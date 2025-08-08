@@ -65,7 +65,7 @@ export let CallProvider = ({ children }) => {
     let [inviteData, setInviteData] = useState({});
     let [inviteOnNewCall, setInviteOnNewCall] = useState(false);
 
-    let [clientPing, setClientPing] = useState(0);
+    let [clientPing, setClientPing] = useState("?");
     let [connected, setConnected] = useState(false);
 
     let [callId, setCallId] = useState(null);
@@ -94,6 +94,7 @@ export let CallProvider = ({ children }) => {
     let [streamingUsers, setStreamingUsers] = useState([]);
     let [watchingUsers, setWatchingUsers] = useState([]);
 
+    // Reset Function
     function reset() {
         micStreamRef.current?.getTracks().forEach(track => track.stop());
         screenStreamRef.current?.getTracks().forEach(track => track.stop());
@@ -108,7 +109,7 @@ export let CallProvider = ({ children }) => {
         setCallId(null);
         setCallSecret(null);
         setIdentified(false);
-        setClientPing(0);
+        setClientPing("?");
         setConnected(false);
     }
 
@@ -876,7 +877,7 @@ export let CallProvider = ({ children }) => {
                         log_level: -1
                     },
                     {
-                        last_ping: clientPing,
+                        last_ping: typeof(clientPing) === "string" ? 0 : clientPing,
                     }
                 ).then(() => {
                     let newTime = Date.now()
