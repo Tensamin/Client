@@ -1,0 +1,6 @@
+{
+  "name": "Example Mod",
+  "description": "This is a example mod for developers.",
+  "version": "1.0",
+  "src": "https://tensamin.methanium.net/example-mod.js"
+}

@@ -8,7 +8,7 @@ import ls from "@/lib/localStorageManager";
 
 // Context Imports
 import { useWebSocketContext } from "@/components/context/websocket";
-import { useMessageContext } from "@/components/context/messages";
+import { useMessageContext } from "@/components/context/message";
 import { useUsersContext } from "@/components/context/users";
 
 // Components

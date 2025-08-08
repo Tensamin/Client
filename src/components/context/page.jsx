@@ -9,7 +9,7 @@ import React, {
 } from "react";
 
 // Context Imports
-import { useMessageContext } from "@/components/context/messages";
+import { useMessageContext } from "@/components/context/message";
 
 // Main
 let PageContext = createContext();

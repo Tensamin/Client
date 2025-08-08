@@ -16,7 +16,7 @@ import ls from "@/lib/localStorageManager";
 let ThemeContext = createContext(null);
 
 // Use Context Function
-export function useThemeProvider() {
+export function useThemeContext() {
   let context = useContext(ThemeContext);
   if (context === undefined) {
     throw new Error("useTheme must be used within a ThemeProvider");

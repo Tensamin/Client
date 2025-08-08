@@ -12,9 +12,9 @@ import ls from "@/lib/localStorageManager";
 
 // Context Imports
 import { usePageContext } from "@/components/context/page";
-import { useMessageContext } from "@/components/context/messages";
+import { useMessageContext } from "@/components/context/message";
 import { useUsersContext } from "@/components/context/users";
-import { useThemeProvider } from "@/components/context/theme";
+import { useThemeContext } from "@/components/context/theme";
 import { useCallContext } from "@/components/context/call";
 
 // Components
@@ -46,7 +46,7 @@ let itemVariants = {
 
 // Main
 export function Navbar() {
-    let { sidebarRightSide } = useThemeProvider();
+    let { sidebarRightSide } = useThemeContext();
     let { get } = useUsersContext();
     let { open } = useSidebar();
     let { setPage } = usePageContext();

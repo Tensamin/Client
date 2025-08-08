@@ -8,7 +8,7 @@ import { convertDisplayNameToInitials, copyTextToClipboard } from "@/lib/utils";
 
 // Context Imports
 import { useUsersContext } from "@/components/context/users";
-import { useMessageContext } from "@/components/context/messages";
+import { useMessageContext } from "@/components/context/message";
 
 // Components
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

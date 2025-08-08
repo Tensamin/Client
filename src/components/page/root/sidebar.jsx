@@ -1,6 +1,6 @@
 // Context Imports
 import { useUsersContext } from "@/components/context/users";
-import { useThemeProvider } from "@/components/context/theme";
+import { useThemeContext } from "@/components/context/theme";
 import { useCallContext } from "@/components/context/call";
 
 // Components
@@ -21,7 +21,7 @@ import { VoiceControls } from "@/components/page/voice/controls";
 // Main
 export function AppSidebar(props) {
   let { forceLoad, ownUuid } = useUsersContext();
-  let { sidebarRightSide } = useThemeProvider();
+  let { sidebarRightSide } = useThemeContext();
   let { connected } = useCallContext();
 
   return (

@@ -1,8 +1,9 @@
 // Package Imports
 import { HexColorPicker } from "react-colorful";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import * as Icon from "lucide-react";
+import Image from "next/image";
 
 // Lib Imports
 import {
@@ -10,15 +11,15 @@ import {
   generateMaterialYouPalette,
   THEME_CONTROLS,
 } from "@/lib/theme";
-import { cn, isHexColor, log, capitalizeFirstLetter } from "@/lib/utils";
+import { cn, isHexColor, log, capitalizeFirstLetter, downloadString } from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
 import ls from "@/lib/localStorageManager";
 
 // Context Imports
 import { useCryptoContext } from "@/components/context/crypto";
 import { useUsersContext } from "@/components/context/users";
-import { useMessageContext } from "@/components/context/messages";
-import { useThemeProvider } from "@/components/context/theme";
+import { useMessageContext } from "@/components/context/message";
+import { useThemeContext } from "@/components/context/theme";
 import { useModsContext } from "@/components/context/mods"
 
 // Components
@@ -52,10 +53,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Preview } from "@/components/page/settings/theme-preview"
 import { EditableText, EditableTextarea } from "@/components/page/settings/editable/text"
 import { EditableImage } from "@/components/page/settings/editable/image"
+
+// Helper Functions
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    let reader = new FileReader();
+    reader.onload = (event) => {
+      resolve(event.target.result);
+    };
+    reader.onerror = (error) => {
+      reject(error);
+    };
+    reader.readAsText(file);
+  });
+};
 
 // Main
 export function Profile() {
@@ -167,10 +182,10 @@ export function Profile() {
       </div>
     </div>
   );
-}
+};
 
 export function Appearance() {
-  let { sidebarRightSide, setSidebarRightSide } = useThemeProvider();
+  let { sidebarRightSide, setSidebarRightSide } = useThemeContext();
 
   let [tmpColor, setTmpColor] = useState(ls.get("theme_hex") || "");
   let [tint, setTint] = useState(ls.get("theme_tint") || "soft");
@@ -490,7 +505,7 @@ export function Appearance() {
       </div>
     </div>
   );
-}
+};
 
 export function Notifications() {
   let [loading, setLoading] = useState(ls.get('notifications') === 'enabled' ? true : false)
@@ -528,14 +543,14 @@ export function Notifications() {
       </Button>
     </div>
   )
-}
+};
 
 export function Voice() {
   return (
     <div className="flex gap-2">
     </div>
   )
-}
+};
 
 export function ExtraBenefits() {
   let { get, ownUuid } = useUsersContext()
@@ -575,33 +590,218 @@ export function ExtraBenefits() {
       </CardFooter>
     </Card>
   )
-}
+};
 
 export function Mods() {
   let { mods, setMods } = useModsContext();
+  let [newMod, setNewMod] = useState("");
+  let [newMods, setNewMods] = useState("");
+  let addModButtonRef = useRef(null);
+  let importButtonRef = useRef(null);
+
+  useEffect(() => {
+    if (!newMod || newMod === "") return;
+
+    try {
+      let jsonMod = JSON.parse(newMod);
+      if (
+        jsonMod.name &&
+        jsonMod.description &&
+        jsonMod.version &&
+        jsonMod.src
+      ) {
+        let modName = jsonMod.name;
+
+        fetch(jsonMod.src)
+          .then(response => response.text())
+          .then(data => {
+            setMods((prev) => ({
+              ...prev,
+              [modName]: {
+                name: jsonMod.name,
+                description: jsonMod.description,
+                version: jsonMod.version,
+                src: btoa(data),
+                enabled: true,
+              },
+            }));
+            toast.success("Added Mod");
+          })
+      } else {
+        toast("Invalid Mod");
+      }
+    } catch (err) {
+      toast("Invalid Mod");
+    }
+  }, [newMod, setMods]);
+
+  useEffect(() => {
+    if (!newMods || newMods === "") return;
+    try {
+      let jsonMods = JSON.parse(newMods);
+      if (Object.keys(jsonMods).length >= 1) {
+        setMods(jsonMods);
+        toast.success("Added Mods");
+      } else {
+        toast("Invalid Mods");
+      }
+    } catch (err) {
+      toast("Invalid Mods");
+    }
+  }, [newMods, setMods]);
+
+  let handleToggle = (key, nextEnabled) => {
+    setMods((prev) => {
+      if (!prev || !prev[key]) return prev;
+      if (prev[key].enabled === nextEnabled) return prev;
+      return {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          enabled: nextEnabled,
+        },
+      };
+    });
+  };
+
+  function ModCard({ modKey, mod, onToggle }) {
+    let [enabled, setEnabled] = useState(Boolean(mod.enabled));
+
+    useEffect(() => {
+      setEnabled(Boolean(mod.enabled));
+    }, [mod.enabled]);
+
+    let handleChange = (next) => {
+      setEnabled(next);
+      if (onToggle) onToggle(modKey, next);
+    };
+
+    return (
+      <Card key={modKey} className="bg-input/30 border-input hover:bg-input/50">
+        <CardHeader>
+          <CardTitle>{mod.name}</CardTitle>
+          <CardAction className="flex items-center gap-3">
+            <Switch checked={enabled} onCheckedChange={handleChange} />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="w-9 h-9"
+                >
+                  <Icon.Trash />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This is just a confirmation so you don't accidentally delete something.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      setMods((prev) => {
+                        let newMods = { ...prev };
+                        delete newMods[mod.name];
+                        return newMods;
+                      });
+                    }}
+                  >Continue</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardAction>
+          <p className="text-sm text-muted-foreground">{mod.description}</p>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   return (
-    <div>
-      <p className="text-destructive">Mods are not checked by Tensamin or reviewed by moderators!</p>
-      <p className="text-destructive">Mods can and probably will try to steal your private key!</p>
+    <div className="flex flex-col gap-6 h-full">
+      <div>
+        <p className="text-destructive">
+          Mods are not checked by Tensamin or reviewed by moderators!
+        </p>
+        <p className="text-destructive">
+          Mods can and probably will try to steal your private key!
+        </p>
+      </div>
+
       <div className="flex gap-3">
-        <Button>
+        <input
+          ref={addModButtonRef}
+          onChange={async (e) => {
+            let files = Array.from(e.target.files || []);
+            if (files[0]) {
+              setNewMod(await readFileAsText(files[0]));
+            }
+          }}
+          className="hidden"
+          id="new-mod-file"
+          type="file"
+        />
+        <input
+          ref={importButtonRef}
+          onChange={async (e) => {
+            let files = Array.from(e.target.files || []);
+            if (files[0]) {
+              setNewMods(await readFileAsText(files[0]));
+            }
+          }}
+          className="hidden"
+          id="new-mods-file"
+          type="file"
+        />
+        <Button
+          onClick={() => {
+            addModButtonRef.current.click();
+          }}
+        >
           Add Mod
         </Button>
-        <div className="w-full"/>
-        <Button>
+        <div className="w-full" />
+        <Button
+          variant="outline"
+          onClick={() => {
+            downloadString("mods.json", JSON.stringify(mods));
+          }}
+        >
           Export Mods
         </Button>
-        <Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            importButtonRef.current.click();
+          }}
+        >
           Import Mods
         </Button>
       </div>
-      <div>
 
-      </div>
+      {mods && mods !== "" && Object.keys(mods).length >= 1 ? (
+        <div>
+          {Object.keys(mods).map((key) => (
+            <ModCard key={key} modKey={key} mod={mods[key]} onToggle={handleToggle} />
+          ))}
+        </div>
+      ) : (
+        <div className="w-full h-full flex flex-col justify-center items-center">
+          <Image
+            className="select-none [user-drag:none] [-webkit-user-drag:none]"
+            src="/megamind.png"
+            width={200}
+            height={200}
+            alt="Meme"
+          />
+          <p className="text-2xl">No Mods?</p>
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
 
 export function Developer() {
   let [debugMode, setDebugMode] = useState(ls.get("debug") === "true" || false)
@@ -627,4 +827,4 @@ export function Developer() {
       </div>
     </div>
   )
-}
+};

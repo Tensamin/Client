@@ -2,7 +2,7 @@
 import { useRef, useEffect, useState, useLayoutEffect } from "react";
 
 // Context Imports
-import { useMessageContext } from "@/components/context/messages";
+import { useMessageContext } from "@/components/context/message";
 
 // Components
 import { Card } from "@/components/ui/card";

@@ -16,15 +16,13 @@
   "type": "module",
   "main": "none",
   "scripts": {
-    "dev": "npm run partytown && next dev --turbopack -p 9161",
-    "build": "npm run partytown && next build",
+    "dev": "next dev --turbopack -p 9161",
+    "build": "next build",
     "start": "next start -p 9161",
-    "lint": "next lint",
-    "partytown": "partytown copylib public/~partytown"
+    "lint": "next lint"
   },
   "dependencies": {
     "@material/material-color-utilities": "^0.3.0",
-    "@qwik.dev/partytown": "^0.11.2",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
     "@radix-ui/react-avatar": "^1.1.10",

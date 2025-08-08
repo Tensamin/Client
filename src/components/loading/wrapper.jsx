@@ -9,7 +9,7 @@ import ls from "@/lib/localStorageManager";
 
 // Context Imports
 import { WebSocketProvider } from "@/components/context/websocket";
-import { MessageProvider } from "@/components/context/messages";
+import { MessageProvider } from "@/components/context/message";
 import { UsersProvider } from "@/components/context/users"
 import { PageProvider } from "@/components/context/page";
 import { CryptoProvider } from "@/components/context/crypto";
@@ -90,8 +90,9 @@ export function LoadingWrapper() {
                             <CallProvider>
                                 <PageProvider>
                                     <ThemeProvider>
-                                        <ModsProvider />
-                                        <Page />
+                                        <ModsProvider>
+                                            <Page />
+                                        </ModsProvider>
                                     </ThemeProvider>
                                 </PageProvider>
                             </CallProvider>

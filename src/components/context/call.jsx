@@ -22,7 +22,7 @@ import { useCryptoContext } from "@/components/context/crypto";
 import { useUsersContext } from "@/components/context/users";
 import { useEncryptionContext } from "@/components/context/encryption";
 import { useWebSocketContext } from "@/components/context/websocket";
-import { useMessageContext } from "@/components/context/messages";
+import { useMessageContext } from "@/components/context/message";
 
 // Config
 let webrtc_servers = {
@@ -845,7 +845,7 @@ export let CallProvider = ({ children }) => {
     }, [send, webrtc_servers, encrypt_base64_using_aes, callSecret]);
 
     // Start Call
-    let startCall = useCallback(async (shouldInviteReceiver) => {
+    let startCall = useCallback(async (shouldInviteReceiver = false) => {
         setCreateCall(true);
         setInviteOnNewCall(shouldInviteReceiver);
     }, [])

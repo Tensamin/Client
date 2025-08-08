@@ -1,6 +1,5 @@
 // Package Imports
 import { JetBrains_Mono } from "next/font/google";
-import { Partytown } from "@qwik.dev/partytown/react";
 
 // Components
 import "./globals.css";
@@ -20,9 +19,6 @@ export let metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <head>
-        <Partytown debug={true} forward={["dataLayer.push"]} />
-      </head>
       <body className={`${jetbrainsMono.variable} antialiased`}>
         {children}
       </body>

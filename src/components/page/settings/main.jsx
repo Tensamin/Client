@@ -75,7 +75,7 @@ export function Main() {
             <Card className="w-full h-full overflow-auto">
                 {settings.map((item) => (
                     isSelectedTrueFalse(item.id) ? (
-                        <CardContent key={item.id}>
+                        <CardContent key={item.id} className="h-full flex flex-col">
                             <p className="text-xl font-bold">{item.name}</p>
                             <br />
                             <item.comp />

@@ -8,7 +8,7 @@ import ls from "@/lib/localStorageManager";
 
 // Context Imports
 import { usePageContext } from "@/components/context/page";
-import { useThemeProvider } from "@/components/context/theme";
+import { useThemeContext } from "@/components/context/theme";
 
 // Components
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -25,7 +25,7 @@ import { GettingCalled } from "@/components/page/voice/parts";
 export function Page() {
     let [isVisible, setIsVisible] = useState(false);
     let { page } = usePageContext();
-    let { sidebarRightSide } = useThemeProvider();
+    let { sidebarRightSide } = useThemeContext();
 
     useEffect(() => {
         const timer = setTimeout(() => {
