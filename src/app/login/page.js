@@ -230,8 +230,8 @@ export function LoginForm() {
                 </div>
                 <div className="h-full w-full flex flex-col items-center justify-center text-xs select-none">
                   {canRelease ? <>
-                    <p>Drop it, i'll catch it!</p>
-                    <p className='text-muted-foreground'>I'm a good catcher</p>
+                    <p>Drop it, i&apos;ll catch it!</p>
+                    <p className='text-muted-foreground'>I&apos;m a good catcher</p>
                   </> : privateKey === "" ? <>
                     <p>Drag & Drop your private key</p>
                     <p className='text-muted-foreground'>It will never leave your device.</p>
