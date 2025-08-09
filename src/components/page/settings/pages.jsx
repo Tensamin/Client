@@ -21,6 +21,7 @@ import { useUsersContext } from "@/components/context/users";
 import { useMessageContext } from "@/components/context/message";
 import { useThemeContext } from "@/components/context/theme";
 import { useModsContext } from "@/components/context/mods"
+import { useCallContext } from "@/components/context/call";
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -128,58 +129,67 @@ export function Profile() {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-muted-foreground/50">Click any field to edit it</p>
-      <div className="flex flex-col w-78 border-1 bg-input/20 p-4 rounded-xl gap-3">
-        <div className="flex gap-3">
-          <div className="flex">
-            <EditableImage
-              avatarUrl={profile.avatar}
-              onSave={(newAvatarBase64) => handleFieldUpdate("avatar", newAvatarBase64)}
-              className="w-17 h-17 z-10"
+      <div className="flex w-full gap-5">
+        <div className="flex flex-col w-3/4 border-1 bg-input/20 p-4 rounded-xl gap-3">
+          <div className="flex gap-3">
+            <div className="flex">
+              <EditableImage
+                avatarUrl={profile.avatar}
+                onSave={(newAvatarBase64) => handleFieldUpdate("avatar", newAvatarBase64)}
+                className="w-17 h-17 z-10"
+              />
+            </div>
+            <div className="flex gap-3">
+              <div className="pt-9">
+                <div className="-rotate-z-45 h-5 w-0 border-l-1 border-foreground" />
+                <div className="-rotate-z-45 h-5 w-0 border-l-1 border-foreground" />
+              </div>
+              <div>
+                <Badge className="mb-3">
+                  <EditableText
+                    value={profile.status}
+                    onSave={(newValue) => handleFieldUpdate("status", newValue)}
+                    className="max-w-full text-background"
+                    placeholder="Watching Memes"
+                  />
+                </Badge>
+                <EditableText
+                  value={profile.display}
+                  onSave={(newValue) => handleFieldUpdate("display", newValue)}
+                  className="text-2xl font-bold"
+                />
+                <EditableText
+                  value={profile.username}
+                  onSave={(newValue) => handleFieldUpdate("username", newValue.toLowerCase())}
+                  className="text-foreground/67 font-bold text-sm"
+                />
+              </div>
+            </div>
+          </div>
+          <div>
+            <EditableTextarea
+              name="Description"
+              value={profile.about}
+              onSave={(newValue) => handleFieldUpdate("about", newValue)}
+              onChar={(chars) => setAboutChars(chars)}
+              maxChars={200}
+              className="text-sm"
+              placeholder="Professional nap-taker, coffee enthusiast and part-time superhero."
+              useBase64={true}
             />
           </div>
-          <div className="flex gap-3">
-            <div className="pt-9">
-              <div className="-rotate-z-45 h-5 w-0 border-l-1 border-foreground" />
-              <div className="-rotate-z-45 h-5 w-0 border-l-1 border-foreground" />
-            </div>
-            <div>
-              <Badge className="mb-3">
-                <EditableText
-                  value={profile.status}
-                  onSave={(newValue) => handleFieldUpdate("status", newValue)}
-                  className="max-w-full"
-                  placeholder="Watching Memes"
-                />
-              </Badge>
-              <EditableText
-                value={profile.display}
-                onSave={(newValue) => handleFieldUpdate("display", newValue)}
-                className="text-2xl font-bold"
-              />
-              <EditableText
-                value={profile.username}
-                onSave={(newValue) => handleFieldUpdate("username", newValue.toLowerCase())}
-                className="text-foreground/67 font-bold text-sm"
-              />
-            </div>
+          <div className="flex gap-2">
+            <p className={`text-xs ${aboutChars > 200 ? "text-destructive" : ""}`}>{aboutChars} / 200 </p>
           </div>
         </div>
-        <div>
-          <EditableTextarea
-            name="Description"
-            value={profile.about}
-            onSave={(newValue) => handleFieldUpdate("about", newValue)}
-            onChar={(chars) => setAboutChars(chars)}
-            maxChars={200}
-            className="text-sm"
-            placeholder="Professional nap-taker, coffee enthusiast and part-time superhero."
-            useBase64={true}
-          />
-        </div>
-        <div className="flex gap-2">
-          <p className={`text-xs ${aboutChars > 200 ? "text-destructive" : ""}`}>{aboutChars} / 200 </p>
+        <div className="border-1 bg-input/20 p-4 rounded-xl flex flex-col w-full justify-center items-center">
+          <p>This is reserved space for</p>
+          <p className="bg-clip-text text-transparent bg-gradient-to-r from-primary/60 to-primary">future customizations</p>
         </div>
       </div>
+      <Card>
+
+      </Card>
     </div>
   );
 };
@@ -546,11 +556,138 @@ export function Notifications() {
 };
 
 export function Voice() {
+  let [outputs, setOutputs] = useState([]);
+  let [inputs, setInputs] = useState([]);
+  let [openOutputs, setOpenOutputs] = useState(false);
+  let [openInputs, setOpenInputs] = useState(false);
+
+  let { inputDeviceId, setInput, outputDeviceId, setOutput } = useCallContext();
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadDevices() {
+      if (!('mediaDevices' in navigator)) return;
+
+      try {
+        let devices = await navigator.mediaDevices.enumerateDevices();
+        let outputs = devices.filter(d => d.kind === 'audiooutput');
+        if (mounted) {
+          setOutputs(outputs);
+        }
+      } catch { }
+
+      try {
+        let devices = await navigator.mediaDevices.enumerateDevices();
+        let inputs = devices.filter(d => d.kind === 'audioinput');
+        if (mounted) {
+          setInputs(inputs);
+        }
+      } catch { }
+    }
+
+    loadDevices();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
-    <div className="flex gap-2">
+    <div className="p-4 space-y-2">
+      <div className="flex flex-col gap-2">
+        <Label>Output Device</Label>
+        <Popover open={openOutputs} onOpenChange={setOpenOutputs}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={openOutputs}
+              className="justify-between w-[200px]"
+            >
+              <p className="truncate">{outputDeviceId
+                ? outputs.find((output) => output.deviceId === outputDeviceId)?.label
+                : "Select device..."}</p>
+              <Icon.ChevronsUpDown className="opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0">
+            <Command>
+              <CommandList>
+                <CommandEmpty>No devices found.</CommandEmpty>
+                <CommandGroup>
+                  {outputs.map((device) => (
+                    <CommandItem
+                      key={device.deviceId}
+                      value={device.deviceId}
+                      onSelect={(currentValue) => {
+                        setOutput(currentValue === outputDeviceId ? "default" : currentValue)
+                        setOpenOutputs(false)
+                      }}
+                    >
+                      {device.label || `Output ${device.deviceId}`}
+                      <Icon.Check
+                        className={cn(
+                          "ml-auto",
+                          outputDeviceId === device.deviceId ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label>Input Device</Label>
+        <Popover open={openInputs} onOpenChange={setOpenInputs}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={openInputs}
+              className="justify-between w-[200px]"
+            >
+              <p className="truncate">{inputDeviceId
+                ? inputs.find((input) => input.deviceId === inputDeviceId)?.label
+                : "Select device..."}</p>
+              <Icon.ChevronsUpDown className="opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0">
+            <Command>
+              <CommandList>
+                <CommandEmpty>No devices found.</CommandEmpty>
+                <CommandGroup>
+                  {inputs.map((device) => (
+                    <CommandItem
+                      key={device.deviceId}
+                      value={device.deviceId}
+                      onSelect={(currentValue) => {
+                        setInput(currentValue === inputDeviceId ? "default" : currentValue)
+                        setOpenInputs(false)
+                      }}
+                    >
+                      {device.label || `Input ${device.deviceId}`}
+                      <Icon.Check
+                        className={cn(
+                          "ml-auto",
+                          inputDeviceId === device.deviceId ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
     </div>
-  )
-};
+  );
+}
 
 export function ExtraBenefits() {
   let { get, ownUuid } = useUsersContext()

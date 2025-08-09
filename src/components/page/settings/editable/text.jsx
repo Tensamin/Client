@@ -46,16 +46,12 @@ export function EditableText({ value, onSave, className, placeholder }) {
   return (
     <p
       ref={editableRef}
-      className={cn(
-        `placeholder break-words whitespace-pre-wrap outline-none ${isEditing ? "cursor-text" : ""}`,
-        className
-      )}
+      className={`break-words whitespace-pre-wrap outline-none ${isEditing ? "cursor-text" : ""} ${className}`}
       onClick={handleClick}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       contentEditable={isEditing}
       suppressContentEditableWarning={true}
-      data-placeholder={placeholder}
     >
       {value}
     </p>

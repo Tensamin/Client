@@ -80,6 +80,9 @@ export let CallProvider = ({ children }) => {
     let [streamAudio, setStreamAudio] = useState(false);
 
     // WebRTC
+    let [outputDeviceId, setOutput] = useState(null);
+    let [inputDeviceId, setInput] = useState(null);
+
     let micStreamRef = useRef(null);
     let screenStreamRef = useRef(null);
 
@@ -93,6 +96,28 @@ export let CallProvider = ({ children }) => {
     let [connectedUsers, setConnectedUsers] = useState([]);
     let [streamingUsers, setStreamingUsers] = useState([]);
     let [watchingUsers, setWatchingUsers] = useState([]);
+
+    // Output & Input
+    useEffect(() => {
+        if (outputDeviceId === null) {
+            let output = ls.get("call_output");
+            if (output) {
+                setOutput(output)
+            } else {
+                setOutput("default")
+            };
+        };
+    }, [outputDeviceId]);
+    useEffect(() => {
+        if (inputDeviceId === null) {
+            let input = ls.get("call_input");
+            if (input) {
+                setInput(input)
+            } else {
+                setInput("default")
+            };
+        };
+    }, [inputDeviceId]);
 
     // Reset Function
     function reset() {
@@ -1035,6 +1060,11 @@ export let CallProvider = ({ children }) => {
 
             connectedUsers,
             streamingUsers,
+
+            inputDeviceId,
+            setInput,
+            outputDeviceId,
+            setOutput,
         }}>
             <div hidden>
                 {connected ? connectedUsers.map((id) => (
