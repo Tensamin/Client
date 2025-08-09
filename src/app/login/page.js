@@ -48,8 +48,37 @@ export default function EncryptionWrapper() {
 export function LoginForm() {
   let [username, setUsername] = useState("");
   let [privateKey, setPrivateKey] = useState("");
+  let [canRelease, setCanRelease] = useState(false);
   let { encrypt_base64_using_aes } = useEncryptionContext();
   let privateKeyFileRef = useRef(null);
+  let counter = useRef(0);
+
+  let drop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    counter.current = 0;
+    setCanRelease(false);
+    let dt = e.dataTransfer;
+    let files = dt.files;
+    handlePrivateKeyFileChange(files)
+  }
+
+  let enter = (e) => {
+    e.preventDefault();
+    counter.current++;
+    if (counter.current === 1) setCanRelease(true);
+  }
+
+  let leave = (e) => {
+    e.preventDefault();
+    counter.current--;
+    if (counter.current === 0) setCanRelease(false);
+  }
+
+  let over = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  }
 
   async function login(useExistingPasskey) {
     try {
@@ -136,11 +165,11 @@ export function LoginForm() {
     } catch (err) {
       log(err.message, "showError")
     }
-  }
+  };
 
   function handleUsernameChange(event) {
     setUsername(event.target.value.toLowerCase())
-  }
+  };
 
   async function handlePrivateKeyFileChange(files) {
     if (files[0]) {
@@ -150,95 +179,105 @@ export function LoginForm() {
       }
       setPrivateKey(pemPrivateKey);
     }
-  }
+  };
 
   function handlePrivateKeyClick() {
     privateKeyFileRef.current.click();
-  }
+  };
 
   return (
     <div
-      className="flex flex-col justify-center items-center w-full h-screen"
-      onDrop={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        let dt = e.dataTransfer;
-        let files = dt.files;
-        handlePrivateKeyFileChange(files)
-      }}
+      className="z-20 w-full h-full"
+      onDrop={drop}
+      onDragEnter={enter}
+      onDragOver={over}
+      onDragLeave={leave}
     >
-      <Card className="w-auto h-auto">
-        <CardContent className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              type="text"
-              placeholder="the_real_john_doe"
-              value={username}
-              onChange={handleUsernameChange}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="private-key">Private Key</Label>
-            <div
-              className="w-full h-full py-3 border border-input rounded-lg bg-input/30 hover:bg-input/50 flex"
-              onClick={handlePrivateKeyClick}
-            >
-              <input
-                ref={privateKeyFileRef}
-                onChange={(e) => handlePrivateKeyFileChange(Array.from(e.target.files || []))}
-                className="hidden"
-                id="private-key-file"
-                type="file"
+      <div
+        className="z-10 flex flex-col justify-center items-center w-full h-screen"
+      >
+        <Card className="w-auto h-auto">
+          <CardContent className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="the_real_john_doe"
+                value={username}
+                onChange={handleUsernameChange}
               />
-              <div className="h-full w-auto flex items-center pl-3">
-                {privateKey === "" ? <Icon.FileKey size={30} strokeWidth={1} />
-                  : <Icon.FileCheck size={30} strokeWidth={1} />}
-              </div>
-              <div className="h-full w-full flex flex-col items-center justify-center text-xs select-none">
-                {privateKey === "" ? <>
-                  <p>Drag & Drop your private key</p>
-                  <p className='text-muted-foreground'>It will never leave your device.</p>
-                </> : <>
-                  <p>Private key selected!</p>
-                  <p className='text-muted-foreground'>You can still change it.</p>
-                </>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="private-key">Private key</Label>
+              <div
+                className="w-full h-full py-3 border border-input rounded-lg bg-input/30 hover:bg-input/50 flex"
+                onClick={handlePrivateKeyClick}
+              >
+                <input
+                  ref={privateKeyFileRef}
+                  onChange={(e) => handlePrivateKeyFileChange(Array.from(e.target.files || []))}
+                  className="hidden"
+                  id="private-key-file"
+                  type="file"
+                />
+                <div className="h-full w-auto flex items-center pl-3">
+                  {canRelease ?
+                    <Icon.FileDown size={25} strokeWidth={1.5} /> : privateKey === "" ?
+                    <Icon.FileKey2 size={25} strokeWidth={1.5} /> :
+                    <Icon.FileCheck size={25} strokeWidth={1.5} />
+                  }
+                </div>
+                <div className="h-full w-full flex flex-col items-center justify-center text-xs select-none">
+                  {canRelease ? <>
+                    <p>Drop it, i'll catch it!</p>
+                    <p className='text-muted-foreground'>I'm a good catcher</p>
+                  </> : privateKey === "" ? <>
+                    <p>Drag & Drop your private key</p>
+                    <p className='text-muted-foreground'>It will never leave your device.</p>
+                  </> : <>
+                    <p>Private key selected!</p>
+                    <p className='text-muted-foreground'>You can still change it.</p>
+                  </>}
+                </div>
               </div>
             </div>
-          </div>
-          <Separator />
-          <div className="flex flex-col gap-2 w-full">
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => {
-                login(false)
-              }}
-            >
-              Add Device
-            </Button>
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => {
-                login(true)
-              }}
-            >
-              Add Device with existing passkey
-            </Button>
-            <p className="text-[11px] text-muted-foreground">
-              By clicking &quot;Add device&quot; or &quot;Add Device with existing passkey&quot;
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-      <br />
-      <p className="text-[11px] text-muted-foreground">
-        you agree to our <a href={endpoint.tos} className="underline">
-          Terms of Service
-        </a> and <a href={endpoint.pp} className="underline">Privacy Policy.</a>
-      </p>
+            <Separator />
+            <div className="flex flex-col gap-2 w-full">
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => {
+                  login(false)
+                }}
+              >
+                Add device
+              </Button>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => {
+                  login(true)
+                }}
+              >
+                Add device with existing passkey
+              </Button>
+              <p className="text-[11px] text-muted-foreground text-center">
+                If this is your first device, click &quot;Add device&quot;
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <br />
+        <p className="text-[11px] text-muted-foreground">
+          By clicking &quot;Add device&quot; or &quot;Add device with existing passkey&quot;
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          you agree to our <a href={endpoint.tos} className="underline">
+            Terms of Service
+          </a> and <a href={endpoint.pp} className="underline">Privacy Policy.</a>
+        </p>
+      </div>
     </div>
   )
 };
