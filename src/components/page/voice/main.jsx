@@ -154,7 +154,6 @@ export function Main() {
       {/* Content */}
       <div className="flex w-full flex-1 min-h-0 flex-col">
         {focused === "" ? (
-          // Draggable canvas (only avatars) + centered Volume icon with rings
           <div
             ref={canvasRef}
             className="relative flex-1 min-h-0 w-full overflow-hidden rounded-xl border border-border bg-background/40"
@@ -166,25 +165,13 @@ export function Main() {
                   className="absolute left-1/2 top-1/2 z-10 h-10 w-10 -translate-x-1/2 -translate-y-1/2 text-foreground"
                 />
                 <span
-                  className="absolute inset-0 rounded-full border border-foreground/40"
-                  style={{
-                    animation: "ringPulse 2s ease-out infinite",
-                    animationDelay: "0s",
-                  }}
+                  className="absolute inset-0 rounded-full border border-border/75"
                 />
                 <span
-                  className="absolute inset-0 rounded-full border border-foreground/30"
-                  style={{
-                    animation: "ringPulse 2s ease-out infinite",
-                    animationDelay: "0.6s",
-                  }}
+                  className="absolute -inset-10 rounded-full border border-border/50"
                 />
                 <span
-                  className="absolute inset-0 rounded-full border border-foreground/20"
-                  style={{
-                    animation: "ringPulse 2s ease-out infinite",
-                    animationDelay: "1.2s",
-                  }}
+                  className="absolute -inset-20 rounded-full border border-border/25"
                 />
               </div>
             </div>
@@ -237,7 +224,6 @@ export function Main() {
             `}</style>
           </div>
         ) : (
-          // Focused view: focused tile shrinks to keep thumbnails visible
           <div className="flex w-full flex-1 min-h-0 flex-col gap-2">
             {/* Focused area (fits within remaining height) */}
             <div className="flex-1 min-h-0 px-1">
@@ -504,7 +490,6 @@ function renderVideoOrPlaceholder({
     );
   }
 
-  // Not streaming: center avatar inside area
   return (
     <button
       type="button"
@@ -519,7 +504,6 @@ function renderVideoOrPlaceholder({
   );
 }
 
-// Hook: observe element size
 function useElementSize(ref) {
   let [size, setSize] = useState({ width: 0, height: 0 });
   useEffect(() => {
@@ -537,7 +521,6 @@ function useElementSize(ref) {
   return size;
 }
 
-// Hook: compute best-fit width/height for aspect box within a container
 function useFitBox(containerRef, aspectW = 16, aspectH = 9) {
   let { width, height } = useElementSize(containerRef);
   let [box, setBox] = useState({ width: 0, height: 0 });
