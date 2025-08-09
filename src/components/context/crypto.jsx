@@ -121,9 +121,12 @@ export function CryptoProvider({ children }) {
 
         if (!isMounted) return;
 
+        retryCountRef += 1
+
         if (retryCountRef.current >= MAX_PASSKEY_RETRIES) {
           ls.remove("auth_private_key");
           ls.remove("auth_uuid");
+          ls.remove("auth_cred_id");
           if (isMounted) {
             router.push("/login");
             setIsInitialized(true);
