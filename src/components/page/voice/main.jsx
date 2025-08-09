@@ -205,23 +205,6 @@ export function Main() {
                 </div>
               );
             })}
-
-            {/* Local keyframes for ring pulse */}
-            <style jsx>{`
-              @keyframes ringPulse {
-                0% {
-                  transform: scale(0.6);
-                  opacity: 0.7;
-                }
-                80% {
-                  opacity: 0.15;
-                }
-                100% {
-                  transform: scale(1.6);
-                  opacity: 0;
-                }
-              }
-            `}</style>
           </div>
         ) : (
           <div className="flex w-full flex-1 min-h-0 flex-col gap-2">
@@ -273,8 +256,8 @@ function VoiceModal({
   focused = false,
   onFocus,
   dragHandleProps = {},
-  mode = "tile", // "tile" | "avatarOnly"
-  fitToParent = false, // fit video area to parent's available height
+  mode = "tile",
+  fitToParent = false,
 }) {
   let [avatar, setAvatar] = useState("...");
   let [username, setUsername] = useState("...");
@@ -302,12 +285,10 @@ function VoiceModal({
   let isWatching = watchingUsers.includes(id);
   let showVideo = streams && id !== ownUuid;
 
-  // Fit box refs (focused main tile)
   let fitAreaRef = useRef(null);
-  let fit = useFitBox(fitAreaRef, 16, 9); // width & height in px
+  let fit = useFitBox(fitAreaRef, 16, 9);
 
   if (mode === "avatarOnly") {
-    // Draggable avatar-only tile
     return (
       <div
         className="flex items-center justify-center"

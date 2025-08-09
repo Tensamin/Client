@@ -846,9 +846,16 @@ export let CallProvider = ({ children }) => {
     }, [send, webrtc_servers, encrypt_base64_using_aes, callSecret]);
 
     // Start Call
-    let startCall = useCallback(async (shouldInviteReceiver = false) => {
-        setCreateCall(true);
-        setInviteOnNewCall(shouldInviteReceiver);
+    let startCall = useCallback(async (shouldInviteReceiver, id, secret) => {
+        reset();
+        setTimeout(() => {
+            if (id && secret) {
+                setCallId(id);
+                setCallSecret(secret);
+            }
+            setCreateCall(true);
+            setInviteOnNewCall(shouldInviteReceiver);
+        }, 100)
     }, [])
 
     // End Call
@@ -877,7 +884,7 @@ export let CallProvider = ({ children }) => {
                         log_level: -1
                     },
                     {
-                        last_ping: typeof(clientPing) === "string" ? 0 : clientPing,
+                        last_ping: typeof (clientPing) === "string" ? 0 : clientPing,
                     }
                 ).then(() => {
                     let newTime = Date.now()

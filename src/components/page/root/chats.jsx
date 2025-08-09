@@ -63,6 +63,9 @@ export function Chats() {
                   id={chat.user_id}
                   state={getUserState(chat.user_id)}
                   showIotaStatus={true}
+                  callActive={chat.call_active}
+                  callId={chat.call_id || ""}
+                  encCallSecret={chat.call_secret || ""}
                 />
               )}
             </div>

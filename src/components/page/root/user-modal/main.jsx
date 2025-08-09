@@ -19,13 +19,17 @@ import { useUsersContext } from "@/components/context/users"
 import {
   Avatar,
   AvatarFallback,
-} from "@/components/ui/avatar"
+} from "@/components/ui/avatar";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { useCryptoContext } from "@/components/context/crypto";
+import { useEncryptionContext } from "@/components/context/encryption";
+import { useCallContext } from "@/components/context/call"
 
 // User Modal for user
 export function UserModal({ id, state }) {
@@ -100,12 +104,25 @@ export function UserModal({ id, state }) {
 }
 
 // User Modal for Sidebar Chats
-export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = false }) {
+export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = false, callActive = false, callId = "", encCallSecret = "" }) {
   let [avatar, setAvatar] = useState("...");
   let [username, setUsername] = useState("...");
   let [display, setDisplay] = useState("...");
   let [status, setStatus] = useState("...");
+  let [callSecret, setCallSecret] = useState("");
   let { get } = useUsersContext();
+  let { privateKey } = useCryptoContext();
+  let { decrypt_base64_using_privkey } = useEncryptionContext();
+  let { startCall } = useCallContext();
+
+  useEffect(() => {
+    if (encCallSecret !== "") {
+      async function decrypt() {
+        setCallSecret(await decrypt_base64_using_privkey(encCallSecret, privateKey))
+      }
+      decrypt()
+    }
+  }, [encCallSecret])
 
   useEffect(() => {
     if (id !== "") get(id)
@@ -162,7 +179,7 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
         </div>
       )}
 
-      <div className="min-w-0 flex-grow">
+      <div className="min-w-0 flex-grow w-full">
         <div className={`${showIotaStatus && state !== "IOTA_OFFLINE" ? "flex" : ""} gap-2 text-[15px] overflow-hidden whitespace-nowrap text-overflow-ellipsis`}>
           <div className="flex flex-col">
             <div className="flex gap-2">
@@ -197,6 +214,19 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
           </div>
         </div>
       </div>
+
+      {callActive && (
+        <div className="flex justify-center items-center">
+          <Badge 
+            className="w-7 h-7 "
+            onClick={() => {
+              startCall(false, callId, callSecret)
+            }}  
+          >
+            <Icon.PhoneIncoming />
+          </Badge>
+        </div>
+      )}
     </div>
   );
 }

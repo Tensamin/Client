@@ -144,7 +144,11 @@ export function LoginForm() {
 
   async function handlePrivateKeyFileChange(files) {
     if (files[0]) {
-      setPrivateKey(await readFileAsText(files[0]));
+      let pemPrivateKey = await readFileAsText(files[0])
+      if (pemPrivateKey.startsWith("-----BEGIN PRIVATE KEY-----\n")) {
+        pemPrivateKey = pemPrivateKey.replaceAll("-----BEGIN PRIVATE KEY-----\n", "").replaceAll("\n-----END PRIVATE KEY-----", "")
+      }
+      setPrivateKey(pemPrivateKey);
     }
   }
 

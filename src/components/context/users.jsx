@@ -70,20 +70,30 @@ export function UsersProvider({ children }) {
 						if (data.type !== "error") {
 							return data.data;
 						} else {
-							log(data.log.message, "error");
-							return null;
+							return {
+
+							}
 						}
 					})
 					.catch((error) => {
-						log(
-							`Network error fetching user ${uuid}: ${error.message}`,
-							"error",
-						);
-						return null;
+						return {
+
+						}
 					});
 
 				if (!fetchedUser) {
-					return undefined;
+					fetchedUser = {
+						uuid: uuid,
+						created_at: 0,
+						username: "...",
+						display: "...",
+						avatar: "...",
+						about: "This user does not exist",
+						status: "Failed to load user.",
+						public_key: "",
+						sub_level: 0,
+						sub_end: 0,
+					};
 				}
 
 				let userToStore = {

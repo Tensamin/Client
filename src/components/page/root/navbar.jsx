@@ -51,7 +51,7 @@ export function Navbar() {
     let { open } = useSidebar();
     let { setPage } = usePageContext();
     let { failedMessages, navbarLoading, navbarLoadingMessage, receiver } = useMessageContext();
-    let { setCallId, setCallSecret, startCall } = useCallContext();
+    let { startCall } = useCallContext();
 
     let [receiverDisplay, setReceiverDisplay] = useState("")
 
@@ -193,9 +193,7 @@ export function Navbar() {
                                 className="w-9 h-9"
                                 variant="outline"
                                 onClick={() => {
-                                    setCallId(v7());
-                                    setCallSecret(v7());
-                                    startCall(true);
+                                    startCall(true, v7(), v7());
                                 }}
                             >
                                 <Icon.PhoneCall />

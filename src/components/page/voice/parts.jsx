@@ -46,10 +46,7 @@ export function GettingCalled() {
                     <Button
                         className="size-15 rounded-2xl"
                         onClick={async () => {
-                            stopCall();
-                            setCallId(tempCallId);
-                            setCallSecret(tempCallSecret);
-                            startCall();
+                            startCall(false, tempCallId, tempCallSecret);
                             setInvitedToCall(false);
                         }}
                     >
