@@ -70,27 +70,23 @@ export function UsersProvider({ children }) {
 						if (data.type !== "error") {
 							return data.data;
 						} else {
-							return {
-
-							}
+							return null;
 						}
 					})
 					.catch((error) => {
-						return {
-
-						}
+						return null;
 					});
 
-				if (!fetchedUser) {
+				if (!fetchedUser || fetchedUser === null) {
 					fetchedUser = {
 						uuid: uuid,
 						created_at: 0,
-						username: "...",
-						display: "...",
+						username: "Failed to load",
+						display: "Failed to load",
 						avatar: "...",
-						about: "This user does not exist",
-						status: "Failed to load user.",
-						public_key: "",
+						about: "Failed to load",
+						status: "Failed to load",
+						public_key: "MIICLjANBgkqhkiG9w0BAQEFAAOCAhsAMIICFgKCAg0NmcU0Xqog/GN/Fvg8EXPirko4RIHjDxq4gbQ8eqEj0ui4GpL5DVt50u/6Lx81/thYrCfg/jq75n6ARYxMgadC4BRKrpaWiKFVilprZ/8fjCpD1k3RPaxMjaKtjncxNzoCUTwQkq4Yoy++Kh8FWAim7454lNd1r1YtyeiPn/WsDX+h/PrIVqR0PStx4QHxO3SkPRwNQR+1paJBKPK4SiKGJyHNDXlcxuz6A0FD1tZ8IBidSSqloayg+kCMZpgSRceOMZONvWJKlsRkaJZcwPJ/up5aDGT55DSoHtwZpI/L3XHKNukc3+X9moj1dSTbH1yAJNQqJdyEnYD8P37+uxBS44A42aFhqrbsimcadIev+Fqp3CWiZz9oAxx3bQBeTKCj/IzMGQFdN4Lq5oGSWJE/Banb6VdaPdfdIAAP1CSXLL1KpENlJvxkD+2UKptHjoz5cVo2lv6sHZacztuLa4nzAq3AXs53D+givWHzeyXIOYEnt6tq6eLn5lfWLBCbwIaQCcEuKmoJm8qhzO9nrB3ISg42RRkLd+ccSt7ZTo+4UmkFnUsfg3F0l2/NrasWH57Sw/+EhBEDWscKKt15HdJFkeWKYPpkjSySofwq7U00bgIFvWohgGca3o04CDmSq1u2RLDayIUKAt6hNXBxcTVQeK+l/uQKFhtvz2t2Ow2d+jXDAXg4g2gJg5YBrU0CAwEAAQ==",
 						sub_level: 0,
 						sub_end: 0,
 					};
