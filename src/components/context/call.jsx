@@ -86,6 +86,10 @@ export let CallProvider = ({ children }) => {
     let micStreamRef = useRef(null);
     let screenStreamRef = useRef(null);
 
+    // Keep a persistent observer to apply output device to all audio elements
+    let sinkObserverRef = useRef(null);
+    let currentSinkIdRef = useRef(null);
+
     let micRefs = useRef(new Map());
     let screenRefs = useRef(new Map());
     let watchingRefs = useRef(new Map());
@@ -97,27 +101,110 @@ export let CallProvider = ({ children }) => {
     let [streamingUsers, setStreamingUsers] = useState([]);
     let [watchingUsers, setWatchingUsers] = useState([]);
 
-    // Output & Input
+    // Helper: apply sinkId to all existing audio elements on the page
+    let applySinkToAllAudios = useCallback(async (sinkId) => {
+        try {
+            let audios = Array.from(document.querySelectorAll('audio'));
+            await Promise.all(audios.map(async (el) => {
+                if (typeof el.setSinkId === 'function' && sinkId) {
+                    try { await el.setSinkId(sinkId); } catch { /* ignore */ }
+                }
+            }));
+        } catch { /* ignore */ }
+    }, []);
+
+    // Output device: initialize, persist, and enforce globally with a persistent observer
     useEffect(() => {
+        // Initialize from storage
         if (outputDeviceId === null) {
             let output = ls.get("call_output");
-            if (output) {
-                setOutput(output)
-            } else {
-                setOutput("default")
-            };
-        };
-    }, [outputDeviceId]);
+            setOutput(output || "default");
+            return;
+        }
+
+        // Persist selection
+        ls.set("call_output", outputDeviceId);
+        currentSinkIdRef.current = outputDeviceId;
+
+        // Apply to all existing audio tags
+        applySinkToAllAudios(outputDeviceId);
+
+        // Start or update a persistent MutationObserver
+        if (!sinkObserverRef.current) {
+            sinkObserverRef.current = new MutationObserver((mutations) => {
+                for (let m of mutations) {
+                    m.addedNodes.forEach(node => {
+                        try {
+                            if (node instanceof HTMLElement) {
+                                node.querySelectorAll('audio').forEach(el => {
+                                    if (typeof el.setSinkId === 'function' && currentSinkIdRef.current) {
+                                        el.setSinkId(currentSinkIdRef.current).catch(() => { });
+                                    }
+                                });
+                            } else if (node instanceof HTMLMediaElement) {
+                                if (node.tagName.toLowerCase() === 'audio' && typeof node.setSinkId === 'function' && currentSinkIdRef.current) {
+                                    node.setSinkId(currentSinkIdRef.current).catch(() => { });
+                                }
+                            }
+                        } catch { /* ignore */ }
+                    });
+                }
+            });
+            try {
+                sinkObserverRef.current.observe(document.body, { childList: true, subtree: true });
+            } catch { /* ignore */ }
+        }
+    }, [outputDeviceId, applySinkToAllAudios]);
+
+    // Input device: initialize from storage and live-switch mic stream across PCs
+    let switchMicInput = useCallback(async (preferredId) => {
+        try {
+            // Build constraints
+            let constraints = preferredId && preferredId !== 'default'
+                ? { audio: { deviceId: { exact: preferredId } } }
+                : { audio: true };
+
+            let newStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+            // Respect current mute state
+            newStream.getAudioTracks().forEach(t => { t.enabled = !mute; });
+
+            // Swap tracks in existing PCs
+            let newTrack = newStream.getAudioTracks()[0];
+            if (newTrack) {
+                for (let pc of micRefs.current.values()) {
+                    try {
+                        let sender = pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+                        if (sender) {
+                            await sender.replaceTrack(newTrack);
+                        } else {
+                            pc.addTrack(newTrack, newStream);
+                        }
+                    } catch { /* ignore per-peer errors */ }
+                }
+            }
+
+            // Stop old tracks and replace ref
+            try { micStreamRef.current?.getTracks().forEach(tr => tr.stop()); } catch { }
+            micStreamRef.current = newStream;
+        } catch (e) {
+            logFunction(`Failed to switch mic input: ${e.message}`, 'error');
+        }
+    }, [mute]);
+
     useEffect(() => {
         if (inputDeviceId === null) {
             let input = ls.get("call_input");
-            if (input) {
-                setInput(input)
-            } else {
-                setInput("default")
-            };
-        };
-    }, [inputDeviceId]);
+            setInput(input || "default");
+            return;
+        }
+        // Persist selection always
+        ls.set("call_input", inputDeviceId);
+        // Only switch mic while in a call/connected
+        if (connected) {
+            switchMicInput(inputDeviceId);
+        }
+    }, [inputDeviceId, switchMicInput, connected]);
 
     // Reset Function
     function reset() {
@@ -156,7 +243,7 @@ export let CallProvider = ({ children }) => {
     // Toggle Mute
     let toggleMute = useCallback(() => {
         setMute((prevMute) => {
-            const newMute = !prevMute;
+            let newMute = !prevMute;
             ls.set("call_mute", newMute);
 
             // When unmuting, also undeafen
@@ -172,7 +259,7 @@ export let CallProvider = ({ children }) => {
     // Toggle Deaf
     let toggleDeaf = useCallback(() => {
         setDeaf((prevDeaf) => {
-            const newDeaf = !prevDeaf;
+            let newDeaf = !prevDeaf;
             ls.set("call_deaf", newDeaf);
 
             // When deafening, also mute
@@ -396,13 +483,18 @@ export let CallProvider = ({ children }) => {
             onOpen: async () => {
                 logFunction("Call connected", "info");
                 if (mute) toggleMute();
-                micStreamRef.current = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                });
+                // Acquire mic using current or stored input device
+                try {
+                    let preferredId = inputDeviceId ?? ls.get('call_input') ?? 'default';
+                    await switchMicInput(preferredId);
+                } catch { /* handled inside switchMicInput */ }
                 setConnectedUsers([ownUuid]);
             },
             onClose: () => {
                 logFunction("Call disconnected", "info");
+                // Stop using the microphone when leaving the call
+                try { micStreamRef.current?.getTracks().forEach(t => t.stop()); } catch { }
+                micStreamRef.current = null;
                 pendingRequests.current.forEach(({ reject, timeoutId }) => {
                     clearTimeout(timeoutId);
                     reject(
@@ -1008,6 +1100,8 @@ export let CallProvider = ({ children }) => {
     // Unmount Cleanup
     useEffect(() => {
         return () => {
+            try { sinkObserverRef.current?.disconnect(); } catch { }
+            sinkObserverRef.current = null;
             pendingRequests.current.forEach(({ reject, timeoutId }) => {
                 clearTimeout(timeoutId);
                 let unmountError = new Error('WebSocket provider unmounted before response was received.');
@@ -1080,6 +1174,12 @@ export let CallProvider = ({ children }) => {
                                 } else if (stream) {
                                     logFunction(`Invalid stream type for user ${id}: ${typeof stream}`, "warning");
                                 }
+                                // Apply current output device to this element
+                                try {
+                                    if (typeof el.setSinkId === 'function' && currentSinkIdRef.current) {
+                                        el.setSinkId(currentSinkIdRef.current).catch(() => { });
+                                    }
+                                } catch { /* ignore */ }
                             } else {
                                 audioRefs.current.delete(id);
                             }
