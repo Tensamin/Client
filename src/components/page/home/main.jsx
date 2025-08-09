@@ -35,8 +35,8 @@ import { VideoStream } from "@/components/page/voice/parts"
 // Main
 export function Main() {
     let [open, setOpen] = useState(false)
-    let [newChatUUID, setNewChatUUID] = useState("")
-    let { ownUuid } = useUsersContext();
+    let [newChatUsername, setNewChatUUID] = useState("")
+    let { ownUuid, get } = useUsersContext();
     let { send } = useWebSocketContext();
     let { encrypt_base64_using_pubkey } = useEncryptionContext();
     let { voiceSend, createP2PConnection, callId, setCallId, callSecret, setCallSecret, startCall, clientPing, connected, mute, toggleMute, deaf, toggleDeaf, stream, startScreenStream, stopScreenStream, getScreenStream, connectedUsers, streamingUsers, toggleStream } = useCallContext();
@@ -46,6 +46,20 @@ export function Main() {
 
     async function handleSubmit() {
         try {
+            let newChatUUID = "...";
+
+            await fetch(`${endpoint.username_to_uuid}${newChatUsername}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.type !== "error") {
+                    newChatUUID = data.data.uuid;
+                    return;
+                } else {
+                    log(data.log.message, "showError")
+                    return;
+                }
+            })
+
             if (isUuid(newChatUUID)) {
                 let secret = btoa(v7() + " Tensate? " + v7() + " Sag mal Fisch " + v7() + " Jreap stinkt " + v7() + " Karpfen " + v7() + " Marmeladendoner " + v7() + " Ich war in Elias keller :^) " + v7())
 
@@ -54,48 +68,32 @@ export function Main() {
 
                 let success = false;
 
-                await fetch(`${endpoint.user}${ownUuid}/public-key`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.type !== "error") {
-                            log(data.log.message, "debug");
-                            ownPubKey = data.data.public_key;
-                            success = true;
-                        } else {
-                            log(data.log.message, "error");
-                            success = false;
-                        };
-                    });
+                try {
+                    await get(ownUuid).then(data => {
+                        ownPubKey = data.public_key;
+                    })
 
-                await fetch(`${endpoint.user}${newChatUUID}/public-key`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.type !== "error") {
-                            log(data.log.message, "debug");
-                            newUserPubKey = data.data.public_key;
-                            success = true;
-                        } else {
-                            if (data.log.message === `Failed to get public_key for ${newChatUUID}: UUID not found.`) {
-                                log("That User does not exist!", "warning")
-                            } else {
-                                log(data.log.message, "error");
-                            }
-                            success = false;
-                        };
-                    });
+                    await get(newChatUUID).then(data => {
+                        newUserPubKey = data.public_key;
+                    })
+
+                    success = true;
+                } catch (err) {
+                    success = false;
+                }
 
                 if (success) {
                     await send("shared_secret_set", {
-                        message: `${ownUuid} sent ${newChatUUID} a friend request`,
+                        message: `${ownUuid} sent ${newChatUsername} a friend request`,
                         log_level: 1
                     }, {
-                        receiver_id: newChatUUID,
+                        receiver_id: newChatUsername,
                         shared_secret_own: await encrypt_base64_using_pubkey(btoa(secret), ownPubKey),
                         shared_secret_other: await encrypt_base64_using_pubkey(btoa(secret), newUserPubKey),
                     })
                         .then(data => {
                             if (data.type !== "error") {
-                                log(`Sent Chat Request to ${newChatUUID}`, "success")
+                                log(`Sent Chat Request to ${newChatUsername}`, "success")
                             }
                         })
                 }
@@ -131,7 +129,7 @@ export function Main() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Enter the UUID of the User</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    <Input placeholder="00000000-0000-0000-0000-000000000000" value={newChatUUID} onChange={(e) => handleInputChange(e.target.value)} onSubmit={handleSubmit}></Input>
+                                    <Input placeholder="the_real_john_doe" value={newChatUsername} onChange={(e) => handleInputChange(e.target.value)} onSubmit={handleSubmit}></Input>
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
