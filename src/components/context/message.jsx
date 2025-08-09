@@ -191,69 +191,51 @@ export function MessageProvider({ children }) {
   // addMessage Function
   let addMessage = useCallback((newMessageData) => {
     setMessages((prevMessages) => {
-      let messageAppended = false;
-
-      let updatedMessages = prevMessages.map((msgGroup) => {
+      if (prevMessages.length > 0) {
+        let lastGroup = prevMessages[prevMessages.length - 1];
         if (
-          msgGroup.sender === newMessageData.sender &&
-          removeSecondsFromUnixTimestamp(msgGroup.id) ===
-          removeSecondsFromUnixTimestamp(newMessageData.id)
+          lastGroup.sender === newMessageData.sender &&
+          removeSecondsFromUnixTimestamp(lastGroup.id) ===
+            removeSecondsFromUnixTimestamp(newMessageData.id)
         ) {
-          let newMsgGroup = new Message({
-            id: msgGroup.id,
-            sender: msgGroup.sender,
-            messages: [...msgGroup.subMessages],
+          let newLastGroup = new Message({
+            id: lastGroup.id,
+            sender: lastGroup.sender,
+            messages: [...lastGroup.subMessages],
           });
-
-          newMsgGroup.addSubMessage(
+          newLastGroup.addSubMessage(
             newMessageData.content,
             newMessageData.sendToServer || false,
           );
-          messageAppended = true;
-          return newMsgGroup;
+          return [...prevMessages.slice(0, -1), newLastGroup];
         }
-        return msgGroup;
-      });
-
-      if (messageAppended) {
-        return updatedMessages;
-      } else {
-        return [...prevMessages, new Message(newMessageData)];
       }
+      return [...prevMessages, new Message(newMessageData)];
     });
   }, []);
 
-  // Local add function for building chunk messages (replicates addMessage logic but returns new array instead of setting state)
   function addToChunk(chunk, newMessageData) {
-    let messageAppended = false;
-
-    let updatedChunk = chunk.map((msgGroup) => {
+    if (chunk.length > 0) {
+      let lastGroup = chunk[chunk.length - 1];
       if (
-        msgGroup.sender === newMessageData.sender &&
-        removeSecondsFromUnixTimestamp(msgGroup.id) ===
-        removeSecondsFromUnixTimestamp(newMessageData.id)
+        lastGroup.sender === newMessageData.sender &&
+        removeSecondsFromUnixTimestamp(lastGroup.id) ===
+          removeSecondsFromUnixTimestamp(newMessageData.id)
       ) {
-        let newMsgGroup = new Message({
-          id: msgGroup.id,
-          sender: msgGroup.sender,
-          messages: [...msgGroup.subMessages],
+        let newLastGroup = new Message({
+          id: lastGroup.id,
+          sender: lastGroup.sender,
+          messages: [...lastGroup.subMessages],
         });
 
-        newMsgGroup.addSubMessage(
+        newLastGroup.addSubMessage(
           newMessageData.content,
           newMessageData.sendToServer || false,
         );
-        messageAppended = true;
-        return newMsgGroup;
+        return [...chunk.slice(0, -1), newLastGroup];
       }
-      return msgGroup;
-    });
-
-    if (messageAppended) {
-      return updatedChunk;
-    } else {
-      return [...chunk, new Message(newMessageData)];
     }
+    return [...chunk, new Message(newMessageData)];
   }
 
   // Loading of more messages
