@@ -100,7 +100,7 @@ export function LoginForm() {
         });
 
       if (useExistingPasskey) {
-        cred_id = prompt("Enter the cred id found in the database or on the existing device:")
+        cred_id = prompt("Enter the passkey id found in your passkey provider or on the existing device:")
         await fetch(`${endpoint.webauthn_login_options}${uuid}/${cred_id}`)
           .then(response => response.json())
           .then(data => {
@@ -150,7 +150,7 @@ export function LoginForm() {
             throw new Error(data.log.message)
           } else {
             lambda = data.data.lambda;
-            if (!useExistingPasskey) cred_id = data.data.cred_id;
+            if (!useExistingPasskey) cred_id = attestation.id;
             verified = true;
           }
         });
