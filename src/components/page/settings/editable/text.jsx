@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
-import { cn } from "@/lib/utils";
+import { capitalizeFirstLetter, cn } from "@/lib/utils";
 
 // Components
 import { Textarea } from "@/components/ui/textarea";
@@ -62,7 +62,7 @@ export function EditableText({ value, onSave, className, placeholder }) {
   );
 }
 
-export function EditableTextarea({ value, onSave, onChar, maxChars, className, placeholder, useBase64 }) {
+export function EditableTextarea({ name, value, onSave, onChar, maxChars, className, placeholder }) {
   let [editingValue, setEditingValue] = useState("")
 
   useEffect(() => {
@@ -71,27 +71,15 @@ export function EditableTextarea({ value, onSave, onChar, maxChars, className, p
 
   function handleChange(event) {
     setEditingValue(event.target.value)
-    if (useBase64) {
-    onChar(btoa(event.target.value).length)
-    } else {
     onChar(event.target.value.length)
-    }
   }
 
   function handleBlur() {
-    let tooLongMsg = "Description too long!"
-    if (useBase64) {
-      if (btoa(editingValue).length <= maxChars) {
-        onSave(btoa(editingValue))
-      } else {
-        toast.error(tooLongMsg)
-      }
+    let tooLongMsg = `${name} too long!`
+    if (editingValue.length <= maxChars) {
+      onSave(editingValue)
     } else {
-      if (editingValue.length <= maxChars) {
-        onSave(editingValue)
-      } else {
-        toast.error(tooLongMsg)
-      }
+      toast.error(tooLongMsg)
     }
   }
 

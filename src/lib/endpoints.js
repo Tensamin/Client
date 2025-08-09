@@ -3,6 +3,7 @@ let authServer = process.env.NODE_ENV === "development" ? "https://dev.auth.tens
 export let endpoint = {
     username_to_uuid: authServer + "/api/get/uuid/",
     user: authServer + "/api/get/",
+    change: authServer + "/api/change/",
 
     tos: "https://docs.tensamin.methanium.net/legal/terms-of-service",
     pp: "https://docs.tensamin.methanium.net/legal/privacy-policy",

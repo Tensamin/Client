@@ -98,19 +98,19 @@ export function Profile() {
           sub_level: data.sub_level,
           sub_end: data.sub_end,
         });
-        setAboutChars(btoa(data.about).length)
+        setAboutChars(data.about.length)
       })
   }, [])
 
   function handleFieldUpdate(field, newValue) {
     setProfile((prevData) => ({
       ...prevData,
-      [field]: field === "about" ? atob(newValue) : newValue,
+      [field]: newValue,
     }));
-    fetch(`${endpoint.user}${ownUuid}/change_${field}`, {
+    fetch(`${endpoint.change}${field}/${ownUuid}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: `{"private_key_hash": "${privateKeyHash}", "${field}": "${newValue}"}`
+      body: `{"private_key_hash": "${privateKeyHash}", "${field}": "${field !== "about" ? newValue : btoa(newValue)}"}`
     })
       .then(response => response.json())
       .then(data => {
@@ -166,6 +166,7 @@ export function Profile() {
         </div>
         <div>
           <EditableTextarea
+            name="Description"
             value={profile.about}
             onSave={(newValue) => handleFieldUpdate("about", newValue)}
             onChar={(chars) => setAboutChars(chars)}
@@ -177,7 +178,6 @@ export function Profile() {
         </div>
         <div className="flex gap-2">
           <p className={`text-xs ${aboutChars > 200 ? "text-destructive" : ""}`}>{aboutChars} / 200 </p>
-          <p className="text-xs text-muted-foreground/80">Base64 uses more characters.</p>
         </div>
       </div>
     </div>

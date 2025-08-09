@@ -110,6 +110,8 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
   let [display, setDisplay] = useState("...");
   let [status, setStatus] = useState("...");
   let [callSecret, setCallSecret] = useState("");
+  let [callActiveHover, setCallActiveHover] = useState(false);
+  let [showCallActive, setShowCallActive] = useState(callActive);
   let { get } = useUsersContext();
   let { privateKey } = useCryptoContext();
   let { decrypt_base64_using_privkey } = useEncryptionContext();
@@ -215,15 +217,18 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
         </div>
       </div>
 
-      {callActive && (
+      {showCallActive && (
         <div className="flex justify-center items-center">
-          <Badge 
-            className="w-7 h-7 "
+          <Badge
+            className="w-7 h-7"
+            onMouseEnter={() => setCallActiveHover(true)}
+            onMouseLeave={() => setCallActiveHover(false)}
             onClick={() => {
-              startCall(false, callId, callSecret)
-            }}  
+              startCall(false, callId, callSecret);
+              setShowCallActive(false);
+            }}
           >
-            <Icon.PhoneIncoming />
+            {callActiveHover ? <Icon.PhoneIncoming /> : <Icon.PhoneCall />}
           </Badge>
         </div>
       )}
