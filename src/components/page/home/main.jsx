@@ -87,7 +87,7 @@ export function Main() {
                         message: `${ownUuid} sent ${newChatUsername} a friend request`,
                         log_level: 1
                     }, {
-                        receiver_id: newChatUsername,
+                        receiver_id: newChatUUID,
                         shared_secret_own: await encrypt_base64_using_pubkey(btoa(secret), ownPubKey),
                         shared_secret_other: await encrypt_base64_using_pubkey(btoa(secret), newUserPubKey),
                     })
