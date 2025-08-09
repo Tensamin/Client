@@ -121,7 +121,7 @@ export function CryptoProvider({ children }) {
 
         if (!isMounted) return;
 
-        retryCountRef += 1
+        retryCountRef.current += 1;
 
         if (retryCountRef.current >= MAX_PASSKEY_RETRIES) {
           ls.remove("auth_private_key");
