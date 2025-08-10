@@ -27,17 +27,16 @@ import { useMessageContext } from "@/components/context/message";
 // Config
 let webrtc_servers = {
     iceServers: [
-        { 
-            urls: ["stun:tensamin.methanium.net:5349"] 
-        },
-        {
-            urls: [
-                "turn:tensamin.methanium.net:5349?transport=udp",
-                "turn:tensamin.methanium.net:5349?transport=tcp"
-            ],
-            username: "tensamin",
-            credential: "tensamin"
-        },
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun.l.google.com:5349" },
+        { urls: "stun:stun1.l.google.com:3478" },
+        { urls: "stun:stun1.l.google.com:5349" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:5349" },
+        { urls: "stun:stun3.l.google.com:3478" },
+        { urls: "stun:stun3.l.google.com:5349" },
+        { urls: "stun:stun4.l.google.com:19302" },
+        { urls: "stun:stun4.l.google.com:5349" }
     ],
     iceCandidatePoolSize: 10,
 };
