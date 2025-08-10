@@ -12,7 +12,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export let metadata = {
   title: "Tensamin",
-  description: "",
+  description: "Super secure messaging app",
 };
 
 // suppressHydrationWarning
