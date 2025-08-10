@@ -389,7 +389,7 @@ function VoiceModal({
 
       {fitToParent ? (
         // Fit to parent available height (keeps thumbnails visible)
-        <div ref={fitAreaRef} className="relative mt-2 grid h-full place-items-center">
+        <div ref={fitAreaRef} className="relative grid h-full place-items-center">
           <div
             className="relative overflow-hidden rounded-xl border bg-background/40"
             style={{
@@ -441,7 +441,7 @@ function VoiceModal({
       ) : (
         // Regular tile with aspect box
         <div
-          className="relative mt-2 w-full overflow-hidden rounded-xl border bg-background/40 aspect-[16/9]"
+          className="relative w-full overflow-hidden rounded-xl border bg-background/40 aspect-[16/9]"
           onClick={() => {
             onFocus(true);
           }}
