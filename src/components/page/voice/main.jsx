@@ -387,7 +387,6 @@ function VoiceModal({
         </div>
       )}
 
-      {/* Body: strict 16:9 with two render modes */}
       {fitToParent ? (
         // Fit to parent available height (keeps thumbnails visible)
         <div ref={fitAreaRef} className="relative mt-2 grid h-full place-items-center">
@@ -396,6 +395,9 @@ function VoiceModal({
             style={{
               width: `${fit.width || 0}px`,
               height: `${fit.height || 0}px`,
+            }}
+            onClick={() => {
+              onFocus(true);
             }}
           >
             {renderVideoOrPlaceholder({
@@ -407,14 +409,10 @@ function VoiceModal({
               ownUuid,
               voiceSend,
               onFocus,
-              children: <div
-                className="flex items-center justify-center"
-                title="Double-click to focus"
-              >
+              children: <div className="flex items-center justify-center">
                 {avatar !== "..." ? (
                   <button
                     className="inline-flex items-center justify-center rounded-full border bg-background/60 hover:bg-background"
-                    onDoubleClick={() => onFocus(true)}
                   >
                     <Avatar className="size-25 bg-background/10">
                       {avatar !== "" ? (
@@ -442,7 +440,12 @@ function VoiceModal({
         </div>
       ) : (
         // Regular tile with aspect box
-        <div className="relative mt-2 w-full overflow-hidden rounded-xl border bg-background/40 aspect-[16/9]">
+        <div
+          className="relative mt-2 w-full overflow-hidden rounded-xl border bg-background/40 aspect-[16/9]"
+          onClick={() => {
+            onFocus(true);
+          }}
+        >
           {renderVideoOrPlaceholder({
             showVideo,
             isWatching,
@@ -452,6 +455,32 @@ function VoiceModal({
             ownUuid,
             voiceSend,
             onFocus,
+            children: <div className="flex items-center justify-center">
+              {avatar !== "..." ? (
+                <button
+                  className="inline-flex items-center justify-center rounded-full border bg-background/60 hover:bg-background"
+                >
+                  <Avatar className="size-15 bg-background/10">
+                    {avatar !== "" ? (
+                      <Image
+                        className="object-cover"
+                        data-slot="avatar-image"
+                        width={250}
+                        height={250}
+                        src={avatar}
+                        alt=""
+                        onError={() => setAvatar("")}
+                      />
+                    ) : null}
+                    <AvatarFallback>
+                      {convertDisplayNameToInitials(username)}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              ) : (
+                <Skeleton className="size-14 rounded-full" />
+              )}
+            </div>
           })}
         </div>
       )}
@@ -478,8 +507,7 @@ function renderVideoOrPlaceholder({
             <Skeleton className="absolute inset-0 h-full w-full rounded-xl" />
           )}
           <VideoStream
-            className={`absolute inset-0 h-full w-full ${loading ? "hidden" : ""
-              } object-contain`}
+            className={`absolute inset-0 h-full w-full ${loading ? "hidden" : ""} object-contain`}
             id={id}
             key={id}
             onPlay={() => setLoading(false)}
