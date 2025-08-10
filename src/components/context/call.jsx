@@ -800,11 +800,15 @@ export let CallProvider = ({ children }) => {
     // Start Screen Stream
     let startScreenStream = useCallback(async () => {
         try {
+        let [wStr, hStr] = String(streamResolution).split("x");
+        let widthNum = parseInt(wStr, 10) || undefined;
+        let heightNum = parseInt(hStr, 10) || undefined;
+        let frameNum = parseInt(String(streamRefresh), 10) || undefined;
             let stream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
-                    frameRate: { ideal: streamRefresh, max: streamRefresh },
-                    width: { ideal: streamResolution.split("x")[0], max: streamResolution.split("x")[0] },
-                    height: { ideal: streamResolution.split("x")[1], max: streamResolution.split("x")[1] }
+            frameRate: frameNum ? { ideal: frameNum, max: frameNum } : undefined,
+            width: widthNum ? { ideal: widthNum, max: widthNum } : undefined,
+            height: heightNum ? { ideal: heightNum, max: heightNum } : undefined,
                 },
                 audio: streamAudio
             });
@@ -950,26 +954,25 @@ export let CallProvider = ({ children }) => {
 
     // Update Stream
     let updateStream = useCallback(async () => {
-        if (stream) {
-            let tracks = screenStreamRef.current.getVideoTracks();
-            if (tracks.length > 0) {
-                let track = tracks[0]
-                let newConstraints = {
-                    video: {
-                        frameRate: { ideal: streamRefresh, max: streamRefresh },
-                        width: { ideal: streamResolution.split("x")[0], max: streamResolution.split("x")[0] },
-                        height: { ideal: streamResolution.split("x")[1], max: streamResolution.split("x")[1] }
-                    },
-                    audio: streamAudio
-                }
-                try {
-                    await track.applyConstraints(newConstraints);
-                } catch (err) {
-                    log(err.message, "showError")
-                }
-            }
+        if (!stream) return;
+        let videoTracks = screenStreamRef.current?.getVideoTracks?.() || [];
+        if (videoTracks.length === 0) return;
+        let track = videoTracks[0];
+        let [wStr, hStr] = String(streamResolution).split("x");
+        let widthNum = parseInt(wStr, 10) || undefined;
+        let heightNum = parseInt(hStr, 10) || undefined;
+        let frameNum = parseInt(String(streamRefresh), 10) || undefined;
+        // Apply constraints to the video track only
+        let constraints = {};
+        if (frameNum) constraints.frameRate = { ideal: frameNum, max: frameNum };
+        if (widthNum) constraints.width = { ideal: widthNum, max: widthNum };
+        if (heightNum) constraints.height = { ideal: heightNum, max: heightNum };
+        try {
+            await track.applyConstraints(constraints);
+        } catch (err) {
+            log(err.message, "showError");
         }
-    }, [screenStreamRef.current, stream])
+    }, [stream, streamResolution, streamRefresh])
 
     // Create P2P Connection
     let createP2PConnection = useCallback(async (id, isInitiator = false, isScreenShare = false) => {
@@ -1331,10 +1334,10 @@ export let CallProvider = ({ children }) => {
         }
     }, [mute]);
 
-    // Update Stream when Refresh, Resolution or Audio changes
+    // Update Stream when Refresh or Resolution changes (video)
     useEffect(() => {
         updateStream();
-    }, [updateStream, streamRefresh, streamResolution, streamAudio])
+    }, [updateStream, streamRefresh, streamResolution])
 
     // Unmount Cleanup
     useEffect(() => {
