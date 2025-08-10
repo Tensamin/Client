@@ -39,17 +39,19 @@ let TILE_GAP = 16;
 // Main
 export function Main() {
   let { ownUuid, chatsArray } = useUsersContext();
-  let { connected, connectedUsers, streamingUsers, positions, setPositions, directionalAudio, setDirectionalAudio } = useCallContext();
+  let { connected, connectedUsers, streamingUsers, positions, setPositions, directionalAudio, setDirectionalAudio, setCanvasSize } = useCallContext();
 
   let [inviteOpen, setInviteOpen] = useState(false);
   let [focused, setFocused] = useState("");
 
   // Draggable positions: { [userId]: { x, y } }
   let canvasRef = useRef(null);
-  let { width: canvasW } = useElementSize(canvasRef);
+  let { width: canvasW, height: canvasH } = useElementSize(canvasRef);
 
   useEffect(() => {
     if (!canvasW) return;
+    // Report canvas size for directional audio orientation
+    setCanvasSize({ width: canvasW, height: canvasH || 0 });
     setPositions((prev) => {
       let next = { ...prev };
 
@@ -75,7 +77,7 @@ export function Main() {
 
       return next;
     });
-  }, [connectedUsers, canvasW]);
+  }, [connectedUsers, canvasW, canvasH, setCanvasSize]);
 
   // Drag handlers
   let startDrag = useCallback(
@@ -187,7 +189,9 @@ export function Main() {
             </div>
 
             {/* Draggable avatars */}
-            {connectedUsers.map((user) => {
+            {connectedUsers
+              .filter((user) => !directionalAudio || user !== ownUuid)
+              .map((user) => {
               let pos = positions[user] || { x: 0, y: 0 };
               return (
                 <div
@@ -234,7 +238,9 @@ export function Main() {
 
             {/* Thumbnail rail (always visible) */}
             <div className="flex w-full flex-none gap-2 overflow-x-auto px-1 pb-1 pt-2">
-              {connectedUsers.map((user) =>
+              {connectedUsers
+                .filter((user) => !directionalAudio || user !== ownUuid)
+                .map((user) =>
                 focused === user ? null : (
                   <div
                     key={`thumb-${user}`}

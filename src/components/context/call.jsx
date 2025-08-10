@@ -90,6 +90,8 @@ export let CallProvider = ({ children }) => {
 
     let [positions, setPositions] = useState({});
     let [directionalAudio, setDirectionalAudio] = useState(false);
+    // Canvas size for spatial orientation
+    let [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
     // WebRTC
     let [outputDeviceId, setOutput] = useState(null);
@@ -214,26 +216,36 @@ export let CallProvider = ({ children }) => {
         if (!spatialEnabledRef.current) return;
         let ids = connectedUsers.filter(Boolean);
         if (ids.length === 0) return;
+        // Prefer page/canvas center if available
+        let useCanvas = canvasSize && canvasSize.width > 0 && canvasSize.height > 0;
+        let centerX = useCanvas ? canvasSize.width / 2 : 0;
+        let minY = 0;
+        let height = useCanvas ? canvasSize.height : 1;
+        let widthHalf = useCanvas ? canvasSize.width / 2 : 1; // for x normalization
 
-        // Compute bounding box of positions
-        let xs = [], ys = [];
-        ids.forEach((id) => {
-            let pos = positions[id];
-            if (pos) { xs.push(pos.x); ys.push(pos.y); }
-        });
-        if (xs.length === 0) return;
-        let minX = Math.min(...xs), maxX = Math.max(...xs);
-        let minY = Math.min(...ys), maxY = Math.max(...ys);
-        let width = Math.max(1, maxX - minX);
-        let height = Math.max(1, maxY - minY);
-        let centerX = (minX + maxX) / 2;
+        // Fallback: if canvas size unknown, derive from bounding box
+        if (!useCanvas) {
+            let xs = [], ys = [];
+            ids.forEach((id) => {
+                let pos = positions[id];
+                if (pos) { xs.push(pos.x); ys.push(pos.y); }
+            });
+            if (xs.length === 0) return;
+            let minX = Math.min(...xs), maxX = Math.max(...xs);
+            minY = Math.min(...ys);
+            let maxY = Math.max(...ys);
+            let width = Math.max(1, maxX - minX);
+            height = Math.max(1, maxY - minY);
+            centerX = (minX + maxX) / 2;
+            widthHalf = width / 2;
+        }
 
         ids.forEach((id) => {
             let nodes = spatialNodesRef.current.get(id);
             if (!nodes) return;
             let pos = positions[id] || { x: centerX, y: minY };
-            // Normalize x to [-1,1]
-            let xNorm = (pos.x - centerX) / (width / 2);
+        // Normalize x to [-1,1] around page center (or fallback center)
+        let xNorm = (pos.x - centerX) / (widthHalf);
             if (!isFinite(xNorm)) xNorm = 0;
             xNorm = Math.max(-1, Math.min(1, xNorm));
             // Map to range [-5, 5]
@@ -254,7 +266,7 @@ export let CallProvider = ({ children }) => {
                 }
             } catch { /* ignore */ }
         });
-    }, [connectedUsers, positions]);
+    }, [connectedUsers, positions, canvasSize]);
 
     // Tear down all spatial nodes/graph
     let teardownSpatialGraph = useCallback(async () => {
@@ -1406,6 +1418,8 @@ export let CallProvider = ({ children }) => {
             setDirectionalAudio,
             positions,
             setPositions,
+            canvasSize,
+            setCanvasSize,
         }}>
             <div hidden>
                 {/* Spatial mix output element (used when directionalAudio is enabled) */}
