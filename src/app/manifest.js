@@ -5,6 +5,7 @@ export default function manifest() {
     description: 'Super secure messaging app',
     start_url: '/',
     display: 'fullscreen',
+    display_override: ["window-controls-overlay"],
     background_color: '#11111b',
     theme_color: '#b4befe',
     icons: [
