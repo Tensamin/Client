@@ -44,6 +44,11 @@ export function Main() {
   let [inviteOpen, setInviteOpen] = useState(false);
   let [focused, setFocused] = useState("");
 
+  // If focus somehow points to own user, clear it
+  useEffect(() => {
+    if (focused === ownUuid) setFocused("");
+  }, [focused, ownUuid]);
+
   // Draggable positions: { [userId]: { x, y } }
   let canvasRef = useRef(null);
   let { width: canvasW, height: canvasH } = useElementSize(canvasRef);
@@ -190,7 +195,7 @@ export function Main() {
 
             {/* Draggable avatars */}
             {connectedUsers
-              .filter((user) => !directionalAudio || user !== ownUuid)
+              .filter((user) => user !== ownUuid)
               .map((user) => {
               let pos = positions[user] || { x: 0, y: 0 };
               return (
@@ -239,7 +244,7 @@ export function Main() {
             {/* Thumbnail rail (always visible) */}
             <div className="flex w-full flex-none gap-2 overflow-x-auto px-1 pb-1 pt-2">
               {connectedUsers
-                .filter((user) => !directionalAudio || user !== ownUuid)
+                .filter((user) => user !== ownUuid)
                 .map((user) =>
                 focused === user ? null : (
                   <div
