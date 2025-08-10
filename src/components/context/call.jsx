@@ -79,6 +79,9 @@ export let CallProvider = ({ children }) => {
     let [streamRefresh, setStreamRefresh] = useState("30");
     let [streamAudio, setStreamAudio] = useState(false);
 
+    let [positions, setPositions] = useState({});
+    let [directionalAudio, setDirectionalAudio] = useState(false);
+
     // WebRTC
     let [outputDeviceId, setOutput] = useState(null);
     let [inputDeviceId, setInput] = useState(null);
@@ -101,7 +104,6 @@ export let CallProvider = ({ children }) => {
     let [streamingUsers, setStreamingUsers] = useState([]);
     let [watchingUsers, setWatchingUsers] = useState([]);
 
-    // Helper: apply sinkId to all existing audio elements on the page
     let applySinkToAllAudios = useCallback(async (sinkId) => {
         try {
             let audios = Array.from(document.querySelectorAll('audio'));
@@ -1159,6 +1161,11 @@ export let CallProvider = ({ children }) => {
             setInput,
             outputDeviceId,
             setOutput,
+
+            directionalAudio,
+            setDirectionalAudio,
+            positions,
+            setPositions,
         }}>
             <div hidden>
                 {connected ? connectedUsers.map((id) => (

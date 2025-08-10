@@ -29,6 +29,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InviteItem, VideoStream } from "@/components/page/voice/parts";
+import { Switch } from "@/components/ui/switch"
 
 // Tunables
 let AVATAR_TILE_WIDTH = 96;
@@ -37,13 +38,12 @@ let TILE_GAP = 16;
 // Main
 export function Main() {
   let { ownUuid, chatsArray } = useUsersContext();
-  let { connected, connectedUsers, streamingUsers } = useCallContext();
+  let { connected, connectedUsers, streamingUsers, positions, setPositions, directionalAudio, setDirectionalAudio } = useCallContext();
 
   let [inviteOpen, setInviteOpen] = useState(false);
   let [focused, setFocused] = useState("");
 
   // Draggable positions: { [userId]: { x, y } }
-  let [positions, setPositions] = useState({});
   let canvasRef = useRef(null);
   let { width: canvasW } = useElementSize(canvasRef);
 
@@ -133,6 +133,15 @@ export function Main() {
         >
           <Icon.Send /> Invite
         </Button>
+
+        <div className="flex gap-2 justify-center items-center">
+          <Switch
+            checked={directionalAudio}
+            onCheckedChange={setDirectionalAudio}
+          />
+          Directional Audio
+        </div>
+
 
         <CommandDialog open={inviteOpen} onOpenChange={setInviteOpen}>
           <CommandInput placeholder="Search for a Friend..." />
