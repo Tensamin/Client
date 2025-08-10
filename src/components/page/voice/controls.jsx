@@ -107,10 +107,9 @@ export function VoiceControls() {
                                     <TooltipTrigger asChild>
                                         <DropdownMenuTrigger asChild>
                                             <Button
-                                                variant={stream ? "secondary" : "default"}
                                                 className="h-9 w-9"
                                             >
-                                                <Icon.Monitor />
+                                                {stream ? <Icon.MonitorDot /> : <Icon.Monitor />}
                                             </Button>
                                         </DropdownMenuTrigger>
                                     </TooltipTrigger>

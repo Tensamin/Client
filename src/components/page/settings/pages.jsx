@@ -560,30 +560,48 @@ export function Voice() {
   let [inputs, setInputs] = useState([]);
   let [openOutputs, setOpenOutputs] = useState(false);
   let [openInputs, setOpenInputs] = useState(false);
+  let [denied, setDenied] = useState(null);
 
   let { inputDeviceId, setInput, outputDeviceId, setOutput } = useCallContext();
+
+  async function getMicrophonePermissionState() {
+    if (!navigator.permissions || !navigator.permissions.query) {
+      return 'unsupported';
+    }
+    try {
+      const status = await navigator.permissions.query({
+        name: 'microphone',
+      });
+      // granted, denied, prompt
+      return status.state;
+    } catch (err) {
+      return 'unknown';
+    }
+  }
 
   useEffect(() => {
     let mounted = true;
 
     async function loadDevices() {
-      if (!('mediaDevices' in navigator)) return;
+      setDenied(await getMicrophonePermissionState() !== 'granted');
 
-      try {
-        let devices = await navigator.mediaDevices.enumerateDevices();
-        let outputs = devices.filter(d => d.kind === 'audiooutput');
-        if (mounted) {
-          setOutputs(outputs);
-        }
-      } catch { }
+      if ('mediaDevices' in navigator) {
+        try {
+          let devices = await navigator.mediaDevices.enumerateDevices();
+          let outputs = devices.filter(d => d.kind === 'audiooutput');
+          if (mounted) {
+            setOutputs(outputs);
+          }
+        } catch { }
 
-      try {
-        let devices = await navigator.mediaDevices.enumerateDevices();
-        let inputs = devices.filter(d => d.kind === 'audioinput');
-        if (mounted) {
-          setInputs(inputs);
-        }
-      } catch { }
+        try {
+          let devices = await navigator.mediaDevices.enumerateDevices();
+          let inputs = devices.filter(d => d.kind === 'audioinput');
+          if (mounted) {
+            setInputs(inputs);
+          }
+        } catch { }
+      };
     }
 
     loadDevices();
@@ -595,17 +613,32 @@ export function Voice() {
 
   return (
     <div className="p-4 space-y-2">
+      {denied && (
+        <Button
+          onClick={async () => {
+            try {
+              await navigator.mediaDevices.getUserMedia({ audio: true })
+              .then(() => {
+                window.location.reload();
+              })
+            } catch { }
+          }}
+        >
+          Request microphone permission
+        </Button>
+      )}
       <div className="flex flex-col gap-2">
         <Label>Output Device</Label>
         <Popover open={openOutputs} onOpenChange={setOpenOutputs}>
           <PopoverTrigger asChild>
             <Button
+              disabled={denied}
               variant="outline"
               role="combobox"
               aria-expanded={openOutputs}
               className="justify-between w-[200px]"
             >
-              <p className="truncate">{outputDeviceId
+              <p className="truncate">{denied ? "None" : outputDeviceId
                 ? outputs.find((output) => output.deviceId === outputDeviceId)?.label
                 : "Select device..."}</p>
               <Icon.ChevronsUpDown className="opacity-50" />
@@ -645,12 +678,13 @@ export function Voice() {
         <Popover open={openInputs} onOpenChange={setOpenInputs}>
           <PopoverTrigger asChild>
             <Button
+              disabled={denied}
               variant="outline"
               role="combobox"
               aria-expanded={openInputs}
               className="justify-between w-[200px]"
             >
-              <p className="truncate">{inputDeviceId
+              <p className="truncate">{denied ? "None" : inputDeviceId
                 ? inputs.find((input) => input.deviceId === inputDeviceId)?.label
                 : "Select device..."}</p>
               <Icon.ChevronsUpDown className="opacity-50" />

@@ -1447,8 +1447,7 @@ export let CallProvider = ({ children }) => {
                             }
                         }}
                         autoPlay
-                        muted={deaf}
-                        volume={directionalAudio ? 0 : 1.0}
+                        muted={deaf || directionalAudio}
                     />
                 )) : null}
             </div>

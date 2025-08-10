@@ -30,6 +30,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InviteItem, VideoStream } from "@/components/page/voice/parts";
 import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label";
 
 // Tunables
 let AVATAR_TILE_WIDTH = 96;
@@ -111,9 +112,8 @@ export function Main() {
       {/* Top bar */}
       <div className="flex w-full gap-2">
         <Button
-          className={`gap-2 ${
-            connected ? "" : "bg-destructive hover:bg-destructive/90"
-          }`}
+          className={`gap-2 ${connected ? "" : "bg-destructive hover:bg-destructive/90"
+            }`}
         >
           {connected ? (
             <>
@@ -136,10 +136,11 @@ export function Main() {
 
         <div className="flex gap-2 justify-center items-center">
           <Switch
+            id="directional-audio"
             checked={directionalAudio}
             onCheckedChange={setDirectionalAudio}
           />
-          Directional Audio
+          <Label htmlFor="directional-audio">Directional Audio</Label>
         </div>
 
 
@@ -165,7 +166,7 @@ export function Main() {
         {focused === "" ? (
           <div
             ref={canvasRef}
-            className="relative flex-1 min-h-0 w-full overflow-hidden rounded-xl border border-border bg-background/40"
+            className="relative flex-1 min-h-0 w-full overflow-hidden"
           >
             {/* Centered Volume icon with 3 rings */}
             <div className="pointer-events-none absolute inset-0 grid place-items-center">
@@ -207,7 +208,6 @@ export function Main() {
                     mode="avatarOnly"
                     dragHandleProps={{
                       onPointerDown: startDrag(user),
-                      className: "cursor-grab active:cursor-grabbing",
                       title: "Drag",
                     }}
                   />
@@ -300,23 +300,23 @@ function VoiceModal({
   if (mode === "avatarOnly") {
     return (
       <div
-        className="flex items-center justify-center"
+        className="flex items-center justify-center cursor-grab active:cursor-grabbing"
         {...dragHandleProps}
         onDoubleClick={() => onFocus(true)}
         title="Double-click to focus"
       >
         {avatar !== "..." ? (
           <button
-            className="inline-flex items-center justify-center rounded-full border bg-background/60 p-1 hover:bg-background"
-            onClick={() => onFocus(true)}
+            className="inline-flex items-center justify-center rounded-full border bg-background/60 hover:bg-background cursor-grab active:cursor-grabbing"
+            onDoubleClick={() => onFocus(true)}
           >
             <Avatar className="size-14 bg-background/10">
               {avatar !== "" ? (
                 <Image
                   className="object-cover"
                   data-slot="avatar-image"
-                  width={80}
-                  height={80}
+                  width={100}
+                  height={100}
                   src={avatar}
                   alt=""
                   onError={() => setAvatar("")}
@@ -342,48 +342,50 @@ function VoiceModal({
       `}
     >
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-input bg-input/30 p-2">
-          <div className="shrink-0" {...dragHandleProps}>
-            {avatar !== "..." ? (
-              <Avatar className="size-8 bg-accent border">
-                {avatar !== "" ? (
-                  <Image
-                    className="object-cover"
-                    data-slot="avatar-image"
-                    width={100}
-                    height={100}
-                    src={avatar}
-                    alt=""
-                    onError={() => setAvatar("")}
-                  />
-                ) : null}
-                <AvatarFallback>
-                  {convertDisplayNameToInitials(username)}
-                </AvatarFallback>
-              </Avatar>
-            ) : (
-              <Skeleton className="size-8 rounded-full" />
-            )}
+      {streams && id !== ownUuid && (
+        <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-input bg-input/30 p-2">
+            <div className="shrink-0" {...dragHandleProps}>
+              {avatar !== "..." ? (
+                <Avatar className="size-8 bg-accent border">
+                  {avatar !== "" ? (
+                    <Image
+                      className="object-cover"
+                      data-slot="avatar-image"
+                      width={100}
+                      height={100}
+                      src={avatar}
+                      alt=""
+                      onError={() => setAvatar("")}
+                    />
+                  ) : null}
+                  <AvatarFallback>
+                    {convertDisplayNameToInitials(username)}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <Skeleton className="size-8 rounded-full" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              {display !== "..." ? (
+                <p className="truncate">{display}</p>
+              ) : (
+                <Skeleton className="h-4 w-20" />
+              )}
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            {display !== "..." ? (
-              <p className="truncate">{display}</p>
-            ) : (
-              <Skeleton className="h-4 w-20" />
-            )}
-          </div>
-        </div>
 
-        <Button
-          className="h-auto rounded-xl p-2"
-          variant="outline"
-          onClick={() => onFocus(true)}
-          title={focused ? "Shrink" : "Expand"}
-        >
-          {focused ? <Icon.Shrink /> : <Icon.Expand />}
-        </Button>
-      </div>
+          <Button
+            className="h-auto rounded-xl p-2"
+            variant="outline"
+            onClick={() => onFocus(true)}
+            title={focused ? "Shrink" : "Expand"}
+          >
+            {focused ? <Icon.Shrink /> : <Icon.Expand />}
+          </Button>
+        </div>
+      )}
 
       {/* Body: strict 16:9 with two render modes */}
       {fitToParent ? (
@@ -405,6 +407,36 @@ function VoiceModal({
               ownUuid,
               voiceSend,
               onFocus,
+              children: <div
+                className="flex items-center justify-center"
+                title="Double-click to focus"
+              >
+                {avatar !== "..." ? (
+                  <button
+                    className="inline-flex items-center justify-center rounded-full border bg-background/60 hover:bg-background"
+                    onDoubleClick={() => onFocus(true)}
+                  >
+                    <Avatar className="size-25 bg-background/10">
+                      {avatar !== "" ? (
+                        <Image
+                          className="object-cover"
+                          data-slot="avatar-image"
+                          width={250}
+                          height={250}
+                          src={avatar}
+                          alt=""
+                          onError={() => setAvatar("")}
+                        />
+                      ) : null}
+                      <AvatarFallback>
+                        {convertDisplayNameToInitials(username)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                ) : (
+                  <Skeleton className="size-14 rounded-full" />
+                )}
+              </div>
             })}
           </div>
         </div>
@@ -436,6 +468,7 @@ function renderVideoOrPlaceholder({
   ownUuid,
   voiceSend,
   onFocus,
+  children,
 }) {
   if (showVideo) {
     if (isWatching) {
@@ -445,9 +478,8 @@ function renderVideoOrPlaceholder({
             <Skeleton className="absolute inset-0 h-full w-full rounded-xl" />
           )}
           <VideoStream
-            className={`absolute inset-0 h-full w-full ${
-              loading ? "hidden" : ""
-            } object-contain`}
+            className={`absolute inset-0 h-full w-full ${loading ? "hidden" : ""
+              } object-contain`}
             id={id}
             key={id}
             onPlay={() => setLoading(false)}
@@ -475,22 +507,14 @@ function renderVideoOrPlaceholder({
           );
         }}
       >
-        Watch Stream…
+        Watch Stream...
       </Button>
     );
   }
-
   return (
-    <button
-      type="button"
-      onClick={() => onFocus(true)}
-      className="absolute inset-0 flex h-full w-full flex-col items-center justify-center gap-3 p-4"
-    >
-      <Avatar className="size-16 border bg-background/10">
-        {/* Avatar image set by parent VoiceModal */}
-        <AvatarFallback className="text-lg">{/* fallback handled */}</AvatarFallback>
-      </Avatar>
-    </button>
+    <div className="absolute inset-0 flex h-full w-full flex-col items-center justify-center gap-3 p-4">
+      {children}
+    </div>
   );
 }
 
