@@ -27,7 +27,17 @@ import { useMessageContext } from "@/components/context/message";
 // Config
 let webrtc_servers = {
     iceServers: [
-        { urls: ["stun:stun.omikron.methanium.net:5349"] },
+        { 
+            urls: ["stun:tensamin.methanium.net:5349"] 
+        },
+        {
+            urls: [
+                "turn:tensamin.methanium.net:5349?transport=udp",
+                "turn:tensamin.methanium.net:5349?transport=tcp"
+            ],
+            username: "tensamin",
+            credential: "tensamin"
+        },
     ],
     iceCandidatePoolSize: 10,
 };
@@ -100,9 +110,213 @@ export let CallProvider = ({ children }) => {
     let audioRefs = useRef(new Map());
     let audioStreamsRefs = useRef(new Map());
 
+    // Users state (must be declared before spatial hooks reference it)
     let [connectedUsers, setConnectedUsers] = useState([]);
     let [streamingUsers, setStreamingUsers] = useState([]);
     let [watchingUsers, setWatchingUsers] = useState([]);
+
+    // Spatial/directional audio (Web Audio API)
+    let audioContextRef = useRef(null);
+    let masterGainRef = useRef(null);
+    let destinationNodeRef = useRef(null); // MediaStreamAudioDestinationNode
+    let spatialAudioElRef = useRef(null); // <audio> that plays the mixed stream (for setSinkId)
+    let spatialNodesRef = useRef(new Map()); // id -> { source, panner, gain }
+    let spatialEnabledRef = useRef(false);
+
+    // Create or ensure the Web Audio graph exists
+    let ensureSpatialAudioGraph = useCallback(() => {
+        if (!audioContextRef.current) {
+            let AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            audioContextRef.current = new AC();
+        }
+        if (!masterGainRef.current && audioContextRef.current) {
+            masterGainRef.current = audioContextRef.current.createGain();
+            masterGainRef.current.gain.value = 1.0;
+        }
+        if (!destinationNodeRef.current && audioContextRef.current) {
+            destinationNodeRef.current = audioContextRef.current.createMediaStreamDestination();
+        }
+        if (audioContextRef.current && masterGainRef.current && destinationNodeRef.current) {
+            try { masterGainRef.current.disconnect(); } catch { }
+            try { masterGainRef.current.connect(destinationNodeRef.current); } catch { }
+        }
+        // Attach destination stream to hidden audio element for device routing
+        if (spatialAudioElRef.current && destinationNodeRef.current) {
+            try {
+                if (spatialAudioElRef.current.srcObject !== destinationNodeRef.current.stream) {
+                    spatialAudioElRef.current.srcObject = destinationNodeRef.current.stream;
+                }
+                if (typeof spatialAudioElRef.current.setSinkId === 'function' && currentSinkIdRef.current) {
+                    spatialAudioElRef.current.setSinkId(currentSinkIdRef.current).catch(() => { });
+                }
+            } catch { /* ignore */ }
+        }
+        // Listener orientation defaults: facing -Z
+        try {
+            let ctx = audioContextRef.current;
+            let now = ctx.currentTime;
+            if (ctx.listener.forwardX) {
+                ctx.listener.forwardX.setValueAtTime(0, now);
+                ctx.listener.forwardY.setValueAtTime(0, now);
+                ctx.listener.forwardZ.setValueAtTime(-1, now);
+                ctx.listener.upX.setValueAtTime(0, now);
+                ctx.listener.upY.setValueAtTime(1, now);
+                ctx.listener.upZ.setValueAtTime(0, now);
+            } else if (ctx.listener.setOrientation) {
+                ctx.listener.setOrientation(0, 0, -1, 0, 1, 0);
+            }
+        } catch { /* ignore */ }
+    }, []);
+
+    // Build spatial nodes for a specific user stream
+    let buildSpatialNodesForUser = useCallback((userId) => {
+        if (!audioContextRef.current || !masterGainRef.current) return;
+        let stream = audioStreamsRefs.current.get(userId);
+        if (!stream || !(stream instanceof MediaStream)) return;
+
+        // If already built and same stream object, skip
+        let existing = spatialNodesRef.current.get(userId);
+        if (existing && existing.stream === stream) return existing;
+
+        // Clean previous if any
+        if (existing) {
+            try { existing.source.disconnect(); } catch { }
+            try { existing.panner.disconnect(); } catch { }
+            try { existing.gain.disconnect(); } catch { }
+            spatialNodesRef.current.delete(userId);
+        }
+
+        let ctx = audioContextRef.current;
+        let source = ctx.createMediaStreamSource(stream);
+        let panner = new PannerNode(ctx, {
+            panningModel: 'HRTF',
+            distanceModel: 'inverse',
+            refDistance: 1,
+            maxDistance: 10000,
+            rolloffFactor: 1,
+            coneInnerAngle: 360,
+            coneOuterAngle: 0,
+            coneOuterGain: 0,
+        });
+        let gain = ctx.createGain();
+        gain.gain.value = 1.0;
+
+        source.connect(panner).connect(gain).connect(masterGainRef.current);
+
+        let node = { source, panner, gain, stream };
+        spatialNodesRef.current.set(userId, node);
+        return node;
+    }, []);
+
+    // Map 2D positions -> WebAudio 3D and apply to panners
+    let updatePannerPositions = useCallback(() => {
+        if (!audioContextRef.current) return;
+        if (!spatialEnabledRef.current) return;
+        let ids = connectedUsers.filter(Boolean);
+        if (ids.length === 0) return;
+
+        // Compute bounding box of positions
+        let xs = [], ys = [];
+        ids.forEach((id) => {
+            let pos = positions[id];
+            if (pos) { xs.push(pos.x); ys.push(pos.y); }
+        });
+        if (xs.length === 0) return;
+        let minX = Math.min(...xs), maxX = Math.max(...xs);
+        let minY = Math.min(...ys), maxY = Math.max(...ys);
+        let width = Math.max(1, maxX - minX);
+        let height = Math.max(1, maxY - minY);
+        let centerX = (minX + maxX) / 2;
+
+        ids.forEach((id) => {
+            let nodes = spatialNodesRef.current.get(id);
+            if (!nodes) return;
+            let pos = positions[id] || { x: centerX, y: minY };
+            // Normalize x to [-1,1]
+            let xNorm = (pos.x - centerX) / (width / 2);
+            if (!isFinite(xNorm)) xNorm = 0;
+            xNorm = Math.max(-1, Math.min(1, xNorm));
+            // Map to range [-5, 5]
+            let x = xNorm * 5;
+            // Map y to distance: near at top, far at bottom; listener faces -Z
+            let yNorm = (pos.y - minY) / height; // 0..1
+            if (!isFinite(yNorm)) yNorm = 0.5;
+            // z negative (in front). Between -1 and -5
+            let z = - (1 + yNorm * 4);
+            try {
+                if ('positionX' in nodes.panner) {
+                    let t = audioContextRef.current.currentTime;
+                    nodes.panner.positionX.setValueAtTime(x, t);
+                    nodes.panner.positionY.setValueAtTime(0, t);
+                    nodes.panner.positionZ.setValueAtTime(z, t);
+                } else if (nodes.panner.setPosition) {
+                    nodes.panner.setPosition(x, 0, z);
+                }
+            } catch { /* ignore */ }
+        });
+    }, [connectedUsers, positions]);
+
+    // Tear down all spatial nodes/graph
+    let teardownSpatialGraph = useCallback(async () => {
+        spatialEnabledRef.current = false;
+        spatialNodesRef.current.forEach((nodes, id) => {
+            try { nodes.source.disconnect(); } catch { }
+            try { nodes.panner.disconnect(); } catch { }
+            try { nodes.gain.disconnect(); } catch { }
+        });
+        spatialNodesRef.current.clear();
+        try { masterGainRef.current?.disconnect(); } catch { }
+        try {
+            // Detach mixed stream from element
+            if (spatialAudioElRef.current) {
+                spatialAudioElRef.current.srcObject = null;
+            }
+            destinationNodeRef.current = null;
+        } catch { }
+        try { await audioContextRef.current?.close(); } catch { }
+        audioContextRef.current = null;
+        masterGainRef.current = null;
+    }, []);
+
+    // When output device changes, reflect on spatial audio element
+    useEffect(() => {
+        try {
+            if (spatialAudioElRef.current && typeof spatialAudioElRef.current.setSinkId === 'function' && currentSinkIdRef.current) {
+                spatialAudioElRef.current.setSinkId(currentSinkIdRef.current).catch(() => { });
+            }
+        } catch { /* ignore */ }
+    }, [outputDeviceId]);
+
+    // Enable/disable directional audio
+    useEffect(() => {
+        if (!connected) return;
+        if (directionalAudio) {
+            ensureSpatialAudioGraph();
+            spatialEnabledRef.current = true;
+            // Build nodes for current users
+            connectedUsers.forEach((id) => {
+                if (id) buildSpatialNodesForUser(id);
+            });
+            updatePannerPositions();
+        } else {
+            teardownSpatialGraph();
+        }
+        // Also mute/unmute the per-user elements via volume prop handled in JSX.
+    }, [directionalAudio, connected, connectedUsers, ensureSpatialAudioGraph, buildSpatialNodesForUser, updatePannerPositions, teardownSpatialGraph]);
+
+    // Update panner positions when the layout changes
+    useEffect(() => {
+        if (!directionalAudio) return;
+        updatePannerPositions();
+    }, [positions, directionalAudio, updatePannerPositions]);
+
+    // Teardown spatial audio when disconnected
+    useEffect(() => {
+        if (!connected) {
+            try { teardownSpatialGraph(); } catch { }
+        }
+    }, [connected, teardownSpatialGraph]);
 
     let applySinkToAllAudios = useCallback(async (sinkId) => {
         try {
@@ -296,6 +510,16 @@ export let CallProvider = ({ children }) => {
                 break;
 
             case "client_closed":
+                // Clean up spatial nodes for this user if present
+                try {
+                    let nodes = spatialNodesRef.current.get(message.data.user_id);
+                    if (nodes) {
+                        try { nodes.source.disconnect(); } catch { }
+                        try { nodes.panner.disconnect(); } catch { }
+                        try { nodes.gain.disconnect(); } catch { }
+                        spatialNodesRef.current.delete(message.data.user_id);
+                    }
+                } catch { /* ignore */ }
                 if (screenRefs.current.has(message.data.user_id)) {
                     let screenPc = screenRefs.current.get(message.data.user_id);
                     screenPc.close();
@@ -867,6 +1091,13 @@ export let CallProvider = ({ children }) => {
                 } else {
                     logFunction(`Audio element not yet available for user ${id}, will be set when element is created`, "debug");
                 }
+
+                // If spatial audio is enabled, make sure this user's stream is spatialized
+                if (spatialEnabledRef.current) {
+                    try { ensureSpatialAudioGraph(); } catch { }
+                    try { buildSpatialNodesForUser(id); } catch { }
+                    try { updatePannerPositions(); } catch { }
+                }
             }
         };
 
@@ -956,6 +1187,13 @@ export let CallProvider = ({ children }) => {
                         } else if (audioElement && stream) {
                             logFunction(`Invalid stream type for user ${id}: ${typeof stream}`, "warning");
                         }
+
+                        // Also wire spatial node if enabled
+                        if (spatialEnabledRef.current) {
+                            try { ensureSpatialAudioGraph(); } catch { }
+                            try { buildSpatialNodesForUser(id); } catch { }
+                            try { updatePannerPositions(); } catch { }
+                        }
                     }, 100);
                 }
             }
@@ -1012,7 +1250,7 @@ export let CallProvider = ({ children }) => {
                     .catch(err => {
                         logFunction(err.message, "info")
                     })
-            }, 10000);
+            }, 5000);
         } else {
             clearInterval(interval);
         }
@@ -1168,6 +1406,24 @@ export let CallProvider = ({ children }) => {
             setPositions,
         }}>
             <div hidden>
+                {/* Spatial mix output element (used when directionalAudio is enabled) */}
+                <audio
+                    ref={(el) => {
+                        spatialAudioElRef.current = el || null;
+                        // When element appears, attach stream if graph exists
+                        try {
+                            if (el && destinationNodeRef.current) {
+                                el.srcObject = destinationNodeRef.current.stream;
+                                // Apply current sink
+                                if (typeof el.setSinkId === 'function' && currentSinkIdRef.current) {
+                                    el.setSinkId(currentSinkIdRef.current).catch(() => { });
+                                }
+                            }
+                        } catch { /* ignore */ }
+                    }}
+                    autoPlay
+                    muted={deaf}
+                />
                 {connected ? connectedUsers.map((id) => (
                     <audio
                         key={id}
@@ -1193,7 +1449,7 @@ export let CallProvider = ({ children }) => {
                         }}
                         autoPlay
                         muted={deaf}
-                        volume={1.0}
+                        volume={directionalAudio ? 0 : 1.0}
                     />
                 )) : null}
             </div>

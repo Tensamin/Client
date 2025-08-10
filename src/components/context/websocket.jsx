@@ -179,7 +179,7 @@ export let WebSocketProvider = ({ children }) => {
           .catch(err => {
             logFunction(err.message, "info")
           })
-      }, 10000);
+      }, 5000);
     } else {
       clearInterval(interval);
     }
