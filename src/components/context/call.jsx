@@ -10,7 +10,7 @@ import {
     useCallback
 } from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
-import { v7 } from "uuid"
+import { v7 } from "uuid";
 
 // Lib Imports
 import { log, log as logFunction, sha256 } from "@/lib/utils";
@@ -24,7 +24,7 @@ import { useEncryptionContext } from "@/components/context/encryption";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useMessageContext } from "@/components/context/message";
 
-// Config
+// WebRTC ICE servers config
 let webrtc_servers = {
     iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
@@ -44,7 +44,7 @@ let webrtc_servers = {
 // Main
 let CallContext = createContext(null);
 
-// Use Context Function
+// useContext Function
 export let useCallContext = () => {
     let context = useContext(CallContext);
     if (!context) {
@@ -57,18 +57,18 @@ export let useCallContext = () => {
 
 // Provider
 export let CallProvider = ({ children }) => {
-    // WebSocket Send Function
+    // WebSocket send function stuff
     let pendingRequests = useRef(new Map());
     let responseTimeout = 10000;
 
-    // Basic Functions
+    // Context hooks
     let { encrypt_base64_using_aes, decrypt_base64_using_aes, decrypt_base64_using_privkey, encrypt_base64_using_pubkey } = useEncryptionContext();
     let { privateKeyHash, privateKey } = useCryptoContext();
     let { ownUuid, get } = useUsersContext();
     let { receiver } = useMessageContext();
     let { message, wsSend } = useWebSocketContext();
 
-    // Calling Stuff
+    // Calling
     let [createCall, setCreateCall] = useState(false);
     let [invitedToCall, setInvitedToCall] = useState(false);
     let [inviteData, setInviteData] = useState({});
@@ -78,34 +78,21 @@ export let CallProvider = ({ children }) => {
     let [connected, setConnected] = useState(false);
 
     let [callId, setCallId] = useState(null);
+
+    // Audio/Video Device
     let [callSecret, setCallSecret] = useState(null);
     let [identified, setIdentified] = useState(false);
-
     let [mute, setMute] = useState(ls.get("call_mute") === "true" || false);
     let [deaf, setDeaf] = useState(ls.get("call_deaf") === "true" || false);
     let [stream, setStream] = useState(false);
     let [streamResolution, setStreamResolution] = useState("1280x720");
     let [streamRefresh, setStreamRefresh] = useState("30");
     let [streamAudio, setStreamAudio] = useState(false);
-
-    let [positions, setPositions] = useState({});
-    let [directionalAudio, setDirectionalAudio] = useState(false);
-    // Canvas size for spatial orientation
-    let [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-
-    // WebRTC
+    let screenStreamRef = useRef(null);
     let [outputDeviceId, setOutput] = useState(null);
     let [inputDeviceId, setInput] = useState(null);
-
-    let micStreamRef = useRef(null);
-    // Keep original mic stream separate from processed stream
-    let micRawStreamRef = useRef(null);
-    let screenStreamRef = useRef(null);
-
-    // Keep a persistent observer to apply output device to all audio elements
     let sinkObserverRef = useRef(null);
     let currentSinkIdRef = useRef(null);
-
     let micRefs = useRef(new Map());
     let screenRefs = useRef(new Map());
     let watchingRefs = useRef(new Map());
@@ -113,23 +100,28 @@ export let CallProvider = ({ children }) => {
     let audioRefs = useRef(new Map());
     let audioStreamsRefs = useRef(new Map());
 
-    // Users state (must be declared before spatial hooks reference it)
+    // Users
     let [connectedUsers, setConnectedUsers] = useState([]);
     let [streamingUsers, setStreamingUsers] = useState([]);
     let [watchingUsers, setWatchingUsers] = useState([]);
 
-    // Spatial/directional audio (Web Audio API)
+    // Directional/Spatial Audio
+    let [positions, setPositions] = useState({});
+    let [directionalAudio, setDirectionalAudio] = useState(false);
+    let [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
     let audioContextRef = useRef(null);
     let masterGainRef = useRef(null);
-    let destinationNodeRef = useRef(null); // MediaStreamAudioDestinationNode
-    let spatialAudioElRef = useRef(null); // <audio> that plays the mixed stream (for setSinkId)
-    let spatialNodesRef = useRef(new Map()); // id -> { source, panner, gain }
+    let destinationNodeRef = useRef(null);
+    let spatialAudioElRef = useRef(null);
+    let spatialNodesRef = useRef(new Map());
     let spatialEnabledRef = useRef(false);
 
-    // Mic processing (input sensitivity gating)
+    // Mic Processing
+    let micStreamRef = useRef(null);
+    let micRawStreamRef = useRef(null);
     let [inputSensitivity, setInputSensitivity] = useState(() => {
         let v = ls.get("call_input_sensitivity");
-        let n = Number.isFinite(Number(v)) ? Number(v) : 60; // default more sensitive
+        let n = Number.isFinite(Number(v)) ? Number(v) : 70;
         return Math.min(100, Math.max(0, n));
     });
     let micCtxRef = useRef(null);
@@ -140,8 +132,11 @@ export let CallProvider = ({ children }) => {
     let micMeterTimerRef = useRef(null);
     let micGateOpenRef = useRef(false);
     let micLastBelowRef = useRef(0);
-    let micThresholdRef = useRef(0.02); // RMS threshold; updated from sensitivity
+    let micThresholdRef = useRef(0.02);
 
+    // ==========================
+    //  Mic Processing Functions
+    // ==========================
     let computeThresholdFromSensitivity = useCallback((s) => {
         // Map 0..100 (low..high sensitivity) to RMS 0.1..0.003 (high..low threshold)
         // Higher sensitivity => lower threshold
@@ -183,12 +178,12 @@ export let CallProvider = ({ children }) => {
         micCtxRef.current = ctx;
 
         let src = ctx.createMediaStreamSource(rawStream);
-    let gateGain = ctx.createGain();
-    gateGain.gain.value = 1.0;
-    let analyser = ctx.createAnalyser();
-    analyser.fftSize = 512; // lower = less latency
-    analyser.smoothingTimeConstant = 0.05; // faster response
-    let dest = ctx.createMediaStreamDestination();
+        let gateGain = ctx.createGain();
+        gateGain.gain.value = 1.0;
+        let analyser = ctx.createAnalyser();
+        analyser.fftSize = 512; // lower = less latency
+        analyser.smoothingTimeConstant = 0.05; // faster response
+        let dest = ctx.createMediaStreamDestination();
 
         // Connect: source -> gate -> dest
         src.connect(gateGain).connect(dest);
@@ -1558,20 +1553,17 @@ export let CallProvider = ({ children }) => {
             setCanvasSize,
         }}>
             <div hidden>
-                {/* Spatial mix output element (used when directionalAudio is enabled) */}
                 <audio
                     ref={(el) => {
                         spatialAudioElRef.current = el || null;
-                        // When element appears, attach stream if graph exists
                         try {
                             if (el && destinationNodeRef.current) {
                                 el.srcObject = destinationNodeRef.current.stream;
-                                // Apply current sink
                                 if (typeof el.setSinkId === 'function' && currentSinkIdRef.current) {
                                     el.setSinkId(currentSinkIdRef.current).catch(() => { });
                                 }
                             }
-                        } catch { /* ignore */ }
+                        } catch { }
                     }}
                     autoPlay
                     muted={deaf}
@@ -1582,19 +1574,17 @@ export let CallProvider = ({ children }) => {
                         ref={(el) => {
                             if (el) {
                                 audioRefs.current.set(id, el);
-                                // Set the stream if it already exists
                                 let stream = audioStreamsRefs.current.get(id);
                                 if (stream && stream instanceof MediaStream) {
                                     el.srcObject = stream;
                                 } else if (stream) {
                                     logFunction(`Invalid stream type for user ${id}: ${typeof stream}`, "warning");
                                 }
-                                // Apply current output device to this element
                                 try {
                                     if (typeof el.setSinkId === 'function' && currentSinkIdRef.current) {
                                         el.setSinkId(currentSinkIdRef.current).catch(() => { });
                                     }
-                                } catch { /* ignore */ }
+                                } catch { }
                             } else {
                                 audioRefs.current.delete(id);
                             }
