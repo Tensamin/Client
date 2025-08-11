@@ -25,7 +25,7 @@ export function AppSidebar(props) {
   let { connected } = useCallContext();
 
   return (
-    <Sidebar side={sidebarRightSide ? "right" : "left"} variant="inset" {...props}>
+    <Sidebar side={sidebarRightSide ? "right" : "left"} variant="inset" {...props} className="pt-[env(titlebar-area-height)]">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="border-1 bg-card rounded-xl">
