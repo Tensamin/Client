@@ -244,8 +244,8 @@ export let CallProvider = ({ children }) => {
             let nodes = spatialNodesRef.current.get(id);
             if (!nodes) return;
             let pos = positions[id] || { x: centerX, y: minY };
-        // Normalize x to [-1,1] around page center (or fallback center)
-        let xNorm = (pos.x - centerX) / (widthHalf);
+            // Normalize x to [-1,1] around page center (or fallback center)
+            let xNorm = (pos.x - centerX) / (widthHalf);
             if (!isFinite(xNorm)) xNorm = 0;
             xNorm = Math.max(-1, Math.min(1, xNorm));
             // Map to range [-5, 5]
@@ -386,10 +386,16 @@ export let CallProvider = ({ children }) => {
     // Input device: initialize from storage and live-switch mic stream across PCs
     let switchMicInput = useCallback(async (preferredId) => {
         try {
+            let base = {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            }
+
             // Build constraints
             let constraints = preferredId && preferredId !== 'default'
-                ? { audio: { deviceId: { exact: preferredId } } }
-                : { audio: true };
+                ? { audio: { deviceId: { exact: preferredId }, ...base } }
+                : { audio: { ...base } };
 
             let newStream = await navigator.mediaDevices.getUserMedia(constraints);
 
@@ -812,15 +818,16 @@ export let CallProvider = ({ children }) => {
     // Start Screen Stream
     let startScreenStream = useCallback(async () => {
         try {
-        let [wStr, hStr] = String(streamResolution).split("x");
-        let widthNum = parseInt(wStr, 10) || undefined;
-        let heightNum = parseInt(hStr, 10) || undefined;
-        let frameNum = parseInt(String(streamRefresh), 10) || undefined;
+            let [wStr, hStr] = String(streamResolution).split("x");
+            let widthNum = parseInt(wStr, 10) || undefined;
+            let heightNum = parseInt(hStr, 10) || undefined;
+            let frameNum = parseInt(String(streamRefresh), 10) || undefined;
             let stream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
-            frameRate: frameNum ? { ideal: frameNum, max: frameNum } : undefined,
-            width: widthNum ? { ideal: widthNum, max: widthNum } : undefined,
-            height: heightNum ? { ideal: heightNum, max: heightNum } : undefined,
+                    frameRate: frameNum ? { ideal: frameNum } : undefined,
+                    width: widthNum ? { exact: widthNum } : undefined,
+                    height: heightNum ? { exact: heightNum } : undefined,
+                    displaySurface: "monitor",
                 },
                 audio: streamAudio
             });
