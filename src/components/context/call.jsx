@@ -183,12 +183,12 @@ export let CallProvider = ({ children }) => {
         micCtxRef.current = ctx;
 
         let src = ctx.createMediaStreamSource(rawStream);
-        let gateGain = ctx.createGain();
-        gateGain.gain.value = 1.0;
-        let analyser = ctx.createAnalyser();
-        analyser.fftSize = 2048;
-        analyser.smoothingTimeConstant = 0.2;
-        let dest = ctx.createMediaStreamDestination();
+    let gateGain = ctx.createGain();
+    gateGain.gain.value = 1.0;
+    let analyser = ctx.createAnalyser();
+    analyser.fftSize = 512; // lower = less latency
+    analyser.smoothingTimeConstant = 0.05; // faster response
+    let dest = ctx.createMediaStreamDestination();
 
         // Connect: source -> gate -> dest
         src.connect(gateGain).connect(dest);
@@ -204,7 +204,7 @@ export let CallProvider = ({ children }) => {
         let buffer = new Float32Array(analyser.fftSize);
         micGateOpenRef.current = false;
         micLastBelowRef.current = performance.now();
-        let holdMs = 200; // keep gate open this long after dropping below threshold
+        let holdMs = 50; // much shorter hold for fast close
         let closeGain = 0.0001;
 
         micMeterTimerRef.current = setInterval(() => {
@@ -222,20 +222,20 @@ export let CallProvider = ({ children }) => {
                 if (!micGateOpenRef.current) {
                     if (rms >= threshold) {
                         micGateOpenRef.current = true;
-                        micGateGainRef.current.gain.setTargetAtTime(1.0, ctx.currentTime, 0.02);
+                        micGateGainRef.current.gain.setValueAtTime(1.0, ctx.currentTime); // instant open
                     }
                 } else {
                     if (rms < threshold * 0.7) { // close with a bit of hysteresis
                         if ((now - micLastBelowRef.current) >= holdMs) {
                             micGateOpenRef.current = false;
-                            micGateGainRef.current.gain.setTargetAtTime(closeGain, ctx.currentTime, 0.05);
+                            micGateGainRef.current.gain.setValueAtTime(closeGain, ctx.currentTime); // instant close
                         }
                     } else {
                         micLastBelowRef.current = now;
                     }
                 }
             } catch { /* ignore meter errors */ }
-        }, 50);
+        }, 20); // faster polling
 
         // Use processed stream for sending
         let processed = dest.stream;
