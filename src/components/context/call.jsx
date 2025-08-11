@@ -98,6 +98,8 @@ export let CallProvider = ({ children }) => {
     let [inputDeviceId, setInput] = useState(null);
 
     let micStreamRef = useRef(null);
+    // Keep original mic stream separate from processed stream
+    let micRawStreamRef = useRef(null);
     let screenStreamRef = useRef(null);
 
     // Keep a persistent observer to apply output device to all audio elements
@@ -123,6 +125,125 @@ export let CallProvider = ({ children }) => {
     let spatialAudioElRef = useRef(null); // <audio> that plays the mixed stream (for setSinkId)
     let spatialNodesRef = useRef(new Map()); // id -> { source, panner, gain }
     let spatialEnabledRef = useRef(false);
+
+    // Mic processing (input sensitivity gating)
+    let [inputSensitivity, setInputSensitivity] = useState(() => {
+        let v = ls.get("call_input_sensitivity");
+        let n = Number.isFinite(Number(v)) ? Number(v) : 60; // default more sensitive
+        return Math.min(100, Math.max(0, n));
+    });
+    let micCtxRef = useRef(null);
+    let micSourceRef = useRef(null);
+    let micAnalyserRef = useRef(null);
+    let micGateGainRef = useRef(null);
+    let micDestRef = useRef(null);
+    let micMeterTimerRef = useRef(null);
+    let micGateOpenRef = useRef(false);
+    let micLastBelowRef = useRef(0);
+    let micThresholdRef = useRef(0.02); // RMS threshold; updated from sensitivity
+
+    let computeThresholdFromSensitivity = useCallback((s) => {
+        // Map 0..100 (low..high sensitivity) to RMS 0.1..0.003 (high..low threshold)
+        // Higher sensitivity => lower threshold
+        let minTh = 0.003; // most sensitive
+        let maxTh = 0.1;   // least sensitive
+        let t = (100 - Math.min(100, Math.max(0, s))) / 100; // 1..0 as sensitivity grows
+        // Exponential interpolate for perceptual smoothness
+        let th = Math.exp(Math.log(maxTh) * t + Math.log(minTh) * (1 - t));
+        return th;
+    }, []);
+
+    // Update threshold whenever sensitivity changes
+    useEffect(() => {
+        micThresholdRef.current = computeThresholdFromSensitivity(inputSensitivity);
+        ls.set("call_input_sensitivity", String(inputSensitivity));
+    }, [inputSensitivity, computeThresholdFromSensitivity]);
+
+    // Build or rebuild mic processing graph for a raw getUserMedia() stream
+    let setupMicProcessing = useCallback(async (rawStream) => {
+        // Cleanup old graph
+        try { clearInterval(micMeterTimerRef.current); } catch { }
+        micMeterTimerRef.current = null;
+        try { micCtxRef.current?.close(); } catch { }
+        micCtxRef.current = null;
+        micSourceRef.current = null;
+        micAnalyserRef.current = null;
+        micGateGainRef.current = null;
+        micDestRef.current = null;
+
+        // Create new graph
+        let AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) {
+            // Fallback: no processing, use raw stream
+            micStreamRef.current = rawStream;
+            return rawStream;
+        }
+
+        let ctx = new AC();
+        micCtxRef.current = ctx;
+
+        let src = ctx.createMediaStreamSource(rawStream);
+        let gateGain = ctx.createGain();
+        gateGain.gain.value = 1.0;
+        let analyser = ctx.createAnalyser();
+        analyser.fftSize = 2048;
+        analyser.smoothingTimeConstant = 0.2;
+        let dest = ctx.createMediaStreamDestination();
+
+        // Connect: source -> gate -> dest
+        src.connect(gateGain).connect(dest);
+        // Branch for analysis (doesn't affect signal)
+        src.connect(analyser);
+
+        micSourceRef.current = src;
+        micGateGainRef.current = gateGain;
+        micAnalyserRef.current = analyser;
+        micDestRef.current = dest;
+
+        // Start meter + gate loop
+        let buffer = new Float32Array(analyser.fftSize);
+        micGateOpenRef.current = false;
+        micLastBelowRef.current = performance.now();
+        let holdMs = 200; // keep gate open this long after dropping below threshold
+        let closeGain = 0.0001;
+
+        micMeterTimerRef.current = setInterval(() => {
+            try {
+                analyser.getFloatTimeDomainData(buffer);
+                let sumSq = 0;
+                for (let i = 0; i < buffer.length; i++) {
+                    let v = buffer[i];
+                    sumSq += v * v;
+                }
+                let rms = Math.sqrt(sumSq / buffer.length);
+                let threshold = micThresholdRef.current;
+
+                let now = performance.now();
+                if (!micGateOpenRef.current) {
+                    if (rms >= threshold) {
+                        micGateOpenRef.current = true;
+                        micGateGainRef.current.gain.setTargetAtTime(1.0, ctx.currentTime, 0.02);
+                    }
+                } else {
+                    if (rms < threshold * 0.7) { // close with a bit of hysteresis
+                        if ((now - micLastBelowRef.current) >= holdMs) {
+                            micGateOpenRef.current = false;
+                            micGateGainRef.current.gain.setTargetAtTime(closeGain, ctx.currentTime, 0.05);
+                        }
+                    } else {
+                        micLastBelowRef.current = now;
+                    }
+                }
+            } catch { /* ignore meter errors */ }
+        }, 50);
+
+        // Use processed stream for sending
+        let processed = dest.stream;
+        // Respect current mute state
+        processed.getAudioTracks().forEach(t => { t.enabled = !mute; });
+        micStreamRef.current = processed;
+        return processed;
+    }, [mute]);
 
     // Create or ensure the Web Audio graph exists
     let ensureSpatialAudioGraph = useCallback(() => {
@@ -397,13 +518,17 @@ export let CallProvider = ({ children }) => {
                 ? { audio: { deviceId: { exact: preferredId }, ...base } }
                 : { audio: { ...base } };
 
-            let newStream = await navigator.mediaDevices.getUserMedia(constraints);
+            // Acquire raw mic
+            let rawStream = await navigator.mediaDevices.getUserMedia(constraints);
+            // Store and stop old raw
+            try { micRawStreamRef.current?.getTracks().forEach(tr => tr.stop()); } catch { }
+            micRawStreamRef.current = rawStream;
 
-            // Respect current mute state
-            newStream.getAudioTracks().forEach(t => { t.enabled = !mute; });
+            // Build processing graph and get processed stream
+            let processedStream = await setupMicProcessing(rawStream);
 
-            // Swap tracks in existing PCs
-            let newTrack = newStream.getAudioTracks()[0];
+            // Swap tracks in existing PCs to processed track
+            let newTrack = processedStream?.getAudioTracks?.()[0];
             if (newTrack) {
                 for (let pc of micRefs.current.values()) {
                     try {
@@ -411,19 +536,15 @@ export let CallProvider = ({ children }) => {
                         if (sender) {
                             await sender.replaceTrack(newTrack);
                         } else {
-                            pc.addTrack(newTrack, newStream);
+                            pc.addTrack(newTrack, processedStream);
                         }
                     } catch { /* ignore per-peer errors */ }
                 }
             }
-
-            // Stop old tracks and replace ref
-            try { micStreamRef.current?.getTracks().forEach(tr => tr.stop()); } catch { }
-            micStreamRef.current = newStream;
         } catch (e) {
             logFunction(`Failed to switch mic input: ${e.message}`, 'error');
         }
-    }, [mute]);
+    }, [mute, setupMicProcessing]);
 
     useEffect(() => {
         if (inputDeviceId === null) {
@@ -441,7 +562,13 @@ export let CallProvider = ({ children }) => {
 
     // Reset Function
     function reset() {
-        micStreamRef.current?.getTracks().forEach(track => track.stop());
+        try { micStreamRef.current?.getTracks().forEach(track => track.stop()); } catch { }
+        try { micRawStreamRef.current?.getTracks().forEach(track => track.stop()); } catch { }
+        micRawStreamRef.current = null;
+        try { clearInterval(micMeterTimerRef.current); } catch { }
+        micMeterTimerRef.current = null;
+        try { micCtxRef.current?.close(); } catch { }
+        micCtxRef.current = null;
         screenStreamRef.current?.getTracks().forEach(track => track.stop());
         micRefs.current.clear();
         screenRefs.current.clear();
@@ -1423,6 +1550,8 @@ export let CallProvider = ({ children }) => {
 
             directionalAudio,
             setDirectionalAudio,
+            inputSensitivity,
+            setInputSensitivity,
             positions,
             setPositions,
             canvasSize,

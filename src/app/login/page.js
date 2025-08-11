@@ -80,7 +80,7 @@ export function LoginForm() {
     e.dataTransfer.dropEffect = 'copy';
   }
 
-  async function login(useExistingPasskey) {
+  async function login() {
     try {
       let uuid;
       let options;
@@ -89,7 +89,7 @@ export function LoginForm() {
       let attestation;
       let lambda;
 
-      await fetch(endpoint.username_to_uuid + username)
+      await fetch(endpoint.username_to_uuid + username.toLowerCase())
         .then(response => response.json())
         .then(data => {
           if (data.type === "error") {
@@ -99,49 +99,32 @@ export function LoginForm() {
           }
         });
 
-      if (useExistingPasskey) {
-        cred_id = prompt("Enter the passkey id found in your passkey provider or on the existing device:")
-        await fetch(`${endpoint.webauthn_login_options}${uuid}/${cred_id}`)
-          .then(response => response.json())
-          .then(data => {
-            if (data.type === "error") {
-              throw new Error(data.log.message)
-            } else {
-              options = JSON.parse(atob(data.data.options));
-            }
-          });
-      } else {
-        await fetch(endpoint.webauthn_register_options + uuid, {
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            private_key_hash: await sha256(privateKey)
-          })
-        })
-          .then(response => response.json())
-          .then(data => {
-            if (data.type === "error") {
-              throw new Error(data.log.message)
-            } else {
-              options = JSON.parse(atob(data.data.options));
-            }
-          });
-      }
-
-      if (useExistingPasskey) {
-        attestation = await startAuthentication(options);
-      } else {
-        attestation = await startRegistration(options);
-      }
-
-      await fetch(useExistingPasskey ? `${endpoint.webauthn_login_verify}${uuid}/${cred_id}` : endpoint.webauthn_register_verify + uuid, {
+      await fetch(endpoint.webauthn_register_options + uuid, {
         method: "POST",
         headers: {
           'Content-Type': 'application/json'
         },
-        body: useExistingPasskey ? JSON.stringify({ attestation }) : JSON.stringify({ private_key_hash: await sha256(privateKey), attestation })
+        body: JSON.stringify({
+          private_key_hash: await sha256(privateKey)
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.type === "error") {
+            throw new Error(data.log.message)
+          } else {
+            options = JSON.parse(atob(data.data.options));
+          }
+        });
+
+      attestation = await startRegistration(options);
+
+      await fetch(endpoint.webauthn_register_verify + uuid, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ private_key_hash: await sha256(privateKey), attestation })
       })
         .then(response => response.json())
         .then(data => {
@@ -150,7 +133,7 @@ export function LoginForm() {
             throw new Error(data.log.message)
           } else {
             lambda = data.data.lambda;
-            if (!useExistingPasskey) cred_id = attestation.id;
+            cred_id = attestation.id;
             verified = true;
           }
         });
@@ -168,7 +151,7 @@ export function LoginForm() {
   };
 
   function handleUsernameChange(event) {
-    setUsername(event.target.value.toLowerCase())
+    setUsername(event.target.value)
   };
 
   async function handlePrivateKeyFileChange(files) {
@@ -224,8 +207,8 @@ export function LoginForm() {
                 <div className="h-full w-auto flex items-center pl-3">
                   {canRelease ?
                     <Icon.FileDown size={25} strokeWidth={1.5} /> : privateKey === "" ?
-                    <Icon.FileKey2 size={25} strokeWidth={1.5} /> :
-                    <Icon.FileCheck size={25} strokeWidth={1.5} />
+                      <Icon.FileKey2 size={25} strokeWidth={1.5} /> :
+                      <Icon.FileCheck size={25} strokeWidth={1.5} />
                   }
                 </div>
                 <div className="h-full w-full flex flex-col items-center justify-center text-xs select-none">
@@ -248,34 +231,22 @@ export function LoginForm() {
                 className="w-full"
                 variant="outline"
                 onClick={() => {
-                  login(false)
+                  login();
                 }}
               >
-                Add device
+                Login
               </Button>
-              <Button
-                className="w-full"
-                variant="outline"
-                onClick={() => {
-                  login(true)
-                }}
-              >
-                Add device with existing passkey
-              </Button>
-              <p className="text-[11px] text-muted-foreground text-center">
-                If this is your first device, click &quot;Add device&quot;
-              </p>
             </div>
           </CardContent>
         </Card>
         <br />
         <p className="text-[11px] text-muted-foreground">
-          By clicking &quot;Add device&quot; or &quot;Add device with existing passkey&quot;
+          By clicking &quot;Add device&quot; you agree to our
         </p>
         <p className="text-[11px] text-muted-foreground">
-          you agree to our <a href={endpoint.tos} className="underline">
+          <a href={endpoint.tos} className="underline">
             Terms of Service
-          </a> and <a href={endpoint.pp} className="underline">Privacy Policy.</a>
+          </a> and <a href={endpoint.pp} className="underline">Privacy Policy</a>.
         </p>
       </div>
     </div>

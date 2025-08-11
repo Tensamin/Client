@@ -58,6 +58,7 @@ import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from
 import { Preview } from "@/components/page/settings/theme-preview"
 import { EditableText, EditableTextarea } from "@/components/page/settings/editable/text"
 import { EditableImage } from "@/components/page/settings/editable/image"
+import { Slider } from "@/components/ui/slider"
 
 // Helper Functions
 function readFileAsText(file) {
@@ -562,7 +563,7 @@ export function Voice() {
   let [openInputs, setOpenInputs] = useState(false);
   let [denied, setDenied] = useState(null);
 
-  let { inputDeviceId, setInput, outputDeviceId, setOutput } = useCallContext();
+  let { inputDeviceId, setInput, outputDeviceId, setOutput, inputSensitivity, setInputSensitivity } = useCallContext();
 
   async function getMicrophonePermissionState() {
     if (!navigator.permissions || !navigator.permissions.query) {
@@ -618,9 +619,9 @@ export function Voice() {
           onClick={async () => {
             try {
               await navigator.mediaDevices.getUserMedia({ audio: true })
-              .then(() => {
-                window.location.reload();
-              })
+                .then(() => {
+                  window.location.reload();
+                })
             } catch { }
           }}
         >
@@ -718,6 +719,26 @@ export function Voice() {
             </Command>
           </PopoverContent>
         </Popover>
+      </div>
+      <div className="flex flex-col gap-2 w-full max-w-md">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="input-sensitivity">Input Sensitivity</Label>
+          <span className="text-xs text-muted-foreground">{inputSensitivity}</span>
+        </div>
+        <div className="px-1">
+          <Slider
+            id="input-sensitivity"
+            min={0}
+            max={100}
+            value={[inputSensitivity]}
+            onValueChange={(vals) => {
+              let v = Array.isArray(vals) ? vals[0] : Number(vals);
+              if (!Number.isFinite(v)) return;
+              setInputSensitivity(Math.min(100, Math.max(0, Math.round(v))));
+            }}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">Lower means more sensitive; higher means you need to speak louder to transmit.</p>
       </div>
     </div>
   );
