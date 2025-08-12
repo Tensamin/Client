@@ -43,6 +43,11 @@ export function Main() {
 
   let [inviteOpen, setInviteOpen] = useState(false);
   let [focused, setFocused] = useState("");
+  // Hold DOM nodes for per-user containers so we can mutate transform smoothly during drag
+  let nodeRefs = useRef(new Map());
+  // Track which users are being dragged to avoid React overriding transform
+  let draggingIdsRef = useRef(new Set());
+  let [, setDragRev] = useState(0); // bump to re-render at drag start/end only
 
   // If focus somehow points to own user, clear it
   useEffect(() => {
@@ -106,32 +111,76 @@ export function Main() {
   // Drag handlers
   let startDrag = useCallback(
     (id) => (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+      // Smooth, local drag: mutate element transform via rAF; commit once on end
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
+
+      let el = nodeRefs.current.get(id) || e.currentTarget;
+      if (!el) return;
+      try { el.setPointerCapture?.(e.pointerId); } catch {}
+
+      // Disable text selection during drag
+      let previousUserSelect = document.body.style.userSelect;
+      document.body.style.userSelect = "none";
+
+  // Mark as dragging and trigger one render so style omits transform
+  draggingIdsRef.current.add(id);
+  setDragRev((r) => (r + 1) & 0xffff);
 
       let startX = e.clientX;
       let startY = e.clientY;
       let startPos = positions[id] || { x: 0, y: 0 };
 
-      let handleMove = (ev) => {
-        let dx = ev.clientX - startX;
-        let dy = ev.clientY - startY;
+      let targetX = startPos.x;
+      let targetY = startPos.y;
+      let rafId = null;
+      let updating = false;
+
+      const apply = () => {
+        rafId = null;
+        // Hint to browser for smoother transform
+        el.style.willChange = "transform";
+        el.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+        updating = false;
+      };
+
+      const handleMove = (ev) => {
+        targetX = startPos.x + (ev.clientX - startX);
+        targetY = startPos.y + (ev.clientY - startY);
+        if (!updating) {
+          updating = true;
+          rafId = requestAnimationFrame(apply);
+        }
+      };
+
+      const finalize = () => {
+        window.removeEventListener("pointermove", handleMove);
+        window.removeEventListener("pointerup", finalize);
+        window.removeEventListener("pointercancel", finalize);
+        try { el.releasePointerCapture?.(e.pointerId); } catch {}
+        if (rafId) cancelAnimationFrame(rafId);
+        // Commit final position once to context, then notify end of drag
         setPositions((prev) => ({
           ...prev,
-          [id]: { x: startPos.x + dx, y: startPos.y + dy },
+          [id]: { x: targetX, y: targetY },
         }));
+        try { endUserDrag(id); } catch {}
+        // Restore styles
+        el.style.willChange = "";
+        // Keep transform; React will reconcile to same final transform via props
+        document.body.style.userSelect = previousUserSelect;
+        // Unmark dragging and trigger a render to restore React-driven transform
+        draggingIdsRef.current.delete(id);
+        setDragRev((r) => (r + 1) & 0xffff);
       };
 
-      let handleUp = () => {
-        window.removeEventListener("pointermove", handleMove);
-        window.removeEventListener("pointerup", handleUp);
-        try { endUserDrag(id); } catch { }
-      };
-
-      window.addEventListener("pointermove", handleMove);
-      window.addEventListener("pointerup", handleUp);
+      window.addEventListener("pointermove", handleMove, { passive: true });
+      window.addEventListener("pointerup", finalize, { once: true });
+      window.addEventListener("pointercancel", finalize, { once: true });
     },
-    [positions, endUserDrag]
+    [positions, setPositions, endUserDrag]
   );
 
   return (
@@ -218,14 +267,21 @@ export function Main() {
               .filter((user) => user !== ownUuid)
               .map((user) => {
               let pos = positions[user] || { x: 0, y: 0 };
+              const isDragging = draggingIdsRef.current.has(user);
               return (
                 <div
                   key={`free-${user}`}
-                  className="absolute"
+                  className="absolute cursor-grab active:cursor-grabbing"
                   style={{
-                    transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
+                    ...(isDragging ? {} : { transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }),
                     width: `${AVATAR_TILE_WIDTH}px`,
+                    touchAction: "none",
                   }}
+                  ref={(el) => {
+                    if (el) nodeRefs.current.set(user, el);
+                    else nodeRefs.current.delete(user);
+                  }}
+                  onPointerDown={startDrag(user)}
                 >
                   <VoiceModal
                     id={user}
@@ -235,10 +291,6 @@ export function Main() {
                       if (focus) setFocused(user);
                     }}
                     mode="avatarOnly"
-                    dragHandleProps={{
-                      onPointerDown: startDrag(user),
-                      title: "Drag",
-                    }}
                   />
                 </div>
               );
