@@ -1,6 +1,5 @@
 "use client";
 
-// Package Imports
 import {
     createContext,
     useContext,
@@ -13,19 +12,17 @@ import {
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { v7 } from "uuid";
 
-// Lib Imports
 import { log, log as logFunction, sha256 } from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
 import ls from "@/lib/localStorageManager";
 
-// Context Imports
 import { useCryptoContext } from "@/components/context/crypto";
 import { useUsersContext } from "@/components/context/users";
 import { useEncryptionContext } from "@/components/context/encryption";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useMessageContext } from "@/components/context/message";
 
-// WebRTC ICE servers config (trimmed for faster ICE gathering)
+// WebRTC configuration used for all peer connections.
 const webrtc_servers = {
     iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
@@ -36,10 +33,9 @@ const webrtc_servers = {
     rtcpMuxPolicy: 'require',
 };
 
-// Main
 let CallContext = createContext(null);
 
-// useContext Function
+// Hook to access the CallContext. Must be used within CallProvider.
 export let useCallContext = () => {
     let context = useContext(CallContext);
     if (!context) {
@@ -50,20 +46,17 @@ export let useCallContext = () => {
     return context;
 };
 
-// Provider
+// Provider for audio/video call functionality and WebRTC/WebSocket orchestration.
 export let CallProvider = ({ children }) => {
-    // WebSocket send function stuff
     let pendingRequests = useRef(new Map());
     let responseTimeout = 10000;
 
-    // Context hooks
     let { encrypt_base64_using_aes, decrypt_base64_using_aes, decrypt_base64_using_privkey, encrypt_base64_using_pubkey } = useEncryptionContext();
     let { privateKeyHash, privateKey } = useCryptoContext();
     let { ownUuid, get } = useUsersContext();
     let { receiver } = useMessageContext();
     let { message, wsSend } = useWebSocketContext();
 
-    // Calling
     let [createCall, setCreateCall] = useState(false);
     let [invitedToCall, setInvitedToCall] = useState(false);
     let [inviteData, setInviteData] = useState({});
@@ -74,7 +67,6 @@ export let CallProvider = ({ children }) => {
 
     let [callId, setCallId] = useState(null);
 
-    // Audio/Video Device
     let [callSecret, setCallSecret] = useState(null);
     let [identified, setIdentified] = useState(false);
     let [mute, setMute] = useState(ls.get("call_mute") === "true" || false);
@@ -95,12 +87,10 @@ export let CallProvider = ({ children }) => {
     let audioRefs = useRef(new Map());
     let audioStreamsRefs = useRef(new Map());
 
-    // Users
     let [connectedUsers, setConnectedUsers] = useState([]);
     let [streamingUsers, setStreamingUsers] = useState([]);
     let [watchingUsers, setWatchingUsers] = useState([]);
 
-    // Directional/Spatial Audio (UI state only; functionality removed)
     let [positions, setPositions] = useState({});
     let [audioPositions, setAudioPositions] = useState({});
     let [directionalAudio, setDirectionalAudio] = useState(false);
@@ -108,7 +98,6 @@ export let CallProvider = ({ children }) => {
     let destinationNodeRef = useRef(null);
     let spatialAudioElRef = useRef(null);
 
-    // Mic Processing
     let micStreamRef = useRef(null);
     let micRawStreamRef = useRef(null);
     let [inputSensitivity, setInputSensitivity] = useState(() => {
@@ -116,19 +105,14 @@ export let CallProvider = ({ children }) => {
         let n = Number.isFinite(Number(v)) ? Number(v) : 70;
         return Math.min(100, Math.max(0, n));
     });
-    // keep noop refs for cleanup compat
     let micCtxRef = useRef(null);
     let micMeterTimerRef = useRef(null);
-    // Persist input sensitivity for UI only (no processing)
     useEffect(() => {
         ls.set("call_input_sensitivity", String(inputSensitivity));
     }, [inputSensitivity]);
-    // Drag callbacks (no audio side-effects)
     let beginUserDrag = useCallback((_userId) => {
-        // intentionally no-op (UI may still call this)
     }, []);
     let endUserDrag = useCallback((userId) => {
-        // keep audioPositions in sync for UI consumers
         setAudioPositions((prev) => {
             let next = { ...prev };
             let p = positions[userId];
@@ -137,15 +121,12 @@ export let CallProvider = ({ children }) => {
         });
     }, [positions]);
 
-    // Keep audioPositions in sync with connected users for UI-only state: add new users/remove stale
     useEffect(() => {
         setAudioPositions((prev) => {
             let next = { ...prev };
-            // remove disconnected
             Object.keys(next).forEach((id) => {
                 if (!connectedUsers.includes(id)) delete next[id];
             });
-            // add new users
             connectedUsers.forEach((id) => {
                 if (!next[id] && positions[id]) {
                     next[id] = { ...positions[id] };
@@ -169,7 +150,6 @@ export let CallProvider = ({ children }) => {
         } catch { /* ignore */ }
     }, []);
 
-    // Output device: init from storage once
     useEffect(() => {
         if (outputDeviceId === null) {
             let output = ls.get("call_output");
@@ -177,7 +157,6 @@ export let CallProvider = ({ children }) => {
         }
     }, [outputDeviceId]);
 
-    // Persist and apply sink changes
     useEffect(() => {
         if (!outputDeviceId) return;
         ls.set("call_output", outputDeviceId);
@@ -185,7 +164,6 @@ export let CallProvider = ({ children }) => {
         applySinkToAllAudios(outputDeviceId);
     }, [outputDeviceId, applySinkToAllAudios]);
 
-    // Persistent MutationObserver (created once)
     useEffect(() => {
         if (sinkObserverRef.current) return;
         try {
@@ -234,7 +212,7 @@ export let CallProvider = ({ children }) => {
         } catch { /* ignore */ }
     }, []);
 
-    // Input device: initialize from storage and live-switch mic stream across PCs
+    // Acquire or switch the active microphone input media stream; replaces track on all existing peer connections.
     let switchMicInput = useCallback(async (preferredId) => {
         try {
             let base = {
@@ -243,22 +221,17 @@ export let CallProvider = ({ children }) => {
                 autoGainControl: true
             }
 
-            // Build constraints
             let constraints = preferredId && preferredId !== 'default'
                 ? { audio: { deviceId: { exact: preferredId }, ...base } }
                 : { audio: { ...base } };
 
-            // Acquire raw mic
             let rawStream = await navigator.mediaDevices.getUserMedia(constraints);
-            // Store and stop old raw
             try { micRawStreamRef.current?.getTracks().forEach(tr => tr.stop()); } catch { }
             micRawStreamRef.current = rawStream;
 
-            // Use raw stream directly (no sensitivity gating). Respect current mute.
             rawStream.getAudioTracks().forEach(t => { t.enabled = !mute; });
             micStreamRef.current = rawStream;
 
-            // Swap tracks in existing PCs to raw track
             let newTrack = rawStream?.getAudioTracks?.()[0];
             if (newTrack) {
                 for (let pc of micRefs.current.values()) {
@@ -283,15 +256,13 @@ export let CallProvider = ({ children }) => {
             setInput(input || "default");
             return;
         }
-        // Persist selection always
         ls.set("call_input", inputDeviceId);
-        // Only switch mic while in a call/connected
         if (connected) {
             switchMicInput(inputDeviceId);
         }
     }, [inputDeviceId, switchMicInput, connected]);
 
-    // Reset Function
+    // Reset all call-related state and close media/peer resources.
     function reset() {
         try { micStreamRef.current?.getTracks().forEach(track => track.stop()); } catch { }
         try { micRawStreamRef.current?.getTracks().forEach(track => track.stop()); } catch { }
@@ -316,7 +287,6 @@ export let CallProvider = ({ children }) => {
         setConnected(false);
     }
 
-    // Call Invites
     useEffect(() => {
         async function doStuff() {
             if (message.type === "new_call") {
@@ -331,13 +301,12 @@ export let CallProvider = ({ children }) => {
         doStuff();
     }, [message])
 
-    // Toggle Mute
+    // Toggle local microphone mute; unmuting clears deaf state.
     let toggleMute = useCallback(() => {
         setMute((prevMute) => {
             let newMute = !prevMute;
             ls.set("call_mute", newMute);
 
-            // When unmuting, also undeafen
             if (!newMute) {
                 setDeaf(false);
                 ls.set("call_deaf", false);
@@ -347,13 +316,12 @@ export let CallProvider = ({ children }) => {
         });
     }, []);
 
-    // Toggle Deaf
+    // Toggle local deaf (output muted); deafening forces mic mute.
     let toggleDeaf = useCallback(() => {
         setDeaf((prevDeaf) => {
             let newDeaf = !prevDeaf;
             ls.set("call_deaf", newDeaf);
 
-            // When deafening, also mute
             if (newDeaf) {
                 setMute(true);
                 ls.set("call_mute", true);
@@ -363,7 +331,7 @@ export let CallProvider = ({ children }) => {
         });
     }, []);
 
-    // Get Screen Stream
+    // Get current screen MediaStream or specific user's stream by id.
     let getScreenStream = useCallback((id) => {
         if (!id) {
             return screenStreamRef.current;
@@ -371,7 +339,7 @@ export let CallProvider = ({ children }) => {
         return videoRefs.current.get(id);
     }, []);
 
-    // Handle WebSocket Messages
+    // WebSocket event handler for call-level signaling messages.
     let handleWebSocketMessage = useCallback(async (event) => {
         let message = JSON.parse(event.data);
 
@@ -403,7 +371,6 @@ export let CallProvider = ({ children }) => {
                     micRefs.current.delete(message.data.user_id);
                 }
 
-                // Clean up audio references
                 audioRefs.current.delete(message.data.user_id);
                 audioStreamsRefs.current.delete(message.data.user_id);
 
@@ -567,14 +534,13 @@ export let CallProvider = ({ children }) => {
         } else logFunction(message.log.message, "info");
     }, [callSecret, decrypt_base64_using_aes, encrypt_base64_using_aes, identified]);
 
-    // Init WebSocket
+    // Initialize call WebSocket when a call session is active.
     let { sendMessage, readyState } = useWebSocket(
         createCall && callId && callSecret ? endpoint.call_wss : null,
         {
             onOpen: async () => {
                 logFunction("Call connected", "info");
                 if (mute) toggleMute();
-                // Acquire mic using current or stored input device
                 try {
                     let preferredId = inputDeviceId ?? ls.get('call_input') ?? 'default';
                     await switchMicInput(preferredId);
@@ -583,7 +549,6 @@ export let CallProvider = ({ children }) => {
             },
             onClose: () => {
                 logFunction("Call disconnected", "info");
-                // Stop using the microphone when leaving the call
                 try { micStreamRef.current?.getTracks().forEach(t => t.stop()); } catch { }
                 micStreamRef.current = null;
                 pendingRequests.current.forEach(({ reject, timeoutId }) => {
@@ -609,7 +574,7 @@ export let CallProvider = ({ children }) => {
         }
     );
 
-    // Send Function
+    // Send a signaling request over the call WebSocket; returns a promise when awaiting a response.
     let send = useCallback(async (requestType, log, data = {}, awaitResponse = true) => {
         if (readyState !== ReadyState.CLOSED && readyState !== ReadyState.CLOSING) {
             if (awaitResponse) {
@@ -663,7 +628,7 @@ export let CallProvider = ({ children }) => {
         }
     }, [sendMessage, readyState]);
 
-    // Start Screen Stream
+    // Start screen sharing (optional audio); notifies peers and attaches tracks to watcher connections.
     let startScreenStream = useCallback(async () => {
         if (stream || screenStreamRef.current) return screenStreamRef.current;
         try {
@@ -685,7 +650,6 @@ export let CallProvider = ({ children }) => {
             screenStreamRef.current = stream;
             setStream(true);
 
-            // Add own user to streaming users when starting screen share
             setStreamingUsers((prev) => {
                 if (!prev.includes(ownUuid)) {
                     return [...prev, ownUuid];
@@ -693,7 +657,6 @@ export let CallProvider = ({ children }) => {
                 return prev;
             });
 
-            // Notify other users that we started streaming
             send("start_stream", {
                 message: "User started screen sharing",
                 log_level: 0
@@ -744,16 +707,14 @@ export let CallProvider = ({ children }) => {
         }
     }, [ownUuid, send]);
 
-    // Stop Screen Stream
+    // Stop screen sharing; detach tracks from watchers and notify peers.
     let stopScreenStream = useCallback(() => {
         if (!screenStreamRef.current) {
             return;
         }
 
-        // Remove own user from streaming users when stopping screen share
         setStreamingUsers((prev) => prev.filter(userId => userId !== ownUuid));
 
-        // Notify other users that we stopped streaming
         send("end_stream", {
             message: "User stopped screen sharing",
             log_level: 0
@@ -819,7 +780,7 @@ export let CallProvider = ({ children }) => {
         setStream(false);
     }, [ownUuid, send])
 
-    // Memoize parsed stream settings
+    // Derived settings for screen stream constraints (width/height/fps).
     const parsedStreamSettings = useMemo(() => {
         let [wStr, hStr] = String(streamResolution).split("x");
         return {
@@ -827,10 +788,9 @@ export let CallProvider = ({ children }) => {
             heightNum: parseInt(hStr, 10) || undefined,
             frameNum: parseInt(String(streamRefresh), 10) || undefined,
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [streamResolution, streamRefresh]);
 
-    // Debounced Update Stream constraints
+    // Apply updated constraints to an active screen video track.
     let updateStream = useCallback(() => {
         if (!stream) return;
         let track = screenStreamRef.current?.getVideoTracks?.()?.[0];
@@ -841,7 +801,6 @@ export let CallProvider = ({ children }) => {
         if (widthNum) constraints.width = { ideal: widthNum, max: widthNum };
         if (heightNum) constraints.height = { ideal: heightNum, max: heightNum };
 
-        // debounce via rAF + microtask to collapse bursts
         let handle = requestAnimationFrame(() => {
             Promise.resolve().then(async () => {
                 try {
@@ -854,9 +813,8 @@ export let CallProvider = ({ children }) => {
         return () => cancelAnimationFrame(handle);
     }, [stream, parsedStreamSettings]);
 
-    // Create P2P Connection
+    // Create or reuse an RTCPeerConnection for mic/screen; handle ICE, negotiation, tracks, lifecycle.
     let createP2PConnection = useCallback(async (id, isInitiator = false, isScreenShare = false) => {
-        // Handle Existing Connections
         if (isScreenShare) {
             if (isInitiator) {
                 if (watchingRefs.current.has(id)) {
@@ -876,7 +834,6 @@ export let CallProvider = ({ children }) => {
             }
         }
 
-        // Create New Peer Connection
         let pc = new RTCPeerConnection(webrtc_servers);
 
         if (isScreenShare) {
@@ -889,21 +846,18 @@ export let CallProvider = ({ children }) => {
             micRefs.current.set(id, pc);
         }
 
-        // Add Own Mic Stream
         if (micStreamRef.current && !isScreenShare) {
             micStreamRef.current.getTracks().forEach(track => {
                 pc.addTrack(track, micStreamRef.current);
             });
         }
 
-        // Add Own Screen Stream
         if (screenStreamRef.current && isScreenShare && isInitiator) {
             screenStreamRef.current.getTracks().forEach(track => {
                 pc.addTrack(track, screenStreamRef.current);
             });
         }
 
-        // ICE Candidates
         pc.onicecandidate = async (event) => {
             if (event.candidate) {
                 send("webrtc_ice", {
@@ -921,7 +875,6 @@ export let CallProvider = ({ children }) => {
             }
         };
 
-        // Track Events
         pc.ontrack = (event) => {
             event.track.onended = async () => {
                 if (isScreenShare) {
@@ -944,7 +897,6 @@ export let CallProvider = ({ children }) => {
                 }
             }
 
-            // Handle Tracks
             if (isScreenShare && !isInitiator) {
                 let stream = videoRefs.current.get(id);
                 if (!stream) {
@@ -1071,7 +1023,7 @@ export let CallProvider = ({ children }) => {
         return pc;
     }, [send, webrtc_servers, encrypt_base64_using_aes, callSecret]);
 
-    // Start Call
+    // Begin a call session; optionally use provided id/secret and send invite.
     let startCall = useCallback(async (shouldInviteReceiver, id, secret) => {
         reset();
         setTimeout(() => {
@@ -1084,12 +1036,11 @@ export let CallProvider = ({ children }) => {
         }, 100)
     }, [])
 
-    // End Call
+    // End the active call session and cleanup resources.
     let stopCall = useCallback(() => {
         reset();
     }, [])
 
-    // Update Connected State
     useEffect(() => {
         if (micStreamRef.current && readyState === ReadyState.OPEN) {
             setConnected(true);
@@ -1098,7 +1049,7 @@ export let CallProvider = ({ children }) => {
         }
     }, [readyState, micStreamRef.current]);
 
-    // Pings
+    // Periodic ping to server for latency tracking while connected.
     useEffect(() => {
         let interval;
         if (connected) {
@@ -1127,7 +1078,7 @@ export let CallProvider = ({ children }) => {
         return () => clearInterval(interval);
     }, [connected, send]);
 
-    // Identification
+    // Identify with the server once connected; optionally send call invites.
     useEffect(() => {
         async function sendIdentification() {
             if (connected) {
@@ -1192,7 +1143,6 @@ export let CallProvider = ({ children }) => {
         sendIdentification();
     }, [connected, send]);
 
-    // Mute
     useEffect(() => {
         if (micStreamRef.current) {
             micStreamRef.current.getAudioTracks().forEach((track) => {
@@ -1201,13 +1151,11 @@ export let CallProvider = ({ children }) => {
         }
     }, [mute]);
 
-    // Update Stream when Refresh or Resolution changes (video)
     useEffect(() => {
         let cancel = updateStream();
         return () => { try { cancel?.(); } catch { } };
     }, [updateStream])
 
-    // Unmount Cleanup
     useEffect(() => {
         return () => {
             try { sinkObserverRef.current?.disconnect(); } catch { }
