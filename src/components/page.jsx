@@ -19,7 +19,7 @@ import { AppSidebar } from "@/components/page/root/sidebar";
 import { Main as ChatMain } from "@/components/page/chat/main";
 import { Main as HomeMain } from "@/components/page/home/main";
 import { Main as SettingsMain } from "@/components/page/settings/main";
-import { Main as VoiceMain } from "@/components/page/voice/main";
+import { VoiceExpanded, VoiceRearrangement } from "@/components/page/voice/main";
 import { Main as CommunityMain } from "@/components/page/voice/main";
 import { GettingCalled } from "@/components/page/voice/parts";
 
@@ -63,8 +63,11 @@ export function Page() {
                                 {page.name === "settings" ? (
                                     <SettingsMain data={page.data} />
                                 ) : null}
-                                {page.name === "voice" ? (
-                                    <VoiceMain data={page.data} />
+                                {page.name === "voice-expanded" ? (
+                                    <VoiceExpanded data={page.data} />
+                                ) : null}
+                                {page.name === "voice-rearrangement" ? (
+                                    <VoiceRearrangement data={page.data} />
                                 ) : null}
                             </div>
                         </SidebarInset>

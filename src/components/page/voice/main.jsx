@@ -37,19 +37,28 @@ let AVATAR_TILE_WIDTH = 96;
 let TILE_GAP = 16;
 
 // Main
+export function VoiceExpanded() {
+  return (
+    <p>Voice Expanded</p>
+  )
+}
+
+export function VoiceRearrangement() {
+  return (
+    <p>Voice Rearrangement</p>
+  )
+}
+
 export function Main() {
   let { ownUuid, chatsArray } = useUsersContext();
   let { connected, connectedUsers, streamingUsers, positions, setPositions, audioPositions, setAudioPositions, directionalAudio, setDirectionalAudio, setCanvasSize, endUserDrag } = useCallContext();
 
   let [inviteOpen, setInviteOpen] = useState(false);
   let [focused, setFocused] = useState("");
-  // Hold DOM nodes for per-user containers so we can mutate transform smoothly during drag
   let nodeRefs = useRef(new Map());
-  // Track which users are being dragged to avoid React overriding transform
   let draggingIdsRef = useRef(new Set());
-  let [, setDragRev] = useState(0); // bump to re-render at drag start/end only
+  let [, setDragRev] = useState(0);
 
-  // If focus somehow points to own user, clear it
   useEffect(() => {
     if (focused === ownUuid) setFocused("");
   }, [focused, ownUuid]);
@@ -385,14 +394,9 @@ function VoiceModal({
       <div
         className="flex items-center justify-center cursor-grab active:cursor-grabbing"
         {...dragHandleProps}
-        onDoubleClick={() => onFocus(true)}
-        title="Double-click to focus"
       >
         {avatar !== "..." ? (
-          <button
-            className="inline-flex items-center justify-center rounded-full border bg-background/60 hover:bg-background cursor-grab active:cursor-grabbing"
-            onDoubleClick={() => onFocus(true)}
-          >
+          <button className="inline-flex items-center justify-center rounded-full border bg-background/60 hover:bg-background cursor-grab active:cursor-grabbing">
             <Avatar className="size-14 bg-background/10">
               {avatar !== "" ? (
                 <Image

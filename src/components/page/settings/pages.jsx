@@ -55,7 +55,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch"
 import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Preview } from "@/components/page/settings/theme-preview"
 import { EditableText, EditableTextarea } from "@/components/page/settings/editable/text"
 import { EditableImage } from "@/components/page/settings/editable/image"
 import { Slider } from "@/components/ui/slider"
@@ -130,7 +129,7 @@ export function Profile() {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-muted-foreground/50">Click any field to edit it</p>
-      <div className="flex w-full gap-5">
+      <div className="flex flex-col lg:flex-row w-full gap-5">
         <div className="flex flex-col w-3/4 border-1 bg-input/20 p-4 rounded-xl gap-3">
           <div className="flex gap-3">
             <div className="flex">
@@ -188,15 +187,13 @@ export function Profile() {
           <p className="bg-clip-text text-transparent bg-gradient-to-r from-primary/60 to-primary">future customizations</p>
         </div>
       </div>
-      <Card>
-
-      </Card>
     </div>
   );
 };
 
 export function Appearance() {
-  let { sidebarRightSide, setSidebarRightSide } = useThemeContext();
+  let { sidebarRightSide, setSidebarRightSide, customCss, setCustomCss } = useThemeContext();
+  let [draftCustomCss, setDraftCustomCss] = useState(customCss || '');
 
   let [tmpColor, setTmpColor] = useState(ls.get("theme_hex") || "");
   let [tint, setTint] = useState(ls.get("theme_tint") || "soft");
@@ -226,9 +223,11 @@ export function Appearance() {
       }
 
       if (palette) {
-        let root = document.documentElement;
-        for (let colorName in palette) {
-          root.style.setProperty(`--${colorName}`, palette[colorName]);
+        // palette keys are already css variable names (e.g., "--background")
+        for (let cssVar in palette) {
+          let value = palette[cssVar];
+          document.documentElement.style.setProperty(cssVar, value);
+          document.body.style.setProperty(cssVar, value);
         }
       }
     }
@@ -281,7 +280,19 @@ export function Appearance() {
 
   useEffect(() => {
     ls.set("theme_scheme", colorScheme);
+    // Toggle scheme class live for preview
+    try {
+      let current = colorScheme === 'dark' ? 'dark' : 'light';
+      let other = colorScheme === 'dark' ? 'light' : 'dark';
+      document.body.classList.add(current);
+      document.body.classList.remove(other);
+    } catch { }
   }, [colorScheme]);
+
+  // Keep draft in sync when applied CSS changes from elsewhere (e.g., reset)
+  useEffect(() => {
+    setDraftCustomCss(customCss || '');
+  }, [customCss]);
 
   function submitThemeControlsChange(event) {
     event.preventDefault();
@@ -306,8 +317,8 @@ export function Appearance() {
 
   return (
     <div>
-      <div className="flex flex-col gap-1">
-        <div className="flex gap-2">
+      <div className="flex flex-col">
+        <div className="flex flex-col md:flex-row gap-2 h-full">
           <div className="flex w-50 flex-col gap-2">
             <Popover open={tintOpen} onOpenChange={setTintOpen}>
               <PopoverTrigger asChild>
@@ -434,11 +445,23 @@ export function Appearance() {
                 onChange={handleTmpColorChange}
               />
             </form>
-            <HexColorPicker color={tmpColor} onChange={setTmpColor} />
+            <HexColorPicker
+              color={tmpColor}
+              onChange={setTmpColor}
+            />
           </div>
-
-          {/* Preview */}
-          <Preview style={previewPalette} />
+          <div className="flex flex-col gap-2 w-full h-auto">
+            <Textarea
+              placeholder="/* Enter your custom CSS here */"
+              value={draftCustomCss}
+              onChange={(e) => setDraftCustomCss(e.target.value)}
+              onBlur={() => {
+                setCustomCss(draftCustomCss);
+                toast.success('Applied custom CSS');
+              }}
+              className="border-1 resize-none h-full"
+            />
+          </div>
         </div>
 
         <br />
@@ -461,14 +484,9 @@ export function Appearance() {
           </form>
         ) : null}
 
-        <Button variant="outline" onClick={() => window.location.reload()}>
-          <Icon.RefreshCw />
-          <p className="w-full text-left">Apply (This will reload the site)</p>
-        </Button>
-
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button className="text-destructive" variant="outline">
+            <Button variant="destructive" className="w-full h-9">
               <Icon.Trash />
               <p className="w-full text-left">Reset color theme</p>
             </Button>
@@ -492,6 +510,8 @@ export function Appearance() {
                   ls.remove("theme_scheme");
                   ls.remove("theme_hex");
                   ls.remove("theme_control");
+                  setCustomCss('');
+                  ls.remove('custom_css');
                   window.location.reload();
                 }}
               >
@@ -914,15 +934,15 @@ export function Mods() {
   return (
     <div className="flex flex-col gap-6 h-full">
       <div>
-        <p className="text-destructive">
+        <p className="text-destructive text-xs md:text-md">
           Mods are not checked by Tensamin or reviewed by moderators!
         </p>
-        <p className="text-destructive">
+        <p className="text-destructive text-xs md:text-md">
           Mods can and probably will try to steal your private key!
         </p>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-col md:flex-row gap-2">
         <input
           ref={addModButtonRef}
           onChange={async (e) => {
@@ -954,7 +974,7 @@ export function Mods() {
         >
           Add Mod
         </Button>
-        <div className="w-full" />
+        <div className="w-full hidden md:block" />
         <Button
           variant="outline"
           onClick={() => {

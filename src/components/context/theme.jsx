@@ -29,6 +29,7 @@ export function ThemeProvider({ children }) {
   let [customHex, setCustomHex] = useState('');
   let [mounted, setMounted] = useState(false);
   let [sidebarRightSide, setSidebarRightSide] = useState(ls.get("theme_sidebar") === "right")
+  let [customCss, setCustomCss] = useState('');
 
   useEffect(() => {
     if (sidebarRightSide) {
@@ -43,6 +44,11 @@ export function ThemeProvider({ children }) {
     let storedHex = ls.get('theme_hex');
     if (storedHex) {
       setCustomHex(storedHex);
+    }
+    // Load persisted Custom CSS
+    let storedCss = ls.get('custom_css');
+    if (typeof storedCss === 'string') {
+      setCustomCss(storedCss);
     }
   }, []);
 
@@ -73,18 +79,43 @@ export function ThemeProvider({ children }) {
           break;
       }
 
+      // Apply custom palette on both html and body so it overrides .dark/.light variable scopes
       for (let [cssVar, value] of Object.entries(palette)) {
-        document.documentElement.style.setProperty(cssVar, value);
+        try {
+          document.documentElement.style.setProperty(cssVar, value);
+          document.body.style.setProperty(cssVar, value);
+        } catch {}
       }
     } else {
       ls.remove('theme_hex');
     }
   }, [customHex, mounted]);
 
+  // Inject Custom CSS into a dedicated <style id="custom-css"> tag and persist
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      let styleEl = document.getElementById('custom-css');
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'custom-css';
+        document.head.appendChild(styleEl);
+      }
+      styleEl.textContent = customCss || '';
+      if (customCss && customCss !== '') {
+        ls.set('custom_css', customCss);
+      } else {
+        ls.remove('custom_css');
+      }
+    } catch {}
+  }, [customCss, mounted]);
+
   return (
     <ThemeContext.Provider value={{
       sidebarRightSide,
       setSidebarRightSide,
+  customCss,
+  setCustomCss,
     }}>
       {children}
     </ThemeContext.Provider>

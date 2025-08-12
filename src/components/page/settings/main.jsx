@@ -1,14 +1,16 @@
 // Package Imports
-import packageJson from "@/../package.json"
-import { useState } from "react"
+import packageJson from "@/../package.json";
+import { useState } from "react";
+import * as Icon from "lucide-react";
 
 // Context Imports
-import { useWebSocketContext } from "@/components/context/websocket"
+import { useWebSocketContext } from "@/components/context/websocket";
 
 // Components
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import * as Page from "@/components/page/settings/pages"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import * as Page from "@/components/page/settings/pages";
 
 // Main
 let settings = [
@@ -52,7 +54,7 @@ export function Main() {
 
     return (
         <div className="w-full h-full flex gap-3">
-            <Card className="p-3 w-45 overflow-auto">
+            <Card className={`relative p-3 w-full md:w-45 overflow-auto ${!isSelectedTrueFalse("") && "hidden md:block"}`}>
                 <CardContent className="flex flex-col gap-2 h-full p-0">
                     {settings.map((item) => (
                         <Button
@@ -60,11 +62,11 @@ export function Main() {
                             variant="outline"
                             key={item.id}
                             onClick={() => select(item.id)}
-                            className={isSelectedClassNames(item.id)}
+                            className={`${isSelectedClassNames(item.id)} text-lg md:text-sm h-11 md:h-9`}
                         >{item.name}</Button>
                     ))}
                 </CardContent>
-                <CardFooter className="p-0">
+                <CardFooter className="absolute bottom-0 left-0 p-0 m-3">
                     <div className="flex flex-col gap-2">
                         <p className="text-foreground/50 text-xs">Version: {packageJson.version}</p>
                         <p className="text-foreground/50 text-xs">Client Ping: {clientPing}ms</p>
@@ -72,11 +74,21 @@ export function Main() {
                     </div>
                 </CardFooter>
             </Card>
-            <Card className="w-full h-full overflow-auto">
+            <Card className={`w-full h-full overflow-auto ${isSelectedTrueFalse("") && "hidden md:block"}`}>
                 {settings.map((item) => (
                     isSelectedTrueFalse(item.id) ? (
                         <CardContent key={item.id} className="h-full flex flex-col">
-                            <p className="text-xl font-bold">{item.name}</p>
+                            <div className="flex items-center">
+                                <Button
+                                    id="back-button"
+                                    variant="outline"
+                                    className="w-7 h-7 mr-1 md:hidden"
+                                    onClick={() => setSelected("")}
+                                >
+                                    <Icon.ArrowLeft />
+                                </Button>
+                                <Label htmlFor="back-button" className="text-xl font-bold">{item.name}</Label>
+                            </div>
                             <br />
                             <item.comp />
                         </CardContent>

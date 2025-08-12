@@ -34,14 +34,11 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { VideoStream } from "@/components/page/voice/parts"
-//import { MiniMiniUserModal } from "@/components/page/root/user-modal/main";
 
 // Main
 export function VoiceControls() {
     let { setPage } = usePageContext();
     let { toggleMute, toggleDeaf, mute, deaf, stream, stopCall, getScreenStream, startScreenStream, stopScreenStream, setStreamResolution, setStreamRefresh, setStreamAudio, streamResolution, streamRefresh, streamAudio } = useCallContext();
-
-    //let [expandUsers, setExpandUsers] = useState(true);
 
     function changeStreamRefresh(event) {
         setStreamRefresh(event);
@@ -59,7 +56,7 @@ export function VoiceControls() {
         <Card className="flex w-full flex-col p-2 gap-2">
             {stream && (
                 <div className="aspect-16/9">
-                    <VideoStream local={true} className="rounded-lg border-1" onPlay={() => {}} />
+                    <VideoStream local={true} className="rounded-lg border-1" onPlay={() => { }} />
                 </div>
             )}
 
@@ -99,6 +96,44 @@ export function VoiceControls() {
                         </Tooltip>
                     </div>
 
+                    <div className="flex flex-row gap-3">
+                        {/* Expand */}
+                        <Tooltip delayDuration={2000}>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    className="h-9 w-9"
+                                    onClick={() => setPage({ name: "voice-expanded", data: "" })}
+                                >
+                                    <Icon.Expand />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Expand</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        {/* Rearrangement */}
+                        <Tooltip delayDuration={2000}>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    className="h-9 w-9"
+                                    onClick={() => setPage({ name: "voice-rearrangement", data: "" })}
+                                >
+                                    <Icon.ReplaceAll />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Rearrangement</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
+                </div>
+
+                <div className="w-full h-auto flex justify-center items-center">
+                    <div className="h-3/4 border-l pl-0.5"></div>
+                </div>
+
+                <div className="flex flex-col gap-3">
                     <div className="flex flex-row gap-3">
                         {/* Stream */}
                         <div>
@@ -234,41 +269,6 @@ export function VoiceControls() {
                             </DropdownMenu>
                         </div>
 
-                        {/* ? */}
-                        <Tooltip delayDuration={2000}>
-                            <TooltipTrigger asChild>
-                                <Button disabled className="h-9 w-9">
-                                    <Icon.Bomb />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>idk</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </div>
-                </div>
-
-                <div className="w-full h-auto flex justify-center items-center">
-                    <div className="h-3/4 border-l pl-0.5"></div>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <div className="flex flex-row gap-3">
-                        {/* Expand */}
-                        <Tooltip delayDuration={2000}>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    className="h-9 w-9"
-                                    onClick={() => setPage({ name: "voice", data: "" })}
-                                >
-                                    <Icon.Expand />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Expand</p>
-                            </TooltipContent>
-                        </Tooltip>
-
                         {/* Exit */}
                         <Tooltip delayDuration={2000}>
                             <TooltipTrigger asChild>
@@ -328,30 +328,6 @@ export function VoiceControls() {
                     </div>
                 </div>
             </div>
-            {/*currentCall.users.length >= 25 ? (
-                <div className="flex items-center gap-2">
-                    <Switch
-                        id="expand-users"
-                        checked={expandUsers}
-                        onCheckedChange={setExpandUsers}
-                    />
-                    <Label htmlFor="expand-users">Expand Users</Label>
-                </div>
-            ) : null}
-            <div className="relative">
-                <div className="flex flex-row flex-wrap justify-start rounded-xl">
-                    <div
-                        className={`min-h-13 max-h-50 flex w-full flex-row flex-wrap justify-start gap-1.5 rounded-xl border-1 px-1.5 py-2.5 ${expandUsers ? "overflow-auto" : "overflow-hidden"
-                            }`}
-                    >
-                        {memoizedUserList}
-                    </div>
-                    <div
-                        hidden={expandUsers}
-                        className="pointer-events-none absolute h-full w-full rounded-xl bg-gradient-to-b from-transparent to-background"
-                    />
-                </div>
-            </div>*/}
         </Card>
     );
 }
