@@ -188,48 +188,54 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
               {display !== "..." || forceLoad ?
                 <p>{forceLoad ? "Debug Mode" : display}</p>
                 :
-                <Skeleton className="mr-20"><p className="invisible">🥴</p></Skeleton>
+                <Skeleton><p className="invisible">Tensamin :3</p></Skeleton>
               }
-              {showIotaStatus && state !== "IOTA_OFFLINE" ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="w-4 text-foreground/20 scale-85 mt-0.5">
-                      <Icon.Activity />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="border-1">
-                    <p>Iota is Online</p>
-                  </TooltipContent>
-                </Tooltip>
-
-              ) : null}
             </div>
             <div className="flex gap-1">
-              {showIotaStatus && state === "IOTA_OFFLINE" ? (
-                <div className="text-destructive flex text-xs">
-                  <div className="scale-90 origin-top-left overflow-ellipsis"><Icon.Activity /></div> Iota is Offline
-                </div>
-              ) : (
-                <p className="text-xs text-foreground/75">{forceLoad ? "Chats wont load!" : status}</p>
-              )}
+              <p className="text-xs text-foreground/75">{forceLoad ? "Chats wont load!" : status}</p>
             </div>
           </div>
         </div>
       </div>
 
+      {showIotaStatus && state === "IOTA_OFFLINE" && (
+        <div className="flex justify-center items-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge
+                variant="destructive"
+                className="w-7 h-7"
+              >
+                <Icon.Activity />
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Iota is Offline</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+
       {showCallActive && (
         <div className="flex justify-center items-center">
-          <Badge
-            className="w-7 h-7"
-            onMouseEnter={() => setCallActiveHover(true)}
-            onMouseLeave={() => setCallActiveHover(false)}
-            onClick={() => {
-              startCall(false, callId, callSecret);
-              setShowCallActive(false);
-            }}
-          >
-            {callActiveHover ? <Icon.PhoneIncoming /> : <Icon.PhoneCall />}
-          </Badge>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge
+                className="w-7 h-7"
+                onMouseEnter={() => setCallActiveHover(true)}
+                onMouseLeave={() => setCallActiveHover(false)}
+                onClick={() => {
+                  startCall(false, callId, callSecret);
+                  setShowCallActive(false);
+                }}
+              >
+                {callActiveHover ? <Icon.PhoneIncoming /> : <Icon.PhoneCall />}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Join call</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       )}
     </div>

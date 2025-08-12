@@ -9,8 +9,8 @@ export function cn(...inputs) {
 }
 
 export let statusColors = {
-  IOTA_OFFLINE: "bg-red-300",
-  USER_OFFLINE: "bg-gray-300",
+  IOTA_OFFLINE: "bg-gray-400",
+  USER_OFFLINE: "bg-gray-400",
   ONLINE: "bg-green-500",
   DND: "bg-red-600",
   IDLE: "bg-yellow-500",
