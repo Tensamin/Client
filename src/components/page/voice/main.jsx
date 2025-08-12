@@ -39,7 +39,7 @@ let TILE_GAP = 16;
 // Main
 export function Main() {
   let { ownUuid, chatsArray } = useUsersContext();
-  let { connected, connectedUsers, streamingUsers, positions, setPositions, directionalAudio, setDirectionalAudio, setCanvasSize } = useCallContext();
+  let { connected, connectedUsers, streamingUsers, positions, setPositions, audioPositions, setAudioPositions, directionalAudio, setDirectionalAudio, setCanvasSize, beginUserDrag, endUserDrag } = useCallContext();
 
   let [inviteOpen, setInviteOpen] = useState(false);
   let [focused, setFocused] = useState("");
@@ -82,6 +82,25 @@ export function Main() {
 
       return next;
     });
+    // Initialize audio positions for new users and cleanup removed
+    setAudioPositions?.((prev) => {
+      try {
+        let next = { ...prev };
+        // Remove stale users
+        Object.keys(next).forEach((id) => {
+          if (!connectedUsers.includes(id)) delete next[id];
+        });
+        // Add any missing users with same starting position as visual
+        connectedUsers.forEach((user) => {
+          if (!next[user] && positions[user]) {
+            next[user] = { ...positions[user] };
+          }
+        });
+        return next;
+      } catch {
+        return prev;
+      }
+    });
   }, [connectedUsers, canvasW, canvasH, setCanvasSize]);
 
   // Drag handlers
@@ -93,6 +112,9 @@ export function Main() {
       let startX = e.clientX;
       let startY = e.clientY;
       let startPos = positions[id] || { x: 0, y: 0 };
+
+      // Inform context we're starting a drag to freeze directional audio updates
+      try { beginUserDrag(id); } catch { }
 
       let handleMove = (ev) => {
         let dx = ev.clientX - startX;
@@ -106,12 +128,14 @@ export function Main() {
       let handleUp = () => {
         window.removeEventListener("pointermove", handleMove);
         window.removeEventListener("pointerup", handleUp);
+        // Inform context that drag ended so it can apply a smooth final update
+        try { endUserDrag(id); } catch { }
       };
 
       window.addEventListener("pointermove", handleMove);
       window.addEventListener("pointerup", handleUp);
     },
-    [positions]
+    [positions, beginUserDrag, endUserDrag]
   );
 
   return (

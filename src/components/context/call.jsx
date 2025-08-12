@@ -106,15 +106,29 @@ export let CallProvider = ({ children }) => {
     let [watchingUsers, setWatchingUsers] = useState([]);
 
     // Directional/Spatial Audio
+    // Visual positions (avatars) move rapidly during drag
     let [positions, setPositions] = useState({});
+    // Audio positions (panners) update only on drag end or when layout commits
+    let [audioPositions, setAudioPositions] = useState({});
     let [directionalAudio, setDirectionalAudio] = useState(false);
     let [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
     let audioContextRef = useRef(null);
     let masterGainRef = useRef(null);
+    let compressorRef = useRef(null);
     let destinationNodeRef = useRef(null);
     let spatialAudioElRef = useRef(null);
     let spatialNodesRef = useRef(new Map());
     let spatialEnabledRef = useRef(false);
+    let useElementRoutingRef = useRef(false);
+    // For smoothing spatial updates
+    let lastPannerUpdateRef = useRef(0);
+    let pannerUpdateIntervalMsRef = useRef(40); // throttle ~25fps to reduce CPU/zipper noise
+    let pannerRampDurationRef = useRef(0.08); // 80ms ramp for smoother motion
+    let pannerFinalRampDurationRef = useRef(0.25); // 250ms ramp after drag end
+    // Track which user(s) are actively being dragged (freeze their audio until release)
+    let draggingIdsRef = useRef(new Set());
+
+    // Helpers to control drag-aware spatial audio from UI (defined after spatial helpers)
 
     // Mic Processing
     let micStreamRef = useRef(null);
@@ -242,37 +256,94 @@ export let CallProvider = ({ children }) => {
 
     // Create or ensure the Web Audio graph exists
     let ensureSpatialAudioGraph = useCallback(() => {
+        // If an instance exists but is closed, drop it so we can recreate
+        try {
+            if (audioContextRef.current && audioContextRef.current.state === 'closed') {
+                audioContextRef.current = null;
+            }
+        } catch { }
         if (!audioContextRef.current) {
             let AC = window.AudioContext || window.webkitAudioContext;
             if (!AC) return;
-            audioContextRef.current = new AC();
+            // Prefer low-latency interactive context
+            try {
+                audioContextRef.current = new AC({ latencyHint: 'interactive' });
+            } catch {
+                audioContextRef.current = new AC();
+            }
         }
         if (!masterGainRef.current && audioContextRef.current) {
             masterGainRef.current = audioContextRef.current.createGain();
-            masterGainRef.current.gain.value = 1.0;
+            masterGainRef.current.gain.value = 0.9; // headroom to reduce clipping
         }
-        if (!destinationNodeRef.current && audioContextRef.current) {
-            destinationNodeRef.current = audioContextRef.current.createMediaStreamDestination();
-        }
-        if (audioContextRef.current && masterGainRef.current && destinationNodeRef.current) {
-            try { masterGainRef.current.disconnect(); } catch { }
-            try { masterGainRef.current.connect(destinationNodeRef.current); } catch { }
-        }
-        // Attach destination stream to hidden audio element for device routing
-        if (spatialAudioElRef.current && destinationNodeRef.current) {
+        if (!compressorRef.current && audioContextRef.current) {
+            let comp = audioContextRef.current.createDynamicsCompressor();
+            // Gentle limiting
             try {
-                if (spatialAudioElRef.current.srcObject !== destinationNodeRef.current.stream) {
-                    spatialAudioElRef.current.srcObject = destinationNodeRef.current.stream;
-                }
-                if (typeof spatialAudioElRef.current.setSinkId === 'function' && currentSinkIdRef.current) {
-                    spatialAudioElRef.current.setSinkId(currentSinkIdRef.current).catch(() => { });
-                }
-            } catch { /* ignore */ }
+                comp.threshold.value = -12;
+                comp.knee.value = 6;
+                comp.ratio.value = 4;
+                comp.attack.value = 0.003;
+                comp.release.value = 0.25;
+            } catch { }
+            compressorRef.current = comp;
         }
+        // Decide routing: direct to device (low latency) vs via HTMLAudioElement (device selection)
+        let sinkSupported = false;
+        try { sinkSupported = typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype; } catch { }
+        let wantsSpecificDevice = Boolean(currentSinkIdRef.current && currentSinkIdRef.current !== 'default');
+        let useElementRouting = sinkSupported && wantsSpecificDevice;
+        useElementRoutingRef.current = useElementRouting;
+
+        // Build or tear down element-based destination accordingly
+        if (useElementRouting) {
+            if (!destinationNodeRef.current && audioContextRef.current) {
+                destinationNodeRef.current = audioContextRef.current.createMediaStreamDestination();
+            }
+            if (audioContextRef.current && masterGainRef.current && compressorRef.current && destinationNodeRef.current) {
+                try { masterGainRef.current.disconnect(); } catch { }
+                try { compressorRef.current.disconnect(); } catch { }
+                try { masterGainRef.current.connect(compressorRef.current).connect(destinationNodeRef.current); } catch { }
+            }
+            // Attach destination stream to hidden audio element for device routing
+            if (spatialAudioElRef.current && destinationNodeRef.current) {
+                try {
+                    if (spatialAudioElRef.current.srcObject !== destinationNodeRef.current.stream) {
+                        spatialAudioElRef.current.srcObject = destinationNodeRef.current.stream;
+                    }
+                    if (typeof spatialAudioElRef.current.setSinkId === 'function' && currentSinkIdRef.current) {
+                        spatialAudioElRef.current.setSinkId(currentSinkIdRef.current).catch(() => { });
+                    }
+                    // Ensure stable playback without pitch artifacts
+                    try { spatialAudioElRef.current.playbackRate = 1.0; } catch { }
+                    try { spatialAudioElRef.current.preservesPitch = true; } catch { }
+                    try { spatialAudioElRef.current.mozPreservesPitch = true; } catch { }
+                    try { spatialAudioElRef.current.webkitPreservesPitch = true; } catch { }
+                    try { spatialAudioElRef.current.playsInline = true; } catch { }
+                } catch { /* ignore */ }
+            }
+        } else {
+            // Direct to audio device output (lowest latency)
+            try { masterGainRef.current.disconnect(); } catch { }
+            try { compressorRef.current.disconnect(); } catch { }
+            try { masterGainRef.current.connect(compressorRef.current).connect(audioContextRef.current.destination); } catch { }
+            // Ensure element is not double-playing
+            if (spatialAudioElRef.current) {
+                try { spatialAudioElRef.current.pause?.(); } catch { }
+                try { spatialAudioElRef.current.srcObject = null; } catch { }
+            }
+        }
+
+        try {
+            if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+                audioContextRef.current.resume();
+            }
+        } catch { }
         // Listener orientation defaults: facing -Z
         try {
             let ctx = audioContextRef.current;
-            let now = ctx.currentTime;
+            if (!ctx) return;
+            let now = ctx.currentTime || 0;
             if (ctx.listener.forwardX) {
                 ctx.listener.forwardX.setValueAtTime(0, now);
                 ctx.listener.forwardY.setValueAtTime(0, now);
@@ -311,7 +382,7 @@ export let CallProvider = ({ children }) => {
             distanceModel: 'inverse',
             refDistance: 1,
             maxDistance: 10000,
-            rolloffFactor: 1,
+            rolloffFactor: 0.8,
             coneInnerAngle: 360,
             coneOuterAngle: 0,
             coneOuterGain: 0,
@@ -321,17 +392,28 @@ export let CallProvider = ({ children }) => {
 
         source.connect(panner).connect(gain).connect(masterGainRef.current);
 
+        // Initial position straight ahead so ramps have a starting point
+        try {
+            let t = ctx.currentTime;
+            if ('positionX' in panner) {
+                panner.positionX.setValueAtTime(0, t);
+                panner.positionY.setValueAtTime(0, t);
+                panner.positionZ.setValueAtTime(-3, t);
+            } else if (panner.setPosition) {
+                panner.setPosition(0, 0, -3);
+            }
+        } catch { /* ignore */ }
+
         let node = { source, panner, gain, stream };
         spatialNodesRef.current.set(userId, node);
         return node;
     }, []);
 
-    // Map 2D positions -> WebAudio 3D and apply to panners
-    let updatePannerPositions = useCallback(() => {
+    // Compute and apply a single user's 3D position to their panner (optionally final long ramp)
+    let applyPannerForUser = useCallback((id, useFinalRamp = false) => {
         if (!audioContextRef.current) return;
-        if (!spatialEnabledRef.current) return;
-        let ids = connectedUsers.filter(Boolean);
-        if (ids.length === 0) return;
+        let nodes = spatialNodesRef.current.get(id);
+        if (!nodes) return;
         // Prefer page/canvas center if available
         let useCanvas = canvasSize && canvasSize.width > 0 && canvasSize.height > 0;
         let centerX = useCanvas ? canvasSize.width / 2 : 0;
@@ -339,50 +421,99 @@ export let CallProvider = ({ children }) => {
         let height = useCanvas ? canvasSize.height : 1;
         let widthHalf = useCanvas ? canvasSize.width / 2 : 1; // for x normalization
 
-        // Fallback: if canvas size unknown, derive from bounding box
+        // Fallback bounds if canvas unknown
         if (!useCanvas) {
             let xs = [], ys = [];
-            ids.forEach((id) => {
-                let pos = positions[id];
-                if (pos) { xs.push(pos.x); ys.push(pos.y); }
+            connectedUsers.forEach((uid) => {
+                let p = audioPositions[uid];
+                if (p) { xs.push(p.x); ys.push(p.y); }
             });
-            if (xs.length === 0) return;
-            let minX = Math.min(...xs), maxX = Math.max(...xs);
-            minY = Math.min(...ys);
-            let maxY = Math.max(...ys);
-            let width = Math.max(1, maxX - minX);
-            height = Math.max(1, maxY - minY);
-            centerX = (minX + maxX) / 2;
-            widthHalf = width / 2;
+            if (xs.length > 0) {
+                let minX = Math.min(...xs), maxX = Math.max(...xs);
+                minY = Math.min(...ys);
+                let maxY = Math.max(...ys);
+                let width = Math.max(1, maxX - minX);
+                height = Math.max(1, maxY - minY);
+                centerX = (minX + maxX) / 2;
+                widthHalf = width / 2;
+            }
         }
 
-        ids.forEach((id) => {
-            let nodes = spatialNodesRef.current.get(id);
-            if (!nodes) return;
-            let pos = positions[id] || { x: centerX, y: minY };
-            // Normalize x to [-1,1] around page center (or fallback center)
-            let xNorm = (pos.x - centerX) / (widthHalf);
-            if (!isFinite(xNorm)) xNorm = 0;
-            xNorm = Math.max(-1, Math.min(1, xNorm));
-            // Map to range [-5, 5]
-            let x = xNorm * 5;
-            // Map y to distance: near at top, far at bottom; listener faces -Z
-            let yNorm = (pos.y - minY) / height; // 0..1
-            if (!isFinite(yNorm)) yNorm = 0.5;
-            // z negative (in front). Between -1 and -5
-            let z = - (1 + yNorm * 4);
-            try {
-                if ('positionX' in nodes.panner) {
-                    let t = audioContextRef.current.currentTime;
-                    nodes.panner.positionX.setValueAtTime(x, t);
-                    nodes.panner.positionY.setValueAtTime(0, t);
-                    nodes.panner.positionZ.setValueAtTime(z, t);
-                } else if (nodes.panner.setPosition) {
-                    nodes.panner.setPosition(x, 0, z);
+    let pos = audioPositions[id] || { x: centerX, y: minY };
+        let xNorm = (pos.x - centerX) / (widthHalf);
+        if (!isFinite(xNorm)) xNorm = 0;
+        xNorm = Math.max(-1, Math.min(1, xNorm));
+        let x = xNorm * 5;
+        let yNorm = (pos.y - minY) / height; // 0..1
+        if (!isFinite(yNorm)) yNorm = 0.5;
+        let z = - (1 + yNorm * 4);
+
+        try {
+            let ctx = audioContextRef.current;
+            let t = ctx.currentTime;
+            let ramp = useFinalRamp ? pannerFinalRampDurationRef.current : pannerRampDurationRef.current;
+            let rampEnd = t + ramp;
+            if ('positionX' in nodes.panner) {
+                let px = nodes.panner.positionX;
+                let py = nodes.panner.positionY;
+                let pz = nodes.panner.positionZ;
+                // Prefer cancelAndHoldAtTime for click-free changes
+                if (px.cancelAndHoldAtTime) {
+                    try { px.cancelAndHoldAtTime(t); } catch { }
+                    try { py.cancelAndHoldAtTime(t); } catch { }
+                    try { pz.cancelAndHoldAtTime(t); } catch { }
+                } else {
+                    try { px.cancelScheduledValues(t); px.setValueAtTime(px.value, t); } catch { }
+                    try { py.cancelScheduledValues(t); py.setValueAtTime(py.value, t); } catch { }
+                    try { pz.cancelScheduledValues(t); pz.setValueAtTime(pz.value, t); } catch { }
                 }
-            } catch { /* ignore */ }
+                px.linearRampToValueAtTime(x, rampEnd);
+                py.linearRampToValueAtTime(0, rampEnd);
+                pz.linearRampToValueAtTime(z, rampEnd);
+            } else if (nodes.panner.setPosition) {
+                nodes.panner.setPosition(x, 0, z);
+            }
+        } catch { /* ignore scheduling errors */ }
+    }, [audioPositions, canvasSize, connectedUsers]);
+
+    // Map 2D positions -> WebAudio 3D and apply to panners, skipping users being dragged
+    let updatePannerPositions = useCallback(() => {
+        if (!audioContextRef.current) return;
+        if (!spatialEnabledRef.current) return;
+        let ids = connectedUsers.filter(Boolean);
+        if (ids.length === 0) return;
+        // Throttle updates to avoid over-scheduling automation and causing crackles
+        let nowMs = performance.now();
+        if (nowMs - lastPannerUpdateRef.current < pannerUpdateIntervalMsRef.current) return;
+        lastPannerUpdateRef.current = nowMs;
+        ids.forEach((id) => {
+            if (draggingIdsRef.current.has(id)) return; // freeze while dragging
+            applyPannerForUser(id, false);
         });
-    }, [connectedUsers, positions, canvasSize]);
+    }, [connectedUsers, applyPannerForUser]);
+
+    // Drag control callbacks (now that helpers are initialized)
+    let beginUserDrag = useCallback((userId) => {
+        try { draggingIdsRef.current.add(userId); } catch { }
+    }, []);
+    let endUserDrag = useCallback((userId) => {
+        try {
+            draggingIdsRef.current.delete(userId);
+            // Commit the visual position to the audio position once on release
+            setAudioPositions((prev) => {
+                let next = { ...prev };
+                let p = positions[userId];
+                if (p) next[userId] = { x: p.x, y: p.y };
+                return next;
+            });
+            // Apply a final smoothed update for the released user
+            if (directionalAudio && spatialEnabledRef.current) {
+                try { ensureSpatialAudioGraph(); } catch { }
+                try { buildSpatialNodesForUser(userId); } catch { }
+                try { applyPannerForUser(userId, true); } catch { }
+            }
+        } catch { /* ignore */ }
+    }, [positions, directionalAudio, ensureSpatialAudioGraph, buildSpatialNodesForUser, applyPannerForUser]);
 
     // Tear down all spatial nodes/graph
     let teardownSpatialGraph = useCallback(async () => {
@@ -394,6 +525,7 @@ export let CallProvider = ({ children }) => {
         });
         spatialNodesRef.current.clear();
         try { masterGainRef.current?.disconnect(); } catch { }
+    try { compressorRef.current?.disconnect(); } catch { }
         try {
             // Detach mixed stream from element
             if (spatialAudioElRef.current) {
@@ -404,6 +536,7 @@ export let CallProvider = ({ children }) => {
         try { await audioContextRef.current?.close(); } catch { }
         audioContextRef.current = null;
         masterGainRef.current = null;
+    compressorRef.current = null;
     }, []);
 
     // When output device changes, reflect on spatial audio element
@@ -413,7 +546,16 @@ export let CallProvider = ({ children }) => {
                 spatialAudioElRef.current.setSinkId(currentSinkIdRef.current).catch(() => { });
             }
         } catch { /* ignore */ }
+        // Re-evaluate routing to minimize latency if default device is used
+        try { ensureSpatialAudioGraph(); } catch { }
     }, [outputDeviceId]);
+
+    // Keep spatial graph alive and refreshed when mic device or sensitivity change
+    useEffect(() => {
+        if (!directionalAudio) return;
+        try { ensureSpatialAudioGraph(); } catch { }
+        try { updatePannerPositions(); } catch { }
+    }, [inputDeviceId, inputSensitivity, directionalAudio]);
 
     // Enable/disable directional audio
     useEffect(() => {
@@ -437,6 +579,30 @@ export let CallProvider = ({ children }) => {
         if (!directionalAudio) return;
         updatePannerPositions();
     }, [positions, directionalAudio, updatePannerPositions]);
+
+    // Also update panners when committed audio positions change
+    useEffect(() => {
+        if (!directionalAudio) return;
+        updatePannerPositions();
+    }, [audioPositions, directionalAudio, updatePannerPositions]);
+
+    // Keep audioPositions in sync with connected users: add new users with their current visual position, remove stale
+    useEffect(() => {
+        setAudioPositions((prev) => {
+            let next = { ...prev };
+            // remove disconnected
+            Object.keys(next).forEach((id) => {
+                if (!connectedUsers.includes(id)) delete next[id];
+            });
+            // add new users
+            connectedUsers.forEach((id) => {
+                if (!next[id] && positions[id]) {
+                    next[id] = { ...positions[id] };
+                }
+            });
+            return next;
+        });
+    }, [connectedUsers, positions]);
 
     // Teardown spatial audio when disconnected
     useEffect(() => {
@@ -1549,8 +1715,12 @@ export let CallProvider = ({ children }) => {
             setInputSensitivity,
             positions,
             setPositions,
+            audioPositions,
+            setAudioPositions,
             canvasSize,
             setCanvasSize,
+            beginUserDrag,
+            endUserDrag,
         }}>
             <div hidden>
                 <audio
