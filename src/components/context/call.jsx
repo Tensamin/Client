@@ -7,7 +7,8 @@ import {
     useEffect,
     useRef,
     useState,
-    useCallback
+    useCallback,
+    useMemo
 } from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { v7 } from "uuid";
@@ -24,21 +25,15 @@ import { useEncryptionContext } from "@/components/context/encryption";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useMessageContext } from "@/components/context/message";
 
-// WebRTC ICE servers config
-let webrtc_servers = {
+// WebRTC ICE servers config (trimmed for faster ICE gathering)
+const webrtc_servers = {
     iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun.l.google.com:5349" },
         { urls: "stun:stun1.l.google.com:3478" },
-        { urls: "stun:stun1.l.google.com:5349" },
-        { urls: "stun:stun2.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:5349" },
-        { urls: "stun:stun3.l.google.com:3478" },
-        { urls: "stun:stun3.l.google.com:5349" },
-        { urls: "stun:stun4.l.google.com:19302" },
-        { urls: "stun:stun4.l.google.com:5349" }
     ],
-    iceCandidatePoolSize: 10,
+    iceCandidatePoolSize: 4,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require',
 };
 
 // Main
@@ -105,30 +100,13 @@ export let CallProvider = ({ children }) => {
     let [streamingUsers, setStreamingUsers] = useState([]);
     let [watchingUsers, setWatchingUsers] = useState([]);
 
-    // Directional/Spatial Audio
-    // Visual positions (avatars) move rapidly during drag
+    // Directional/Spatial Audio (UI state only; functionality removed)
     let [positions, setPositions] = useState({});
-    // Audio positions (panners) update only on drag end or when layout commits
     let [audioPositions, setAudioPositions] = useState({});
     let [directionalAudio, setDirectionalAudio] = useState(false);
     let [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-    let audioContextRef = useRef(null);
-    let masterGainRef = useRef(null);
-    let compressorRef = useRef(null);
     let destinationNodeRef = useRef(null);
     let spatialAudioElRef = useRef(null);
-    let spatialNodesRef = useRef(new Map());
-    let spatialEnabledRef = useRef(false);
-    let useElementRoutingRef = useRef(false);
-    // For smoothing spatial updates
-    let lastPannerUpdateRef = useRef(0);
-    let pannerUpdateIntervalMsRef = useRef(40); // throttle ~25fps to reduce CPU/zipper noise
-    let pannerRampDurationRef = useRef(0.08); // 80ms ramp for smoother motion
-    let pannerFinalRampDurationRef = useRef(0.25); // 250ms ramp after drag end
-    // Track which user(s) are actively being dragged (freeze their audio until release)
-    let draggingIdsRef = useRef(new Set());
-
-    // Helpers to control drag-aware spatial audio from UI (defined after spatial helpers)
 
     // Mic Processing
     let micStreamRef = useRef(null);
@@ -138,455 +116,28 @@ export let CallProvider = ({ children }) => {
         let n = Number.isFinite(Number(v)) ? Number(v) : 70;
         return Math.min(100, Math.max(0, n));
     });
+    // keep noop refs for cleanup compat
     let micCtxRef = useRef(null);
-    let micSourceRef = useRef(null);
-    let micAnalyserRef = useRef(null);
-    let micGateGainRef = useRef(null);
-    let micDestRef = useRef(null);
     let micMeterTimerRef = useRef(null);
-    let micGateOpenRef = useRef(false);
-    let micLastBelowRef = useRef(0);
-    let micThresholdRef = useRef(0.02);
-
-    // ==========================
-    //  Mic Processing Functions
-    // ==========================
-    let computeThresholdFromSensitivity = useCallback((s) => {
-        // Map 0..100 (low..high sensitivity) to RMS 0.1..0.003 (high..low threshold)
-        // Higher sensitivity => lower threshold
-        let minTh = 0.003; // most sensitive
-        let maxTh = 0.1;   // least sensitive
-        let t = (100 - Math.min(100, Math.max(0, s))) / 100; // 1..0 as sensitivity grows
-        // Exponential interpolate for perceptual smoothness
-        let th = Math.exp(Math.log(maxTh) * t + Math.log(minTh) * (1 - t));
-        return th;
-    }, []);
-
-    // Update threshold whenever sensitivity changes
+    // Persist input sensitivity for UI only (no processing)
     useEffect(() => {
-        micThresholdRef.current = computeThresholdFromSensitivity(inputSensitivity);
         ls.set("call_input_sensitivity", String(inputSensitivity));
-    }, [inputSensitivity, computeThresholdFromSensitivity]);
-
-    // Build or rebuild mic processing graph for a raw getUserMedia() stream
-    let setupMicProcessing = useCallback(async (rawStream) => {
-        // Cleanup old graph
-        try { clearInterval(micMeterTimerRef.current); } catch { }
-        micMeterTimerRef.current = null;
-        try { micCtxRef.current?.close(); } catch { }
-        micCtxRef.current = null;
-        micSourceRef.current = null;
-        micAnalyserRef.current = null;
-        micGateGainRef.current = null;
-        micDestRef.current = null;
-
-        // Create new graph
-        let AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) {
-            // Fallback: no processing, use raw stream
-            micStreamRef.current = rawStream;
-            return rawStream;
-        }
-
-        let ctx = new AC();
-        micCtxRef.current = ctx;
-
-        let src = ctx.createMediaStreamSource(rawStream);
-        let gateGain = ctx.createGain();
-        gateGain.gain.value = 1.0;
-        let analyser = ctx.createAnalyser();
-        analyser.fftSize = 512; // lower = less latency
-        analyser.smoothingTimeConstant = 0.05; // faster response
-        let dest = ctx.createMediaStreamDestination();
-
-        // Connect: source -> gate -> dest
-        src.connect(gateGain).connect(dest);
-        // Branch for analysis (doesn't affect signal)
-        src.connect(analyser);
-
-        micSourceRef.current = src;
-        micGateGainRef.current = gateGain;
-        micAnalyserRef.current = analyser;
-        micDestRef.current = dest;
-
-        // Start meter + gate loop
-        let buffer = new Float32Array(analyser.fftSize);
-        micGateOpenRef.current = false;
-        micLastBelowRef.current = performance.now();
-        let holdMs = 50; // much shorter hold for fast close
-        let closeGain = 0.0001;
-
-        micMeterTimerRef.current = setInterval(() => {
-            try {
-                analyser.getFloatTimeDomainData(buffer);
-                let sumSq = 0;
-                for (let i = 0; i < buffer.length; i++) {
-                    let v = buffer[i];
-                    sumSq += v * v;
-                }
-                let rms = Math.sqrt(sumSq / buffer.length);
-                let threshold = micThresholdRef.current;
-
-                let now = performance.now();
-                if (!micGateOpenRef.current) {
-                    if (rms >= threshold) {
-                        micGateOpenRef.current = true;
-                        micGateGainRef.current.gain.setValueAtTime(1.0, ctx.currentTime); // instant open
-                    }
-                } else {
-                    if (rms < threshold * 0.7) { // close with a bit of hysteresis
-                        if ((now - micLastBelowRef.current) >= holdMs) {
-                            micGateOpenRef.current = false;
-                            micGateGainRef.current.gain.setValueAtTime(closeGain, ctx.currentTime); // instant close
-                        }
-                    } else {
-                        micLastBelowRef.current = now;
-                    }
-                }
-            } catch { /* ignore meter errors */ }
-        }, 20); // faster polling
-
-        // Use processed stream for sending
-        let processed = dest.stream;
-        // Respect current mute state
-        processed.getAudioTracks().forEach(t => { t.enabled = !mute; });
-        micStreamRef.current = processed;
-        return processed;
-    }, [mute]);
-
-    // Create or ensure the Web Audio graph exists
-    let ensureSpatialAudioGraph = useCallback(() => {
-        // If an instance exists but is closed, drop it so we can recreate
-        try {
-            if (audioContextRef.current && audioContextRef.current.state === 'closed') {
-                audioContextRef.current = null;
-            }
-        } catch { }
-        if (!audioContextRef.current) {
-            let AC = window.AudioContext || window.webkitAudioContext;
-            if (!AC) return;
-            // Prefer low-latency interactive context
-            try {
-                audioContextRef.current = new AC({ latencyHint: 'interactive' });
-            } catch {
-                audioContextRef.current = new AC();
-            }
-        }
-        if (!masterGainRef.current && audioContextRef.current) {
-            masterGainRef.current = audioContextRef.current.createGain();
-            masterGainRef.current.gain.value = 0.9; // headroom to reduce clipping
-        }
-        if (!compressorRef.current && audioContextRef.current) {
-            let comp = audioContextRef.current.createDynamicsCompressor();
-            // Gentle limiting
-            try {
-                comp.threshold.value = -12;
-                comp.knee.value = 6;
-                comp.ratio.value = 4;
-                comp.attack.value = 0.003;
-                comp.release.value = 0.25;
-            } catch { }
-            compressorRef.current = comp;
-        }
-        // Decide routing: direct to device (low latency) vs via HTMLAudioElement (device selection)
-        let sinkSupported = false;
-        try { sinkSupported = typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype; } catch { }
-        let wantsSpecificDevice = Boolean(currentSinkIdRef.current && currentSinkIdRef.current !== 'default');
-        let useElementRouting = sinkSupported && wantsSpecificDevice;
-        useElementRoutingRef.current = useElementRouting;
-
-        // Build or tear down element-based destination accordingly
-        if (useElementRouting) {
-            if (!destinationNodeRef.current && audioContextRef.current) {
-                destinationNodeRef.current = audioContextRef.current.createMediaStreamDestination();
-            }
-            if (audioContextRef.current && masterGainRef.current && compressorRef.current && destinationNodeRef.current) {
-                try { masterGainRef.current.disconnect(); } catch { }
-                try { compressorRef.current.disconnect(); } catch { }
-                try { masterGainRef.current.connect(compressorRef.current).connect(destinationNodeRef.current); } catch { }
-            }
-            // Attach destination stream to hidden audio element for device routing
-            if (spatialAudioElRef.current && destinationNodeRef.current) {
-                try {
-                    if (spatialAudioElRef.current.srcObject !== destinationNodeRef.current.stream) {
-                        spatialAudioElRef.current.srcObject = destinationNodeRef.current.stream;
-                    }
-                    if (typeof spatialAudioElRef.current.setSinkId === 'function' && currentSinkIdRef.current) {
-                        spatialAudioElRef.current.setSinkId(currentSinkIdRef.current).catch(() => { });
-                    }
-                    // Ensure stable playback without pitch artifacts
-                    try { spatialAudioElRef.current.playbackRate = 1.0; } catch { }
-                    try { spatialAudioElRef.current.preservesPitch = true; } catch { }
-                    try { spatialAudioElRef.current.mozPreservesPitch = true; } catch { }
-                    try { spatialAudioElRef.current.webkitPreservesPitch = true; } catch { }
-                    try { spatialAudioElRef.current.playsInline = true; } catch { }
-                } catch { /* ignore */ }
-            }
-        } else {
-            // Direct to audio device output (lowest latency)
-            try { masterGainRef.current.disconnect(); } catch { }
-            try { compressorRef.current.disconnect(); } catch { }
-            try { masterGainRef.current.connect(compressorRef.current).connect(audioContextRef.current.destination); } catch { }
-            // Ensure element is not double-playing
-            if (spatialAudioElRef.current) {
-                try { spatialAudioElRef.current.pause?.(); } catch { }
-                try { spatialAudioElRef.current.srcObject = null; } catch { }
-            }
-        }
-
-        try {
-            if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-                audioContextRef.current.resume();
-            }
-        } catch { }
-        // Listener orientation defaults: facing -Z
-        try {
-            let ctx = audioContextRef.current;
-            if (!ctx) return;
-            let now = ctx.currentTime || 0;
-            if (ctx.listener.forwardX) {
-                ctx.listener.forwardX.setValueAtTime(0, now);
-                ctx.listener.forwardY.setValueAtTime(0, now);
-                ctx.listener.forwardZ.setValueAtTime(-1, now);
-                ctx.listener.upX.setValueAtTime(0, now);
-                ctx.listener.upY.setValueAtTime(1, now);
-                ctx.listener.upZ.setValueAtTime(0, now);
-            } else if (ctx.listener.setOrientation) {
-                ctx.listener.setOrientation(0, 0, -1, 0, 1, 0);
-            }
-        } catch { /* ignore */ }
-    }, []);
-
-    // Build spatial nodes for a specific user stream
-    let buildSpatialNodesForUser = useCallback((userId) => {
-        if (!audioContextRef.current || !masterGainRef.current) return;
-        let stream = audioStreamsRefs.current.get(userId);
-        if (!stream || !(stream instanceof MediaStream)) return;
-
-        // If already built and same stream object, skip
-        let existing = spatialNodesRef.current.get(userId);
-        if (existing && existing.stream === stream) return existing;
-
-        // Clean previous if any
-        if (existing) {
-            try { existing.source.disconnect(); } catch { }
-            try { existing.panner.disconnect(); } catch { }
-            try { existing.gain.disconnect(); } catch { }
-            spatialNodesRef.current.delete(userId);
-        }
-
-        let ctx = audioContextRef.current;
-        let source = ctx.createMediaStreamSource(stream);
-        let panner = new PannerNode(ctx, {
-            panningModel: 'HRTF',
-            distanceModel: 'inverse',
-            refDistance: 1,
-            maxDistance: 10000,
-            rolloffFactor: 0.8,
-            coneInnerAngle: 360,
-            coneOuterAngle: 0,
-            coneOuterGain: 0,
-        });
-        let gain = ctx.createGain();
-        gain.gain.value = 1.0;
-
-        source.connect(panner).connect(gain).connect(masterGainRef.current);
-
-        // Initial position straight ahead so ramps have a starting point
-        try {
-            let t = ctx.currentTime;
-            if ('positionX' in panner) {
-                panner.positionX.setValueAtTime(0, t);
-                panner.positionY.setValueAtTime(0, t);
-                panner.positionZ.setValueAtTime(-3, t);
-            } else if (panner.setPosition) {
-                panner.setPosition(0, 0, -3);
-            }
-        } catch { /* ignore */ }
-
-        let node = { source, panner, gain, stream };
-        spatialNodesRef.current.set(userId, node);
-        return node;
-    }, []);
-
-    // Compute and apply a single user's 3D position to their panner (optionally final long ramp)
-    let applyPannerForUser = useCallback((id, useFinalRamp = false) => {
-        if (!audioContextRef.current) return;
-        let nodes = spatialNodesRef.current.get(id);
-        if (!nodes) return;
-        // Prefer page/canvas center if available
-        let useCanvas = canvasSize && canvasSize.width > 0 && canvasSize.height > 0;
-        let centerX = useCanvas ? canvasSize.width / 2 : 0;
-        let minY = 0;
-        let height = useCanvas ? canvasSize.height : 1;
-        let widthHalf = useCanvas ? canvasSize.width / 2 : 1; // for x normalization
-
-        // Fallback bounds if canvas unknown
-        if (!useCanvas) {
-            let xs = [], ys = [];
-            connectedUsers.forEach((uid) => {
-                let p = audioPositions[uid];
-                if (p) { xs.push(p.x); ys.push(p.y); }
-            });
-            if (xs.length > 0) {
-                let minX = Math.min(...xs), maxX = Math.max(...xs);
-                minY = Math.min(...ys);
-                let maxY = Math.max(...ys);
-                let width = Math.max(1, maxX - minX);
-                height = Math.max(1, maxY - minY);
-                centerX = (minX + maxX) / 2;
-                widthHalf = width / 2;
-            }
-        }
-
-    let pos = audioPositions[id] || { x: centerX, y: minY };
-        let xNorm = (pos.x - centerX) / (widthHalf);
-        if (!isFinite(xNorm)) xNorm = 0;
-        xNorm = Math.max(-1, Math.min(1, xNorm));
-        let x = xNorm * 5;
-        let yNorm = (pos.y - minY) / height; // 0..1
-        if (!isFinite(yNorm)) yNorm = 0.5;
-        let z = - (1 + yNorm * 4);
-
-        try {
-            let ctx = audioContextRef.current;
-            let t = ctx.currentTime;
-            let ramp = useFinalRamp ? pannerFinalRampDurationRef.current : pannerRampDurationRef.current;
-            let rampEnd = t + ramp;
-            if ('positionX' in nodes.panner) {
-                let px = nodes.panner.positionX;
-                let py = nodes.panner.positionY;
-                let pz = nodes.panner.positionZ;
-                // Prefer cancelAndHoldAtTime for click-free changes
-                if (px.cancelAndHoldAtTime) {
-                    try { px.cancelAndHoldAtTime(t); } catch { }
-                    try { py.cancelAndHoldAtTime(t); } catch { }
-                    try { pz.cancelAndHoldAtTime(t); } catch { }
-                } else {
-                    try { px.cancelScheduledValues(t); px.setValueAtTime(px.value, t); } catch { }
-                    try { py.cancelScheduledValues(t); py.setValueAtTime(py.value, t); } catch { }
-                    try { pz.cancelScheduledValues(t); pz.setValueAtTime(pz.value, t); } catch { }
-                }
-                px.linearRampToValueAtTime(x, rampEnd);
-                py.linearRampToValueAtTime(0, rampEnd);
-                pz.linearRampToValueAtTime(z, rampEnd);
-            } else if (nodes.panner.setPosition) {
-                nodes.panner.setPosition(x, 0, z);
-            }
-        } catch { /* ignore scheduling errors */ }
-    }, [audioPositions, canvasSize, connectedUsers]);
-
-    // Map 2D positions -> WebAudio 3D and apply to panners, skipping users being dragged
-    let updatePannerPositions = useCallback(() => {
-        if (!audioContextRef.current) return;
-        if (!spatialEnabledRef.current) return;
-        let ids = connectedUsers.filter(Boolean);
-        if (ids.length === 0) return;
-        // Throttle updates to avoid over-scheduling automation and causing crackles
-        let nowMs = performance.now();
-        if (nowMs - lastPannerUpdateRef.current < pannerUpdateIntervalMsRef.current) return;
-        lastPannerUpdateRef.current = nowMs;
-        ids.forEach((id) => {
-            if (draggingIdsRef.current.has(id)) return; // freeze while dragging
-            applyPannerForUser(id, false);
-        });
-    }, [connectedUsers, applyPannerForUser]);
-
-    // Drag control callbacks (now that helpers are initialized)
-    let beginUserDrag = useCallback((userId) => {
-        try { draggingIdsRef.current.add(userId); } catch { }
+    }, [inputSensitivity]);
+    // Drag callbacks (no audio side-effects)
+    let beginUserDrag = useCallback((_userId) => {
+        // intentionally no-op (UI may still call this)
     }, []);
     let endUserDrag = useCallback((userId) => {
-        try {
-            draggingIdsRef.current.delete(userId);
-            // Commit the visual position to the audio position once on release
-            setAudioPositions((prev) => {
-                let next = { ...prev };
-                let p = positions[userId];
-                if (p) next[userId] = { x: p.x, y: p.y };
-                return next;
-            });
-            // Apply a final smoothed update for the released user
-            if (directionalAudio && spatialEnabledRef.current) {
-                try { ensureSpatialAudioGraph(); } catch { }
-                try { buildSpatialNodesForUser(userId); } catch { }
-                try { applyPannerForUser(userId, true); } catch { }
-            }
-        } catch { /* ignore */ }
-    }, [positions, directionalAudio, ensureSpatialAudioGraph, buildSpatialNodesForUser, applyPannerForUser]);
-
-    // Tear down all spatial nodes/graph
-    let teardownSpatialGraph = useCallback(async () => {
-        spatialEnabledRef.current = false;
-        spatialNodesRef.current.forEach((nodes, id) => {
-            try { nodes.source.disconnect(); } catch { }
-            try { nodes.panner.disconnect(); } catch { }
-            try { nodes.gain.disconnect(); } catch { }
+        // keep audioPositions in sync for UI consumers
+        setAudioPositions((prev) => {
+            let next = { ...prev };
+            let p = positions[userId];
+            if (p) next[userId] = { x: p.x, y: p.y };
+            return next;
         });
-        spatialNodesRef.current.clear();
-        try { masterGainRef.current?.disconnect(); } catch { }
-    try { compressorRef.current?.disconnect(); } catch { }
-        try {
-            // Detach mixed stream from element
-            if (spatialAudioElRef.current) {
-                spatialAudioElRef.current.srcObject = null;
-            }
-            destinationNodeRef.current = null;
-        } catch { }
-        try { await audioContextRef.current?.close(); } catch { }
-        audioContextRef.current = null;
-        masterGainRef.current = null;
-    compressorRef.current = null;
-    }, []);
+    }, [positions]);
 
-    // When output device changes, reflect on spatial audio element
-    useEffect(() => {
-        try {
-            if (spatialAudioElRef.current && typeof spatialAudioElRef.current.setSinkId === 'function' && currentSinkIdRef.current) {
-                spatialAudioElRef.current.setSinkId(currentSinkIdRef.current).catch(() => { });
-            }
-        } catch { /* ignore */ }
-        // Re-evaluate routing to minimize latency if default device is used
-        try { ensureSpatialAudioGraph(); } catch { }
-    }, [outputDeviceId]);
-
-    // Keep spatial graph alive and refreshed when mic device or sensitivity change
-    useEffect(() => {
-        if (!directionalAudio) return;
-        try { ensureSpatialAudioGraph(); } catch { }
-        try { updatePannerPositions(); } catch { }
-    }, [inputDeviceId, inputSensitivity, directionalAudio]);
-
-    // Enable/disable directional audio
-    useEffect(() => {
-        if (!connected) return;
-        if (directionalAudio) {
-            ensureSpatialAudioGraph();
-            spatialEnabledRef.current = true;
-            // Build nodes for current users
-            connectedUsers.forEach((id) => {
-                if (id) buildSpatialNodesForUser(id);
-            });
-            updatePannerPositions();
-        } else {
-            teardownSpatialGraph();
-        }
-        // Also mute/unmute the per-user elements via volume prop handled in JSX.
-    }, [directionalAudio, connected, connectedUsers, ensureSpatialAudioGraph, buildSpatialNodesForUser, updatePannerPositions, teardownSpatialGraph]);
-
-    // Update panner positions when the layout changes
-    useEffect(() => {
-        if (!directionalAudio) return;
-        updatePannerPositions();
-    }, [positions, directionalAudio, updatePannerPositions]);
-
-    // Also update panners when committed audio positions change
-    useEffect(() => {
-        if (!directionalAudio) return;
-        updatePannerPositions();
-    }, [audioPositions, directionalAudio, updatePannerPositions]);
-
-    // Keep audioPositions in sync with connected users: add new users with their current visual position, remove stale
+    // Keep audioPositions in sync with connected users for UI-only state: add new users/remove stale
     useEffect(() => {
         setAudioPositions((prev) => {
             let next = { ...prev };
@@ -604,66 +155,84 @@ export let CallProvider = ({ children }) => {
         });
     }, [connectedUsers, positions]);
 
-    // Teardown spatial audio when disconnected
-    useEffect(() => {
-        if (!connected) {
-            try { teardownSpatialGraph(); } catch { }
-        }
-    }, [connected, teardownSpatialGraph]);
-
     let applySinkToAllAudios = useCallback(async (sinkId) => {
         try {
             let audios = Array.from(document.querySelectorAll('audio'));
             await Promise.all(audios.map(async (el) => {
                 if (typeof el.setSinkId === 'function' && sinkId) {
-                    try { await el.setSinkId(sinkId); } catch { /* ignore */ }
+                    try {
+                        await el.setSinkId(sinkId);
+                        try { el.dataset.sinkApplied = sinkId; } catch { /* ignore */ }
+                    } catch { /* ignore */ }
                 }
             }));
         } catch { /* ignore */ }
     }, []);
 
-    // Output device: initialize, persist, and enforce globally with a persistent observer
+    // Output device: init from storage once
     useEffect(() => {
-        // Initialize from storage
         if (outputDeviceId === null) {
             let output = ls.get("call_output");
             setOutput(output || "default");
-            return;
         }
+    }, [outputDeviceId]);
 
-        // Persist selection
+    // Persist and apply sink changes
+    useEffect(() => {
+        if (!outputDeviceId) return;
         ls.set("call_output", outputDeviceId);
         currentSinkIdRef.current = outputDeviceId;
-
-        // Apply to all existing audio tags
         applySinkToAllAudios(outputDeviceId);
+    }, [outputDeviceId, applySinkToAllAudios]);
 
-        // Start or update a persistent MutationObserver
-        if (!sinkObserverRef.current) {
+    // Persistent MutationObserver (created once)
+    useEffect(() => {
+        if (sinkObserverRef.current) return;
+        try {
+            const processAudio = (el) => {
+                try {
+                    if (!el || el.dataset?.sinkApplied === currentSinkIdRef.current) return;
+                    if (typeof el.setSinkId === 'function' && currentSinkIdRef.current) {
+                        el.setSinkId(currentSinkIdRef.current).catch(() => { /* ignore */ });
+                        el.dataset.sinkApplied = currentSinkIdRef.current;
+                    }
+                } catch { /* ignore */ }
+            };
+
+            let rafId = null;
+            let pending = [];
+            const schedule = () => {
+                if (rafId) return;
+                rafId = requestAnimationFrame(() => {
+                    let batch = pending;
+                    pending = [];
+                    rafId = null;
+                    for (let node of batch) {
+                        if (node instanceof HTMLElement) {
+                            node.querySelectorAll('audio').forEach(processAudio);
+                        } else if (node instanceof HTMLMediaElement && node.tagName.toLowerCase() === 'audio') {
+                            processAudio(node);
+                        }
+                    }
+                });
+            };
+
             sinkObserverRef.current = new MutationObserver((mutations) => {
                 for (let m of mutations) {
                     m.addedNodes.forEach(node => {
-                        try {
-                            if (node instanceof HTMLElement) {
-                                node.querySelectorAll('audio').forEach(el => {
-                                    if (typeof el.setSinkId === 'function' && currentSinkIdRef.current) {
-                                        el.setSinkId(currentSinkIdRef.current).catch(() => { });
-                                    }
-                                });
-                            } else if (node instanceof HTMLMediaElement) {
-                                if (node.tagName.toLowerCase() === 'audio' && typeof node.setSinkId === 'function' && currentSinkIdRef.current) {
-                                    node.setSinkId(currentSinkIdRef.current).catch(() => { });
-                                }
-                            }
-                        } catch { /* ignore */ }
+                        pending.push(node);
                     });
                 }
+                schedule();
             });
-            try {
-                sinkObserverRef.current.observe(document.body, { childList: true, subtree: true });
-            } catch { /* ignore */ }
-        }
-    }, [outputDeviceId, applySinkToAllAudios]);
+            sinkObserverRef.current.observe(document.body, { childList: true, subtree: true });
+            return () => {
+                try { cancelAnimationFrame(rafId); } catch { }
+                try { sinkObserverRef.current?.disconnect(); } catch { }
+                sinkObserverRef.current = null;
+            };
+        } catch { /* ignore */ }
+    }, []);
 
     // Input device: initialize from storage and live-switch mic stream across PCs
     let switchMicInput = useCallback(async (preferredId) => {
@@ -685,11 +254,12 @@ export let CallProvider = ({ children }) => {
             try { micRawStreamRef.current?.getTracks().forEach(tr => tr.stop()); } catch { }
             micRawStreamRef.current = rawStream;
 
-            // Build processing graph and get processed stream
-            let processedStream = await setupMicProcessing(rawStream);
+            // Use raw stream directly (no sensitivity gating). Respect current mute.
+            rawStream.getAudioTracks().forEach(t => { t.enabled = !mute; });
+            micStreamRef.current = rawStream;
 
-            // Swap tracks in existing PCs to processed track
-            let newTrack = processedStream?.getAudioTracks?.()[0];
+            // Swap tracks in existing PCs to raw track
+            let newTrack = rawStream?.getAudioTracks?.()[0];
             if (newTrack) {
                 for (let pc of micRefs.current.values()) {
                     try {
@@ -697,7 +267,7 @@ export let CallProvider = ({ children }) => {
                         if (sender) {
                             await sender.replaceTrack(newTrack);
                         } else {
-                            pc.addTrack(newTrack, processedStream);
+                            pc.addTrack(newTrack, rawStream);
                         }
                     } catch { /* ignore per-peer errors */ }
                 }
@@ -705,7 +275,7 @@ export let CallProvider = ({ children }) => {
         } catch (e) {
             logFunction(`Failed to switch mic input: ${e.message}`, 'error');
         }
-    }, [mute, setupMicProcessing]);
+    }, [mute]);
 
     useEffect(() => {
         if (inputDeviceId === null) {
@@ -815,16 +385,6 @@ export let CallProvider = ({ children }) => {
                 break;
 
             case "client_closed":
-                // Clean up spatial nodes for this user if present
-                try {
-                    let nodes = spatialNodesRef.current.get(message.data.user_id);
-                    if (nodes) {
-                        try { nodes.source.disconnect(); } catch { }
-                        try { nodes.panner.disconnect(); } catch { }
-                        try { nodes.gain.disconnect(); } catch { }
-                        spatialNodesRef.current.delete(message.data.user_id);
-                    }
-                } catch { /* ignore */ }
                 if (screenRefs.current.has(message.data.user_id)) {
                     let screenPc = screenRefs.current.get(message.data.user_id);
                     screenPc.close();
@@ -1101,10 +661,11 @@ export let CallProvider = ({ children }) => {
         } else {
             logFunction("Call WebSocket not connected", "warning", "Voice WebSocket:");
         }
-    }, [sendMessage, connected]);
+    }, [sendMessage, readyState]);
 
     // Start Screen Stream
     let startScreenStream = useCallback(async () => {
+        if (stream || screenStreamRef.current) return screenStreamRef.current;
         try {
             let [wStr, hStr] = String(streamResolution).split("x");
             let widthNum = parseInt(wStr, 10) || undefined;
@@ -1120,7 +681,6 @@ export let CallProvider = ({ children }) => {
                 audio: streamAudio
             });
 
-            console.log(stream)
 
             screenStreamRef.current = stream;
             setStream(true);
@@ -1259,27 +819,40 @@ export let CallProvider = ({ children }) => {
         setStream(false);
     }, [ownUuid, send])
 
-    // Update Stream
-    let updateStream = useCallback(async () => {
-        if (!stream) return;
-        let videoTracks = screenStreamRef.current?.getVideoTracks?.() || [];
-        if (videoTracks.length === 0) return;
-        let track = videoTracks[0];
+    // Memoize parsed stream settings
+    const parsedStreamSettings = useMemo(() => {
         let [wStr, hStr] = String(streamResolution).split("x");
-        let widthNum = parseInt(wStr, 10) || undefined;
-        let heightNum = parseInt(hStr, 10) || undefined;
-        let frameNum = parseInt(String(streamRefresh), 10) || undefined;
-        // Apply constraints to the video track only
+        return {
+            widthNum: parseInt(wStr, 10) || undefined,
+            heightNum: parseInt(hStr, 10) || undefined,
+            frameNum: parseInt(String(streamRefresh), 10) || undefined,
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [streamResolution, streamRefresh]);
+
+    // Debounced Update Stream constraints
+    let updateStream = useCallback(() => {
+        if (!stream) return;
+        let track = screenStreamRef.current?.getVideoTracks?.()?.[0];
+        if (!track) return;
+        let { widthNum, heightNum, frameNum } = parsedStreamSettings;
         let constraints = {};
         if (frameNum) constraints.frameRate = { ideal: frameNum, max: frameNum };
         if (widthNum) constraints.width = { ideal: widthNum, max: widthNum };
         if (heightNum) constraints.height = { ideal: heightNum, max: heightNum };
-        try {
-            await track.applyConstraints(constraints);
-        } catch (err) {
-            log(err.message, "showError");
-        }
-    }, [stream, streamResolution, streamRefresh])
+
+        // debounce via rAF + microtask to collapse bursts
+        let handle = requestAnimationFrame(() => {
+            Promise.resolve().then(async () => {
+                try {
+                    await track.applyConstraints(constraints);
+                } catch (err) {
+                    log(err.message, "showError");
+                }
+            });
+        });
+        return () => cancelAnimationFrame(handle);
+    }, [stream, parsedStreamSettings]);
 
     // Create P2P Connection
     let createP2PConnection = useCallback(async (id, isInitiator = false, isScreenShare = false) => {
@@ -1401,12 +974,6 @@ export let CallProvider = ({ children }) => {
                     logFunction(`Audio element not yet available for user ${id}, will be set when element is created`, "debug");
                 }
 
-                // If spatial audio is enabled, make sure this user's stream is spatialized
-                if (spatialEnabledRef.current) {
-                    try { ensureSpatialAudioGraph(); } catch { }
-                    try { buildSpatialNodesForUser(id); } catch { }
-                    try { updatePannerPositions(); } catch { }
-                }
             }
         };
 
@@ -1487,7 +1054,7 @@ export let CallProvider = ({ children }) => {
                 });
 
                 if (!isScreenShare) {
-                    setTimeout(() => {
+                    requestAnimationFrame(() => {
                         let audioElement = audioRefs.current.get(id);
                         let stream = audioStreamsRefs.current.get(id);
                         if (audioElement && stream && stream instanceof MediaStream) {
@@ -1496,14 +1063,7 @@ export let CallProvider = ({ children }) => {
                         } else if (audioElement && stream) {
                             logFunction(`Invalid stream type for user ${id}: ${typeof stream}`, "warning");
                         }
-
-                        // Also wire spatial node if enabled
-                        if (spatialEnabledRef.current) {
-                            try { ensureSpatialAudioGraph(); } catch { }
-                            try { buildSpatialNodesForUser(id); } catch { }
-                            try { updatePannerPositions(); } catch { }
-                        }
-                    }, 100);
+                    });
                 }
             }
         };
@@ -1643,8 +1203,9 @@ export let CallProvider = ({ children }) => {
 
     // Update Stream when Refresh or Resolution changes (video)
     useEffect(() => {
-        updateStream();
-    }, [updateStream, streamRefresh, streamResolution])
+        let cancel = updateStream();
+        return () => { try { cancel?.(); } catch { } };
+    }, [updateStream])
 
     // Unmount Cleanup
     useEffect(() => {
@@ -1663,8 +1224,7 @@ export let CallProvider = ({ children }) => {
         };
     }, []);
 
-    return (
-        <CallContext.Provider value={{
+    const contextValue = useMemo(() => ({
             callId,
             setCallId,
             callSecret,
@@ -1721,7 +1281,52 @@ export let CallProvider = ({ children }) => {
             setCanvasSize,
             beginUserDrag,
             endUserDrag,
-        }}>
+    }), [
+        callId,
+        callSecret,
+        send,
+        clientPing,
+        connected,
+        startCall,
+        stopCall,
+        invitedToCall,
+        inviteData,
+        mute,
+        toggleMute,
+        deaf,
+        toggleDeaf,
+        stream,
+        streamResolution,
+        streamRefresh,
+        streamAudio,
+        startScreenStream,
+        stopScreenStream,
+        getScreenStream,
+        watchingUsers,
+        setWatchingUsers,
+        createP2PConnection,
+        connectedUsers,
+        streamingUsers,
+        inputDeviceId,
+        setInput,
+        outputDeviceId,
+        setOutput,
+        directionalAudio,
+        setDirectionalAudio,
+        inputSensitivity,
+        setInputSensitivity,
+        positions,
+        setPositions,
+        audioPositions,
+        setAudioPositions,
+        canvasSize,
+        setCanvasSize,
+        beginUserDrag,
+        endUserDrag,
+    ]);
+
+    return (
+        <CallContext.Provider value={contextValue}>
             <div hidden>
                 <audio
                     ref={(el) => {
@@ -1760,7 +1365,7 @@ export let CallProvider = ({ children }) => {
                             }
                         }}
                         autoPlay
-                        muted={deaf || directionalAudio}
+                        muted={deaf}
                     />
                 )) : null}
             </div>
