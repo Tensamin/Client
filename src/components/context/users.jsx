@@ -32,6 +32,13 @@ export function UsersProvider({ children }) {
 	let [userStates, setUserStates] = useState({});
 	let [chatsArray, setChatsArray] = useState([]);
 	let [forceLoad, setForceLoad] = useState(false);
+	let [ownState, setOwnState] = useState("ONLINE");
+	let [refetchUser, setRefetchUser] = useState(false);
+	
+	function clearFromCache(uuid) {
+		setRefetchUser(!refetchUser);
+		get(uuid, true);
+	}
 
 	function getUserState(uuid) {
 		if (userStates[uuid]) {
@@ -58,9 +65,9 @@ export function UsersProvider({ children }) {
 		}
 	}
 
-	async function get(uuid) {
+	async function get(uuid, refresh = false) {
 		if (typeof uuid !== "undefined") {
-			if (fetchedUsers[uuid]) {
+			if (fetchedUsers[uuid] && !refresh) {
 				log("User already fetched: " + uuid, "debug");
 				return fetchedUsers[uuid];
 			} else {
@@ -135,6 +142,10 @@ export function UsersProvider({ children }) {
 				forceLoad,
 				setForceLoad,
 				ownUuid: ls.get("auth_uuid"),
+				ownState,
+				setOwnState,
+				clearFromCache,
+				refetchUser,
 			}}
 		>
 			{children}

@@ -45,7 +45,7 @@ export let WebSocketProvider = ({ children }) => {
   let responseTimeout = 10000;
   let { decrypt_base64_using_privkey } = useEncryptionContext();
   let { privateKeyHash, privateKey } = useCryptoContext();
-  let { setUserState, setUserStates, forceLoad, setForceLoad, setGettingCalled, setGettingCalledData } = useUsersContext();
+  let { setUserState, setUserStates, forceLoad, setForceLoad, clearFromCache } = useUsersContext();
   let [iotaPing, setIotaPing] = useState("?");
   let [clientPing, setClientPing] = useState("?");
   let [identified, setIdentified] = useState(false);
@@ -64,11 +64,12 @@ export let WebSocketProvider = ({ children }) => {
 
       switch (message.type) {
         case "get_states":
-          setUserStates(message.data.user_states)
+          setUserStates(message.data.user_states);
           break;
 
         case "client_changed":
-          setUserState(message.data.user_id, message.data.user_state)
+          setUserState(message.data.user_id, message.data.user_state);
+          clearFromCache(message.data.user_id);
           break;
 
         default:

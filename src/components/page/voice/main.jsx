@@ -66,7 +66,8 @@ export function VoiceExpanded() {
       {/* Top bar */}
       <div className="flex w-full gap-2">
         <Button
-          className={`gap-2 ${connected ? "" : "bg-destructive hover:bg-destructive/90"}`}
+          variant={connected ? "default" : "destructive"}
+          className="gap-2"
         >
           {connected ? (
             <>
@@ -299,7 +300,8 @@ export function VoiceRearrangement() {
       {/* Top bar */}
       <div className="flex w-full gap-2">
         <Button
-          className={`gap-2 ${connected ? "" : "bg-destructive hover:bg-destructive/90"}`}
+          variant={connected ? "default" : "destructive"}
+          className="gap-2"
         >
           {connected ? (
             <>
@@ -549,8 +551,8 @@ export function Main() {
       {/* Top bar */}
       <div className="flex w-full gap-2">
         <Button
-          className={`gap-2 ${connected ? "" : "bg-destructive hover:bg-destructive/90"
-            }`}
+          variant={connected ? "default" : "destructive"}
+          className="gap-2"
         >
           {connected ? (
             <>

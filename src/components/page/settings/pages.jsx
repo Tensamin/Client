@@ -22,6 +22,7 @@ import { useMessageContext } from "@/components/context/message";
 import { useThemeContext } from "@/components/context/theme";
 import { useModsContext } from "@/components/context/mods"
 import { useCallContext } from "@/components/context/call";
+import { useWebSocketContext } from "@/components/context/websocket";
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -75,7 +76,8 @@ function readFileAsText(file) {
 
 // Main
 export function Profile() {
-  let { get, ownUuid } = useUsersContext();
+  let { get, ownUuid, ownState, clearFromCache } = useUsersContext();
+  let { send } = useWebSocketContext();
   let { privateKeyHash } = useCryptoContext();
 
   let [profile, setProfile] = useState({
@@ -117,6 +119,13 @@ export function Profile() {
       .then(data => {
         if (data.type !== "error") {
           toast.success(`Updated your ${field === "display" ? "Display Name" : capitalizeFirstLetter(field)}!`)
+          clearFromCache(ownUuid);
+          send("client_changed", {
+            message: "Changed State",
+            log_level: 0
+          }, {
+            user_state: ownState,
+          }).catch(_ => {})
         } else {
           log(data.log.message, "showError")
         }

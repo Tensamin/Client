@@ -273,7 +273,8 @@ export function VoiceControls() {
                         <Tooltip delayDuration={2000}>
                             <TooltipTrigger asChild>
                                 <Button
-                                    className="h-9 w-9 bg-destructive hover:bg-destructive/90"
+                                    variant="destructive"
+                                    className="h-9 w-9"
                                     onClick={stopCall}
                                 >
                                     <Icon.PhoneOutgoing />
@@ -290,10 +291,8 @@ export function VoiceControls() {
                         <Tooltip delayDuration={2000}>
                             <TooltipTrigger asChild>
                                 <Button
-                                    className={`h-9 w-9 ${mute
-                                        ? "bg-destructive hover:bg-destructive/90"
-                                        : ""
-                                        }`}
+                                    variant={mute ? "destructive" : "default"}
+                                    className="h-9 w-9"
                                     onClick={toggleMute}
                                 >
                                     {mute ? <Icon.MicOff /> : <Icon.Mic />}
@@ -308,10 +307,8 @@ export function VoiceControls() {
                         <Tooltip delayDuration={2000}>
                             <TooltipTrigger asChild>
                                 <Button
-                                    className={`h-9 w-9 ${deaf
-                                        ? "bg-destructive hover:bg-destructive/90"
-                                        : ""
-                                        }`}
+                                    variant={deaf ? "destructive" : "default"}
+                                    className="h-9 w-9"
                                     onClick={toggleDeaf}
                                 >
                                     {deaf ? (

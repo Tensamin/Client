@@ -17,9 +17,9 @@ import { Button } from "@/components/ui/button";
 // Main
 export function MessageSend() {
   let [message, setMessage] = useState("");
-  let { ownUuid } = useUsersContext();
+  let { ownUuid, makeChatTop } = useUsersContext();
   let { connected } = useWebSocketContext();
-  let { addMessage, navbarLoading, navbarLoadingMessage } = useMessageContext();
+  let { addMessage, navbarLoading, navbarLoadingMessage, receiver } = useMessageContext();
   let textareaRef = useRef(null);
 
   let handleGlobalKeyDown = useCallback((event) => {
@@ -97,6 +97,7 @@ export function MessageSend() {
         content: message,
         sendToServer: true,
       });
+      makeChatTop(receiver);
 
       setMessage("");
     } else {

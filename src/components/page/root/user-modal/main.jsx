@@ -36,7 +36,7 @@ export function UserModal({ id, state }) {
   let [avatar, setAvatar] = useState("...");
   let [username, setUsername] = useState("...");
   let [display, setDisplay] = useState("...");
-  let { get } = useUsersContext();
+  let { get, refetchUser } = useUsersContext();
 
   useEffect(() => {
     if (id !== "") get(id)
@@ -45,7 +45,7 @@ export function UserModal({ id, state }) {
         setUsername(data.username);
         setDisplay(data.display);
       });
-  }, [id])
+  }, [id, refetchUser])
 
   return (
     <div className="rounded-xl flex flex-col items-center p-3 gap-3 justify-center">
@@ -112,7 +112,7 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
   let [callSecret, setCallSecret] = useState("");
   let [callActiveHover, setCallActiveHover] = useState(false);
   let [showCallActive, setShowCallActive] = useState(callActive);
-  let { get } = useUsersContext();
+  let { get, refetchUser } = useUsersContext();
   let { privateKey } = useCryptoContext();
   let { decrypt_base64_using_privkey } = useEncryptionContext();
   let { startCall } = useCallContext();
@@ -134,7 +134,7 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
         setDisplay(data.display);
         setStatus(data.status);
       });
-  }, [id])
+  }, [id, refetchUser])
 
   return (
     <div className="rounded-xl flex items-center h-12 pl-3 gap-3">
@@ -240,7 +240,7 @@ export function MiniUserModal({ id }) {
   let [avatar, setAvatar] = useState("...");
   let [username, setUsername] = useState("...");
   let [display, setDisplay] = useState("...");
-  let { get } = useUsersContext();
+  let { get, refetchUser } = useUsersContext();
 
   useEffect(() => {
     if (id !== "") get(id)
@@ -249,7 +249,7 @@ export function MiniUserModal({ id }) {
         setUsername(data.username);
         setDisplay(data.display);
       });
-  }, [id])
+  }, [id, refetchUser])
 
   return (
     <div className="rounded-xl flex items-center h-7 gap-3">
@@ -291,7 +291,7 @@ export function MiniMiniUserModal({ id }) {
   let [avatar, setAvatar] = useState("...");
   let [username, setUsername] = useState("...");
   let [display, setDisplay] = useState("...");
-  let { get } = useUsersContext();
+  let { get, refetchUser } = useUsersContext();
 
   useEffect(() => {
     if (id !== "") get(id)
@@ -300,7 +300,7 @@ export function MiniMiniUserModal({ id }) {
         setUsername(data.username);
         setDisplay(data.display);
       });
-  }, [id])
+  }, [id, refetchUser])
 
   return (
     <div className="rounded-xl flex items-center h-5.5 w-5.5 m-1">
@@ -344,7 +344,7 @@ export function CallModal({ id }) {
   let [avatar, setAvatar] = useState("...");
   let [username, setUsername] = useState("...");
   let [display, setDisplay] = useState("...");
-  let { get } = useUsersContext();
+  let { get, refetchUser } = useUsersContext();
 
   useEffect(() => {
     if (id !== "") get(id)
@@ -353,7 +353,7 @@ export function CallModal({ id }) {
         setUsername(data.username);
         setDisplay(data.display);
       });
-  }, [id])
+  }, [id, refetchUser])
 
   return (
     <div className="rounded-xl flex flex-col items-center p-3 gap-3 justify-center">
