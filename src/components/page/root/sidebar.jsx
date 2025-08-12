@@ -58,11 +58,11 @@ export function AppSidebar(props) {
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
         <SidebarMenu>
           <Chats />
         </SidebarMenu>
-      </SidebarHeader>
-      <SidebarContent>
       </SidebarContent>
       <SidebarFooter>
       </SidebarFooter>
