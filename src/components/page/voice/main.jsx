@@ -38,15 +38,359 @@ let TILE_GAP = 16;
 
 // Main
 export function VoiceExpanded() {
+  // Context
+  let { ownUuid, chatsArray } = useUsersContext();
+  let { connected, connectedUsers, streamingUsers, directionalAudio, setDirectionalAudio } = useCallContext();
+
+  // UI state
+  let [inviteOpen, setInviteOpen] = useState(false);
+  let [focused, setFocused] = useState("");
+
+  // Choose a default focused user if none selected
+  useEffect(() => {
+    if (focused) return;
+    let firstOther = connectedUsers.find((u) => u !== ownUuid);
+    if (firstOther) setFocused(firstOther);
+  }, [focused, connectedUsers, ownUuid]);
+
   return (
-    <p>Voice Expanded</p>
-  )
+    <div className="flex h-full w-full flex-col gap-4 overflow-hidden">
+      {/* Top bar */}
+      <div className="flex w-full gap-2">
+        <Button
+          className={`gap-2 ${connected ? "" : "bg-destructive hover:bg-destructive/90"}`}
+        >
+          {connected ? (
+            <>
+              <Icon.Wifi /> Connected
+            </>
+          ) : (
+            <>
+              <Icon.WifiOff /> Disconnected
+            </>
+          )}
+        </Button>
+
+        <Button
+          className="h-9 gap-2"
+          onClick={() => setInviteOpen(true)}
+          disabled={!connected}
+        >
+          <Icon.Send /> Invite
+        </Button>
+
+        <div className="flex gap-2 justify-center items-center">
+          <Switch
+            id="directional-audio"
+            checked={directionalAudio}
+            onCheckedChange={setDirectionalAudio}
+          />
+          <Label htmlFor="directional-audio">Directional Audio</Label>
+        </div>
+
+        <CommandDialog open={inviteOpen} onOpenChange={setInviteOpen}>
+          <CommandInput placeholder="Search for a Friend..." />
+          <CommandList>
+            <CommandEmpty>No friends to invite.</CommandEmpty>
+            <CommandGroup>
+              {chatsArray.map((chat) => (
+                <InviteItem
+                  id={chat.user_id}
+                  key={chat.user_id}
+                  onShouldClose={setInviteOpen}
+                />
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </CommandDialog>
+      </div>
+
+      {/* Content: Focused large view + thumbnails */}
+      <div className="flex w-full flex-1 min-h-0 flex-col gap-2">
+        {/* Focused area (fits within remaining height) */}
+        <div className="flex-1 min-h-0 px-1">
+          <div className="mx-auto h-full w-full max-w-screen-xl">
+            {focused ? (
+              <VoiceModal
+                id={focused}
+                streams={streamingUsers.includes(focused)}
+                onFocus={(focus) => {
+                  // In expanded view, shrink clears focus; we'll reselect default via effect
+                  if (focus) setFocused("");
+                }}
+                focused={true}
+                fitToParent={true}
+              />
+            ) : (
+              <div className="h-full w-full grid place-items-center text-sm text-muted-foreground">
+                Select a user from thumbnails below
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Thumbnail rail (always visible) */}
+        <div className="flex w-full flex-none gap-2 overflow-x-auto px-1 pb-1 pt-2">
+          {connectedUsers
+            .filter((user) => user !== ownUuid)
+            .map((user) => (
+              focused === user ? null : (
+                <div key={`thumb-${user}`} className="w-[280px] flex-shrink-0">
+                  <VoiceModal
+                    id={user}
+                    streams={streamingUsers.includes(user)}
+                    onFocus={(focus) => {
+                      if (focus) setFocused(user);
+                    }}
+                    focused={false}
+                  />
+                </div>
+              )
+            ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function VoiceRearrangement() {
+  // Context
+  let { ownUuid, chatsArray } = useUsersContext();
+  let { connected, connectedUsers, streamingUsers, positions, setPositions, audioPositions, setAudioPositions, directionalAudio, setDirectionalAudio, setCanvasSize, endUserDrag } = useCallContext();
+
+  // UI state
+  let [inviteOpen, setInviteOpen] = useState(false);
+
+  // Draggable positions: { [userId]: { x, y } }
+  let nodeRefs = useRef(new Map());
+  let draggingIdsRef = useRef(new Set());
+  let [, setDragRev] = useState(0);
+
+  let canvasRef = useRef(null);
+  let { width: canvasW, height: canvasH } = useElementSize(canvasRef);
+
+  useEffect(() => {
+    if (!canvasW) return;
+    // Report canvas size for directional audio orientation
+    setCanvasSize({ width: canvasW, height: canvasH || 0 });
+    setPositions((prev) => {
+      let next = { ...prev };
+
+      // Remove stale users
+      Object.keys(next).forEach((id) => {
+        if (!connectedUsers.includes(id)) delete next[id];
+      });
+
+      // New users: simple grid layout
+      let cols = Math.max(
+        1,
+        Math.floor((canvasW + TILE_GAP) / (AVATAR_TILE_WIDTH + TILE_GAP))
+      );
+      connectedUsers.forEach((user, i) => {
+        if (next[user]) return;
+        let r = Math.floor(i / cols);
+        let c = i % cols;
+        next[user] = {
+          x: c * (AVATAR_TILE_WIDTH + TILE_GAP),
+          y: r * (AVATAR_TILE_WIDTH + TILE_GAP),
+        };
+      });
+
+      return next;
+    });
+    // Initialize audio positions for new users and cleanup removed
+    setAudioPositions?.((prev) => {
+      try {
+        let next = { ...prev };
+        // Remove stale users
+        Object.keys(next).forEach((id) => {
+          if (!connectedUsers.includes(id)) delete next[id];
+        });
+        // Add any missing users with same starting position as visual
+        connectedUsers.forEach((user) => {
+          if (!next[user] && positions[user]) {
+            next[user] = { ...positions[user] };
+          }
+        });
+        return next;
+      } catch {
+        return prev;
+      }
+    });
+  }, [connectedUsers, canvasW, canvasH, setCanvasSize]);
+
+  // Drag handlers
+  let startDrag = useCallback(
+    (id) => (e) => {
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
+
+      let el = nodeRefs.current.get(id) || e.currentTarget;
+      if (!el) return;
+      try { el.setPointerCapture?.(e.pointerId); } catch {}
+
+      let previousUserSelect = document.body.style.userSelect;
+      document.body.style.userSelect = "none";
+
+      draggingIdsRef.current.add(id);
+      setDragRev((r) => (r + 1) & 0xffff);
+
+      let startX = e.clientX;
+      let startY = e.clientY;
+      let startPos = positions[id] || { x: 0, y: 0 };
+
+      let targetX = startPos.x;
+      let targetY = startPos.y;
+      let rafId = null;
+      let updating = false;
+
+      const apply = () => {
+        rafId = null;
+        el.style.willChange = "transform";
+        el.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+        updating = false;
+      };
+
+      const handleMove = (ev) => {
+        targetX = startPos.x + (ev.clientX - startX);
+        targetY = startPos.y + (ev.clientY - startY);
+        if (!updating) {
+          updating = true;
+          rafId = requestAnimationFrame(apply);
+        }
+      };
+
+      const finalize = () => {
+        window.removeEventListener("pointermove", handleMove);
+        window.removeEventListener("pointerup", finalize);
+        window.removeEventListener("pointercancel", finalize);
+        try { el.releasePointerCapture?.(e.pointerId); } catch {}
+        if (rafId) cancelAnimationFrame(rafId);
+        setPositions((prev) => ({
+          ...prev,
+          [id]: { x: targetX, y: targetY },
+        }));
+        try { endUserDrag(id); } catch {}
+        el.style.willChange = "";
+        document.body.style.userSelect = previousUserSelect;
+        draggingIdsRef.current.delete(id);
+        setDragRev((r) => (r + 1) & 0xffff);
+      };
+
+      window.addEventListener("pointermove", handleMove, { passive: true });
+      window.addEventListener("pointerup", finalize, { once: true });
+      window.addEventListener("pointercancel", finalize, { once: true });
+    },
+    [positions, setPositions, endUserDrag]
+  );
+
   return (
-    <p>Voice Rearrangement</p>
-  )
+    <div className="flex h-full w-full flex-col gap-4 overflow-hidden">
+      {/* Top bar */}
+      <div className="flex w-full gap-2">
+        <Button
+          className={`gap-2 ${connected ? "" : "bg-destructive hover:bg-destructive/90"}`}
+        >
+          {connected ? (
+            <>
+              <Icon.Wifi /> Connected
+            </>
+          ) : (
+            <>
+              <Icon.WifiOff /> Disconnected
+            </>
+          )}
+        </Button>
+
+        <Button
+          className="h-9 gap-2"
+          onClick={() => setInviteOpen(true)}
+          disabled={!connected}
+        >
+          <Icon.Send /> Invite
+        </Button>
+
+        <div className="flex gap-2 justify-center items-center">
+          <Switch
+            id="directional-audio"
+            checked={directionalAudio}
+            onCheckedChange={setDirectionalAudio}
+          />
+          <Label htmlFor="directional-audio">Directional Audio</Label>
+        </div>
+
+        <CommandDialog open={inviteOpen} onOpenChange={setInviteOpen}>
+          <CommandInput placeholder="Search for a Friend..." />
+          <CommandList>
+            <CommandEmpty>No friends to invite.</CommandEmpty>
+            <CommandGroup>
+              {chatsArray.map((chat) => (
+                <InviteItem
+                  id={chat.user_id}
+                  key={chat.user_id}
+                  onShouldClose={setInviteOpen}
+                />
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </CommandDialog>
+      </div>
+
+      {/* Content: Draggable canvas */}
+      <div className="flex w-full flex-1 min-h-0 flex-col">
+        <div
+          ref={canvasRef}
+          className="relative flex-1 min-h-0 w-full overflow-hidden"
+        >
+          {/* Centered Volume icon with 3 rings */}
+          <div className="pointer-events-none absolute inset-0 grid place-items-center">
+            <div className="relative h-28 w-28">
+              <Icon.Volume2
+                className="absolute left-1/2 top-1/2 z-10 h-10 w-10 -translate-x-1/2 -translate-y-1/2 text-foreground"
+              />
+              <span className="absolute inset-0 rounded-full border border-border/75" />
+              <span className="absolute -inset-10 rounded-full border border-border/50" />
+              <span className="absolute -inset-20 rounded-full border border-border/25" />
+            </div>
+          </div>
+
+          {/* Draggable avatars */}
+          {connectedUsers
+            .filter((user) => user !== ownUuid)
+            .map((user) => {
+              let pos = positions[user] || { x: 0, y: 0 };
+              const isDragging = draggingIdsRef.current.has(user);
+              return (
+                <div
+                  key={`free-${user}`}
+                  className="absolute cursor-grab active:cursor-grabbing"
+                  style={{
+                    ...(isDragging ? {} : { transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }),
+                    width: `${AVATAR_TILE_WIDTH}px`,
+                    touchAction: "none",
+                  }}
+                  ref={(el) => {
+                    if (el) nodeRefs.current.set(user, el);
+                    else nodeRefs.current.delete(user);
+                  }}
+                  onPointerDown={startDrag(user)}
+                >
+                  <VoiceModal
+                    id={user}
+                    streams={streamingUsers.includes(user)}
+                    focused={false}
+                    onFocus={() => { /* no-op in rearrangement mode */ }}
+                    mode="avatarOnly"
+                  />
+                </div>
+              );
+            })}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function Main() {
