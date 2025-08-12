@@ -22,7 +22,7 @@ import { useEncryptionContext } from "@/components/context/encryption";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useMessageContext } from "@/components/context/message";
 
-// WebRTC configuration used for all peer connections.
+// Config
 const webrtc_servers = {
     iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
@@ -35,7 +35,7 @@ const webrtc_servers = {
 
 let CallContext = createContext(null);
 
-// Hook to access the CallContext. Must be used within CallProvider.
+// useContext hook
 export let useCallContext = () => {
     let context = useContext(CallContext);
     if (!context) {
@@ -46,36 +46,41 @@ export let useCallContext = () => {
     return context;
 };
 
-// Provider for audio/video call functionality and WebRTC/WebSocket orchestration.
+// Provider
 export let CallProvider = ({ children }) => {
     let pendingRequests = useRef(new Map());
     let responseTimeout = 10000;
 
+    // Context hooks
     let { encrypt_base64_using_aes, decrypt_base64_using_aes, decrypt_base64_using_privkey, encrypt_base64_using_pubkey } = useEncryptionContext();
     let { privateKeyHash, privateKey } = useCryptoContext();
     let { ownUuid, get } = useUsersContext();
     let { receiver } = useMessageContext();
     let { message, wsSend } = useWebSocketContext();
 
+    // Pre Call
     let [createCall, setCreateCall] = useState(false);
     let [invitedToCall, setInvitedToCall] = useState(false);
     let [inviteData, setInviteData] = useState({});
     let [inviteOnNewCall, setInviteOnNewCall] = useState(false);
 
+    // Call Stuff
     let [clientPing, setClientPing] = useState("?");
     let [connected, setConnected] = useState(false);
-
     let [callId, setCallId] = useState(null);
-
     let [callSecret, setCallSecret] = useState(null);
     let [identified, setIdentified] = useState(false);
-    let [mute, setMute] = useState(ls.get("call_mute") === "true" || false);
-    let [deaf, setDeaf] = useState(ls.get("call_deaf") === "true" || false);
+
+    // Streaming
     let [stream, setStream] = useState(false);
     let [streamResolution, setStreamResolution] = useState("1280x720");
     let [streamRefresh, setStreamRefresh] = useState("30");
     let [streamAudio, setStreamAudio] = useState(false);
     let screenStreamRef = useRef(null);
+
+    // Audio
+    let [mute, setMute] = useState(ls.get("call_mute") === "true" || false);
+    let [deaf, setDeaf] = useState(ls.get("call_deaf") === "true" || false);
     let [outputDeviceId, setOutput] = useState(null);
     let [inputDeviceId, setInput] = useState(null);
     let sinkObserverRef = useRef(null);
@@ -87,16 +92,18 @@ export let CallProvider = ({ children }) => {
     let audioRefs = useRef(new Map());
     let audioStreamsRefs = useRef(new Map());
 
-    let [connectedUsers, setConnectedUsers] = useState([]);
-    let [streamingUsers, setStreamingUsers] = useState([]);
-    let [watchingUsers, setWatchingUsers] = useState([]);
-
+    // Directional Audio
     let [positions, setPositions] = useState({});
     let [audioPositions, setAudioPositions] = useState({});
     let [directionalAudio, setDirectionalAudio] = useState(false);
     let [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
     let destinationNodeRef = useRef(null);
     let spatialAudioElRef = useRef(null);
+
+    // Users
+    let [connectedUsers, setConnectedUsers] = useState([]);
+    let [streamingUsers, setStreamingUsers] = useState([]);
+    let [watchingUsers, setWatchingUsers] = useState([]);
 
     let micStreamRef = useRef(null);
     let micRawStreamRef = useRef(null);
@@ -107,35 +114,8 @@ export let CallProvider = ({ children }) => {
     });
     let micCtxRef = useRef(null);
     let micMeterTimerRef = useRef(null);
-    useEffect(() => {
-        ls.set("call_input_sensitivity", String(inputSensitivity));
-    }, [inputSensitivity]);
-    let beginUserDrag = useCallback((_userId) => {
-    }, []);
-    let endUserDrag = useCallback((userId) => {
-        setAudioPositions((prev) => {
-            let next = { ...prev };
-            let p = positions[userId];
-            if (p) next[userId] = { x: p.x, y: p.y };
-            return next;
-        });
-    }, [positions]);
 
-    useEffect(() => {
-        setAudioPositions((prev) => {
-            let next = { ...prev };
-            Object.keys(next).forEach((id) => {
-                if (!connectedUsers.includes(id)) delete next[id];
-            });
-            connectedUsers.forEach((id) => {
-                if (!next[id] && positions[id]) {
-                    next[id] = { ...positions[id] };
-                }
-            });
-            return next;
-        });
-    }, [connectedUsers, positions]);
-
+    /// Audio
     let applySinkToAllAudios = useCallback(async (sinkId) => {
         try {
             let audios = Array.from(document.querySelectorAll('audio'));
@@ -151,6 +131,10 @@ export let CallProvider = ({ children }) => {
     }, []);
 
     useEffect(() => {
+        ls.set("call_input_sensitivity", String(inputSensitivity));
+    }, [inputSensitivity]);
+
+    useEffect(() => {
         if (outputDeviceId === null) {
             let output = ls.get("call_output");
             setOutput(output || "default");
@@ -164,6 +148,7 @@ export let CallProvider = ({ children }) => {
         applySinkToAllAudios(outputDeviceId);
     }, [outputDeviceId, applySinkToAllAudios]);
 
+    // Apply sink to all audio elements
     useEffect(() => {
         if (sinkObserverRef.current) return;
         try {
@@ -212,7 +197,32 @@ export let CallProvider = ({ children }) => {
         } catch { /* ignore */ }
     }, []);
 
-    // Acquire or switch the active microphone input media stream; replaces track on all existing peer connections.
+    /// Directional Audio
+    let endUserDrag = useCallback((userId) => {
+        setAudioPositions((prev) => {
+            let next = { ...prev };
+            let p = positions[userId];
+            if (p) next[userId] = { x: p.x, y: p.y };
+            return next;
+        });
+    }, [positions]);
+
+    useEffect(() => {
+        setAudioPositions((prev) => {
+            let next = { ...prev };
+            Object.keys(next).forEach((id) => {
+                if (!connectedUsers.includes(id)) delete next[id];
+            });
+            connectedUsers.forEach((id) => {
+                if (!next[id] && positions[id]) {
+                    next[id] = { ...positions[id] };
+                }
+            });
+            return next;
+        });
+    }, [connectedUsers, positions]);
+
+    // mic switch
     let switchMicInput = useCallback(async (preferredId) => {
         try {
             let base = {
@@ -287,6 +297,7 @@ export let CallProvider = ({ children }) => {
         setConnected(false);
     }
 
+    // Handle incoming call invitations.
     useEffect(() => {
         async function doStuff() {
             if (message.type === "new_call") {
@@ -301,7 +312,7 @@ export let CallProvider = ({ children }) => {
         doStuff();
     }, [message])
 
-    // Toggle local microphone mute; unmuting clears deaf state.
+    // Mute
     let toggleMute = useCallback(() => {
         setMute((prevMute) => {
             let newMute = !prevMute;
@@ -316,7 +327,7 @@ export let CallProvider = ({ children }) => {
         });
     }, []);
 
-    // Toggle local deaf (output muted); deafening forces mic mute.
+    // Deaf
     let toggleDeaf = useCallback(() => {
         setDeaf((prevDeaf) => {
             let newDeaf = !prevDeaf;
@@ -331,7 +342,7 @@ export let CallProvider = ({ children }) => {
         });
     }, []);
 
-    // Get current screen MediaStream or specific user's stream by id.
+    // Get stream for id
     let getScreenStream = useCallback((id) => {
         if (!id) {
             return screenStreamRef.current;
@@ -339,7 +350,7 @@ export let CallProvider = ({ children }) => {
         return videoRefs.current.get(id);
     }, []);
 
-    // WebSocket event handler for call-level signaling messages.
+    // Message Handling
     let handleWebSocketMessage = useCallback(async (event) => {
         let message = JSON.parse(event.data);
 
@@ -534,7 +545,7 @@ export let CallProvider = ({ children }) => {
         } else logFunction(message.log.message, "info");
     }, [callSecret, decrypt_base64_using_aes, encrypt_base64_using_aes, identified]);
 
-    // Initialize call WebSocket when a call session is active.
+    // Init WebSocket
     let { sendMessage, readyState } = useWebSocket(
         createCall && callId && callSecret ? endpoint.call_wss : null,
         {
@@ -574,7 +585,7 @@ export let CallProvider = ({ children }) => {
         }
     );
 
-    // Send a signaling request over the call WebSocket; returns a promise when awaiting a response.
+    // Send Function
     let send = useCallback(async (requestType, log, data = {}, awaitResponse = true) => {
         if (readyState !== ReadyState.CLOSED && readyState !== ReadyState.CLOSING) {
             if (awaitResponse) {
@@ -628,7 +639,7 @@ export let CallProvider = ({ children }) => {
         }
     }, [sendMessage, readyState]);
 
-    // Start screen sharing (optional audio); notifies peers and attaches tracks to watcher connections.
+    // Start stream
     let startScreenStream = useCallback(async () => {
         if (stream || screenStreamRef.current) return screenStreamRef.current;
         try {
@@ -707,7 +718,7 @@ export let CallProvider = ({ children }) => {
         }
     }, [ownUuid, send]);
 
-    // Stop screen sharing; detach tracks from watchers and notify peers.
+    // Stop stream
     let stopScreenStream = useCallback(() => {
         if (!screenStreamRef.current) {
             return;
@@ -813,7 +824,7 @@ export let CallProvider = ({ children }) => {
         return () => cancelAnimationFrame(handle);
     }, [stream, parsedStreamSettings]);
 
-    // Create or reuse an RTCPeerConnection for mic/screen; handle ICE, negotiation, tracks, lifecycle.
+    // p2p connections
     let createP2PConnection = useCallback(async (id, isInitiator = false, isScreenShare = false) => {
         if (isScreenShare) {
             if (isInitiator) {
@@ -1023,7 +1034,7 @@ export let CallProvider = ({ children }) => {
         return pc;
     }, [send, webrtc_servers, encrypt_base64_using_aes, callSecret]);
 
-    // Begin a call session; optionally use provided id/secret and send invite.
+    // Start call
     let startCall = useCallback(async (shouldInviteReceiver, id, secret) => {
         reset();
         setTimeout(() => {
@@ -1036,11 +1047,12 @@ export let CallProvider = ({ children }) => {
         }, 100)
     }, [])
 
-    // End the active call session and cleanup resources.
+    // Stop call
     let stopCall = useCallback(() => {
         reset();
     }, [])
 
+    // Update connected boolean
     useEffect(() => {
         if (micStreamRef.current && readyState === ReadyState.OPEN) {
             setConnected(true);
@@ -1049,7 +1061,7 @@ export let CallProvider = ({ children }) => {
         }
     }, [readyState, micStreamRef.current]);
 
-    // Periodic ping to server for latency tracking while connected.
+    // Pings
     useEffect(() => {
         let interval;
         if (connected) {
@@ -1078,7 +1090,7 @@ export let CallProvider = ({ children }) => {
         return () => clearInterval(interval);
     }, [connected, send]);
 
-    // Identify with the server once connected; optionally send call invites.
+    // Identifications (Also call invite)
     useEffect(() => {
         async function sendIdentification() {
             if (connected) {
@@ -1143,6 +1155,7 @@ export let CallProvider = ({ children }) => {
         sendIdentification();
     }, [connected, send]);
 
+    // Mute
     useEffect(() => {
         if (micStreamRef.current) {
             micStreamRef.current.getAudioTracks().forEach((track) => {
@@ -1151,11 +1164,13 @@ export let CallProvider = ({ children }) => {
         }
     }, [mute]);
 
+    // Stream updates
     useEffect(() => {
         let cancel = updateStream();
         return () => { try { cancel?.(); } catch { } };
     }, [updateStream])
 
+    // Cleanup
     useEffect(() => {
         return () => {
             try { sinkObserverRef.current?.disconnect(); } catch { }
@@ -1172,7 +1187,8 @@ export let CallProvider = ({ children }) => {
         };
     }, []);
 
-    const contextValue = useMemo(() => ({
+    return (
+        <CallContext.Provider value={{
             callId,
             setCallId,
             callSecret,
@@ -1227,54 +1243,8 @@ export let CallProvider = ({ children }) => {
             setAudioPositions,
             canvasSize,
             setCanvasSize,
-            beginUserDrag,
             endUserDrag,
-    }), [
-        callId,
-        callSecret,
-        send,
-        clientPing,
-        connected,
-        startCall,
-        stopCall,
-        invitedToCall,
-        inviteData,
-        mute,
-        toggleMute,
-        deaf,
-        toggleDeaf,
-        stream,
-        streamResolution,
-        streamRefresh,
-        streamAudio,
-        startScreenStream,
-        stopScreenStream,
-        getScreenStream,
-        watchingUsers,
-        setWatchingUsers,
-        createP2PConnection,
-        connectedUsers,
-        streamingUsers,
-        inputDeviceId,
-        setInput,
-        outputDeviceId,
-        setOutput,
-        directionalAudio,
-        setDirectionalAudio,
-        inputSensitivity,
-        setInputSensitivity,
-        positions,
-        setPositions,
-        audioPositions,
-        setAudioPositions,
-        canvasSize,
-        setCanvasSize,
-        beginUserDrag,
-        endUserDrag,
-    ]);
-
-    return (
-        <CallContext.Provider value={contextValue}>
+        }}>
             <div hidden>
                 <audio
                     ref={(el) => {

@@ -39,7 +39,7 @@ let TILE_GAP = 16;
 // Main
 export function Main() {
   let { ownUuid, chatsArray } = useUsersContext();
-  let { connected, connectedUsers, streamingUsers, positions, setPositions, audioPositions, setAudioPositions, directionalAudio, setDirectionalAudio, setCanvasSize, beginUserDrag, endUserDrag } = useCallContext();
+  let { connected, connectedUsers, streamingUsers, positions, setPositions, audioPositions, setAudioPositions, directionalAudio, setDirectionalAudio, setCanvasSize, endUserDrag } = useCallContext();
 
   let [inviteOpen, setInviteOpen] = useState(false);
   let [focused, setFocused] = useState("");
@@ -113,9 +113,6 @@ export function Main() {
       let startY = e.clientY;
       let startPos = positions[id] || { x: 0, y: 0 };
 
-      // Inform context we're starting a drag to freeze directional audio updates
-      try { beginUserDrag(id); } catch { }
-
       let handleMove = (ev) => {
         let dx = ev.clientX - startX;
         let dy = ev.clientY - startY;
@@ -128,14 +125,13 @@ export function Main() {
       let handleUp = () => {
         window.removeEventListener("pointermove", handleMove);
         window.removeEventListener("pointerup", handleUp);
-        // Inform context that drag ended so it can apply a smooth final update
         try { endUserDrag(id); } catch { }
       };
 
       window.addEventListener("pointermove", handleMove);
       window.addEventListener("pointerup", handleUp);
     },
-    [positions, beginUserDrag, endUserDrag]
+    [positions, endUserDrag]
   );
 
   return (
