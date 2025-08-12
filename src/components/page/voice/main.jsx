@@ -53,6 +53,14 @@ export function VoiceExpanded() {
     if (firstOther) setFocused(firstOther);
   }, [focused, connectedUsers, ownUuid]);
 
+  // If the currently focused user disconnects, clear focus to trigger reselect
+  useEffect(() => {
+    if (!focused) return;
+    if (!connectedUsers.includes(focused)) {
+      setFocused("");
+    }
+  }, [focused, connectedUsers]);
+
   return (
     <div className="flex h-full w-full flex-col gap-4 overflow-hidden">
       {/* Top bar */}
