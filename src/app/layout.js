@@ -19,7 +19,7 @@ export let metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${jetbrainsMono.variable} antialiased pt-[env(titlebar-area-height)]`}>
+      <body className={`${jetbrainsMono.variable} antialiased`}>
         {children}
       </body>
     </html>

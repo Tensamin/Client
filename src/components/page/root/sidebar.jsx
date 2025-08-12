@@ -25,7 +25,7 @@ export function AppSidebar(props) {
   let { connected } = useCallContext();
 
   return (
-    <Sidebar side={sidebarRightSide ? "right" : "left"} variant="inset" {...props} className="pt-[env(titlebar-area-height)]">
+    <Sidebar side={sidebarRightSide ? "right" : "left"} variant="inset" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="border-1 bg-card rounded-xl">
@@ -46,7 +46,7 @@ export function AppSidebar(props) {
             </SidebarMenuItem>
           </SidebarMenu>
         )}
-        <SidebarMenu className="mt-3 pb-5">
+        <SidebarMenu className="pt-3 pb-3">
           <SidebarMenuItem>
             <div className="flex w-full justify-center rounded-full bg-card">
               <Button className={`rounded-full rounded-r-none w-1/2 ${forceLoad ? "border-r-0" : ""}`} variant="outline" disabled={forceLoad}>

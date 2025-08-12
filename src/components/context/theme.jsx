@@ -49,6 +49,8 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     if (!mounted) return;
 
+    document.body.classList.add(ls.get('theme_scheme') || 'dark')
+
     if (customHex) {
       ls.set('theme_hex', customHex);
       let palette;
