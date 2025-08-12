@@ -34,10 +34,10 @@ export function UsersProvider({ children }) {
 	let [forceLoad, setForceLoad] = useState(false);
 	let [ownState, setOwnState] = useState("ONLINE");
 	let [refetchUser, setRefetchUser] = useState(false);
-	
-	function clearFromCache(uuid) {
-		setRefetchUser(!refetchUser);
-		get(uuid, true);
+
+	async function clearFromCache(uuid) {
+		await get(uuid, true);
+		setRefetchUser((prev) => !prev);
 	}
 
 	function getUserState(uuid) {
