@@ -2,4 +2,5 @@
 /.next/
 /out/
 /dist/
+/release/
 package-lock.json
