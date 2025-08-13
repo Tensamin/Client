@@ -2,7 +2,7 @@
   "name": "tensamin-frontend",
   "version": "0.1.1",
   "private": true,
-  "description": "NextJS Frontend",
+  "description": "Super secure messaging app",
   "homepage": "https://tensamin.methanium.net",
   "bugs": {
     "url": "https://github.com/Tensamin/Frontend/issues"
