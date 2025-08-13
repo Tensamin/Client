@@ -12,3 +12,4 @@ sudo cp $PWD/dist/tensamin-frontend_$npm_package_version'_arm64.deb' ./release/T
 # Arch
 #sudo cp "$PWD/dist/tensamin-frontend-$npm_package_version.tar.xz" ./release/aur/amd64.tar.xz
 #sudo cp "$PWD/dist/tensamin-frontend-$npm_package_version-arm64.tar.xz" ./release/aur/arm64.tar.xz
+echo Packaged!
