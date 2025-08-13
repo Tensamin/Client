@@ -12,14 +12,20 @@
     "url": "git+ssh://git@github.com/Tensamin/Frontend.git"
   },
   "license": "CC0-TENSAMIN",
-  "author": "Tensamin Frontend Team",
+  "author": {
+    "name": "Methanium",
+    "email": "admin@methanium.net",
+    "url": "https://tensamin.methanium.net"
+  },
   "type": "module",
-  "main": "none",
+  "main": "main.js",
   "scripts": {
     "dev": "next dev --turbopack -p 9161",
     "build": "next build",
     "start": "next start -p 9161",
-    "lint": "next lint"
+    "lint": "next lint",
+    "electron": "electron .",
+    "dist": "electron-builder -w nsis -l deb tar.xz --x64 --arm64"
   },
   "dependencies": {
     "@material/material-color-utilities": "^0.3.0",
@@ -83,6 +89,8 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",
