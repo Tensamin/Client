@@ -16,7 +16,7 @@ import { SmallUserModal } from "@/components/page/root/user-modal/main";
 // Main
 export function Chats() {
   let { send, connected, identified } = useWebSocketContext();
-  let { chatsArray, setChatsArray, forceLoad, getUserState } = useUsersContext();
+  let { chatsArray, setChatsArray, forceLoad, getUserState, refreshChats } = useUsersContext();
   let { setPage } = usePageContext();
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export function Chats() {
         { user_id: "", last_message_at: 0 }
       ])
     }
-  }, [connected, identified, forceLoad]);
+  }, [connected, identified, forceLoad, refreshChats]);
 
   return (
     <div className="flex flex-col gap-2 mr-2 ml-3">

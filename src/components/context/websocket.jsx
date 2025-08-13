@@ -45,7 +45,7 @@ export let WebSocketProvider = ({ children }) => {
   let responseTimeout = 10000;
   let { decrypt_base64_using_privkey } = useEncryptionContext();
   let { privateKeyHash, privateKey } = useCryptoContext();
-  let { setUserState, setUserStates, forceLoad, setForceLoad, clearFromCache } = useUsersContext();
+  let { setUserState, setUserStates, forceLoad, setForceLoad, clearFromCache, doChatRefresh } = useUsersContext();
   let [iotaPing, setIotaPing] = useState("?");
   let [clientPing, setClientPing] = useState("?");
   let [identified, setIdentified] = useState(false);
@@ -70,6 +70,10 @@ export let WebSocketProvider = ({ children }) => {
         case "client_changed":
           setUserState(message.data.user_id, message.data.user_state);
           clearFromCache(message.data.user_id);
+          break;
+
+        case "shared_secret_return":
+          doChatRefresh();
           break;
 
         default:

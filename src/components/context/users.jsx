@@ -34,10 +34,15 @@ export function UsersProvider({ children }) {
 	let [forceLoad, setForceLoad] = useState(false);
 	let [ownState, setOwnState] = useState("ONLINE");
 	let [refetchUser, setRefetchUser] = useState(false);
+	let [refreshChats, setRefreshChats] = useState(false);
 
 	async function clearFromCache(uuid) {
 		await get(uuid, true);
 		setRefetchUser((prev) => !prev);
+	}
+
+	function doChatRefresh() {
+		setRefreshChats((prev) => !prev);
 	}
 
 	function getUserState(uuid) {
@@ -146,6 +151,8 @@ export function UsersProvider({ children }) {
 				setOwnState,
 				clearFromCache,
 				refetchUser,
+				refreshChats,
+				doChatRefresh,
 			}}
 		>
 			{children}
