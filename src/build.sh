@@ -1,4 +1,4 @@
-rm -rf node_modules dist/* package-lock.json
+sudo rm -rf node_modules dist package-lock.json
 npm i
 
 docker run --rm -ti \
