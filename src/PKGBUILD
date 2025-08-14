@@ -4,6 +4,7 @@ pkgrel=1
 pkgdesc="Super secure messaging app"
 arch=('x86_64' 'aarch64')
 url="https://tensamin.methanium.net"
+depends=('libsecret')
 optdepends=('pam_u2f: OS passkeys' 'pam_fido2: OS passkeys')
 source_x86_64=("https://tensamin.methanium.net/release/Tensamin-amd64.tar.xz")
 source_aarch64=("https://tensamin.methanium.net/release/Tensamin-arm64.tar.xz")
