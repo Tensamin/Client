@@ -26,7 +26,7 @@
     "lint": "next lint",
     "dist": "./src/build.sh && npm run package",
     "package": "./src/package.sh",
-    "electron": "electron .",
+    "electron": "electron . --ozone-platform=wayland",
     "electron-build": "electron-builder -w nsis -l deb tar.xz --x64 --arm64"
   },
   "dependencies": {
@@ -67,6 +67,7 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.11",
     "input-otp": "^1.4.2",
+    "keytar": "^7.9.0",
     "ldrs": "^1.1.7",
     "lucide-react": "^0.515.0",
     "next": "15.3.3",

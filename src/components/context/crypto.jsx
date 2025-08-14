@@ -13,11 +13,12 @@ import { startAuthentication } from "@simplewebauthn/browser";
 
 // Lib Imports
 import { endpoint } from "@/lib/endpoints";
-import { log, sha256 } from "@/lib/utils";
+import { isElectron, log, sha256 } from "@/lib/utils";
 import ls from "@/lib/localStorageManager";
 
 // Context Imports
 import { useEncryptionContext } from "@/components/context/encryption";
+import { useUsersContext } from "@/components/context/users";
 
 // Components
 import { Loading } from "@/components/loading/content";
@@ -40,6 +41,7 @@ export function CryptoProvider({ children }) {
   let [privateKeyHash, setPrivateKeyHash] = useState("pending");
   let [isInitialized, setIsInitialized] = useState(false);
   let { decrypt_base64_using_aes } = useEncryptionContext();
+  let { get } = useUsersContext();
   let retryCountRef = useRef(0);
   let MAX_PASSKEY_RETRIES = 5;
 
@@ -73,37 +75,41 @@ export function CryptoProvider({ children }) {
       }
 
       try {
-        let options;
+        let lambda;
 
-        let resp = await fetch(`${endpoint.webauthn_login_options}${uuid}/${cred_id}`);
-        let data = await resp.json();
-        if (data?.type === "error") {
-          throw new Error(data.log?.message || "Failed to get options");
+        if (isElectron()) {
+          let username = await get(uuid).then(data => data.username);
+          lambda = await window?.keyring?.get('net.methanium.tensamin', username);
+        } else {
+          let options;
+
+          let resp = await fetch(`${endpoint.webauthn_login_options}${uuid}/${cred_id}`);
+          let data = await resp.json();
+          if (data?.type === "error") {
+            throw new Error(data.log?.message || "Failed to get options");
+          }
+          options = JSON.parse(atob(data.data.options));
+
+          let attestation = await startAuthentication(options);
+
+          let verifyResp = await fetch(`${endpoint.webauthn_login_verify}${uuid}/${cred_id}`, {
+            method: "POST",
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ attestation }),
+          });
+
+          let verifyData = await verifyResp.json();
+          if (verifyData?.type === "error") {
+            throw new Error(verifyData.log?.message || "Passkey verify failed");
+          }
+          lambda = verifyData.data.lambda;
         }
-        options = JSON.parse(atob(data.data.options));
-
-        let attestation = await startAuthentication(options);
-
-        let verifyResp = await fetch(`${endpoint.webauthn_login_verify}${uuid}/${cred_id}`, {
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ attestation }),
-        },
-        );
-        let verifyData = await verifyResp.json();
-        if (verifyData?.type === "error") {
-          throw new Error(verifyData.log?.message || "Passkey verify failed");
-        }
-        let lambda = verifyData.data.lambda;
 
         retryCountRef.current = 0;
 
-        let decryptedKey = await decrypt_base64_using_aes(
-          encrypted_private_key,
-          lambda,
-        );
+        let decryptedKey = await decrypt_base64_using_aes(encrypted_private_key, lambda);
 
         let newPrivateKeyHash = await sha256(decryptedKey);
 

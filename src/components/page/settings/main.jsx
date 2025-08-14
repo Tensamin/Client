@@ -3,6 +3,9 @@ import packageJson from "@/../package.json";
 import { useState } from "react";
 import * as Icon from "lucide-react";
 
+// Lib Imports
+import ls from "@/lib/localStorageManager";
+
 // Context Imports
 import { useWebSocketContext } from "@/components/context/websocket";
 
@@ -65,6 +68,16 @@ export function Main() {
                             className={`${isSelectedClassNames(item.id)} text-lg md:text-sm h-11 md:h-9`}
                         >{item.name}</Button>
                     ))}
+                    <Button
+                        variant="destructive"
+                        onClick={() => {
+                            ls.remove('auth_uuid');
+                            ls.remove('auth_cred_id');
+                            ls.remove('auth_private_key');
+                            window.location.reload();
+                        }}
+                        className="text-lg md:text-sm h-11 md:h-9"
+                    >Logout</Button>
                 </CardContent>
                 <CardFooter className="absolute bottom-0 left-0 p-0 m-3">
                     <div className="flex flex-col gap-2">

@@ -239,50 +239,50 @@ export async function getDeviceFingerprint() {
 
   try {
     data.userAgent = navigator.userAgent || "";
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.hardwareConcurrency = navigator.hardwareConcurrency || -1;
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.deviceMemory = navigator.deviceMemory || -1;
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.language = navigator.language || "";
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.languages =
       (navigator.languages && navigator.languages.join(",")) || "";
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.cookieEnabled = navigator.cookieEnabled || false;
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.screenWidth = screen.width || -1;
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.screenHeight = screen.height || -1;
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.screenAvailWidth = screen.availWidth || -1;
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.screenAvailHeight = screen.availHeight || -1;
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.screenColorDepth = screen.colorDepth || -1;
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.screenPixelDepth = screen.pixelDepth || -1;
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.windowInnerWidth = window.innerWidth || -1;
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.windowInnerHeight = window.innerHeight || -1;
-  } catch (e) {}
+  } catch (e) { }
   try {
     data.windowDevicePixelRatio = window.devicePixelRatio || -1;
-  } catch (e) {}
+  } catch (e) { }
   try {
     let canvas = document.createElement("canvas");
     let ctx = canvas.getContext("2d");
@@ -347,7 +347,7 @@ export async function getDeviceFingerprint() {
       analyser.getFloatFrequencyData(buffer);
 
       data.audioFingerprint = Array.from(buffer)
-        .map((v) => (v === -Infinity ? "I" : v.toFixed(3))) 
+        .map((v) => (v === -Infinity ? "I" : v.toFixed(3)))
         .join(",");
       audioCtx.close();
     }
@@ -436,7 +436,7 @@ export function signWithBase64PrivateKey(privateKeyBase64, message) {
   if (!crypto || typeof crypto.createPrivateKey !== 'function') {
     throw new Error(
       'Node crypto.createPrivateKey is required. Use Node.js runtime ' +
-        '(not Edge).',
+      '(not Edge).',
     );
   }
 
@@ -474,4 +474,25 @@ export function signWithBase64PrivateKey(privateKeyBase64, message) {
   signer.update(message, 'utf8');
   signer.end();
   return signer.sign(keyObj, 'base64');
+}
+
+export function isElectron() {
+  if (typeof navigator !== 'undefined' &&
+    navigator.userAgent.includes('Electron')) {
+    return true;
+  }
+
+  if (typeof process !== 'undefined' &&
+    process.versions && process.versions.electron) {
+    return true;
+  }
+
+  try {
+    if (typeof window !== 'undefined' && window.require) {
+      const electron = window.require('electron');
+      if (electron) return true;
+    }
+  } catch (e) { }
+
+  return false;
 }

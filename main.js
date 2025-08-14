@@ -1,19 +1,25 @@
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import keytar from "keytar";
 
 function createWindow() {
-  const win = new BrowserWindow({
+  let win = new BrowserWindow({
     width: 1024,
     height: 768,
     show: false,
+    frame: false,
+    autoHideMenuBar: true,
     backgroundColor: '#fff',
     webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true
-      // path.join(__dirname, 'preload.js')
+      preload: dirname(fileURLToPath(import.meta.url)) + '/preload.js',
+      contextIsolation: true,
+      nodeIntegration: false
     }
   });
 
-  win.loadURL('https://tensamin.methanium.net');
+  // win.loadURL('https://tensamin.methanium.net');
+  win.loadURL('https://ma-at-home.hackrland.dev');
 
   win.once('ready-to-show', () => win.show());
 
@@ -24,18 +30,30 @@ function createWindow() {
 
   win.webContents.on('will-navigate', (event, url) => {
     try {
-      const requestedHost = new URL(url).host;
-      const currentHost = new URL(win.webContents.getURL()).host;
+      let requestedHost = new URL(url).host;
+      let currentHost = new URL(win.webContents.getURL()).host;
       if (requestedHost && requestedHost !== currentHost) {
         event.preventDefault();
         shell.openExternal(url);
       }
-    } catch (err) {
-    }
+    } catch (err) { }
   });
 
   // win.webContents.openDevTools();
 }
+
+ipcMain.handle('keyring-set', async (event, { service, account, secret }) => {
+  await keytar.setPassword(service, account, secret);
+  return true;
+});
+
+ipcMain.handle('keyring-get', async (event, { service, account }) => {
+  return keytar.getPassword(service, account);
+});
+
+ipcMain.handle('keyring-delete', async (event, { service, account }) => {
+  return keytar.deletePassword(service, account);
+});
 
 app.whenReady().then(createWindow);
 

@@ -71,7 +71,7 @@ export function LoadingWrapper() {
                 ];
 
             if (ls.get("debug") !== "true" && ls.get("debug") !== "no-warning") {
-                console.warn(warningMessage, ...styles);
+                console.log(warningMessage, ...styles);
                 console.log("Enabled debug mode to hide this warning.")
             }
         }, 3000)
@@ -83,8 +83,8 @@ export function LoadingWrapper() {
         <Page />
     ) : isAuthenticated ? (
         <EncryptionProvider>
-            <CryptoProvider>
-                <UsersProvider>
+            <UsersProvider>
+                <CryptoProvider>
                     <WebSocketProvider>
                         <MessageProvider>
                             <CallProvider>
@@ -98,8 +98,8 @@ export function LoadingWrapper() {
                             </CallProvider>
                         </MessageProvider>
                     </WebSocketProvider>
-                </UsersProvider>
-            </CryptoProvider>
+                </CryptoProvider>
+            </UsersProvider>
         </EncryptionProvider>
     ) : null;
 }

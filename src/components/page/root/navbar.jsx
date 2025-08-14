@@ -7,8 +7,7 @@ import { useEffect, useState } from "react";
 import { v7 } from "uuid";
 
 // Lib Imports
-import { cn, sha256, log } from "@/lib/utils";
-import ls from "@/lib/localStorageManager";
+import { cn, isElectron } from "@/lib/utils";
 
 // Context Imports
 import { usePageContext } from "@/components/context/page";
@@ -197,6 +196,26 @@ export function Navbar() {
                                 }}
                             >
                                 <Icon.PhoneCall />
+                            </Button>
+                        </motion.div>
+                    )}
+                    {isElectron() && (
+                        <motion.div
+                            layout="position"
+                            key="call-button"
+                            variants={itemVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                        >
+                            <Button
+                                className="w-9 h-9"
+                                variant="outline"
+                                onClick={() => {
+                                    window.close();
+                                }}
+                            >
+                                <Icon.X />
                             </Button>
                         </motion.div>
                     )}

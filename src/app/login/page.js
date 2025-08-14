@@ -4,10 +4,11 @@
 import { useState, useRef } from 'react';
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import * as Icon from "lucide-react";
+import { v7 } from 'uuid';
 
 // Lib Imports
 import { endpoint } from '@/lib/endpoints';
-import { sha256, log } from "@/lib/utils"
+import { sha256, log, isElectron } from "@/lib/utils"
 import ls from '@/lib/localStorageManager';
 
 // Context Imports
@@ -49,6 +50,8 @@ export function LoginForm() {
   let [username, setUsername] = useState("");
   let [privateKey, setPrivateKey] = useState("");
   let [canRelease, setCanRelease] = useState(false);
+  let [loading, setLoading] = useState(false);
+  let [failed, setFailed] = useState(false);
   let { encrypt_base64_using_aes } = useEncryptionContext();
   let privateKeyFileRef = useRef(null);
   let counter = useRef(0);
@@ -99,54 +102,67 @@ export function LoginForm() {
           }
         });
 
-      await fetch(endpoint.webauthn_register_options + uuid, {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          private_key_hash: await sha256(privateKey)
-        })
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.type === "error") {
-            throw new Error(data.log.message)
-          } else {
-            options = JSON.parse(atob(data.data.options));
-          }
-        });
-
-      attestation = await startRegistration(options);
-
-      await fetch(endpoint.webauthn_register_verify + uuid, {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ private_key_hash: await sha256(privateKey), attestation })
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.type === "error") {
-            verified = false;
-            throw new Error(data.log.message)
-          } else {
-            lambda = data.data.lambda;
-            cred_id = attestation.id;
-            verified = true;
-          }
-        });
-
-      if (verified) {
-        let encrypted_private_key = await encrypt_base64_using_aes(privateKey, lambda)
+      if (isElectron()) {
+        let secret = v7();
+        window.keyring.set('net.methanium.tensamin', username.toLowerCase(), secret)
+        let encrypted_private_key = await encrypt_base64_using_aes(privateKey, secret)
         ls.set('auth_private_key', encrypted_private_key);
         ls.set('auth_uuid', uuid);
-        ls.set('auth_cred_id', cred_id);
         window.location.href = "/";
+      } else {
+        await fetch(endpoint.webauthn_register_options + uuid, {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            private_key_hash: await sha256(privateKey)
+          })
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data.type === "error") {
+              throw new Error(data.log.message)
+            } else {
+              options = JSON.parse(atob(data.data.options));
+            }
+          });
+
+        attestation = await startRegistration(options);
+
+        await fetch(endpoint.webauthn_register_verify + uuid, {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ private_key_hash: await sha256(privateKey), attestation })
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data.type === "error") {
+              verified = false;
+              throw new Error(data.log.message)
+            } else {
+              lambda = data.data.lambda;
+              cred_id = attestation.id;
+              verified = true;
+            }
+          });
+        if (verified) {
+          let encrypted_private_key = await encrypt_base64_using_aes(privateKey, lambda)
+          ls.set('auth_private_key', encrypted_private_key);
+          ls.set('auth_uuid', uuid);
+          ls.set('auth_cred_id', cred_id);
+          window.location.href = "/";
+        } else {
+          setFailed(true);
+        }
       }
     } catch (err) {
+      setFailed(true);
       log(err.message, "showError")
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -228,13 +244,15 @@ export function LoginForm() {
             <Separator />
             <div className="flex flex-col gap-2 w-full">
               <Button
+                variant={loading ? "outline" : failed ? "destructive" : "outline"}
                 className="w-full"
-                variant="outline"
                 onClick={() => {
+                  setLoading(true);
                   login();
                 }}
+                disabled={loading}
               >
-                Login
+                {loading ? "Loading..." : failed ? "Failed" : "Login"}
               </Button>
             </div>
           </CardContent>
