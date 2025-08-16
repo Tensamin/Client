@@ -18,8 +18,8 @@ function createWindow() {
     }
   });
 
-  // win.loadURL('https://tensamin.methanium.net');
-  win.loadURL('https://ma-at-home.hackrland.dev');
+  win.loadURL('https://tensamin.methanium.net');
+  // win.loadURL('https://ma-at-home.hackrland.dev');
 
   win.once('ready-to-show', () => win.show());
 

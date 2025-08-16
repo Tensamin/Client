@@ -6,8 +6,8 @@ arch=('x86_64' 'aarch64')
 url="https://tensamin.methanium.net"
 depends=('libsecret')
 optdepends=('pam_u2f: OS passkeys' 'pam_fido2: OS passkeys')
-source_x86_64=("https://tensamin.methanium.net/release/Tensamin-amd64.tar.xz")
-source_aarch64=("https://tensamin.methanium.net/release/Tensamin-arm64.tar.xz")
+source_x86_64=("https://tensamin.methanium.net/release/$pkgver-Tensamin-amd64.tar.xz")
+source_aarch64=("https://tensamin.methanium.net/release/$pkgver-Tensamin-arm64.tar.xz")
 sha256sums_x86_64=('SKIP')
 sha256sums_aarch64=('SKIP')
 
@@ -38,9 +38,9 @@ package() {
   install -d "$pkgdir/usr/share/applications"
   cat > "$pkgdir/usr/share/applications/$pkgname.desktop" <<EOF
 [Desktop Entry]
-Name=Tensamin Frontend
+Name=Tensamin
 Comment=Super secure messaging app
-Exec=/usr/bin/$pkgname %U
+Exec=/usr/bin/$pkgname --ozone-platform=wayland %U
 Terminal=false
 Type=Application
 Categories=Utility;
@@ -49,7 +49,7 @@ EOF
   install -d "$pkgdir/usr/bin"
   cat > "$pkgdir/usr/bin/$pkgname" <<'SH'
 #!/bin/sh
-exec /opt/tensamin-bin/tensamin-frontend "$@"
+exec /opt/tensamin-bin/tensamin "$@"
 SH
   chmod 755 "$pkgdir/usr/bin/$pkgname"
 }
