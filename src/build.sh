@@ -1,4 +1,4 @@
-sudo rm -rf node_modules dist package-lock.json ~/.cache/electron ~/.cache/electron-builder
+sudo rm -rf node_modules dist package-lock.json /home/web/.cache/electron /home/web/.cache/electron-builder /root/.cache/electron /root/.cache/electron-builder
 npm i
 
 docker run --rm -ti \
