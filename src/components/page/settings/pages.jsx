@@ -11,7 +11,7 @@ import {
   generateMaterialYouPalette,
   THEME_CONTROLS,
 } from "@/lib/theme";
-import { cn, isHexColor, log, capitalizeFirstLetter, downloadString } from "@/lib/utils";
+import { cn, isHexColor, log, capitalizeFirstLetter, downloadString, clippy } from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
 import ls from "@/lib/localStorageManager";
 
@@ -195,6 +195,11 @@ export function Profile() {
           <p>This is reserved space for</p>
           <p className="bg-clip-text text-transparent bg-gradient-to-r from-primary/60 to-primary">future customizations</p>
         </div>
+      </div>
+      <div className="flex">
+        <Button onClick={() => {handleFieldUpdate("avatar", clippy)}}>
+          Use Clippy as profile picture
+        </Button>
       </div>
     </div>
   );
