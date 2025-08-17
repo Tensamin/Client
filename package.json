@@ -1,5 +1,6 @@
 {
   "name": "tensamin",
+  "productName": "Tensamin",
   "version": "0.1.1",
   "private": true,
   "description": "Super secure messaging app",
@@ -38,7 +39,6 @@
     "@electron-forge/cli": "^7.8.3",
     "@electron-forge/maker-deb": "^7.8.3",
     "@electron-forge/maker-rpm": "^7.8.3",
-    "@electron-forge/maker-squirrel": "^7.8.3",
     "@electron-forge/maker-wix": "^7.8.3",
     "@electron-forge/maker-zip": "^7.8.3",
     "@electron-forge/plugin-auto-unpack-natives": "^7.8.3",
@@ -102,6 +102,7 @@
   },
   "devDependencies": {
     "@electron-forge/maker-flatpak": "^7.8.3",
+    "@electron-forge/maker-squirrel": "^7.8.3",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/react-syntax-highlighter": "^15.5.13",

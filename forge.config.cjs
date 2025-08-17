@@ -17,11 +17,7 @@ module.exports = {
       name: '@electron-forge/maker-zip'
     },
     {
-      name: '@electron-forge/maker-wix',
-      config: {
-        language: 1033,
-        manufacturer: 'Methanium'
-      }
+      name: '@electron-forge/maker-squirrel'
     }
   ]
 };

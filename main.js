@@ -3,6 +3,8 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import keytar from "keytar";
 
+if (require('electron-squirrel-startup')) app.quit();
+
 function createWindow() {
   let win = new BrowserWindow({
     width: 1024,

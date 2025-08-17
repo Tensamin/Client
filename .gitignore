@@ -4,3 +4,4 @@
 /dist/
 /release/
 package-lock.json
+cert.pfx
