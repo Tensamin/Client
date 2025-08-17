@@ -23,7 +23,7 @@
     "forge": {
       "makers": [
         {
-          "name": "@electron-forge/maker-appx"
+          "name": "@electron-forge/maker-squirrel"
         }
       ]
     }
