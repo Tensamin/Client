@@ -5,7 +5,6 @@ module.exports = {
     ignore: [
       /\.git/,
       /\.next/,
-      /node_modules/,
       /out/,
     ]
   },
