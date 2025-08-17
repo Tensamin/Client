@@ -2,6 +2,12 @@ module.exports = {
   packagerConfig: {
     name: "tensamin",
     asar: true,
+    ignore: [
+      /\.git/,
+      /\.next/,
+      /node_modules/,
+      /out/,
+    ]
   },
   makers: [
     {
