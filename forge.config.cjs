@@ -32,10 +32,5 @@ module.exports = {
         setupIcon: './src/app/favicon.ico',
       },
     },
-    {
-      // add the WiX maker as an additional Windows target (MSI)
-      name: '@electron-forge/maker-wix',
-      platforms: ['win32'],
-    },
   ],
 };
