@@ -1,18 +1,15 @@
 // Package Imports
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { v7 } from "uuid";
-import * as Icon from "lucide-react";
 
 // Lib Imports
 import { endpoint } from "@/lib/endpoints";
 import { log, isUuid } from "@/lib/utils";
-import ls from "@/lib/localStorageManager";
 
 // Context Imports
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useEncryptionContext } from "@/components/context/encryption";
 import { useUsersContext } from "@/components/context/users";
-import { useCallContext } from "@/components/context/call";
 
 // Components
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -29,8 +26,6 @@ import {
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { VideoStream } from "@/components/page/voice/parts"
 
 // Main
 export function Main() {
@@ -39,7 +34,6 @@ export function Main() {
     let { ownUuid, get } = useUsersContext();
     let { send } = useWebSocketContext();
     let { encrypt_base64_using_pubkey } = useEncryptionContext();
-    let { voiceSend, createP2PConnection, callId, setCallId, callSecret, setCallSecret, startCall, clientPing, connected, mute, toggleMute, deaf, toggleDeaf, stream, startScreenStream, stopScreenStream, getScreenStream, connectedUsers, streamingUsers, toggleStream } = useCallContext();
     function handleInputChange(e) {
         setNewChatUUID(e)
     }
@@ -127,7 +121,7 @@ export function Main() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Enter the UUID of the User</AlertDialogTitle>
+                                <AlertDialogTitle>Enter a username</AlertDialogTitle>
                                 <AlertDialogDescription>
                                     <Input placeholder="the_real_john_doe" value={newChatUsername} onChange={(e) => handleInputChange(e.target.value)} onSubmit={handleSubmit}></Input>
                                 </AlertDialogDescription>
