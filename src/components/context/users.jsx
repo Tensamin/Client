@@ -36,6 +36,19 @@ export function UsersProvider({ children }) {
 	let [refetchUser, setRefetchUser] = useState(false);
 	let [refreshChats, setRefreshChats] = useState(false);
 
+	function sleep(ms) {
+		return new Promise((resolve) => setTimeout(resolve, ms));
+	}
+
+	function safeAtob(value) {
+		try {
+			if (typeof value !== "string" || value.length === 0) return "";
+			return atob(value);
+		} catch (_e) {
+			return typeof value === "string" ? value : "";
+		}
+	}
+
 	async function clearFromCache(uuid) {
 		await get(uuid, true);
 		setRefetchUser((prev) => !prev);
@@ -76,18 +89,29 @@ export function UsersProvider({ children }) {
 				log("User already fetched: " + uuid, "debug");
 				return fetchedUsers[uuid];
 			} else {
-				let fetchedUser = await fetch(`${endpoint.user}${uuid}`)
-					.then((response) => response.json())
-					.then((data) => {
-						if (data.type !== "error") {
-							return data.data;
-						} else {
-							return null;
+				let fetchedUser = null;
+				const maxRetries = 5;
+				for (let attempt = 0; attempt <= maxRetries; attempt++) {
+					try {
+						const res = await fetch(`${endpoint.user}${uuid}`);
+						if (!res.ok) throw new Error(`HTTP ${res.status}`);
+						const data = await res.json();
+						if (data && data.type !== "error" && data.data) {
+							fetchedUser = data.data;
+							break;
 						}
-					})
-					.catch((error) => {
-						return null;
-					});
+						throw new Error("API responded with error type");
+					} catch (err) {
+						if (attempt < maxRetries) {
+							const delay = 200 * Math.pow(2, attempt);
+							log(
+								`Retry ${attempt + 1}/${maxRetries} fetching user ${uuid} after error: ${err?.message ?? err}`,
+								"debug",
+							);
+							await sleep(delay);
+						}
+					}
+				}
 
 				if (!fetchedUser || fetchedUser === null) {
 					fetchedUser = {
@@ -113,7 +137,7 @@ export function UsersProvider({ children }) {
 						fetchedUser.display,
 					),
 					avatar: fetchedUser.avatar,
-					about: atob(fetchedUser.about),
+					about: safeAtob(fetchedUser.about),
 					status: fetchedUser.status,
 					public_key: fetchedUser.public_key,
 					sub_level: fetchedUser.sub_level,
