@@ -19,6 +19,19 @@
     "url": "https://tensamin.methanium.net"
   },
   "main": "main.cjs",
+  "config": {
+    "forge": {
+      "makers": [
+        {
+          "name": "@electron-forge/maker-wix",
+          "config": {
+            "language": 1033,
+            "manufacturer": "Methanium"
+          }
+        }
+      ]
+    }
+  },
   "scripts": {
     "start": "next start -p 9161",
     "dev": "next dev --turbopack -p 9161",

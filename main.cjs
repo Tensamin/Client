@@ -2,10 +2,6 @@ let { app, BrowserWindow, shell, ipcMain } = require('electron');
 let path = require('path');
 let keytar = require("keytar");
 
-if (require('electron-squirrel-startup')) app.quit();
-
-console.log(__dirname)
-
 function createWindow() {
   let win = new BrowserWindow({
     width: 1024,
