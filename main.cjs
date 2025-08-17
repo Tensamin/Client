@@ -1,9 +1,10 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import keytar from "keytar";
+let { app, BrowserWindow, shell, ipcMain } = require('electron');
+let path = require('path');
+let keytar = require("keytar");
 
 if (require('electron-squirrel-startup')) app.quit();
+
+console.log(__dirname)
 
 function createWindow() {
   let win = new BrowserWindow({
@@ -14,7 +15,7 @@ function createWindow() {
     autoHideMenuBar: true,
     backgroundColor: '#fff',
     webPreferences: {
-      preload: dirname(fileURLToPath(import.meta.url)) + '/preload.js',
+      preload: path.join(__dirname + '/preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     }

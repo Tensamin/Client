@@ -18,8 +18,7 @@
     "email": "admin@methanium.net",
     "url": "https://tensamin.methanium.net"
   },
-  "type": "module",
-  "main": "main.js",
+  "main": "main.cjs",
   "scripts": {
     "start": "next start -p 9161",
     "dev": "next dev --turbopack -p 9161",
@@ -73,6 +72,7 @@
     "cmdk": "^1.1.1",
     "color": "^5.0.0",
     "date-fns": "^4.1.0",
+    "electron-squirrel-startup": "^1.0.1",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.11",
     "input-otp": "^1.4.2",
