@@ -21,19 +21,16 @@
   "type": "module",
   "main": "main.js",
   "scripts": {
-    "dev": "NODE_ENV=development electron-forge start",
-    "make": "npm run build:web && electron-forge make",
-    "package": "npm run build:web && electron-forge package",
-    "clean": "rm -rf out make builds dist .next",
-    "lint": "next lint",
     "start": "next start -p 9161",
-    "dev:web": "next dev --turbopack -p 9161",
-    "build:web": "next build",
-    "make:linux": "npm run build:web && electron-forge make --platform=linux --arch=x64",
-    "make:linux:arm64": "npm run build:web && electron-forge make --platform=linux --arch=arm64",
-    "make:win": "npm run build:web && electron-forge make --platform=win32 --arch=x64",
-    "make:win:ia32": "npm run build:web && electron-forge make --platform=win32 --arch=ia32",
-    "make:all": "npm run build:web && electron-forge make --platform=linux --arch=x64 && electron-forge make --platform=win32 --arch=x64"
+    "dev": "next dev --turbopack -p 9161",
+    "build": "next build",
+    "lint": "next lint",
+    "package": "npm run build && electron-forge package",
+    "make:linux": "electron-forge make --platform=linux --arch=x64",
+    "make:linux:arm64": "electron-forge make --platform=linux --arch=arm64",
+    "make:win": "electron-forge make --platform=win32 --arch=x64",
+    "make:win:ia32": "electron-forge make --platform=win32 --arch=ia32",
+    "make:all": "npm run make:linux && npm run make:linux:arm64 && npm run make:win && npm run make:win:ia32"
   },
   "dependencies": {
     "@electron-forge/cli": "^7.8.3",
