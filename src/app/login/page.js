@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Helper Functions
 function readFileAsText(file) {
@@ -52,6 +53,7 @@ export function LoginForm() {
   let [canRelease, setCanRelease] = useState(false);
   let [loading, setLoading] = useState(false);
   let [failed, setFailed] = useState(false);
+  let [error, setError] = useState("");
   let { encrypt_base64_using_aes } = useEncryptionContext();
   let privateKeyFileRef = useRef(null);
   let counter = useRef(0);
@@ -92,6 +94,7 @@ export function LoginForm() {
       let attestation;
       let lambda;
 
+      // Turn Username into UUID
       await fetch(endpoint.username_to_uuid + username.toLowerCase())
         .then(response => response.json())
         .then(data => {
@@ -103,6 +106,7 @@ export function LoginForm() {
         });
 
       if (isElectron()) {
+        // use Keyring
         let secret = v7();
         window.keyring.set('net.methanium.tensamin', username.toLowerCase(), secret)
         let encrypted_private_key = await encrypt_base64_using_aes(privateKey, secret)
@@ -110,6 +114,7 @@ export function LoginForm() {
         ls.set('auth_uuid', uuid);
         window.location.href = "/";
       } else {
+        // use Passkey
         await fetch(endpoint.webauthn_register_options + uuid, {
           method: "POST",
           headers: {
@@ -160,7 +165,7 @@ export function LoginForm() {
       }
     } catch (err) {
       setFailed(true);
-      log(err.message, "showError")
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -172,9 +177,9 @@ export function LoginForm() {
 
   async function handlePrivateKeyFileChange(files) {
     if (files[0]) {
-      let pemPrivateKey = await readFileAsText(files[0])
+      let pemPrivateKey = await readFileAsText(files[0]);
       if (pemPrivateKey.startsWith("-----BEGIN PRIVATE KEY-----\n")) {
-        pemPrivateKey = pemPrivateKey.replaceAll("-----BEGIN PRIVATE KEY-----\n", "").replaceAll("\n-----END PRIVATE KEY-----", "")
+        pemPrivateKey = pemPrivateKey.replaceAll("-----BEGIN PRIVATE KEY-----", "").replaceAll("-----END PRIVATE KEY-----", "").replaceAll("\n", "")
       }
       setPrivateKey(pemPrivateKey);
     }
@@ -243,17 +248,43 @@ export function LoginForm() {
             </div>
             <Separator />
             <div className="flex flex-col gap-2 w-full">
-              <Button
-                variant={loading ? "outline" : failed ? "destructive" : "outline"}
-                className="w-full"
-                onClick={() => {
-                  setLoading(true);
-                  login();
-                }}
-                disabled={loading}
-              >
-                {loading ? "Loading..." : failed ? "Failed" : "Login"}
-              </Button>
+              {failed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => {
+                        if (username !== "") {
+                          setFailed(false);
+                          setLoading(true);
+                          login();
+                        }
+                      }}
+                      disabled={username === ""}
+                    >
+                      Failed
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {error}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  variant={loading ? "outline" : "outline"}
+                  className="w-full"
+                  onClick={() => {
+                    if (username !== "") {
+                      setLoading(true);
+                      login();
+                    }
+                  }}
+                  disabled={loading || username === ""}
+                >
+                  {loading ? "Loading..." : "Login"}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

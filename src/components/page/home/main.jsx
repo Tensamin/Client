@@ -10,6 +10,7 @@ import { log, isUuid } from "@/lib/utils";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useEncryptionContext } from "@/components/context/encryption";
 import { useUsersContext } from "@/components/context/users";
+import { useCryptoContext } from "@/components/context/crypto";
 
 // Components
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -34,6 +35,7 @@ export function Main() {
     let { ownUuid, get } = useUsersContext();
     let { send } = useWebSocketContext();
     let { encrypt_base64_using_pubkey } = useEncryptionContext();
+    let { privateKey } = useCryptoContext();
     function handleInputChange(e) {
         setNewChatUUID(e)
     }
@@ -57,6 +59,7 @@ export function Main() {
             if (isUuid(newChatUUID)) {
                 let secret = btoa(v7() + " Tensate? " + v7() + " Sag mal Fisch " + v7() + " Jreap stinkt " + v7() + " Karpfen " + v7() + " Marmeladendoner " + v7() + " Ich war in Elias keller :^) " + v7())
 
+            //  let ownPrivateKey;
                 let ownPubKey;
                 let newUserPubKey;
 

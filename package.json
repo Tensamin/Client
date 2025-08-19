@@ -111,6 +111,7 @@
     "input-otp": "^1.4.2",
     "keytar": "^7.9.0",
     "ldrs": "^1.1.7",
+    "libsodium-wrappers": "^0.7.15",
     "lucide-react": "^0.515.0",
     "next": "15.3.3",
     "node-forge": "^1.3.1",

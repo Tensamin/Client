@@ -125,7 +125,7 @@ export function Profile() {
             log_level: 0
           }, {
             user_state: ownState,
-          }).catch(_ => {})
+          }).catch(_ => { })
         } else {
           log(data.log.message, "showError")
         }
@@ -197,7 +197,7 @@ export function Profile() {
         </div>
       </div>
       <div className="flex">
-        <Button onClick={() => {handleFieldUpdate("avatar", clippy)}}>
+        <Button onClick={() => { handleFieldUpdate("avatar", clippy) }}>
           Use Clippy as profile picture
         </Button>
       </div>
@@ -576,16 +576,18 @@ export function Notifications() {
         }}>
         {message}
       </Button>
-      <Button
-        variant="outline"
-        className="w-9 h-9"
-        onClick={async () => {
-          setMessage("Enable Notifications")
-          setLoading(false)
-          ls.remove('notifications')
-        }}>
-        <Icon.Unlock />
-      </Button>
+      {loading && (
+        <Button
+          variant="outline"
+          className="w-9 h-9"
+          onClick={async () => {
+            setMessage("Enable Notifications")
+            setLoading(false)
+            ls.remove('notifications')
+          }}>
+          <Icon.Unlock />
+        </Button>
+      )}
     </div>
   )
 };
