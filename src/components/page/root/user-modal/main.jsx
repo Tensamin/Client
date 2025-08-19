@@ -108,7 +108,7 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
   let [avatar, setAvatar] = useState("...");
   let [username, setUsername] = useState("...");
   let [display, setDisplay] = useState("...");
-  let [status, setStatus] = useState("...");
+  let [status, setStatus] = useState("");
   let [callSecret, setCallSecret] = useState("");
   let [callActiveHover, setCallActiveHover] = useState(false);
   let [showCallActive, setShowCallActive] = useState(callActive);
