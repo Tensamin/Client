@@ -290,7 +290,7 @@ export function LoginForm() {
         </Card>
         <br />
         <p className="text-[11px] text-muted-foreground">
-          By clicking &quot;Add device&quot; you agree to our
+          By clicking &quot;Login&quot; you agree to our
         </p>
         <p className="text-[11px] text-muted-foreground">
           <a href={endpoint.tos} className="underline">
