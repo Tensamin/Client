@@ -20,7 +20,7 @@ import { Main as ChatMain } from "@/components/page/chat/main";
 import { Main as HomeMain } from "@/components/page/home/main";
 import { Main as SettingsMain } from "@/components/page/settings/main";
 import { VoiceExpanded, VoiceRearrangement } from "@/components/page/voice/main";
-import { Main as CommunityMain } from "@/components/page/voice/main";
+import { Main as CommunityMain } from "@/components/page/community/main";
 import { GettingCalled } from "@/components/page/voice/parts";
 
 export function Page() {
@@ -68,6 +68,9 @@ export function Page() {
                                 ) : null}
                                 {page.name === "voice-rearrangement" ? (
                                     <VoiceRearrangement data={page.data} />
+                                ) : null}
+                                {page.name === "community" ? (
+                                    <CommunityMain data={page.data} />
                                 ) : null}
                             </div>
                         </SidebarInset>
