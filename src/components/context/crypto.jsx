@@ -109,9 +109,10 @@ export function CryptoProvider({ children }) {
 
         retryCountRef.current = 0;
 
-        let decryptedKey = await decrypt_base64_using_aes(encrypted_private_key, lambda);
+        let rawDecryptedKey = await decrypt_base64_using_aes(encrypted_private_key, lambda);
+        let decryptedKey = JSON.parse(atob(rawDecryptedKey));
 
-        let newPrivateKeyHash = await sha256(decryptedKey);
+        let newPrivateKeyHash = await sha256(decryptedKey.d);
 
         if (isMounted) {
           setPrivateKeyHash(newPrivateKeyHash);

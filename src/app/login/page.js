@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import * as Icon from "lucide-react";
 import { v7 } from 'uuid';
@@ -101,7 +101,7 @@ export function LoginForm() {
           if (data.type === "error") {
             throw new Error(data.log.message)
           } else {
-            uuid = data.data.uuid;
+            uuid = data.data.user_id;
           }
         });
 
@@ -109,7 +109,7 @@ export function LoginForm() {
         // use Keyring
         let secret = v7();
         window.keyring.set('net.methanium.tensamin', username.toLowerCase(), secret)
-        let encrypted_private_key = await encrypt_base64_using_aes(privateKey, secret)
+        let encrypted_private_key = await encrypt_base64_using_aes(btoa(JSON.stringify(privateKey)), secret)
         ls.set('auth_private_key', encrypted_private_key);
         ls.set('auth_uuid', uuid);
         window.location.href = "/";
@@ -121,7 +121,7 @@ export function LoginForm() {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            private_key_hash: await sha256(privateKey)
+            private_key_hash: await sha256(privateKey.d)
           })
         })
           .then(response => response.json())
@@ -140,7 +140,7 @@ export function LoginForm() {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ private_key_hash: await sha256(privateKey), attestation })
+          body: JSON.stringify({ private_key_hash: await sha256(privateKey.d), attestation })
         })
           .then(response => response.json())
           .then(data => {
@@ -154,7 +154,7 @@ export function LoginForm() {
             }
           });
         if (verified) {
-          let encrypted_private_key = await encrypt_base64_using_aes(privateKey, lambda)
+          let encrypted_private_key = await encrypt_base64_using_aes(btoa(JSON.stringify(privateKey)), lambda)
           ls.set('auth_private_key', encrypted_private_key);
           ls.set('auth_uuid', uuid);
           ls.set('auth_cred_id', cred_id);
@@ -177,11 +177,28 @@ export function LoginForm() {
 
   async function handlePrivateKeyFileChange(files) {
     if (files[0]) {
-      let pemPrivateKey = await readFileAsText(files[0]);
-      if (pemPrivateKey.startsWith("-----BEGIN PRIVATE KEY-----\n")) {
-        pemPrivateKey = pemPrivateKey.replaceAll("-----BEGIN PRIVATE KEY-----", "").replaceAll("-----END PRIVATE KEY-----", "").replaceAll("\n", "")
+      let rawJwk = await readFileAsText(files[0]);
+
+      // Pem check 
+      if (rawJwk.startsWith("-----BEGIN PRIVATE KEY-----")) {
+        setFailed(true);
+        setError("PEM Files are no longer supported!");
+        return;
       }
-      setPrivateKey(pemPrivateKey);
+      
+      let jwk;
+
+      try {
+        jwk = JSON.parse(rawJwk);
+      } catch {
+        setFailed(true);
+        setError("Invalid JWK!");
+        return;
+      }
+
+      setFailed(false);
+      setError("");
+      setPrivateKey(jwk);
     }
   };
 
@@ -213,7 +230,7 @@ export function LoginForm() {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="private-key">Private key</Label>
+              <Label htmlFor="private-key">JWK</Label>
               <div
                 className="w-full h-full py-3 border border-input rounded-lg bg-input/30 hover:bg-input/50 flex"
                 onClick={handlePrivateKeyClick}
@@ -237,10 +254,10 @@ export function LoginForm() {
                     <p>Drop it, i&apos;ll catch it!</p>
                     <p className='text-muted-foreground'>I&apos;m a good catcher</p>
                   </> : privateKey === "" ? <>
-                    <p>Drag & Drop your private key</p>
+                    <p>Drag & Drop your JWK</p>
                     <p className='text-muted-foreground'>It will never leave your device.</p>
                   </> : <>
-                    <p>Private key selected!</p>
+                    <p>JWK selected!</p>
                     <p className='text-muted-foreground'>You can still change it.</p>
                   </>}
                 </div>
@@ -261,7 +278,6 @@ export function LoginForm() {
                           login();
                         }
                       }}
-                      disabled={username === ""}
                     >
                       Failed
                     </Button>

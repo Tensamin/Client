@@ -20,6 +20,7 @@ import { useCryptoContext } from "@/components/context/crypto";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useUsersContext } from "@/components/context/users";
 import { useEncryptionContext } from "@/components/context/encryption";
+import { endpoint } from "@/lib/endpoints";
 
 // Main
 let MessageContext = createContext();
@@ -45,6 +46,7 @@ export function MessageProvider({ children }) {
     decrypt_base64_using_privkey,
     encrypt_base64_using_aes,
     decrypt_base64_using_aes,
+    get_shared_secret,
   } = useEncryptionContext();
 
   let [receiver, setReceiver] = useState("");
@@ -329,25 +331,12 @@ export function MessageProvider({ children }) {
           updateNavbarLoading(false);
         });
       }
-      if (sharedSecret === "") {
+      if (sharedSecret === "" && receiverPublicKey !== "") {
         updateNavbarLoading(true);
         setNavbarLoadingMessage("Loading shared secret.");
-        send(
-          "shared_secret_get",
-          {
-            message: `${ownUuid} requested shared secret of ${receiver}`,
-            log_level: 1,
-          },
-          {
-            user_id: receiver,
-          },
-        ).then(async (data) => {
-          setSharedSecret(
-            await decrypt_base64_using_privkey(
-              data.data.shared_secret_own,
-              privateKey,
-            ),
-          );
+        get_shared_secret(privateKey, { kty: "OKP", crv: "X448", x: receiverPublicKey })
+        .then(secret => {
+          setSharedSecret(secret.sharedSecretHex);
           setNavbarLoadingMessage("");
           updateNavbarLoading(false);
         });
@@ -425,38 +414,28 @@ export function MessageProvider({ children }) {
     async function doStuff() {
       if (connected && message !== null && message.type === "message_live") {
         let messageSender = message.data.sender_id;
-        let messageMessage = message.data.message;
+        let messageContent = message.data.message;
         if (messageSender === receiver) {
           await processAndAddMessage(
             message.data.send_time,
             messageSender,
-            messageMessage,
+            messageContent,
           );
         } else {
           get(messageSender).then(async (data) => {
             let tmpSharedSecret;
-            await send(
-              "shared_secret_get",
-              {
-                message: `${ls.get(
-                  "uuid",
-                )} requested shared secret of ${receiver}`,
-                log_level: 0,
-              },
-              {
-                user_id: messageSender,
-              },
-            ).then(async (data) => {
-              tmpSharedSecret = await decrypt_base64_using_privkey(
-                data.data.shared_secret_own,
-                privateKey,
-              );
-            });
+            get_shared_secret(privateKey, { kty: "OKP", crv: "X448", x: data.public_key })
+              .then(secret => {
+                tmpSharedSecret = secret.sharedSecretHex;
+                setNavbarLoadingMessage("");
+                updateNavbarLoading(false);
+              });
+
             makeChatTop(messageSender);
             sendNotification(
               data.display,
               atob(
-                await decrypt_base64_using_aes(messageMessage, tmpSharedSecret),
+                await decrypt_base64_using_aes(messageContent, tmpSharedSecret),
               ),
               data.avatar,
             );

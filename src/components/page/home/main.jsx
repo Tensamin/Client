@@ -48,7 +48,7 @@ export function Main() {
             .then(response => response.json())
             .then(data => {
                 if (data.type !== "error") {
-                    newChatUUID = data.data.uuid;
+                    newChatUUID = data.data.user_id;
                     return;
                 } else {
                     log(data.log.message, "showError")
@@ -80,17 +80,15 @@ export function Main() {
                 }
 
                 if (success) {
-                    await send("shared_secret_set", {
-                        message: `${ownUuid} sent ${newChatUsername} a friend request`,
-                        log_level: 1
+                    await send("add_chat", {
+                        message: "Adding chat",
+                        log_level: 0
                     }, {
-                        receiver_id: newChatUUID,
-                        shared_secret_own: await encrypt_base64_using_pubkey(btoa(secret), ownPubKey),
-                        shared_secret_other: await encrypt_base64_using_pubkey(btoa(secret), newUserPubKey),
+                        user_id: newChatUUID,
                     })
                         .then(data => {
                             if (data.type !== "error") {
-                                log(`Sent Chat Request to ${newChatUsername}`, "success")
+                                log(`Added ${newChatUsername}`, "success")
                             }
                         })
                 }
