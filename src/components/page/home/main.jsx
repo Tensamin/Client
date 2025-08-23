@@ -57,43 +57,19 @@ export function Main() {
             })
 
             if (isUuid(newChatUUID)) {
-                let secret = btoa(v7() + " Tensate? " + v7() + " Sag mal Fisch " + v7() + " Jreap stinkt " + v7() + " Karpfen " + v7() + " Marmeladendoner " + v7() + " Ich war in Elias keller :^) " + v7())
-
-            //  let ownPrivateKey;
-                let ownPubKey;
-                let newUserPubKey;
-
-                let success = false;
-
-                try {
-                    await get(ownUuid).then(data => {
-                        ownPubKey = data.public_key;
+                await send("add_chat", {
+                    message: "Adding chat",
+                    log_level: 1
+                }, {
+                    user_id: newChatUUID,
+                })
+                    .then(data => {
+                        if (data.type !== "error") {
+                            log(`Added ${newChatUsername}`, "success")
+                        }
                     })
-
-                    await get(newChatUUID).then(data => {
-                        newUserPubKey = data.public_key;
-                    })
-
-                    success = true;
-                } catch (err) {
-                    success = false;
-                }
-
-                if (success) {
-                    await send("add_chat", {
-                        message: "Adding chat",
-                        log_level: 0
-                    }, {
-                        user_id: newChatUUID,
-                    })
-                        .then(data => {
-                            if (data.type !== "error") {
-                                log(`Added ${newChatUsername}`, "success")
-                            }
-                        })
-                }
             } else {
-                log("That User does not exist!", "warning")
+                log("That user does not exist!", "warning")
             }
         } catch (err) {
             log(err.message, "error")

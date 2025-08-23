@@ -23,6 +23,7 @@ import { useThemeContext } from "@/components/context/theme";
 import { useModsContext } from "@/components/context/mods"
 import { useCallContext } from "@/components/context/call";
 import { useWebSocketContext } from "@/components/context/websocket";
+import { usePageContext } from "@/components/context/page";
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -207,13 +208,16 @@ export function Profile() {
 
 export function Appearance() {
   let { sidebarRightSide, setSidebarRightSide, customCss, setCustomCss } = useThemeContext();
+  let { setSidebarCategory } = usePageContext();
   let [draftCustomCss, setDraftCustomCss] = useState(customCss || '');
 
+  let [sidebarCategoryPolicy, setSidebarCategoryPolicy] = useState(ls.get("layout_sidebar_category_policy") || "last")
   let [tmpColor, setTmpColor] = useState(ls.get("theme_hex") || "");
   let [tint, setTint] = useState(ls.get("theme_tint") || "soft");
   let [colorScheme, setColorScheme] = useState(ls.get("theme_scheme") || "dark");
   let [tintOpen, setTintOpen] = useState(false);
   let [colorSchemeOpen, setColorSchemeOpen] = useState(false);
+  let [sidebarCategoryOpen, setSidebarCategoryOpen] = useState(false);
   let [inputValue, setInputValue] = useState(
     JSON.stringify(
       JSON.parse(ls.get("theme_control")) || THEME_CONTROLS,
@@ -302,6 +306,10 @@ export function Appearance() {
       document.body.classList.remove(other);
     } catch { }
   }, [colorScheme]);
+
+  useEffect(() => {
+    ls.set("layout_sidebar_category_policy", sidebarCategoryPolicy)
+  }, [sidebarCategoryPolicy])
 
   // Keep draft in sync when applied CSS changes from elsewhere (e.g., reset)
   useEffect(() => {
@@ -538,15 +546,87 @@ export function Appearance() {
       <br />
       <p className="text-xl font-bold">Layout Controls</p>
       <br />
-      <div className="flex gap-2">
-        <Switch
-          id="sidebar-right-switch"
-          checked={sidebarRightSide}
-          onCheckedChange={setSidebarRightSide}
-        />
-        <Label
-          htmlFor="sidebar-right-switch"
-        >Sidebar Right</Label>
+      <div className="flex flex-col gap-5">
+        <div className="flex gap-2">
+          <Switch
+            id="sidebar-right-switch"
+            checked={sidebarRightSide}
+            onCheckedChange={setSidebarRightSide}
+          />
+          <Label
+            htmlFor="sidebar-right-switch"
+          >Sidebar Right</Label>
+        </div>
+
+        {/* Sidebar Category */}
+        <Popover open={sidebarCategoryOpen} onOpenChange={setSidebarCategoryOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={tintOpen}
+              className="w-[200px] justify-between"
+            >
+              {sidebarCategoryPolicy === "last" ? "Last Selected" : sidebarCategoryPolicy === "chats" ? "Chats" : "Communities"}
+              <Icon.ChevronsUpDown className="opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0">
+            <Command>
+              <CommandList>
+                <CommandGroup>
+                  <CommandItem
+                    value="last"
+                    onSelect={(currentValue) => {
+                      setSidebarCategoryPolicy(currentValue);
+                      setSidebarCategoryOpen(false);
+                    }}
+                  >
+                    Last Selected
+                    <Icon.Check
+                      className={cn(
+                        "ml-auto",
+                        sidebarCategoryPolicy === "last" ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                  <CommandItem
+                    value="chats"
+                    onSelect={(currentValue) => {
+                      setSidebarCategoryPolicy(currentValue);
+                      ls.set("layout_sidebar_category", currentValue);
+                      setSidebarCategoryOpen(false);
+                    }}
+                  >
+                    Chats
+                    <Icon.Check
+                      className={cn(
+                        "ml-auto",
+                        sidebarCategoryPolicy === "chats" ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                  <CommandItem
+                    value="communities"
+                    onSelect={(currentValue) => {
+                      setSidebarCategoryPolicy(currentValue);
+                      ls.set("layout_sidebar_category", currentValue);
+                      setSidebarCategoryOpen(false);
+                    }}
+                  >
+                    Communities
+                    <Icon.Check
+                      className={cn(
+                        "ml-auto",
+                        sidebarCategoryPolicy === "communities" ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );
@@ -951,10 +1031,7 @@ export function Mods() {
     <div className="flex flex-col gap-6 h-full">
       <div>
         <p className="text-destructive text-xs md:text-md">
-          Mods are not checked by Tensamin or reviewed by moderators!
-        </p>
-        <p className="text-destructive text-xs md:text-md">
-          Mods can and probably will try to steal your private key!
+          Mods are not reviewed and can steal your JWK / private key!
         </p>
       </div>
 

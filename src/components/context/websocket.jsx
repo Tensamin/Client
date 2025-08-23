@@ -124,8 +124,24 @@ export let WebSocketProvider = ({ children }) => {
 
   let connected = readyState === ReadyState.OPEN;
 
-  let send = useCallback(async (requestType, log, data = {}) => {
+  let send = useCallback(async (requestType, log, data = {}, noResponse) => {
     if (!forceLoad && readyState !== ReadyState.CLOSED && readyState !== ReadyState.CLOSING) {
+      if (noResponse) {
+        let messageToSend = {
+          type: requestType,
+          log,
+          data,
+        };
+
+        try {
+          sendMessage(JSON.stringify(messageToSend));
+        } catch (err) {
+          logFunction(err.message, 'error');
+        }
+        
+        return;
+      }
+      
       return new Promise((resolve, reject) => {
         let id = v7();
 

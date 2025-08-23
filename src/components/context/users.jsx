@@ -31,6 +31,7 @@ export function UsersProvider({ children }) {
 	let [fetchedUsers, setFetchedUsers] = useState({});
 	let [userStates, setUserStates] = useState({});
 	let [chatsArray, setChatsArray] = useState([]);
+	let [communitiesArray, setCommunitiesArray] = useState([]);
 	let [forceLoad, setForceLoad] = useState(false);
 	let [ownState, setOwnState] = useState("ONLINE");
 	let [refetchUser, setRefetchUser] = useState(false);
@@ -167,6 +168,8 @@ export function UsersProvider({ children }) {
 				setUserStates,
 				chatsArray,
 				setChatsArray,
+				communitiesArray,
+				setCommunitiesArray,
 				makeChatTop,
 				forceLoad,
 				setForceLoad,

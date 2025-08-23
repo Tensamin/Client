@@ -46,14 +46,14 @@ export function EditableText({ value, onSave, className, placeholder }) {
   return (
     <p
       ref={editableRef}
-      className={`break-words whitespace-pre-wrap outline-none ${isEditing ? "cursor-text" : ""} ${className}`}
+      className={`break-words whitespace-pre-wrap outline-none ${isEditing ? "cursor-text" : ""} ${value === "" && !isEditing ? "opacity-50" : ""} ${className}`}
       onClick={handleClick}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       contentEditable={isEditing}
       suppressContentEditableWarning={true}
     >
-      {value}
+      {value === "" && !isEditing ? placeholder : value}
     </p>
   );
 }

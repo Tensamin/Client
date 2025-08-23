@@ -10,6 +10,7 @@ import React, {
 
 // Context Imports
 import { useMessageContext } from "@/components/context/message";
+import ls from "@/lib/localStorageManager";
 
 // Main
 let PageContext = createContext();
@@ -28,7 +29,13 @@ export function usePageContext() {
 // Provider
 export function PageProvider({ children }) {
     let [page, setPage] = useState({name: "home", data: ""});
+    let [sidebarCategory, setActualSidebarCategory] = useState(ls.get('layout_sidebar_category') || "chats");
     let { resetReceiver } = useMessageContext()
+
+    function setSidebarCategory(newCategory) {
+        if (ls.get('layout_sidebar_category_policy') || "last" === "last") ls.set('layout_sidebar_category', newCategory);
+        setActualSidebarCategory(newCategory);
+    }
 
     useEffect(() => {
         if (page.name !== "chat") {
@@ -41,6 +48,8 @@ export function PageProvider({ children }) {
             value={{
                 page,
                 setPage,
+                sidebarCategory,
+                setSidebarCategory,
             }}
         >
             {children}

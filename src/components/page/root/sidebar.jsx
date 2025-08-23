@@ -2,6 +2,7 @@
 import { useUsersContext } from "@/components/context/users";
 import { useThemeContext } from "@/components/context/theme";
 import { useCallContext } from "@/components/context/call";
+import { usePageContext } from "@/components/context/page";
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { UserModal } from "@/components/page/root/user-modal/main"
-import { Chats } from "@/components/page/root/chats"
+import { Chats } from "@/components/page/root/chats";
+import { Communities } from "@/components/page/root/communities";
 import { VoiceControls } from "@/components/page/voice/controls";
 
 // Main
@@ -23,6 +25,7 @@ export function AppSidebar(props) {
   let { forceLoad, ownUuid } = useUsersContext();
   let { sidebarRightSide } = useThemeContext();
   let { connected } = useCallContext();
+  let { sidebarCategory, setSidebarCategory } = usePageContext();
 
   return (
     <Sidebar side={sidebarRightSide ? "right" : "left"} variant="inset" {...props}>
@@ -48,11 +51,29 @@ export function AppSidebar(props) {
         )}
         <SidebarMenu className="pt-3 pb-3">
           <SidebarMenuItem>
-            <div className="flex w-full justify-center rounded-full bg-card">
-              <Button className={`rounded-full rounded-r-none w-1/2 ${forceLoad ? "border-r-0" : ""}`} variant="outline" disabled={forceLoad}>
+            <div className="flex w-full justify-center rounded-full bg-card py-1 px-1.5 gap-1">
+              <Button
+                variant={sidebarCategory !== "communities" ? "ghost" : "outline"}
+                className="w-1/2 rounded-full"
+                disabled={forceLoad}
+                onClick={() => {
+                  if (sidebarCategory !== "communities") {
+                    setSidebarCategory("communities");
+                  }
+                }}
+              >
                 Communities
               </Button>
-              <Button className={`rounded-full rounded-l-none w-1/2 ${forceLoad ? "" : "border-l-0"}`} variant="outline" disabled={forceLoad}>
+              <Button
+                variant={sidebarCategory !== "chats" ? "ghost" : "outline"}
+                className="w-1/2 rounded-full"
+                disabled={forceLoad}
+                onClick={() => {
+                  if (sidebarCategory !== "chats") {
+                    setSidebarCategory("chats");
+                  }
+                }}
+              >
                 Chats
               </Button>
             </div>
@@ -61,7 +82,7 @@ export function AppSidebar(props) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          <Chats />
+          {sidebarCategory === "chats" ? <Chats /> : <Communities />}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
