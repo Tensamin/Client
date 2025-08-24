@@ -210,6 +210,7 @@ export function LoginForm() {
 
   return (
     <div
+      style={{ WebkitAppRegion: 'drag' }}
       className="z-20 w-full h-full"
       onDrop={drop}
       onDragEnter={enter}
@@ -219,7 +220,7 @@ export function LoginForm() {
       <div
         className="z-10 flex flex-col justify-center items-center w-full h-screen"
       >
-        <Card className="w-auto h-auto">
+        <Card className="w-auto h-auto" style={{ WebkitAppRegion: 'no-drag' }}>
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-col gap-2">
               <Label htmlFor="username">Username</Label>

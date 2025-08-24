@@ -66,7 +66,7 @@ export function Navbar() {
     }, [receiver])
 
     return (
-        <div className="flex-1 flex items-center p-1.5 pb-0" style="-webkit-app-region: drag;">
+        <div className="flex-1 flex items-center p-1.5 pb-0" style={{ WebkitAppRegion: 'drag' }}>
             {!sidebarRightSide ? (
                 <div
                     className={cn(
