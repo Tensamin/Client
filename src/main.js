@@ -24,8 +24,12 @@ let createWindow = () => {
   let mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    frame: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
   });
   mainWindow.loadURL('app://dist/index.html');
