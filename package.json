@@ -18,7 +18,7 @@
     "email": "admin@methanium.net",
     "url": "https://tensamin.methanium.net"
   },
-  "main": ".webpack/main",
+  "main": "./src/main.js",
   "scripts": {
     "start": "next start -p 9161",
     "dev": "next dev -p 9161",
@@ -66,7 +66,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "color": "^5.0.0",
-    "css-loader": "^7.1.2",
+    
     "date-fns": "^4.1.0",
     "electron-squirrel-startup": "^1.0.1",
     "embla-carousel-react": "^8.6.0",
@@ -89,7 +89,7 @@
     "recharts": "^2.15.3",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.5",
-    "style-loader": "^4.0.0",
+    
     "tailwind-merge": "^3.3.1",
     "use-dencrypt-effect": "^2.0.0",
     "uuid": "^11.1.0",

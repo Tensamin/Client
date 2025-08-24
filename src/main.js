@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path')
 const keytar = require('keytar');
 
 if (require('electron-squirrel-startup')) {
@@ -10,11 +11,10 @@ const createWindow = () => {
     width: 800,
     height: 600,
     webPreferences: {
-    preload: TENSAMIN_PRELOAD_WEBPACK_ENTRY,
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
-  mainWindow.loadURL(TENSAMIN_WEBPACK_ENTRY);
-  mainWindow.webContents.openDevTools();
+  mainWindow.loadFile('./dist/index.html');
 };
 
 ipcMain.handle('keyring-set', async (event, { service, account, secret }) => {

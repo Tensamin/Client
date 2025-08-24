@@ -25,25 +25,6 @@ module.exports = {
       name: '@electron-forge/plugin-auto-unpack-natives',
       config: {},
     },
-    {
-      name: '@electron-forge/plugin-webpack',
-      config: {
-        mainConfig: './webpack.main.config.js',
-        renderer: {
-          config: './webpack.renderer.config.js',
-          entryPoints: [
-            {
-              html: './dist/index.html',
-              js: './src/renderer.js',
-              name: 'tensamin',
-              preload: {
-                js: './src/preload.js',
-              },
-            },
-          ],
-        },
-      },
-    },
     new FusesPlugin({
       version: FuseVersion.V1,
       [FuseV1Options.RunAsNode]: false,
