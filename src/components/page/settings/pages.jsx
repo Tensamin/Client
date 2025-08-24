@@ -207,14 +207,25 @@ export function Profile() {
 };
 
 export function Appearance() {
-  let { sidebarRightSide, setSidebarRightSide, customCss, setCustomCss } = useThemeContext();
+  let {
+    sidebarRightSide,
+    setSidebarRightSide,
+    customCss,
+    setCustomCss,
+    customHex,
+    setCustomHex,
+    themeTint,
+    setThemeTint,
+    themeScheme,
+    setThemeScheme,
+  } = useThemeContext();
   let { setSidebarCategory } = usePageContext();
   let [draftCustomCss, setDraftCustomCss] = useState(customCss || '');
 
   let [sidebarCategoryPolicy, setSidebarCategoryPolicy] = useState(ls.get("layout_sidebar_category_policy") || "last")
-  let [tmpColor, setTmpColor] = useState(ls.get("theme_hex") || "");
-  let [tint, setTint] = useState(ls.get("theme_tint") || "soft");
-  let [colorScheme, setColorScheme] = useState(ls.get("theme_scheme") || "dark");
+  let [tmpColor, setTmpColor] = useState(customHex || "");
+  let [tint, setTint] = useState(themeTint || "soft");
+  let [colorScheme, setColorScheme] = useState(themeScheme || "dark");
   let [tintOpen, setTintOpen] = useState(false);
   let [colorSchemeOpen, setColorSchemeOpen] = useState(false);
   let [sidebarCategoryOpen, setSidebarCategoryOpen] = useState(false);
@@ -226,30 +237,22 @@ export function Appearance() {
     )
   );
 
+  // Drive provider from settings instead of mutating DOM directly
   useEffect(() => {
     if (tmpColor && isHexColor(tmpColor)) {
-      ls.set("theme_hex", tmpColor);
-
-      let palette;
-      if (tint === "soft") {
-        palette = generateMaterialYouPalette(tmpColor, colorScheme);
-      } else {
-        let themeControls =
-          JSON.parse(ls.get("theme_control")) || THEME_CONTROLS;
-
-        palette = generateTintPalette(tmpColor, themeControls, colorScheme);
-      }
-
-      if (palette) {
-        // palette keys are already css variable names (e.g., "--background")
-        for (let cssVar in palette) {
-          let value = palette[cssVar];
-          document.documentElement.style.setProperty(cssVar, value);
-          document.body.style.setProperty(cssVar, value);
-        }
-      }
+      setCustomHex(tmpColor);
     }
-  }, [tmpColor, tint, colorScheme]);
+  }, [tmpColor]);
+
+  useEffect(() => {
+    if (!tint) return;
+    setThemeTint(tint);
+  }, [tint]);
+
+  useEffect(() => {
+    if (!colorScheme) return;
+    setThemeScheme(colorScheme);
+  }, [colorScheme]);
 
   let previewPalette = useMemo(() => {
     if (!tmpColor || !isHexColor(tmpColor)) return {};
@@ -292,20 +295,7 @@ export function Appearance() {
     }
   }, [tmpColor, tint, colorScheme, inputValue]);
 
-  useEffect(() => {
-    ls.set("theme_tint", tint);
-  }, [tint]);
-
-  useEffect(() => {
-    ls.set("theme_scheme", colorScheme);
-    // Toggle scheme class live for preview
-    try {
-      let current = colorScheme === 'dark' ? 'dark' : 'light';
-      let other = colorScheme === 'dark' ? 'light' : 'dark';
-      document.body.classList.add(current);
-      document.body.classList.remove(other);
-    } catch { }
-  }, [colorScheme]);
+  // Persistence of tint/scheme is handled by ThemeProvider
 
   useEffect(() => {
     ls.set("layout_sidebar_category_policy", sidebarCategoryPolicy)
@@ -333,7 +323,8 @@ export function Appearance() {
   function submitTmpColorChange(event) {
     event.preventDefault();
     if (isHexColor(tmpColor)) {
-      setTmpColor(tmpColor);
+  // No-op: tmpColor already set; provider effect runs
+  setCustomHex(tmpColor);
     }
   }
 
@@ -533,7 +524,6 @@ export function Appearance() {
                   ls.remove("theme_hex");
                   ls.remove("theme_control");
                   setCustomCss('');
-                  ls.remove('custom_css');
                   window.location.reload();
                 }}
               >
