@@ -1,6 +1,6 @@
 {
   "name": "tensamin",
-  "productName": "Tensamin",
+  "productName": "tensamin",
   "version": "0.1.1",
   "private": true,
   "description": "Super secure messaging app",
@@ -18,59 +18,20 @@
     "email": "admin@methanium.net",
     "url": "https://tensamin.methanium.net"
   },
-  "main": "main.cjs",
-  "config": {
-    "forge": {
-      "packagerConfig": {
-        "name": "tensamin",
-        "icon": "./public/512x512.png",
-        "asar": true,
-        "ignore": [
-          ".git",
-          ".next",
-          "out"
-        ]
-      },
-      "makers": [
-        {
-          "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "iconUrl": "https://tensamin.methanium.net/256x256.ico",
-            "setupIcon": "./public/256x256.ico"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {
-            "options": {
-              "icon": "./public/512x512.png"
-            }
-          }
-        },
-        {
-          "name": "@electron-forge/maker-zip"
-        }
-      ]
-    }
-  },
+  "main": ".webpack/main",
   "scripts": {
     "start": "next start -p 9161",
-    "dev": "next dev --turbopack -p 9161",
+    "dev": "next dev -p 9161",
     "build": "next build",
     "lint": "next lint",
-    "package": "npm run build && electron-forge package",
-    "make:linux": "electron-forge make --platform=linux --arch=x64",
-    "make:linux:arm64": "electron-forge make --platform=linux --arch=arm64",
-    "make:win": "electron-forge make --platform=win32 --arch=x64",
-    "make:win:ia32": "electron-forge make --platform=win32 --arch=ia32",
-    "make:all": "npm run make:linux && npm run make:linux:arm64 && npm run make:win && npm run make:win:ia32"
+    "electron": "npm run build && npm run electron-no-build",
+    "electron-no-build": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish"
   },
   "dependencies": {
-    "@electron-forge/cli": "^7.8.3",
-    "@electron-forge/maker-deb": "^7.8.3",
-    "@electron-forge/maker-rpm": "^7.8.3",
-    "@electron-forge/maker-zip": "^7.8.3",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.8.3",
+    "@electron-forge/plugin-fuses": "^7.8.3",
     "@material/material-color-utilities": "^0.3.0",
     "@noble/curves": "^1.9.7",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -105,6 +66,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "color": "^5.0.0",
+    "css-loader": "^7.1.2",
     "date-fns": "^4.1.0",
     "electron-squirrel-startup": "^1.0.1",
     "embla-carousel-react": "^8.6.0",
@@ -127,22 +89,28 @@
     "recharts": "^2.15.3",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.5",
+    "style-loader": "^4.0.0",
     "tailwind-merge": "^3.3.1",
     "use-dencrypt-effect": "^2.0.0",
     "uuid": "^11.1.0",
     "vaul": "^1.1.2"
   },
   "devDependencies": {
-    "@electron-forge/maker-appx": "^7.8.3",
-    "@electron-forge/maker-flatpak": "^7.8.3",
+    "@electron-forge/cli": "^7.8.3",
+    "@electron-forge/maker-deb": "^7.8.3",
     "@electron-forge/maker-squirrel": "^7.8.3",
+    "@electron-forge/maker-zip": "^7.8.3",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.8.3",
+    "@electron-forge/plugin-webpack": "^7.8.3",
+    "@electron/fuses": "^1.8.0",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/react-syntax-highlighter": "^15.5.13",
-    "electron": "^37.3.0",
-    "electron-builder": "^26.0.12",
+    "@vercel/webpack-asset-relocator-loader": "^1.7.3",
+    "electron": "^37.3.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
+    "node-loader": "^2.1.0",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.4"
   }

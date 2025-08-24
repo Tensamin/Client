@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: false,
+    output: "export",
+    distDir: "dist",
+    webpack(config, { dev, isServer }) {
+        return config;
+    }
 };
 
 export default nextConfig;

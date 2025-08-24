@@ -101,6 +101,8 @@ export function LoginForm() {
           if (data.type === "error") {
             throw new Error(data.log.message)
           } else {
+            console.log(data)
+            alert("")
             uuid = data.data.user_id;
           }
         });
@@ -112,7 +114,7 @@ export function LoginForm() {
         let encrypted_private_key = await encrypt_base64_using_aes(btoa(JSON.stringify(privateKey)), secret)
         ls.set('auth_private_key', encrypted_private_key);
         ls.set('auth_uuid', uuid);
-        window.location.href = "/";
+        //window.location.href = "/";
       } else {
         // use Passkey
         await fetch(endpoint.webauthn_register_options + uuid, {

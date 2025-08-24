@@ -120,7 +120,9 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
   useEffect(() => {
     if (encCallSecret !== "") {
       async function decrypt() {
-        setCallSecret(await decrypt_base64_using_privkey(encCallSecret, privateKey))
+        let enc = await decrypt_base64_using_privkey(encCallSecret, privateKey)
+        alert(enc)
+        setCallSecret(enc)
       }
       decrypt()
     }
