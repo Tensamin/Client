@@ -25,7 +25,8 @@
     "lint": "next lint",
     "electron": "npm run build && npm run electron-no-build",
     "electron-no-build": "electron-forge start",
-    "make": "npm run build && electron-forge make"
+    "make": "npm run build && electron-forge make",
+    "make:archlinux": "./src/mkarchpkg.sh"
   },
   "dependencies": {
     "@electron-forge/plugin-fuses": "^7.8.3",
