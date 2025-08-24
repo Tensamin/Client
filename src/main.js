@@ -1,5 +1,4 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('node:path');
 const keytar = require('keytar');
 
 if (require('electron-squirrel-startup')) {
@@ -11,10 +10,10 @@ const createWindow = () => {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+    preload: TENSAMIN_PRELOAD_WEBPACK_ENTRY,
     },
   });
-  mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+  mainWindow.loadURL(TENSAMIN_WEBPACK_ENTRY);
   mainWindow.webContents.openDevTools();
 };
 
