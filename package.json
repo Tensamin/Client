@@ -26,9 +26,7 @@
     "lint": "next lint",
     "electron": "npm run build && npm run electron-no-build",
     "electron-no-build": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish"
+    "make": "npm run build && electron-forge make"
   },
   "dependencies": {
     "@electron-forge/plugin-fuses": "^7.8.3",
