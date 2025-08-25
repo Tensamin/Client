@@ -14,6 +14,20 @@ import { useUsersContext } from "@/components/context/users";
 // Components
 import { Button } from "@/components/ui/button";
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.onload = () => {
+      // reader.result is a string like "data:<mime>;base64,AAAA..."
+      const dataUrl = reader.result;
+      const base64 = dataUrl.split(",")[1]; // raw base64
+      resolve(base64);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 // Main
 export function MessageSend() {
   let [message, setMessage] = useState("");
@@ -21,6 +35,7 @@ export function MessageSend() {
   let { connected } = useWebSocketContext();
   let { addMessage, navbarLoading, navbarLoadingMessage, receiver } = useMessageContext();
   let textareaRef = useRef(null);
+  let uploadFileRef = useRef(null);
 
   let handleGlobalKeyDown = useCallback((event) => {
     if (event.ctrlKey || event.altKey || event.shiftKey || event.metaKey) {
@@ -84,7 +99,7 @@ export function MessageSend() {
   }, [message]);
 
   async function handleSubmit(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
 
     if (connected) {
       if (message.trim().length === 0) {
@@ -105,8 +120,26 @@ export function MessageSend() {
     }
   }
 
+  async function handleFileChange(event) {
+    let data = await fileToBase64(event.target.files[0]);
+    let finalMessage = `data:`
+    setMessage(finalMessage);
+    handleSubmit();
+  }
+
   return (
+    <>
+    <input ref={uploadFileRef} type="file" onChange={handleFileChange} hidden />
     <form className="flex gap-3 w-full items-center" onSubmit={handleSubmit}>
+      <Button
+        variant="outline"
+        className="w-10.5 h-10.5 rounded-xl"
+        onClick={() => {
+          uploadFileRef.current.click();
+        }}
+      >
+        <Icon.Plus />
+      </Button>
       <textarea
         ref={textareaRef}
         className="p-2.5 w-full rounded-xl text-sm resize-none placeholder:text-muted-foreground border outline-0 text-md border-input bg-card overflow-hidden"
@@ -118,19 +151,11 @@ export function MessageSend() {
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            handleSubmit(e);
+            handleSubmit();
           }
         }}
       />
-      <Button
-        variant="outline"
-        className="w-10.5 h-10.5 rounded-full"
-        type="submit"
-        id="submit"
-        name="submit"
-      >
-        <Icon.Send />
-      </Button>
     </form>
+    </>
   );
 }

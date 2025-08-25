@@ -334,7 +334,7 @@ export function MessageProvider({ children }) {
       if (sharedSecret === "" && receiverPublicKey !== "") {
         updateNavbarLoading(true);
         setNavbarLoadingMessage("Loading shared secret.");
-        get_shared_secret(privateKey, { kty: "OKP", crv: "X448", x: receiverPublicKey })
+        get_shared_secret(privateKey, receiverPublicKey)
         .then(secret => {
           setSharedSecret(secret.sharedSecretHex);
           setNavbarLoadingMessage("");
@@ -424,7 +424,7 @@ export function MessageProvider({ children }) {
         } else {
           get(messageSender).then(async (data) => {
             let tmpSharedSecret;
-            get_shared_secret(privateKey, { kty: "OKP", crv: "X448", x: data.public_key })
+            get_shared_secret(privateKey, data.public_key)
               .then(secret => {
                 tmpSharedSecret = secret.sharedSecretHex;
                 setNavbarLoadingMessage("");

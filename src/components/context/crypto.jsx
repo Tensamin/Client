@@ -38,6 +38,7 @@ export function useCryptoContext() {
 
 export function CryptoProvider({ children }) {
   let [privateKey, setPrivateKey] = useState("pending");
+  let [privateKeyJWK, setPrivateKeyJWK] = useState({});
   let [privateKeyHash, setPrivateKeyHash] = useState("pending");
   let [isInitialized, setIsInitialized] = useState(false);
   let { decrypt_base64_using_aes } = useEncryptionContext();

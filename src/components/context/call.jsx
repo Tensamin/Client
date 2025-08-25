@@ -52,7 +52,7 @@ export let CallProvider = ({ children }) => {
     let responseTimeout = 10000;
 
     // Context hooks
-    let { encrypt_base64_using_aes, decrypt_base64_using_aes, decrypt_base64_using_privkey, encrypt_base64_using_pubkey } = useEncryptionContext();
+    let { encrypt_base64_using_aes, decrypt_base64_using_aes, get_shared_secret } = useEncryptionContext();
     let { privateKeyHash, privateKey } = useCryptoContext();
     let { ownUuid, get } = useUsersContext();
     let { receiver } = useMessageContext();
@@ -304,7 +304,14 @@ export let CallProvider = ({ children }) => {
                 setInviteData({
                     callerId: message.data.sender_id,
                     callId: message.data.call_id,
-                    callSecret: await decrypt_base64_using_privkey(message.data.call_secret, privateKey),
+                    callSecret: atob(await decrypt_base64_using_aes(
+                        message.data.call_secret,
+                        await get_shared_secret(
+                            privateKey,
+                            await get(message.data.sender_id)
+                                .then(data => data.public_key)
+                        )
+                    )),
                 })
                 setInvitedToCall(true)
             }
@@ -1128,9 +1135,9 @@ export let CallProvider = ({ children }) => {
                                         {
                                             receiver_id: receiver,
                                             call_id: callId,
-                                            call_secret: await encrypt_base64_using_pubkey(
+                                            call_secret: await encrypt_base64_using_aes(
                                                 btoa(callSecret),
-                                                publicKey,
+                                                await get_shared_secret(privateKey, publicKey),
                                             ),
                                             call_secret_sha: await sha256(callSecret),
                                         },

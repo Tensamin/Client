@@ -11,6 +11,7 @@ import Image from "next/image";
 
 // Lib Imports
 import { convertDisplayNameToInitials } from "@/lib/utils";
+import ls from "@/lib/localStorageManager";
 
 // Context Imports
 import { useUsersContext } from "@/components/context/users";
@@ -39,11 +40,10 @@ let TILE_GAP = 16;
 // Main
 export function VoiceExpanded() {
   // Context
-  let { ownUuid, chatsArray } = useUsersContext();
-  let { connected, connectedUsers, streamingUsers, directionalAudio, setDirectionalAudio } = useCallContext();
+  let { ownUuid } = useUsersContext();
+  let { connectedUsers, streamingUsers } = useCallContext();
 
   // UI state
-  let [inviteOpen, setInviteOpen] = useState(false);
   let [focused, setFocused] = useState("");
 
   // Choose a default focused user if none selected
@@ -64,55 +64,7 @@ export function VoiceExpanded() {
   return (
     <div className="flex h-full w-full flex-col gap-4 overflow-hidden">
       {/* Top bar */}
-      <div className="flex w-full gap-2">
-        <Button
-          variant={connected ? "default" : "destructive"}
-          className="gap-2"
-        >
-          {connected ? (
-            <>
-              <Icon.Wifi /> Connected
-            </>
-          ) : (
-            <>
-              <Icon.WifiOff /> Disconnected
-            </>
-          )}
-        </Button>
-
-        <Button
-          className="h-9 gap-2"
-          onClick={() => setInviteOpen(true)}
-          disabled={!connected}
-        >
-          <Icon.Send /> Invite
-        </Button>
-
-        <div className="flex gap-2 justify-center items-center">
-          <Switch
-            id="directional-audio"
-            checked={directionalAudio}
-            onCheckedChange={setDirectionalAudio}
-          />
-          <Label htmlFor="directional-audio">Directional Audio</Label>
-        </div>
-
-        <CommandDialog open={inviteOpen} onOpenChange={setInviteOpen}>
-          <CommandInput placeholder="Search for a Friend..." />
-          <CommandList>
-            <CommandEmpty>No friends to invite.</CommandEmpty>
-            <CommandGroup>
-              {chatsArray.map((chat) => (
-                <InviteItem
-                  id={chat.user_id}
-                  key={chat.user_id}
-                  onShouldClose={setInviteOpen}
-                />
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </CommandDialog>
-      </div>
+      <Topbar />
 
       {/* Content: Focused large view + thumbnails */}
       <div className="flex w-full flex-1 min-h-0 flex-col gap-2">
@@ -234,11 +186,11 @@ export function VoiceRearrangement() {
       try {
         e.preventDefault();
         e.stopPropagation();
-      } catch {}
+      } catch { }
 
       let el = nodeRefs.current.get(id) || e.currentTarget;
       if (!el) return;
-      try { el.setPointerCapture?.(e.pointerId); } catch {}
+      try { el.setPointerCapture?.(e.pointerId); } catch { }
 
       let previousUserSelect = document.body.style.userSelect;
       document.body.style.userSelect = "none";
@@ -275,13 +227,13 @@ export function VoiceRearrangement() {
         window.removeEventListener("pointermove", handleMove);
         window.removeEventListener("pointerup", finalize);
         window.removeEventListener("pointercancel", finalize);
-        try { el.releasePointerCapture?.(e.pointerId); } catch {}
+        try { el.releasePointerCapture?.(e.pointerId); } catch { }
         if (rafId) cancelAnimationFrame(rafId);
         setPositions((prev) => ({
           ...prev,
           [id]: { x: targetX, y: targetY },
         }));
-        try { endUserDrag(id); } catch {}
+        try { endUserDrag(id); } catch { }
         el.style.willChange = "";
         document.body.style.userSelect = previousUserSelect;
         draggingIdsRef.current.delete(id);
@@ -298,55 +250,7 @@ export function VoiceRearrangement() {
   return (
     <div className="flex h-full w-full flex-col gap-4 overflow-hidden">
       {/* Top bar */}
-      <div className="flex w-full gap-2">
-        <Button
-          variant={connected ? "default" : "destructive"}
-          className="gap-2"
-        >
-          {connected ? (
-            <>
-              <Icon.Wifi /> Connected
-            </>
-          ) : (
-            <>
-              <Icon.WifiOff /> Disconnected
-            </>
-          )}
-        </Button>
-
-        <Button
-          className="h-9 gap-2"
-          onClick={() => setInviteOpen(true)}
-          disabled={!connected}
-        >
-          <Icon.Send /> Invite
-        </Button>
-
-        <div className="flex gap-2 justify-center items-center">
-          <Switch
-            id="directional-audio"
-            checked={directionalAudio}
-            onCheckedChange={setDirectionalAudio}
-          />
-          <Label htmlFor="directional-audio">Directional Audio</Label>
-        </div>
-
-        <CommandDialog open={inviteOpen} onOpenChange={setInviteOpen}>
-          <CommandInput placeholder="Search for a Friend..." />
-          <CommandList>
-            <CommandEmpty>No friends to invite.</CommandEmpty>
-            <CommandGroup>
-              {chatsArray.map((chat) => (
-                <InviteItem
-                  id={chat.user_id}
-                  key={chat.user_id}
-                  onShouldClose={setInviteOpen}
-                />
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </CommandDialog>
-      </div>
+      <Topbar />
 
       {/* Content: Draggable canvas */}
       <div className="flex w-full flex-1 min-h-0 flex-col">
@@ -478,19 +382,19 @@ export function Main() {
       try {
         e.preventDefault();
         e.stopPropagation();
-      } catch {}
+      } catch { }
 
       let el = nodeRefs.current.get(id) || e.currentTarget;
       if (!el) return;
-      try { el.setPointerCapture?.(e.pointerId); } catch {}
+      try { el.setPointerCapture?.(e.pointerId); } catch { }
 
       // Disable text selection during drag
       let previousUserSelect = document.body.style.userSelect;
       document.body.style.userSelect = "none";
 
-  // Mark as dragging and trigger one render so style omits transform
-  draggingIdsRef.current.add(id);
-  setDragRev((r) => (r + 1) & 0xffff);
+      // Mark as dragging and trigger one render so style omits transform
+      draggingIdsRef.current.add(id);
+      setDragRev((r) => (r + 1) & 0xffff);
 
       let startX = e.clientX;
       let startY = e.clientY;
@@ -522,14 +426,14 @@ export function Main() {
         window.removeEventListener("pointermove", handleMove);
         window.removeEventListener("pointerup", finalize);
         window.removeEventListener("pointercancel", finalize);
-        try { el.releasePointerCapture?.(e.pointerId); } catch {}
+        try { el.releasePointerCapture?.(e.pointerId); } catch { }
         if (rafId) cancelAnimationFrame(rafId);
         // Commit final position once to context, then notify end of drag
         setPositions((prev) => ({
           ...prev,
           [id]: { x: targetX, y: targetY },
         }));
-        try { endUserDrag(id); } catch {}
+        try { endUserDrag(id); } catch { }
         // Restore styles
         el.style.willChange = "";
         // Keep transform; React will reconcile to same final transform via props
@@ -549,56 +453,7 @@ export function Main() {
   return (
     <div className="flex h-full w-full flex-col gap-4 overflow-hidden">
       {/* Top bar */}
-      <div className="flex w-full gap-2">
-        <Button
-          variant={connected ? "default" : "destructive"}
-          className="gap-2"
-        >
-          {connected ? (
-            <>
-              <Icon.Wifi /> Connected
-            </>
-          ) : (
-            <>
-              <Icon.WifiOff /> Disconnected
-            </>
-          )}
-        </Button>
-
-        <Button
-          className="h-9 gap-2"
-          onClick={() => setInviteOpen(true)}
-          disabled={!connected}
-        >
-          <Icon.Send /> Invite
-        </Button>
-
-        <div className="flex gap-2 justify-center items-center">
-          <Switch
-            id="directional-audio"
-            checked={directionalAudio}
-            onCheckedChange={setDirectionalAudio}
-          />
-          <Label htmlFor="directional-audio">Directional Audio</Label>
-        </div>
-
-
-        <CommandDialog open={inviteOpen} onOpenChange={setInviteOpen}>
-          <CommandInput placeholder="Search for a Friend..." />
-          <CommandList>
-            <CommandEmpty>No friends to invite.</CommandEmpty>
-            <CommandGroup>
-              {chatsArray.map((chat) => (
-                <InviteItem
-                  id={chat.user_id}
-                  key={chat.user_id}
-                  onShouldClose={setInviteOpen}
-                />
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </CommandDialog>
-      </div>
+      <Topbar />
 
       {/* Content */}
       <div className="flex w-full flex-1 min-h-0 flex-col">
@@ -629,35 +484,35 @@ export function Main() {
             {connectedUsers
               .filter((user) => user !== ownUuid)
               .map((user) => {
-              let pos = positions[user] || { x: 0, y: 0 };
-              const isDragging = draggingIdsRef.current.has(user);
-              return (
-                <div
-                  key={`free-${user}`}
-                  className="absolute cursor-grab active:cursor-grabbing"
-                  style={{
-                    ...(isDragging ? {} : { transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }),
-                    width: `${AVATAR_TILE_WIDTH}px`,
-                    touchAction: "none",
-                  }}
-                  ref={(el) => {
-                    if (el) nodeRefs.current.set(user, el);
-                    else nodeRefs.current.delete(user);
-                  }}
-                  onPointerDown={startDrag(user)}
-                >
-                  <VoiceModal
-                    id={user}
-                    streams={streamingUsers.includes(user)}
-                    focused={false}
-                    onFocus={(focus) => {
-                      if (focus) setFocused(user);
+                let pos = positions[user] || { x: 0, y: 0 };
+                const isDragging = draggingIdsRef.current.has(user);
+                return (
+                  <div
+                    key={`free-${user}`}
+                    className="absolute cursor-grab active:cursor-grabbing"
+                    style={{
+                      ...(isDragging ? {} : { transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }),
+                      width: `${AVATAR_TILE_WIDTH}px`,
+                      touchAction: "none",
                     }}
-                    mode="avatarOnly"
-                  />
-                </div>
-              );
-            })}
+                    ref={(el) => {
+                      if (el) nodeRefs.current.set(user, el);
+                      else nodeRefs.current.delete(user);
+                    }}
+                    onPointerDown={startDrag(user)}
+                  >
+                    <VoiceModal
+                      id={user}
+                      streams={streamingUsers.includes(user)}
+                      focused={false}
+                      onFocus={(focus) => {
+                        if (focus) setFocused(user);
+                      }}
+                      mode="avatarOnly"
+                    />
+                  </div>
+                );
+              })}
           </div>
         ) : (
           <div className="flex w-full flex-1 min-h-0 flex-col gap-2">
@@ -681,22 +536,22 @@ export function Main() {
               {connectedUsers
                 .filter((user) => user !== ownUuid)
                 .map((user) =>
-                focused === user ? null : (
-                  <div
-                    key={`thumb-${user}`}
-                    className="w-[280px] flex-shrink-0"
-                  >
-                    <VoiceModal
-                      id={user}
-                      streams={streamingUsers.includes(user)}
-                      onFocus={(focus) => {
-                        if (focus) setFocused(user);
-                      }}
-                      focused={false}
-                    />
-                  </div>
-                )
-              )}
+                  focused === user ? null : (
+                    <div
+                      key={`thumb-${user}`}
+                      className="w-[280px] flex-shrink-0"
+                    >
+                      <VoiceModal
+                        id={user}
+                        streams={streamingUsers.includes(user)}
+                        onFocus={(focus) => {
+                          if (focus) setFocused(user);
+                        }}
+                        focused={false}
+                      />
+                    </div>
+                  )
+                )}
             </div>
           </div>
         )}
@@ -1024,4 +879,62 @@ function useFitBox(containerRef, aspectW = 16, aspectH = 9) {
   }, [width, height, aspectW, aspectH]);
 
   return box;
+}
+
+function Topbar() {
+  let { connected, directionalAudio, setDirectionalAudio, callId, callSecret } = useCallContext();
+  let { chatsArray } = useUsersContext();
+  let [inviteOpen, setInviteOpen] = useState(false);
+
+  return (
+    <div className="flex w-full gap-2">
+      <Button
+        variant={connected ? "default" : "destructive"}
+        className="gap-2"
+      >
+        {connected ? (
+          <>
+            <Icon.Wifi /> Connected
+          </>
+        ) : (
+          <>
+            <Icon.WifiOff /> Disconnected
+          </>
+        )}
+      </Button>
+
+      <Button
+        className="h-9 gap-2"
+        onClick={() => setInviteOpen(true)}
+        disabled={!connected}
+      >
+        <Icon.Send /> Invite
+      </Button>
+
+      <div className="flex gap-2 justify-center items-center">
+        <Switch
+          id="directional-audio"
+          checked={directionalAudio}
+          onCheckedChange={setDirectionalAudio}
+        />
+        <Label htmlFor="directional-audio">Directional Audio</Label>
+      </div>
+
+      <CommandDialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <CommandInput placeholder="Search for a Friend..." />
+        <CommandList>
+          <CommandEmpty>No friends to invite.</CommandEmpty>
+          <CommandGroup>
+            {chatsArray.map((chat) => (
+              <InviteItem
+                id={chat.user_id}
+                key={chat.user_id}
+                onShouldClose={setInviteOpen}
+              />
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
+    </div>
+  )
 }

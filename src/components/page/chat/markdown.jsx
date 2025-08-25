@@ -78,7 +78,7 @@ export let Link = ({ href, title, children }) => (
 // --- Image ---
 export let Image = ({ src, alt, title }) => (
   <img
-    src={src}
+    src={`data:${src}`}
     alt={alt}
     title={title}
     className="max-w-full h-auto rounded-lg shadow-md my-4 block mx-auto"

@@ -151,7 +151,9 @@ export function EncryptionProvider({ children }) {
     [sendToWorker],
   );
 
-  async function get_shared_secret(own_jwk, other_jwk) {    
+  async function get_shared_secret(own_jwk, other_jwk_raw) {
+    let other_jwk = { kty: "OKP", crv: "X448", x: other_jwk_raw };
+    
     // --- utils ---
     function bytesToHex(u8) {
       return Array.from(u8)

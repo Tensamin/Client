@@ -21,7 +21,7 @@ export function Communities() {
 
   useEffect(() => {
     if (connected && identified && !forceLoad) {
-      send("get_communties", {
+      send("get_communities", {
         log_level: 0,
         message: "Getting all communities",
       }, {})
