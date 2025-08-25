@@ -98,23 +98,23 @@ export function MessageSend() {
     }
   }, [message]);
 
-  async function handleSubmit(event) {
-    if (event) event.preventDefault();
-
+  async function handleSubmit(event, useCustomMessage = false, customMessage = false) {
+    event.preventDefault();
+    
     if (connected) {
-      if (message.trim().length === 0) {
+      if ((useCustomMessage ? customMessage : message).trim().length === 0) {
         return;
       }
 
       addMessage({
         id: Math.floor(Date.now()).toString(),
         sender: ownUuid,
-        content: message,
+        content: useCustomMessage ? customMessage : message,
         sendToServer: true,
       });
       makeChatTop(receiver);
 
-      setMessage("");
+      if (!useCustomMessage) setMessage("");
     } else {
       toast.error("You are not connected to a Omikron Server!");
     }
@@ -122,9 +122,9 @@ export function MessageSend() {
 
   async function handleFileChange(event) {
     let data = await fileToBase64(event.target.files[0]);
-    let finalMessage = `data:`
-    setMessage(finalMessage);
-    handleSubmit();
+    let finalFile = `data:${event.target.files[0].type};base64,${data}`
+    let finalMessage = `![${event.target.files[0].name}](${finalFile})`
+    handleSubmit(event, true, finalMessage);
   }
 
   return (
@@ -150,8 +150,7 @@ export function MessageSend() {
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            handleSubmit();
+            handleSubmit(e);
           }
         }}
       />
