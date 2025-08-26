@@ -76,12 +76,13 @@ export let Link = ({ href, title, children }) => (
 );
 
 // --- Image ---
-export let Image = ({ src, alt, title }) => (
+export let Image = ({ src, alt }) => (
   <img
     src={src}
     alt={alt}
-    title={title}
     className="max-w-full h-auto rounded-lg shadow-md my-4 block mx-auto"
+    loading="lazy"
+    decoding="async"
   />
 );
 

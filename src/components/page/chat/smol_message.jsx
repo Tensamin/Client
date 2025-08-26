@@ -1,13 +1,13 @@
 // Package Imports
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useState, useEffect } from "react";
 import { Hourglass } from "ldrs/react";
 import "ldrs/react/Hourglass.css";
-import * as Icon from "lucide-react"
+import * as Icon from "lucide-react";
 
 // Lib Imports
-import { copyTextToClipboard } from "@/lib/utils"
+import { copyTextToClipboard } from "@/lib/utils";
 
 // Components
 import {
@@ -16,14 +16,46 @@ import {
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger,
-} from "@/components/ui/context-menu"
+} from "@/components/ui/context-menu";
 import { MarkdownToReactComponents } from "@/components/page/chat/markdown";
+
+// Allow only base64 raster images (png, jpg, jpeg, gif, webp, avif)
+const BASE64_IMG_RE =
+    /^data:image\/(png|jpe?g|gif|webp|avif);base64,/i;
+
+// Pass data: through unchanged; keep defaults for everything else
+const urlTransform = (url) =>
+    url && url.startsWith("data:") ? url : defaultUrlTransform(url);
+
+// Only allow <img> nodes that are base64 image data URIs
+const allowElement = (element) => {
+    if (element.tagName === "img") {
+        const src = element.properties?.src;
+        if (typeof src !== "string") return false;
+        return BASE64_IMG_RE.test(src);
+    }
+    return true;
+};
+
+// Render <img> only for base64 images; hide others
+function ImgBase64Only({ src, alt, title, ...rest }) {
+    if (typeof src !== "string" || !BASE64_IMG_RE.test(src)) return null;
+    return (
+        <img
+            src={src}
+            alt={alt}
+            title={title}
+            className="max-w-full h-auto"
+            {...rest}
+        />
+    );
+}
 
 // Main
 export function SmolMessage({ message, sendToServer }) {
     let [showLoading, setShowLoading] = useState(false);
-    
-    let niceMessage = message.content.replace(/:/g, '\\:');
+
+    let niceMessage = message.content;
 
     useEffect(() => {
         if (sendToServer) {
@@ -32,26 +64,39 @@ export function SmolMessage({ message, sendToServer }) {
         }
     }, [sendToServer]);
 
+    // Merge your existing component map but force our <img> override
+    const mergedComponents = {
+        ...MarkdownToReactComponents,
+        img: ImgBase64Only,
+    };
+
     return (
         <ContextMenu>
             <ContextMenuTrigger>
-                <div className={`flex gap-2 text-foreground hover:bg-input/15 rounded-sm pl-1 ${sendToServer ? "opacity-50" : null}`}>
+                <div
+                    className={`flex gap-2 text-foreground hover:bg-input/15 rounded-sm pl-1 ${sendToServer ? "opacity-50" : null
+                        }`}
+                >
                     <div className="whitespace-pre-wrap w-full">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownToReactComponents}>
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            urlTransform={urlTransform}
+                            allowElement={allowElement}
+                            components={mergedComponents}
+                        >
                             {niceMessage}
                         </ReactMarkdown>
                     </div>
                     <div className="pt-0.5">
                         {sendToServer ? (
                             <div
-                                className={`h-full transition-opacity duration-500 ease-in-out ${sendToServer && showLoading ? 'opacity-100' : 'opacity-0'}`}
+                                className={`h-full transition-opacity duration-500 ease-in-out ${sendToServer && showLoading ? "opacity-100" : "opacity-0"
+                                    }`}
                             >
                                 <Hourglass size={14} speed={2} color="var(--foreground)" />
                             </div>
                         ) : (
-                            <div
-                                className="invisible hover:visible h-full transition-opacity duration-500 ease-in-out"
-                            >
+                            <div className="invisible hover:visible h-full transition-opacity duration-500 ease-in-out">
                                 <Icon.Ellipsis size={14} />
                             </div>
                         )}
@@ -59,9 +104,11 @@ export function SmolMessage({ message, sendToServer }) {
                 </div>
             </ContextMenuTrigger>
             <ContextMenuContent className="w-52">
-                <ContextMenuItem onClick={() => {
-                    copyTextToClipboard(message.content)
-                }}>
+                <ContextMenuItem
+                    onClick={() => {
+                        copyTextToClipboard(message.content);
+                    }}
+                >
                     <Icon.MessageSquareIcon /> Copy Message
                 </ContextMenuItem>
                 <ContextMenuSeparator />

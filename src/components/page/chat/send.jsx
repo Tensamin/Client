@@ -100,7 +100,7 @@ export function MessageSend() {
 
   async function handleSubmit(event, useCustomMessage = false, customMessage = false) {
     event.preventDefault();
-    
+
     if (connected) {
       if ((useCustomMessage ? customMessage : message).trim().length === 0) {
         return;
@@ -121,40 +121,41 @@ export function MessageSend() {
   }
 
   async function handleFileChange(event) {
+    if (!event.target.files[0]) return;
     let data = await fileToBase64(event.target.files[0]);
-    let finalFile = `data:${event.target.files[0].type};base64,${data}`
-    let finalMessage = `![${event.target.files[0].name}](${finalFile})`
+    let finalFile = `data:${event.target.files[0].type};base64,${data}`;
+    let finalMessage = `![${event.target.files[0].name}](${finalFile})`.replace("\n", "");
     handleSubmit(event, true, finalMessage);
   }
 
   return (
     <>
-    <input ref={uploadFileRef} type="file" onChange={handleFileChange} hidden />
-    <form className="flex gap-3 w-full items-center" onSubmit={handleSubmit}>
-      <Button
-        variant="outline"
-        className="w-10.5 h-10.5 rounded-xl"
-        onClick={() => {
-          uploadFileRef.current.click();
-        }}
-      >
-        <Icon.Plus />
-      </Button>
-      <textarea
-        ref={textareaRef}
-        className="p-2.5 w-full rounded-xl text-sm resize-none placeholder:text-muted-foreground border outline-0 text-md border-input bg-card overflow-hidden"
-        placeholder={navbarLoading ? navbarLoadingMessage || "Send a message..." : "Send a message..."}
-        id="message"
-        name="message"
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            handleSubmit(e);
-          }
-        }}
-      />
-    </form>
+      <input ref={uploadFileRef} type="file" onChange={handleFileChange} hidden />
+      <form className="flex gap-3 w-full items-center" onSubmit={handleSubmit}>
+        <Button
+          variant="outline"
+          className="w-10.5 h-10.5 rounded-xl"
+          onClick={() => {
+            uploadFileRef.current.click();
+          }}
+        >
+          <Icon.Plus />
+        </Button>
+        <textarea
+          ref={textareaRef}
+          className="p-2.5 w-full rounded-xl text-sm resize-none placeholder:text-muted-foreground border outline-0 text-md border-input bg-card overflow-hidden"
+          placeholder={navbarLoading ? navbarLoadingMessage || "Send a message..." : "Send a message..."}
+          id="message"
+          name="message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              handleSubmit(e);
+            }
+          }}
+        />
+      </form>
     </>
   );
 }

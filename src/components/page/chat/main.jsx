@@ -53,7 +53,7 @@ export function Main({ data }) {
         !loadedAllMessages &&
         !noMessageWithUser
       ) {
-        
+
         prevScrollHeightRef.current = container.scrollHeight;
         setLoadMoreMessages(true);
       }
