@@ -11,6 +11,7 @@ import { useUsersContext } from "@/components/context/users";
 import { useCallContext } from "@/components/context/call";
 import { useEncryptionContext } from "@/components/context/encryption";
 import { useWebSocketContext } from "@/components/context/websocket";
+import { useCryptoContext } from "@/components/context/crypto";
 
 // Components
 import { CommandDialog, CommandItem } from "@/components/ui/command"
@@ -172,7 +173,8 @@ export function User({ id, className, avatarSize }) {
 
 export function InviteItem({ id, onShouldClose }) {
     let { get } = useUsersContext();
-    let { encrypt_base64_using_pubkey } = useEncryptionContext();
+    let { get_shared_secret, encrypt_base64_using_aes } = useEncryptionContext();
+    let { privateKey } = useCryptoContext();
     let { send } = useWebSocketContext();
     let { callId, callSecret } = useCallContext();
 
@@ -187,9 +189,9 @@ export function InviteItem({ id, onShouldClose }) {
                 {
                     receiver_id: id,
                     call_id: callId,
-                    call_secret: await encrypt_base64_using_pubkey(
+                    call_secret: await encrypt_base64_using_aes(
                         btoa(callSecret),
-                        await get(id).then(data => { return data.public_key }),
+                        await get_shared_secret(privateKey, await get(id).then(data => data.public_key)),
                     ),
                     call_secret_sha: await sha256(callSecret),
                 },

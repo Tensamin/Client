@@ -114,15 +114,14 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
   let [showCallActive, setShowCallActive] = useState(callActive);
   let { get, refetchUser } = useUsersContext();
   let { privateKey } = useCryptoContext();
-  let { decrypt_base64_using_privkey } = useEncryptionContext();
+  let { get_shared_secret, decrypt_base64_using_aes } = useEncryptionContext();
   let { startCall } = useCallContext();
 
   useEffect(() => {
     if (encCallSecret !== "") {
       async function decrypt() {
-        let enc = await decrypt_base64_using_privkey(encCallSecret, privateKey)
-        alert(enc)
-        setCallSecret(enc)
+        let enc = atob(await decrypt_base64_using_aes(encCallSecret, await get_shared_secret(privateKey, await get(id).then(data => data.public_key))));
+        setCallSecret(enc);
       }
       decrypt()
     }

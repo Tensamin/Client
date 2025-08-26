@@ -43,7 +43,6 @@ export function MessageProvider({ children }) {
   let { get, makeChatTop, ownUuid } = useUsersContext();
   let { send, connected, message } = useWebSocketContext();
   let {
-    decrypt_base64_using_privkey,
     encrypt_base64_using_aes,
     decrypt_base64_using_aes,
     get_shared_secret,

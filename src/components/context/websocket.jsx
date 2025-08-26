@@ -43,8 +43,7 @@ export let useWebSocketContext = () => {
 export let WebSocketProvider = ({ children }) => {
   let pendingRequests = useRef(new Map());
   let responseTimeout = 10000;
-  let { decrypt_base64_using_privkey } = useEncryptionContext();
-  let { privateKeyHash, privateKey } = useCryptoContext();
+  let { privateKeyHash } = useCryptoContext();
   let { setUserState, setUserStates, forceLoad, setForceLoad, clearFromCache, doChatRefresh } = useUsersContext();
   let [iotaPing, setIotaPing] = useState("?");
   let [clientPing, setClientPing] = useState("?");

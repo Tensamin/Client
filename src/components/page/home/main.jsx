@@ -1,6 +1,5 @@
 // Package Imports
 import { useState } from "react";
-import { v7 } from "uuid";
 
 // Lib Imports
 import { endpoint } from "@/lib/endpoints";
@@ -8,7 +7,6 @@ import { log, isUuid } from "@/lib/utils";
 
 // Context Imports
 import { useWebSocketContext } from "@/components/context/websocket";
-import { useEncryptionContext } from "@/components/context/encryption";
 import { useUsersContext } from "@/components/context/users";
 import { useCryptoContext } from "@/components/context/crypto";
 
@@ -33,10 +31,7 @@ export function Main() {
     let [open, setOpen] = useState(false)
     let [newChatUsername, setNewChatUUID] = useState("");
     let [newCommunityDomain, setNewCommunityDomain] = useState("");
-    let { ownUuid, get } = useUsersContext();
     let { send } = useWebSocketContext();
-    let { encrypt_base64_using_pubkey } = useEncryptionContext();
-    let { privateKey } = useCryptoContext();
 
     function handleInputChange(e) {
         setNewChatUUID(e)

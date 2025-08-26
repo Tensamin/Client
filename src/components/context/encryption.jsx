@@ -129,28 +129,6 @@ export function EncryptionProvider({ children }) {
     [sendToWorker],
   );
 
-  const encrypt_base64_using_pubkey = useCallback(
-    async (data, key) => {
-      return await sendToWorker({
-        type: "encrypt_base64_using_pubkey",
-        data,
-        key,
-      });
-    },
-    [sendToWorker],
-  );
-
-  const decrypt_base64_using_privkey = useCallback(
-    async (data, key) => {
-      return await sendToWorker({
-        type: "decrypt_base64_using_privkey",
-        data,
-        key,
-      });
-    },
-    [sendToWorker],
-  );
-
   async function get_shared_secret(own_jwk, other_jwk_raw) {
     let other_jwk = { kty: "OKP", crv: "X448", x: other_jwk_raw };
     
@@ -477,8 +455,6 @@ export function EncryptionProvider({ children }) {
       value={{
         encrypt_base64_using_aes,
         decrypt_base64_using_aes,
-        encrypt_base64_using_pubkey,
-        decrypt_base64_using_privkey,
         get_shared_secret,
       }}
     >
