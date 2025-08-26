@@ -1,0 +1,23 @@
+1:"$Sreact.fragment"
+2:I[87555,[],""]
+3:I[31295,[],""]
+4:I[76708,["690","static/chunks/690-9f4ae683f2ec7d2b.js","708","static/chunks/708-03a97f3905b3e37c.js","345","static/chunks/app/not-found-16bfc628ea7710e5.js"],"Loading"]
+5:I[8180,["268","static/chunks/aaea2bcf-9f1920ef5575c7e6.js","690","static/chunks/690-9f4ae683f2ec7d2b.js","887","static/chunks/887-7ca0fec6853ddf1a.js","419","static/chunks/419-fbbdc70b9a4c7ee4.js","708","static/chunks/708-03a97f3905b3e37c.js","670","static/chunks/670-5e9edc1b8883b43b.js","974","static/chunks/app/page-69293ad2157347d7.js"],"LoadingWrapper"]
+6:I[59665,[],"MetadataBoundary"]
+8:I[59665,[],"OutletBoundary"]
+b:I[74911,[],"AsyncMetadataOutlet"]
+d:I[59665,[],"ViewportBoundary"]
+f:I[26614,[],""]
+:HL["/_next/static/media/bb3ef058b751a6ad-s.p.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/_next/static/css/92eb96d882ad5ee5.css","style"]
+:HL["/_next/static/css/4e0d5669fdcfd8a2.css","style"]
+:HL["/_next/static/css/7966238c87294b70.css","style"]
+0:{"P":null,"b":"fhcf9jfS9mqTgMxhTgP1w","p":"","c":["",""],"i":false,"f":[[["",{"children":["__PAGE__",{}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/92eb96d882ad5ee5.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/_next/static/css/4e0d5669fdcfd8a2.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"en","children":["$","body",null,{"className":"__variable_3c557b antialiased","children":["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[["$","$L4",null,{"message":"This page does not exist","error":true}],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}]}]]}],{"children":["__PAGE__",["$","$1","c",{"children":[["$","$L5",null,{}],["$","$L6",null,{"children":"$L7"}],[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/7966238c87294b70.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","$L8",null,{"children":["$L9","$La",["$","$Lb",null,{"promise":"$@c"}]]}]]}],{},null,false]},null,false],["$","$1","h",{"children":[null,["$","$1","t7DWphQRFvr-FrwW19aoW",{"children":[["$","$Ld",null,{"children":"$Le"}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],null]}],false]],"m":"$undefined","G":["$f","$undefined"],"s":false,"S":true}
+10:"$Sreact.suspense"
+11:I[74911,[],"AsyncMetadata"]
+7:["$","$10",null,{"fallback":null,"children":["$","$L11",null,{"promise":"$@12"}]}]
+a:null
+e:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+9:null
+12:{"metadata":[["$","title","0",{"children":"Tensamin"}],["$","meta","1",{"name":"description","content":"Super secure messaging app"}],["$","link","2",{"rel":"manifest","href":"/manifest.webmanifest","crossOrigin":"$undefined"}],["$","link","3",{"rel":"icon","href":"/favicon.ico","type":"image/x-icon","sizes":"48x48"}],["$","link","4",{"rel":"icon","href":"/icon0.svg?ef783948d860dd14","type":"image/svg+xml","sizes":"any"}],["$","link","5",{"rel":"icon","href":"/icon1.png?1344491794e49dd9","type":"image/png","sizes":"96x96"}],["$","link","6",{"rel":"apple-touch-icon","href":"/apple-icon.png?7fc248d44949ff60","type":"image/png","sizes":"180x180"}]],"error":null,"digest":"$undefined"}
+c:{"metadata":"$12:metadata","error":null,"digest":"$undefined"}
