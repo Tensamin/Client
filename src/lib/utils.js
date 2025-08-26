@@ -265,7 +265,7 @@ export async function getDeviceFingerprint({ debug = false } = {}) {
   }
 
   const fp = {
-    version: "v2",
+    version: "v3",
     ts: Date.now(),
   };
 
@@ -291,15 +291,15 @@ export async function getDeviceFingerprint({ debug = false } = {}) {
     collectFontsFingerprint(),
   ]);
 
-  fp.ua = ua; // os/platform architecture
-  fp.display = display; // coarse and stable, avoids window inner sizes
-  fp.intl = intl; // OS-level locale/timezone traits
-  fp.memCpu = memCpu; // bucketed to resist minor tweaks
-  fp.canvas2D = canvas2D; // hashed image, small and stable
-  fp.webgl = webgl; // vendor/renderer/limits/precision + small render hash
-  fp.webgpu = webgpu; // adapter name/features/limits if available
-  fp.audio = audio; // offline + device sample rate
-  fp.fonts = fonts; // sorted list + hash; mostly OS-driven
+  fp.ua = ua;
+  fp.display = display;
+  fp.intl = intl;
+  fp.memCpu = memCpu;
+  fp.canvas2D = canvas2D;
+  fp.webgl = webgl;
+  fp.webgpu = webgpu;
+  fp.audio = audio;
+  fp.fonts = fonts;
 
   const stableJson = stableStringify({
     version: fp.version,
@@ -326,7 +326,8 @@ function stableStringify(value) {
   const seen = new WeakSet();
   const stringify = (v) => {
     if (v === null || typeof v !== "object") {
-      return JSON.stringify(v);
+      // normalize undefined to null for stability
+      return v === undefined ? "null" : JSON.stringify(v);
     }
     if (seen.has(v)) return '"[Circular]"';
     seen.add(v);
@@ -366,6 +367,39 @@ function bucketCores(hc) {
   return 32;
 }
 
+function normalizeArchBits({ architecture, bitness, oscpu, ua }) {
+  const s = `${architecture || ""} ${bitness || ""} ${oscpu || ""} ${ua || ""}`
+    .toLowerCase()
+    .trim();
+
+  let arch = "";
+  if (/aarch64|arm64/.test(s)) arch = "arm64";
+  else if (/\bx86_64|\bx64|\bwin64|\bamd64/.test(s)) arch = "x64";
+  else if (/\bx86|\bwin32|\bi[3-6]86\b/.test(s)) arch = "x86";
+  else if (/\barmv7|armv8|arm\b/.test(s)) arch = "arm";
+  else arch = "";
+
+  let bits = "";
+  if (/\b64\b|x64|aarch64|amd64|win64/.test(s)) bits = "64";
+  else if (/\b32\b|x86|win32|i[3-6]86/.test(s)) bits = "32";
+
+  return { architecture: arch, bitness: bits };
+}
+
+function normalizePlatform({ platform, oscpu, ua }) {
+  const s = `${platform || ""} ${oscpu || ""} ${ua || ""}`
+    .toLowerCase()
+    .trim();
+
+  if (/android/.test(s)) return "Android";
+  if (/iphone|ipad|ipod|ios/.test(s)) return "iOS";
+  if (/mac|darwin/.test(s)) return "macOS";
+  if (/win/.test(s)) return "Windows";
+  if (/linux/.test(s)) return "Linux";
+  if (/cros/.test(s)) return "ChromeOS";
+  return platform || "";
+}
+
 async function collectUA() {
   const out = {};
   try {
@@ -390,12 +424,54 @@ async function collectUA() {
         };
       }
     }
-  } catch (e) { }
+  } catch (e) {
+    // ignore
+  }
+
+  // Legacy and Firefox-centric fallbacks
+  let oscpu = "";
+  let ua = "";
+  try {
+    oscpu = navigator.oscpu || "";
+  } catch (e) {}
+  try {
+    ua = navigator.userAgent || "";
+  } catch (e) {}
+
   try {
     out.platform = navigator.platform || "";
     out.vendor = navigator.vendor || "";
     out.maxTouchPoints = navigator.maxTouchPoints || 0;
-  } catch (e) { }
+  } catch (e) {
+    out.platform = out.platform || "";
+    out.vendor = out.vendor || "";
+    out.maxTouchPoints = out.maxTouchPoints || 0;
+  }
+
+  // Provide coarse normalized fields for non-UA-CH browsers (Firefox/Safari)
+  const coarseArch = normalizeArchBits({
+    architecture: out.uaCH && out.uaCH.architecture,
+    bitness: out.uaCH && out.uaCH.bitness,
+    oscpu,
+    ua,
+  });
+  const coarsePlatform = normalizePlatform({
+    platform: (out.uaCH && out.uaCH.platform) || out.platform,
+    oscpu,
+    ua,
+  });
+
+  out.legacy = {
+    oscpu: oscpu || "",
+    uaShort: ua.slice(0, 128), // limit length for stability
+    coarseArchitecture: coarseArch.architecture,
+    coarseBitness: coarseArch.bitness,
+    coarsePlatform,
+    isMobile:
+      /android|iphone|ipad|ipod|mobile/i.test(ua) ||
+      (typeof navigator !== "undefined" && navigator.maxTouchPoints > 1),
+  };
+
   return out;
 }
 
@@ -424,13 +500,22 @@ async function collectDisplay() {
       aspect,
       colorDepth: screen.colorDepth || -1,
       pixelDepth: screen.pixelDepth || -1,
-      dpr: window.devicePixelRatio || -1,
+      dpr: getSafeDPR(),
       colorGamut: matchMediaQueryColorGamut(),
     };
   } catch (e) {
     out.screen = { error: true };
   }
   return out;
+}
+
+function getSafeDPR() {
+  try {
+    const dpr = Number(window.devicePixelRatio);
+    return Number.isFinite(dpr) ? dpr : -1;
+  } catch {
+    return -1;
+  }
 }
 
 function matchMediaQueryColorGamut() {
@@ -473,14 +558,61 @@ async function collectMemoryCpu() {
   return out;
 }
 
+function get2DCanvas(width = 300, height = 120) {
+  try {
+    if (typeof OffscreenCanvas !== "undefined") {
+      const c = new OffscreenCanvas(width, height);
+      const ctx = c.getContext("2d");
+      if (ctx) return { canvas: c, ctx, offscreen: true };
+    }
+  } catch {}
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  return { canvas, ctx, offscreen: false };
+}
+
+async function canvasToBytes(canvas) {
+  try {
+    if (typeof OffscreenCanvas !== "undefined" && canvas instanceof OffscreenCanvas) {
+      if (canvas.convertToBlob) {
+        const blob = await canvas.convertToBlob({ type: "image/png", quality: 0.92 });
+        const buf = await blob.arrayBuffer();
+        return new Uint8Array(buf);
+      }
+    }
+  } catch (e) {
+    // fall through
+  }
+  try {
+    if ("toDataURL" in canvas) {
+      const dataUrl = canvas.toDataURL("image/png");
+      return new TextEncoder().encode(dataUrl);
+    }
+  } catch (e) {
+    if (e && (e.name === "SecurityError" || /insecure|blocked/i.test(String(e)))) {
+      return { blocked: true };
+    }
+    throw e;
+  }
+  try {
+    if (canvas.convertToBlob) {
+      const blob = await canvas.convertToBlob({ type: "image/png", quality: 0.92 });
+      const buf = await blob.arrayBuffer();
+      return new Uint8Array(buf);
+    }
+  } catch (e) {
+    // ignore
+  }
+  return null;
+}
+
 async function collectCanvas2DHash() {
   const out = {};
   try {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
+    const { canvas, ctx } = get2DCanvas(300, 120);
     if (!ctx) throw new Error("2D context unavailable");
-    canvas.width = 300;
-    canvas.height = 120;
 
     ctx.textBaseline = "alphabetic";
     ctx.fillStyle = "#f60";
@@ -506,22 +638,50 @@ async function collectCanvas2DHash() {
     ctx.fillStyle = "rgba(0, 255, 255, 0.5)";
     ctx.fillRect(190, 30, 40, 40);
 
-    const dataUrl = canvas.toDataURL();
-    out.hash = await sha256(dataUrl);
+    const bytes = await canvasToBytes(canvas);
+    if (bytes && bytes.blocked) {
+      out.hash = "blocked_canvas";
+      out.blocked = true;
+    } else if (bytes) {
+      out.hash = await sha256(bytes);
+    } else {
+      out.hash = "error";
+    }
   } catch (e) {
-    out.hash = "error";
+    if (e && (e.name === "SecurityError" || /insecure|blocked/i.test(String(e)))) {
+      out.hash = "blocked_canvas";
+      out.blocked = true;
+    } else {
+      out.hash = "error";
+    }
   }
   return out;
+}
+
+function getWebGLContext() {
+  try {
+    const opts = { antialias: true, preserveDrawingBuffer: false };
+    if (typeof OffscreenCanvas !== "undefined") {
+      const c = new OffscreenCanvas(1, 1);
+      const gl2 = c.getContext("webgl2", opts);
+      if (gl2) return { gl: gl2, canvas: c };
+      const gl1 =
+        c.getContext("webgl", opts) || c.getContext("experimental-webgl", opts);
+      if (gl1) return { gl: gl1, canvas: c };
+    }
+  } catch {}
+  const canvas = document.createElement("canvas");
+  let gl =
+    canvas.getContext("webgl2", { antialias: true }) ||
+    canvas.getContext("webgl", { antialias: true }) ||
+    canvas.getContext("experimental-webgl");
+  return gl ? { gl, canvas } : { gl: null, canvas: null };
 }
 
 async function collectWebGLInfoAndHash() {
   const out = {};
   try {
-    const canvas = document.createElement("canvas");
-    let gl =
-      canvas.getContext("webgl2", { antialias: true }) ||
-      canvas.getContext("webgl", { antialias: true }) ||
-      canvas.getContext("experimental-webgl");
+    const { gl } = getWebGLContext();
     if (!gl) throw new Error("WebGL unavailable");
 
     let vendor = "";
@@ -531,75 +691,58 @@ async function collectWebGLInfoAndHash() {
       if (debugInfo) {
         vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || "";
         renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || "";
+      } else {
+        // Fallback when extension is blocked (Firefox, privacy modes)
+        vendor = gl.getParameter(gl.VENDOR) || "";
+        renderer = gl.getParameter(gl.RENDERER) || "";
       }
-    } catch (_) { }
+    } catch (_) {
+      try {
+        vendor = gl.getParameter(gl.VENDOR) || "";
+        renderer = gl.getParameter(gl.RENDERER) || "";
+      } catch {}
+    }
 
-    const version = gl.getParameter(gl.VERSION) || "";
-    const shadingLang =
-      gl.getParameter(gl.SHADING_LANGUAGE_VERSION) || "";
+    const version = safeGLGet(gl, gl.VERSION);
+    const shadingLang = safeGLGet(gl, gl.SHADING_LANGUAGE_VERSION);
 
     const limits = {
-      MAX_TEXTURE_SIZE: gl.getParameter(gl.MAX_TEXTURE_SIZE) || -1,
-      MAX_CUBE_MAP_TEXTURE_SIZE:
-        gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE) || -1,
-      MAX_RENDERBUFFER_SIZE:
-        gl.getParameter(gl.MAX_RENDERBUFFER_SIZE) || -1,
-      MAX_VERTEX_ATTRIBS: gl.getParameter(gl.MAX_VERTEX_ATTRIBS) || -1,
-      MAX_VARYING_VECTORS:
-        gl.getParameter(gl.MAX_VARYING_VECTORS) ?? -1,
-      MAX_COMBINED_TEXTURE_IMAGE_UNITS:
-        gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS) || -1,
-      ALIASED_LINE_WIDTH_RANGE:
-        (gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE) || []).join(","),
-      ALIASED_POINT_SIZE_RANGE:
-        (gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE) || []).join(","),
-      RED_BITS: gl.getParameter(gl.RED_BITS) || -1,
-      GREEN_BITS: gl.getParameter(gl.GREEN_BITS) || -1,
-      BLUE_BITS: gl.getParameter(gl.BLUE_BITS) || -1,
-      ALPHA_BITS: gl.getParameter(gl.ALPHA_BITS) || -1,
-      DEPTH_BITS: gl.getParameter(gl.DEPTH_BITS) || -1,
-      STENCIL_BITS: gl.getParameter(gl.STENCIL_BITS) || -1,
-      MAX_VIEWPORT_DIMS:
-        (gl.getParameter(gl.MAX_VIEWPORT_DIMS) || []).join("x"),
+      MAX_TEXTURE_SIZE: numGLGet(gl, gl.MAX_TEXTURE_SIZE),
+      MAX_CUBE_MAP_TEXTURE_SIZE: numGLGet(gl, gl.MAX_CUBE_MAP_TEXTURE_SIZE),
+      MAX_RENDERBUFFER_SIZE: numGLGet(gl, gl.MAX_RENDERBUFFER_SIZE),
+      MAX_VERTEX_ATTRIBS: numGLGet(gl, gl.MAX_VERTEX_ATTRIBS),
+      MAX_VARYING_VECTORS: safeGLGet(gl, gl.MAX_VARYING_VECTORS) ?? -1,
+      MAX_COMBINED_TEXTURE_IMAGE_UNITS: numGLGet(
+        gl,
+        gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS
+      ),
+      ALIASED_LINE_WIDTH_RANGE: listGLGet(gl, gl.ALIASED_LINE_WIDTH_RANGE),
+      ALIASED_POINT_SIZE_RANGE: listGLGet(gl, gl.ALIASED_POINT_SIZE_RANGE),
+      RED_BITS: numGLGet(gl, gl.RED_BITS),
+      GREEN_BITS: numGLGet(gl, gl.GREEN_BITS),
+      BLUE_BITS: numGLGet(gl, gl.BLUE_BITS),
+      ALPHA_BITS: numGLGet(gl, gl.ALPHA_BITS),
+      DEPTH_BITS: numGLGet(gl, gl.DEPTH_BITS),
+      STENCIL_BITS: numGLGet(gl, gl.STENCIL_BITS),
+      MAX_VIEWPORT_DIMS: listGLGet(gl, gl.MAX_VIEWPORT_DIMS, "x"),
     };
 
-    const spf = (shaderType, precisionType) => {
-      try {
-        const fmt = gl.getShaderPrecisionFormat(shaderType, precisionType);
-        return fmt
-          ? `${fmt.rangeMin},${fmt.rangeMax},${fmt.precision}`
-          : "n/a";
-      } catch {
-        return "err";
-      }
-    };
-    const precision = {
-      VS_LOW_FLOAT: spf(gl.VERTEX_SHADER, gl.LOW_FLOAT),
-      VS_MED_FLOAT: spf(gl.VERTEX_SHADER, gl.MEDIUM_FLOAT),
-      VS_HIGH_FLOAT: spf(gl.VERTEX_SHADER, gl.HIGH_FLOAT),
-      FS_LOW_FLOAT: spf(gl.FRAGMENT_SHADER, gl.LOW_FLOAT),
-      FS_MED_FLOAT: spf(gl.FRAGMENT_SHADER, gl.MEDIUM_FLOAT),
-      FS_HIGH_FLOAT: spf(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT),
-      VS_LOW_INT: spf(gl.VERTEX_SHADER, gl.LOW_INT),
-      VS_MED_INT: spf(gl.VERTEX_SHADER, gl.MEDIUM_INT),
-      VS_HIGH_INT: spf(gl.VERTEX_SHADER, gl.HIGH_INT),
-      FS_LOW_INT: spf(gl.FRAGMENT_SHADER, gl.LOW_INT),
-      FS_MED_INT: spf(gl.FRAGMENT_SHADER, gl.MEDIUM_INT),
-      FS_HIGH_INT: spf(gl.FRAGMENT_SHADER, gl.HIGH_INT),
-    };
+    const precision = getGLPrecisions(gl);
 
     let extensions = [];
     try {
       const exts = gl.getSupportedExtensions() || [];
       extensions = exts.slice().sort();
-    } catch (e) { }
+    } catch (e) {
+      // ignore
+    }
 
     const renderHash = await webglRenderHash(gl);
 
-    out.vendor = vendor;
-    out.renderer = renderer;
-    out.version = version;
-    out.shadingLanguage = shadingLang;
+    out.vendor = vendor || "";
+    out.renderer = renderer || "";
+    out.version = version || "";
+    out.shadingLanguage = shadingLang || "";
     out.limits = limits;
     out.precision = precision;
     out.extensionsHash = await sha256(extensions.join(";"));
@@ -611,22 +754,89 @@ async function collectWebGLInfoAndHash() {
   return out;
 }
 
+function safeGLGet(gl, pname) {
+  try {
+    return gl.getParameter(pname) || "";
+  } catch {
+    return "";
+  }
+}
+function numGLGet(gl, pname) {
+  const v = safeGLGet(gl, pname);
+  return typeof v === "number" && Number.isFinite(v) ? v : -1;
+}
+function listGLGet(gl, pname, joiner = ",") {
+  try {
+    const v = gl.getParameter(pname);
+    if (Array.isArray(v) || ArrayBuffer.isView(v)) {
+      return Array.from(v).join(joiner);
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+function getGLPrecisions(gl) {
+  const spf = (shaderType, precisionType) => {
+    try {
+      const fmt = gl.getShaderPrecisionFormat(shaderType, precisionType);
+      return fmt
+        ? `${fmt.rangeMin},${fmt.rangeMax},${fmt.precision}`
+        : "n/a";
+    } catch {
+      return "err";
+    }
+  };
+  return {
+    VS_LOW_FLOAT: spf(gl.VERTEX_SHADER, gl.LOW_FLOAT),
+    VS_MED_FLOAT: spf(gl.VERTEX_SHADER, gl.MEDIUM_FLOAT),
+    VS_HIGH_FLOAT: spf(gl.VERTEX_SHADER, gl.HIGH_FLOAT),
+    FS_LOW_FLOAT: spf(gl.FRAGMENT_SHADER, gl.LOW_FLOAT),
+    FS_MED_FLOAT: spf(gl.FRAGMENT_SHADER, gl.MEDIUM_FLOAT),
+    FS_HIGH_FLOAT: spf(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT),
+    VS_LOW_INT: spf(gl.VERTEX_SHADER, gl.LOW_INT),
+    VS_MED_INT: spf(gl.VERTEX_SHADER, gl.MEDIUM_INT),
+    VS_HIGH_INT: spf(gl.VERTEX_SHADER, gl.HIGH_INT),
+    FS_LOW_INT: spf(gl.FRAGMENT_SHADER, gl.LOW_INT),
+    FS_MED_INT: spf(gl.FRAGMENT_SHADER, gl.MEDIUM_INT),
+    FS_HIGH_INT: spf(gl.FRAGMENT_SHADER, gl.HIGH_INT),
+  };
+}
+
 async function webglRenderHash(gl) {
   try {
-    const vsSrc =
-      "attribute vec2 aPos;varying vec2 vUv;" +
-      "void main(){vUv=(aPos+1.0)*0.5;gl_Position=vec4(aPos,0.0,1.0);}";
+    const isWebGL2 =
+      typeof WebGL2RenderingContext !== "undefined" &&
+      gl instanceof WebGL2RenderingContext;
 
-    const fsSrc =
-      "precision highp float;varying vec2 vUv;" +
-      "float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))" +
-      "*43758.5453);}" +
-      "void main(){vec2 p=vUv;" +
-      "float v=sin(40.0*p.x)*cos(40.0*p.y);" +
-      "float n=hash(p*vec2(128.0,96.0));" +
-      "gl_FragColor=vec4(fract(v*0.75+n*0.25),p,1.0);}";
+    const vsSrc = isWebGL2
+      ? `#version 300 es
+         in vec2 aPos; out vec2 vUv;
+         void main(){ vUv=(aPos+1.0)*0.5; gl_Position=vec4(aPos,0.0,1.0); }`
+      : `attribute vec2 aPos; varying vec2 vUv;
+         void main(){ vUv=(aPos+1.0)*0.5; gl_Position=vec4(aPos,0.0,1.0); }`;
 
-    const prog = createProgram(gl, vsSrc, fsSrc);
+    const fsSrc = isWebGL2
+      ? `#version 300 es
+         precision highp float; in vec2 vUv; out vec4 outColor;
+         float hash(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+         void main(){
+           vec2 p = vUv;
+           float v = sin(40.0*p.x)*cos(40.0*p.y);
+           float n = hash(p*vec2(128.0,96.0));
+           outColor = vec4(fract(v*0.75+n*0.25), p, 1.0);
+         }`
+      : `precision highp float; varying vec2 vUv;
+         float hash(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+         void main(){
+           vec2 p = vUv;
+           float v = sin(40.0*p.x)*cos(40.0*p.y);
+           float n = hash(p*vec2(128.0,96.0));
+           gl_FragColor = vec4(fract(v*0.75+n*0.25), p, 1.0);
+         }`;
+
+    const prog = createProgram(gl, vsSrc, fsSrc, isWebGL2);
     if (!prog) throw new Error("Program compile failed");
     gl.useProgram(prog);
 
@@ -640,7 +850,11 @@ async function webglRenderHash(gl) {
     gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
     gl.viewport(0, 0, 64, 64);
+    gl.disable(gl.DITHER);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    try {
+      gl.finish();
+    } catch {}
 
     const pixels = new Uint8Array(64 * 64 * 4);
     gl.readPixels(0, 0, 64, 64, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
@@ -650,7 +864,7 @@ async function webglRenderHash(gl) {
   }
 }
 
-function createProgram(gl, vsSrc, fsSrc) {
+function createProgram(gl, vsSrc, fsSrc, isWebGL2) {
   const compile = (type, src) => {
     const sh = gl.createShader(type);
     gl.shaderSource(sh, src);
@@ -666,6 +880,12 @@ function createProgram(gl, vsSrc, fsSrc) {
   const prog = gl.createProgram();
   gl.attachShader(prog, vs);
   gl.attachShader(prog, fs);
+  if (isWebGL2) {
+    try {
+      // Explicitly bind attribute location for WebGL2 consistency
+      gl.bindAttribLocation(prog, 0, "aPos");
+    } catch {}
+  }
   gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
   return prog;
@@ -675,26 +895,63 @@ async function collectWebGPUInfo() {
   const out = {};
   try {
     const navGpu = navigator.gpu;
-    if (!navGpu) return { unavailable: true };
+    if (!navGpu) return { unavailable: true, reason: "no_navigator_gpu" };
+
     const adapter =
       (await navGpu
         .requestAdapter({ powerPreference: "high-performance" })
         .catch(() => null)) ||
+      (await navGpu.requestAdapter({ powerPreference: "low-power" }).catch(
+        () => null
+      )) ||
       (await navGpu.requestAdapter().catch(() => null));
 
-    if (!adapter) return { unavailable: true };
+    if (!adapter) return { unavailable: true, reason: "no_adapter" };
 
-    const features = Array.from(adapter.features || []).sort();
+    const features = [];
+    try {
+      for (const f of adapter.features || []) features.push(f);
+      features.sort();
+    } catch {}
     const limits = {};
-    if (adapter.limits) {
-      Object.keys(adapter.limits).forEach((k) => {
-        limits[k] = adapter.limits[k];
-      });
-    }
+    try {
+      if (adapter.limits) {
+        for (const [k, v] of Object.entries(adapter.limits)) {
+          // Only include numeric-ish limits; avoid giant structures
+          if (
+            typeof v === "number" ||
+            (typeof v === "bigint" && v <= Number.MAX_SAFE_INTEGER)
+          ) {
+            limits[k] = Number(v);
+          }
+        }
+      }
+    } catch {}
 
     out.name = adapter.name || "";
     out.isFallbackAdapter = !!adapter.isFallbackAdapter;
     out.featuresHash = await sha256(features.join(","));
+
+    // Optional: adapterInfo (Chromium implements requestAdapterInfo; other
+    // browsers may not). Guard it carefully.
+    try {
+      if (typeof adapter.requestAdapterInfo === "function") {
+        const info = await adapter.requestAdapterInfo().catch(() => null);
+        if (info) {
+          const { vendor, architecture, device, description } = info;
+          out.adapterInfo = {
+            vendor: vendor || "",
+            architecture: architecture || "",
+            device: device || "",
+            description: description || "",
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    // Restrict to "limit-like" keys for stability
     const limitKeys = Object.keys(limits).sort();
     const limited = {};
     for (const k of limitKeys) {
@@ -716,9 +973,11 @@ async function collectAudioFingerprint() {
   try {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (AC) {
+      // Creating an AudioContext in Firefox/Safari is fine, but be ready to
+      // fall back if blocked by policies.
       const ctx = new AC();
-      out.deviceSampleRate = ctx.sampleRate || -1;
-      await ctx.close().catch(() => {});
+      out.deviceSampleRate = Number(ctx.sampleRate) || -1;
+      await (ctx.close ? ctx.close() : Promise.resolve()).catch(() => {});
     } else {
       out.deviceSampleRate = -1;
     }
@@ -726,6 +985,7 @@ async function collectAudioFingerprint() {
     out.deviceSampleRate = -1;
   }
 
+  // Offline rendering is typically allowed even with autoplay policies.
   try {
     const sampleRate = 44100;
     const frames = 44100;
@@ -774,6 +1034,7 @@ async function collectAudioFingerprint() {
 
     out.offlineHash = await sha256(sig.join(","));
   } catch (e) {
+    // Firefox RFP may perturb/limit audio; just mark as error gracefully.
     out.offlineHash = "error";
   }
   return out;
@@ -785,6 +1046,13 @@ async function collectFontsFingerprint() {
     if (!document || !document.body) {
       return { hash: "no_body", list: [] };
     }
+
+    // Wait for font loading where supported (Firefox/Safari/Chromium)
+    try {
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready.catch(() => {});
+      }
+    } catch {}
 
     const fontsToCheck = [
       "Noto Sans",
@@ -848,6 +1116,7 @@ function detectFonts(fontsToCheck) {
   const span = document.createElement("span");
   span.style.cssText =
     "position:absolute;left:-9999px;visibility:hidden;line-height:normal;" +
+    "white-space:pre;letter-spacing:0;word-spacing:0;-webkit-font-smoothing:auto;" +
     `font-size:${size};`;
   span.textContent = testStr;
   document.body.appendChild(span);
