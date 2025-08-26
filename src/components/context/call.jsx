@@ -656,9 +656,9 @@ export let CallProvider = ({ children }) => {
             let frameNum = parseInt(String(streamRefresh), 10) || undefined;
             let stream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
-                    frameRate: frameNum ? { ideal: frameNum } : undefined,
-                    width: widthNum ? { exact: widthNum } : undefined,
-                    height: heightNum ? { exact: heightNum } : undefined,
+                    frameRate: frameNum,
+                    width: widthNum,
+                    height: heightNum,
                     displaySurface: "monitor",
                 },
                 audio: streamAudio

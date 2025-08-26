@@ -31,11 +31,12 @@ import { Label } from "@/components/ui/label";
 
 // Main
 export function Main() {
-    let [open, setOpen] = useState(false)
+    let [open, setOpen] = useState(false);
     let [newChatUsername, setNewChatUUID] = useState("");
     let [newCommunityDomain, setNewCommunityDomain] = useState("");
     let { setConnectToCommunity, connected, setPort, setDomain, setSecureConnection, secureConnection } = useCommunityContext();
     let { send } = useWebSocketContext();
+    let { doChatRefresh } = useUsersContext();
 
     function handleInputChange(e) {
         setNewChatUUID(e)
@@ -66,7 +67,8 @@ export function Main() {
                 })
                     .then(data => {
                         if (data.type !== "error") {
-                            log(`Added ${newChatUsername}`, "success")
+                            log(`Added ${newChatUsername}`, "success");
+                            doChatRefresh();
                         }
                     })
             } else {

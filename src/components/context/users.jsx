@@ -36,6 +36,7 @@ export function UsersProvider({ children }) {
 	let [ownState, setOwnState] = useState("ONLINE");
 	let [refetchUser, setRefetchUser] = useState(false);
 	let [refreshChats, setRefreshChats] = useState(false);
+	let [refreshCommunities, setRefreshCommunities] = useState(false);
 
 	function sleep(ms) {
 		return new Promise((resolve) => setTimeout(resolve, ms));
@@ -57,6 +58,10 @@ export function UsersProvider({ children }) {
 
 	function doChatRefresh() {
 		setRefreshChats((prev) => !prev);
+	}
+
+	function doCommunityRefresh() {
+		setRefreshCommunities((prev) => !prev);
 	}
 
 	function getUserState(uuid) {
@@ -179,7 +184,9 @@ export function UsersProvider({ children }) {
 				clearFromCache,
 				refetchUser,
 				refreshChats,
+				refreshCommunities,
 				doChatRefresh,
+				doCommunityRefresh,
 			}}
 		>
 			{children}
