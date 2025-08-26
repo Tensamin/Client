@@ -55,22 +55,11 @@ export let CommunityProvider = ({ children }) => {
     let [domain, setDomain] = useState(null);
     let [invalidDomain, setInvalidDomain] = useState(false);
     let [port, setPort] = useState(null);
-    let [secureConnection, setSecureConnection] = useState(false);
     let [connectToCommunity, setConnectToCommunity] = useState(false);
     let [connected, setConnected] = useState(false);
     let [clientPing, setClientPing] = useState("?");
-    
-
-    // Update Domain SecureConnection & Invalid
-    useEffect(() => {
-        if (domain.startsWith('wss://')) {
-            setSecureConnection(true);
-        } else if (domain.startsWith('ws://')) {
-            setSecureConnection(false);
-        } else {
-            setInvalidDomain(true);
-        }
-    })
+    let [secureConnection, setSecureConnection] = useState(true);
+    let [identified, setIdentified] = useState(false);
 
     // Handle WebSocket Messages
     let handleWebSocketMessage = useCallback(async (event) => {
@@ -100,11 +89,11 @@ export let CommunityProvider = ({ children }) => {
                 reject(new Error(`Received unknown response type '${message.type}' for request ID '${message.id}'.`));
             }
         } else logFunction(message.log.message, "info");
-    }, [callSecret, decrypt_base64_using_aes, encrypt_base64_using_aes, identified]);
+    }, [decrypt_base64_using_aes, encrypt_base64_using_aes, identified]);
 
     // Init WebSocket
     let { sendMessage, readyState } = useWebSocket(
-        connectToCommunity && !invalidDomain && domain && port ? domain : null,
+        connectToCommunity && !invalidDomain && domain && port ? `${secureConnection ? "wss" : "ws"}://${domain}:${port}` : null,
         {
             onOpen: async () => {
                 logFunction("Community connected", "info", "Community WebSocket:");
@@ -196,11 +185,11 @@ export let CommunityProvider = ({ children }) => {
         if (connected) {
             interval = setInterval(async () => {
                 let time = Date.now()
-                await send("ping", {message: "Ping from Client", log_level: -1})
-                .then(() => {
-                    let newTime = Date.now()
-                    setClientPing(newTime - time)
-                })
+                await send("ping", { message: "Ping from Client", log_level: -1 })
+                    .then(() => {
+                        let newTime = Date.now()
+                        setClientPing(newTime - time)
+                    })
                     .catch(err => {
                         logFunction(err.message, "info")
                     })
@@ -250,8 +239,6 @@ export let CommunityProvider = ({ children }) => {
                 reject(unmountError);
             });
             pendingRequests.current.clear();
-
-            reset();
         };
     }, []);
 
@@ -264,6 +251,7 @@ export let CommunityProvider = ({ children }) => {
             setPort,
             invalidDomain,
             secureConnection,
+            setSecureConnection,
             clientPing,
             setConnectToCommunity,
         }}>

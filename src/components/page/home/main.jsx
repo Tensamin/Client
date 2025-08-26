@@ -9,6 +9,7 @@ import { log, isUuid } from "@/lib/utils";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useUsersContext } from "@/components/context/users";
 import { useCryptoContext } from "@/components/context/crypto";
+import { useCommunityContext } from "@/components/context/communtiy";
 
 // Components
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -25,12 +26,15 @@ import {
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 // Main
 export function Main() {
     let [open, setOpen] = useState(false)
     let [newChatUsername, setNewChatUUID] = useState("");
     let [newCommunityDomain, setNewCommunityDomain] = useState("");
+    let { setConnectToCommunity, connected, setPort, setDomain, setSecureConnection, secureConnection } = useCommunityContext();
     let { send } = useWebSocketContext();
 
     function handleInputChange(e) {
@@ -81,45 +85,12 @@ export function Main() {
 
     async function handleCommunitySubmit() {
         try {
-            let newPort = 0;
-            let newIP = "0.0.0.0";
-
             let split = newCommunityDomain.split(":");
-            newIP = split[0];
-            newPort = split[1] || 1984;
-
-            return;
-            await fetch(`${endpoint.username_to_uuid}${newChatUsername}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.type !== "error") {
-                        newChatUUID = data.data.user_id;
-                        return;
-                    } else {
-                        log(data.log.message, "showError")
-                        return;
-                    }
-                })
-
-            if (isUuid(newChatUUID)) {
-                await send("add_chat", {
-                    message: "Adding chat",
-                    log_level: 1
-                }, {
-                    user_id: newChatUUID,
-                })
-                    .then(data => {
-                        if (data.type !== "error") {
-                            log(`Added ${newChatUsername}`, "success")
-                        }
-                    })
-            } else {
-                log("That user does not exist!", "warning")
-            }
+            setDomain(split[0]);
+            setPort(split[1] || 1984);
+            setConnectToCommunity(true);
         } catch (err) {
             log(err.message, "error")
-        } finally {
-            setNewChatUUID("")
         }
     }
 
@@ -146,7 +117,7 @@ export function Main() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Enter a username</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        <Input placeholder="the_real_john_doe" value={newChatUsername} onChange={(e) => handleInputChange(e.target.value)} onSubmit={handleSubmit}></Input>
+                                        <Input className="text-foreground" placeholder="some_user" value={newChatUsername} onChange={(e) => handleInputChange(e.target.value)} onSubmit={handleSubmit}></Input>
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -172,8 +143,14 @@ export function Main() {
                             <AlertDialogContent>
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Enter a domain</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        <Input placeholder="methanium.net" value={newCommunityDomain} onChange={(e) => handleCommunityInputChange(e.target.value)} onSubmit={handleCommunitySubmit}></Input>
+                                    <AlertDialogDescription asChild>
+                                        <div className="flex flex-col gap-5">
+                                            <Input className="text-foreground" placeholder="methanium.net" value={newCommunityDomain} onChange={(e) => handleCommunityInputChange(e.target.value)} onSubmit={handleCommunitySubmit}></Input>
+                                            <div className="flex gap-2">
+                                                <Checkbox id="use-secure-connection" checked={secureConnection} onCheckedChange={setSecureConnection} />
+                                                <Label className="text-foreground" htmlFor="use-secure-connection">Use secure connection</Label>
+                                            </div>
+                                        </div>
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
