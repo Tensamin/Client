@@ -13,7 +13,7 @@ import { startAuthentication } from "@simplewebauthn/browser";
 
 // Lib Imports
 import { endpoint } from "@/lib/endpoints";
-import { isElectron, log, sha256 } from "@/lib/utils";
+import { getDeviceFingerprint, isElectron, log, sha256 } from "@/lib/utils";
 import ls from "@/lib/localStorageManager";
 
 // Context Imports
@@ -38,7 +38,6 @@ export function useCryptoContext() {
 
 export function CryptoProvider({ children }) {
   let [privateKey, setPrivateKey] = useState("pending");
-  let [privateKeyJWK, setPrivateKeyJWK] = useState({});
   let [privateKeyHash, setPrivateKeyHash] = useState("pending");
   let [isInitialized, setIsInitialized] = useState(false);
   let { decrypt_base64_using_aes } = useEncryptionContext();
@@ -81,6 +80,8 @@ export function CryptoProvider({ children }) {
         if (isElectron()) {
           let username = await get(uuid).then(data => data.username);
           lambda = await window?.keyring?.get('net.methanium.tensamin', username);
+        } if (ls.get('auth_lambda')) {
+          lambda = await decrypt_base64_using_aes(ls.get('auth_lambda'), await getDeviceFingerprint())
         } else {
           let options;
 

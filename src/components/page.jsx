@@ -2,10 +2,6 @@
 
 // Package Imports
 import { useState, useEffect } from "react";
-import Image from "next/image"
-
-// Lib Imports
-import ls from "@/lib/localStorageManager";
 
 // Context Imports
 import { usePageContext } from "@/components/context/page";

@@ -8,7 +8,7 @@ import { v7 } from 'uuid';
 
 // Lib Imports
 import { endpoint } from '@/lib/endpoints';
-import { sha256, log, isElectron } from "@/lib/utils"
+import { sha256, isElectron, getDeviceFingerprint } from "@/lib/utils"
 import ls from '@/lib/localStorageManager';
 
 // Context Imports
@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Checkbox } from "@/components/ui/checkbox"
 
 // Helper Functions
 function readFileAsText(file) {
@@ -54,6 +55,7 @@ export function LoginForm() {
   let [loading, setLoading] = useState(false);
   let [failed, setFailed] = useState(false);
   let [error, setError] = useState("");
+  let [staySignedIn, setStaySignedIn] = useState(false);
   let { encrypt_base64_using_aes } = useEncryptionContext();
   let privateKeyFileRef = useRef(null);
   let counter = useRef(0);
@@ -158,6 +160,13 @@ export function LoginForm() {
           ls.set('auth_private_key', encrypted_private_key);
           ls.set('auth_uuid', uuid);
           ls.set('auth_cred_id', cred_id);
+
+          if (staySignedIn) {
+            let fingerprint = await getDeviceFingerprint();
+            let encryptedLambda = await encrypt_base64_using_aes(lambda, fingerprint);
+            ls.set('auth_lambda', encryptedLambda);
+          } else ls.remove('auth_lambda');
+          
           window.location.href = "/";
         } else {
           setFailed(true);
@@ -179,13 +188,13 @@ export function LoginForm() {
     if (files[0]) {
       let rawJwk = await readFileAsText(files[0]);
 
-      // Pem check 
+      // Remove in 1.0
       if (rawJwk.startsWith("-----BEGIN PRIVATE KEY-----")) {
         setFailed(true);
         setError("PEM Files are no longer supported!");
         return;
       }
-      
+
       let jwk;
 
       try {
@@ -263,6 +272,9 @@ export function LoginForm() {
                   </>}
                 </div>
               </div>
+            </div>
+            <div className="flex gap-2">
+              <Checkbox id="stay-signed-in" checked={staySignedIn} onCheckedChange={setStaySignedIn} /><Label htmlFor="stay-signed-in">Stay signed in</Label>
             </div>
             <Separator />
             <div className="flex flex-col gap-2 w-full">

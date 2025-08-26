@@ -3,7 +3,6 @@ import { HexColorPicker } from "react-colorful";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import * as Icon from "lucide-react";
-import Image from "next/image";
 
 // Lib Imports
 import {
@@ -1084,12 +1083,13 @@ export function Mods() {
         </div>
       ) : (
         <div className="w-full h-full flex flex-col justify-center items-center">
-          <Image
+          <img
             className="select-none [user-drag:none] [-webkit-user-drag:none]"
             src="/megamind.png"
             width={200}
             height={200}
             alt="Meme"
+            loading="eager"
           />
           <p className="text-2xl">No Mods?</p>
         </div>

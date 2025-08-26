@@ -1,7 +1,6 @@
 "use client";
 
 // Package Imports
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useDencrypt } from "use-dencrypt-effect";
 import * as Icon from "lucide-react"
@@ -24,14 +23,13 @@ export function Loading({ message = "Loading...", error = false, allowDebugToFor
 
     return (
         <div className="w-screen h-screen bg-[#11111b] flex justify-center items-center flex-col gap-20">
-            <Image
+            <img
                 src={error ? "/logo.png" : "/loading.gif"}
                 alt="Tensamin"
                 width={500}
                 height={500}
                 className="w-75 h-75 rounded-4xl select-none"
-                priority
-                unoptimized
+                loading="eager"
             />
             <p className="font-bold font-mono text-2xl text-[#c8ccf4]/30 w-2/3 text-center">{coolMessage}</p>
             {debug && allowDebugToForceLoad ? (
