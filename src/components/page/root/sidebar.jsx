@@ -51,7 +51,7 @@ export function AppSidebar(props) {
         )}
         <SidebarMenu className="pt-3 pb-3">
           <SidebarMenuItem>
-            <div className="flex w-full justify-center rounded-full bg-card py-1 px-1.5 gap-1">
+            <div className="border flex w-full justify-center rounded-full bg-card py-1 px-1.5 gap-1">
               <Button
                 variant={sidebarCategory !== "communities" ? "ghost" : "outline"}
                 className="w-1/2 rounded-full"
