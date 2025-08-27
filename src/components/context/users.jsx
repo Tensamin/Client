@@ -35,12 +35,12 @@ export function UsersProvider({ children }) {
 	let [forceLoad, setForceLoad] = useState(false);
 	let [ownState, setOwnState] = useState("ONLINE");
 	let [refetchUser, setRefetchUser] = useState(false);
-	let [refreshChats, setRefreshChats] = useState(false);
-	let [refreshCommunities, setRefreshCommunities] = useState(false);
+	let [fetchChats, setFetchChats] = useState(true);
+	let [fetchCommunities, setFetchCommunities] = useState(true);
 
 	function sleep(ms) {
 		return new Promise((resolve) => setTimeout(resolve, ms));
-	}
+	};
 
 	function safeAtob(value) {
 		try {
@@ -48,36 +48,36 @@ export function UsersProvider({ children }) {
 			return atob(value);
 		} catch (_e) {
 			return typeof value === "string" ? value : "";
-		}
-	}
+		};
+	};
 
 	async function clearFromCache(uuid) {
 		await get(uuid, true);
 		setRefetchUser((prev) => !prev);
-	}
+	};
 
 	function doChatRefresh() {
-		setRefreshChats((prev) => !prev);
-	}
+		setFetchChats(true);
+	};
 
 	function doCommunityRefresh() {
-		setRefreshCommunities((prev) => !prev);
-	}
+		setFetchCommunities(true);
+	};
 
 	function getUserState(uuid) {
 		if (userStates[uuid]) {
 			return userStates[uuid];
 		} else {
 			return "none";
-		}
-	}
+		};
+	};
 
 	function setUserState(uuid, state) {
 		setUserStates((prevUsers) => ({
 			...prevUsers,
 			[uuid]: state,
 		}));
-	}
+	};
 
 	function makeChatTop(uuid) {
 		let newArray = [...chatsArray];
@@ -86,8 +86,8 @@ export function UsersProvider({ children }) {
 			let [itemToMove] = newArray.splice(indexToMove, 1);
 			newArray.unshift(itemToMove);
 			setChatsArray(newArray);
-		}
-	}
+		};
+	};
 
 	async function get(uuid, refresh = false) {
 		if (typeof uuid !== "undefined") {
@@ -183,8 +183,10 @@ export function UsersProvider({ children }) {
 				setOwnState,
 				clearFromCache,
 				refetchUser,
-				refreshChats,
-				refreshCommunities,
+				fetchChats,
+				fetchCommunities,
+				setFetchChats,
+				setFetchCommunities,
 				doChatRefresh,
 				doCommunityRefresh,
 			}}

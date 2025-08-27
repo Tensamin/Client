@@ -16,27 +16,31 @@ import { SmallUserModal } from "@/components/page/root/user-modal/main";
 // Main
 export function Chats() {
   let { send, connected, identified } = useWebSocketContext();
-  let { chatsArray, setChatsArray, forceLoad, getUserState, refreshChats } = useUsersContext();
+  let { chatsArray, setChatsArray, forceLoad, getUserState, fetchChats, setFetchChats } = useUsersContext();
   let { setPage } = usePageContext();
 
   useEffect(() => {
     if (connected && identified && !forceLoad) {
-      send("get_chats", {
-        log_level: 0,
-        message: "Getting all chats",
-      }, {})
-        .then((data) => {
-          let sortedChats = data.data.user_ids.sort(
-            (a, b) => b.last_message_at - a.last_message_at
-          );
-          setChatsArray(sortedChats);
-        });
+      if (fetchChats) {
+        send("get_chats", {
+          log_level: 0,
+          message: "Getting all chats",
+        }, {})
+          .then((data) => {
+            let sortedChats = data.data.user_ids.sort(
+              (a, b) => b.last_message_at - a.last_message_at
+            );
+
+            setFetchChats(false);
+            setChatsArray(sortedChats);
+          });
+      }
     } else {
       setChatsArray([
         { user_id: "", last_message_at: 0 }
       ])
     }
-  }, [connected, identified, forceLoad, refreshChats]);
+  }, [connected, identified, forceLoad, fetchChats]);
 
   return (
     <div className="flex flex-col gap-2 mr-2 ml-3">

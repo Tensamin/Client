@@ -16,27 +16,31 @@ import { SmallCommunityModal } from "@/components/page/root/community-modal/main
 // Main
 export function Communities() {
   let { send, connected, identified } = useWebSocketContext();
-  let { communitiesArray, setCommunitiesArray, forceLoad, refreshCommunities } = useUsersContext();
+  let { communitiesArray, setCommunitiesArray, forceLoad, fetchCommunities, setFetchCommunities } = useUsersContext();
   let { setPage } = usePageContext();
 
   useEffect(() => {
     if (connected && identified && !forceLoad) {
-      send("get_communities", {
-        log_level: 0,
-        message: "Getting all communities",
-      }, {})
-        .then((data) => {
-          let sortedCommunities = data.data.communities.sort(
-            (a, b) => a.position - b.position
-          );
-          setCommunitiesArray(sortedCommunities);
-        });
+      if (fetchCommunities) {
+        send("get_communities", {
+          log_level: 0,
+          message: "Getting all communities",
+        }, {})
+          .then((data) => {
+            let sortedCommunities = data.data.communities.sort(
+              (a, b) => a.position - b.position
+            );
+
+            setFetchCommunities(false);
+            setCommunitiesArray(sortedCommunities);
+          });
+      }
     } else {
       setCommunitiesArray([
         { position: 0, ip: "", port: 0, secure: false, state: "none" }
       ])
     }
-  }, [connected, identified, forceLoad, refreshCommunities]);
+  }, [connected, identified, forceLoad, fetchCommunities]);
 
   return (
     <div className="flex flex-col gap-2 mr-2 ml-3">

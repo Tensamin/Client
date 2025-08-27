@@ -20,7 +20,6 @@ import ls from "@/lib/localStorageManager";
 // Context Imports
 import { useCryptoContext } from "@/components/context/crypto";
 import { useUsersContext } from "@/components/context/users";
-import { useEncryptionContext } from "@/components/context/encryption";
 
 // Components
 import { Loading } from "@/components/loading/content"
