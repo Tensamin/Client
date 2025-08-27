@@ -197,7 +197,7 @@ export function MessageProvider({ children }) {
         if (
           lastGroup.sender === newMessageData.sender &&
           removeSecondsFromUnixTimestamp(lastGroup.id) ===
-            removeSecondsFromUnixTimestamp(newMessageData.id)
+          removeSecondsFromUnixTimestamp(newMessageData.id)
         ) {
           let newLastGroup = new Message({
             id: lastGroup.id,
@@ -221,7 +221,7 @@ export function MessageProvider({ children }) {
       if (
         lastGroup.sender === newMessageData.sender &&
         removeSecondsFromUnixTimestamp(lastGroup.id) ===
-          removeSecondsFromUnixTimestamp(newMessageData.id)
+        removeSecondsFromUnixTimestamp(newMessageData.id)
       ) {
         let newLastGroup = new Message({
           id: lastGroup.id,
@@ -319,31 +319,26 @@ export function MessageProvider({ children }) {
 
   // Initial Loading of Messages
   useEffect(() => {
-    if (receiver !== "") {
-      setMessages([]);
-      if (receiverPublicKey === "") {
+    let cancelled = false;
+    async function loadInitial() {
+      if (receiver === "") return;
+
+      try {
+        setMessages([]);
+
         updateNavbarLoading(true);
-        setNavbarLoadingMessage("Loading receivers public key.");
-        get(receiver).then((data) => {
-          setReceiverPublicKey(data.public_key);
-          setNavbarLoadingMessage("");
-          updateNavbarLoading(false);
-        });
-      }
-      if (sharedSecret === "" && receiverPublicKey !== "") {
-        updateNavbarLoading(true);
-        setNavbarLoadingMessage("Loading shared secret.");
-        get_shared_secret(privateKey, receiverPublicKey)
-        .then(secret => {
-          setSharedSecret(secret.sharedSecretHex);
-          setNavbarLoadingMessage("");
-          updateNavbarLoading(false);
-        });
-      }
-      if (sharedSecret !== "") {
-        updateNavbarLoading(true);
+        setNavbarLoadingMessage("Loading receiver information.");
+        const user = await get(receiver);
+        if (cancelled) return;
+        setReceiverPublicKey(user.public_key);
+
+        setNavbarLoadingMessage("Computing shared secret.");
+        const secret = await get_shared_secret(privateKey, user.public_key);
+        if (cancelled) return;
+        setSharedSecret(secret.sharedSecretHex);
+
         setNavbarLoadingMessage("Loading messages.");
-        send(
+        const data = await send(
           "message_get",
           {
             message: "Getting messages",
@@ -354,59 +349,65 @@ export function MessageProvider({ children }) {
             loaded_messages: 0,
             message_amount: initialMessages,
           },
-        ).then(async (data) => {
-          if (typeof data.data.message_chunk !== "undefined") {
-            let sortedChunk = [...data.data.message_chunk].sort(
-              (a, b) => a.message_time - b.message_time,
-            );
-            const decryptedMessages = await Promise.all(
-              sortedChunk.map(async (chunk) => {
-                try {
-                  const decryptedContent = atob(
-                    await decrypt_base64_using_aes(
-                      chunk.message_content,
-                      sharedSecret,
-                    ),
-                  );
-                  return {
-                    id: chunk.message_time,
-                    sender: chunk.sender_is_me ? ownUuid : receiver,
-                    content: decryptedContent,
-                    sendToServer: false,
-                  };
-                } catch (err) {
-                  let stringErr = err.toString();
-                  if (
-                    stringErr === "OperationError" ||
-                    stringErr ===
-                    "OperationError: The operation failed for an operation-specific reason"
-                  ) {
-                    setFailedMessages((prev) => prev + 1);
-                  } else {
-                    log(stringErr, "error");
-                  }
-                  return null;
+        );
+        if (cancelled) return;
+
+        if (typeof data.data.message_chunk !== "undefined") {
+          let sortedChunk = [...data.data.message_chunk].sort(
+            (a, b) => a.message_time - b.message_time,
+          );
+          const decryptedMessages = await Promise.all(
+            sortedChunk.map(async (chunk) => {
+              try {
+                const decryptedContent = atob(
+                  await decrypt_base64_using_aes(
+                    chunk.message_content,
+                    secret.sharedSecretHex,
+                  ),
+                );
+                return {
+                  id: chunk.message_time,
+                  sender: chunk.sender_is_me ? ownUuid : receiver,
+                  content: decryptedContent,
+                  sendToServer: false,
+                };
+              } catch (err) {
+                let stringErr = err.toString();
+                if (
+                  stringErr === "OperationError" ||
+                  stringErr ===
+                  "OperationError: The operation failed for an operation-specific reason"
+                ) {
+                  setFailedMessages((prev) => prev + 1);
+                } else {
+                  log(stringErr, "error");
                 }
-              }),
-            );
-            let processedMessages = [];
-            decryptedMessages.forEach((msgData) => {
-              if (msgData) {
-                processedMessages = addToChunk(processedMessages, msgData);
+                return null;
               }
-            });
-
-            setMessages(processedMessages);
-          } else {
-            setNoMessageWithUser(true)
-          }
-
-          setNavbarLoadingMessage("");
-          updateNavbarLoading(false);
-        });
+            }),
+          );
+          let processedMessages = [];
+          decryptedMessages.forEach((msgData) => {
+            if (msgData) {
+              processedMessages = addToChunk(processedMessages, msgData);
+            }
+          });
+          setMessages(processedMessages);
+          setNoMessageWithUser(false);
+        } else {
+          setNoMessageWithUser(true);
+        }
+      } finally {
+        setNavbarLoadingMessage("");
+        updateNavbarLoading(false);
       }
     }
-  }, [receiver, sharedSecret, receiverPublicKey]);
+
+    loadInitial();
+    return () => {
+      cancelled = true;
+    };
+  }, [receiver]);
 
   // Live Messages
   useEffect(() => {
