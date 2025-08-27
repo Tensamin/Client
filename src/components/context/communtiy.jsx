@@ -45,7 +45,7 @@ export let CommunityProvider = ({ children }) => {
     let responseTimeout = 10000;
 
     // Basic Functions
-    let { encrypt_base64_using_aes, decrypt_base64_using_aes } = useEncryptionContext();
+    let { encrypt_base64_using_aes, decrypt_base64_using_aes, get_shared_secret } = useEncryptionContext();
     let { privateKeyHash, privateKey } = useCryptoContext();
     let { ownUuid, get } = useUsersContext();
     let { receiver } = useMessageContext();
@@ -58,13 +58,15 @@ export let CommunityProvider = ({ children }) => {
     let [connected, setConnected] = useState(false);
     let [clientPing, setClientPing] = useState("?");
     let [identified, setIdentified] = useState(false);
+    let [communityPublicKey, setCommunityPublicKey] = useState("");
+    let [communitySecret, setCommunitySecret] = useState("");
 
     // Handle WebSocket Messages
     let handleWebSocketMessage = useCallback(async (event) => {
         let message = JSON.parse(event.data);
 
         if (message.type !== "pong") {
-            logFunction(message, "debug", "Call WebSocket (Received):")
+            logFunction(message, "debug", "Community WebSocket (Received):")
         }
 
         switch (message.type) {
@@ -101,7 +103,7 @@ export let CommunityProvider = ({ children }) => {
                 pendingRequests.current.forEach(({ reject, timeoutId }) => {
                     clearTimeout(timeoutId);
                     reject(
-                        new Error('Call WebSocket connection closed before response was received.')
+                        new Error('Community WebSocket connection closed before response was received.')
                     );
                 });
                 pendingRequests.current.clear();
@@ -206,19 +208,36 @@ export let CommunityProvider = ({ children }) => {
     useEffect(() => {
         async function sendIdentification() {
             if (connected) {
-                send("identification",
-                    {
-                        message: "Client identifying",
-                        log_level: 0
-                    },
-                    {
-                        user_id: ownUuid,
-                        signed: "",
-                    })
+                send("identification", {
+                    message: "Client signing in",
+                    log_level: 1
+                }, {
+                    user_id: ownUuid
+                })
                     .then(async data => {
-                        if (data.type === "identification_response") {
-                            setIdentified(true);
+                        if (data.type !== "error") {
+                            let newPublicKey = data.data.public_key;
+                            let secret = await get_shared_secret(privateKey, newPublicKey);
+
+                            let decryptedSecret = await decrypt_base64_using_aes(data.data.challenge, secret);
+
+                            await send("challenge_response", {
+                                message: "Solved challenge",
+                                log_level: 1
+                            }, {
+                                challenge: decryptedSecret,
+                            })
+                                .then(data => {
+                                    if (data.type !== "error") {
+                                        setCommunityPublicKey(newPublicKey);
+                                        setCommunitySecret(secret);
+                                        setIdentified(true);
+                                    } else {
+                                        log(data.log.message, "error");
+                                    }
+                                })
                         } else {
+                            log(data.log.message, "error");
                             setIdentified(false);
                         }
                     })

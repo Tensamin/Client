@@ -40,37 +40,38 @@ export function Communities() {
 
   return (
     <div className="flex flex-col gap-2 mr-2 ml-3">
-      {communitiesArray.map((community) => (
-        <SidebarMenuItem key={community.position}>
-          <Button
-            className="w-full h-full p-1 pr-2.5 pl-0 rounded-2xl transition-all duration-200 ease-in-out"
-            variant="outline"
-            onClick={() => {
-              setPage({
-                name: "community", data: JSON.stringify({
-                  ip: community.ip,
-                  port: community.port,
-                  secure: community.secure,
-                })
-              });
-            }}
-            disabled={forceLoad}
-          >
-            <div variant="outline" className="w-full text-left justify-start">
-              {forceLoad ? (
-                <SmallCommunityModal forceLoad={true} />
-              ) : (
-                <SmallCommunityModal
-                  ip={community.ip}
-                  port={community.port}
-                  secure={community.secure}
-                  state={community.state}
-                />
-              )}
-            </div>
-          </Button>
-        </SidebarMenuItem>
-      ))}
+      {communitiesArray.length > 0 ? communitiesArray.map((community) => {
+        let betterCommunityDomain = JSON.parse(community.community_address);
+
+        return (
+          <SidebarMenuItem key={community.community_address}>
+            <Button
+              className="w-full h-full p-1 pr-2.5 pl-0 rounded-2xl transition-all duration-200 ease-in-out"
+              variant="outline"
+              onClick={() => {
+                setPage({
+                  name: "community", data: community.community_address
+                });
+              }}
+              disabled={forceLoad}
+            >
+              <div variant="outline" className="w-full text-left justify-start">
+                {forceLoad ? (
+                  <SmallCommunityModal forceLoad={true} />
+                ) : (
+                  <SmallCommunityModal
+                    ip={betterCommunityDomain[0]}
+                    port={betterCommunityDomain[1]}
+                    title={community.community_title}
+                  />
+                )}
+              </div>
+            </Button>
+          </SidebarMenuItem>
+        )
+      }) : (
+        <p className="w-full text-xs text-center">No Communities</p>
+      )}
     </div>
   );
 }

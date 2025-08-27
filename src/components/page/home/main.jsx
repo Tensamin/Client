@@ -32,15 +32,11 @@ import { Label } from "@/components/ui/label";
 // Main
 export function Main() {
     let [open, setOpen] = useState(false);
-    let [newChatUsername, setNewChatUUID] = useState("");
+    let [newChatUsername, setNewChatUsername] = useState("");
     let [newCommunityDomain, setNewCommunityDomain] = useState("");
-    let { setConnectToCommunity, connected, setPort, setDomain } = useCommunityContext();
+    let [newCommunityTitle, setNewCommunityTitle] = useState("");
     let { send } = useWebSocketContext();
-    let { doChatRefresh } = useUsersContext();
-
-    function handleInputChange(e) {
-        setNewChatUUID(e)
-    }
+    let { doChatRefresh, doCommunityRefresh } = useUsersContext();
 
     async function handleSubmit() {
         try {
@@ -77,22 +73,34 @@ export function Main() {
         } catch (err) {
             log(err.message, "error")
         } finally {
-            setNewChatUUID("")
+            setNewChatUsername("")
         }
-    }
-
-    function handleCommunityInputChange(e) {
-        setNewCommunityDomain(e)
     }
 
     async function handleCommunitySubmit() {
         try {
             let split = newCommunityDomain.split(":");
-            setDomain(split[0]);
-            setPort(split[1] || 1984);
-            console.log(split[0], split[1] || 1984)
-            setConnectToCommunity(true);
-            console.log("Starting to connect")
+
+            let newDomain = split[0]
+            let newPort = split[1] || 1984
+
+            send("add_community",
+                {
+                    message: "Client adding Community",
+                    log_level: 0
+                },
+                {
+                    community_address: JSON.stringify([newDomain, newPort]),
+                    community_title: newCommunityTitle || "Community",
+                    position: "",
+                })
+                .then(async data => {
+                    if (data.type !== "error") {
+                        doCommunityRefresh();
+                    } else {
+                        log(data.log.message, "error")
+                    }
+                });
         } catch (err) {
             log(err.message, "error")
         }
@@ -121,7 +129,7 @@ export function Main() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Enter a username</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        <Input className="text-foreground" placeholder="some_user" value={newChatUsername} onChange={(e) => handleInputChange(e.target.value)} onSubmit={handleSubmit}></Input>
+                                        <Input className="text-foreground" placeholder="some_user" value={newChatUsername} onChange={(e) => setNewChatUsername(e.target.value)} onSubmit={handleSubmit}></Input>
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -148,7 +156,16 @@ export function Main() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Enter a domain</AlertDialogTitle>
                                     <AlertDialogDescription asChild>
-                                        <Input className="text-foreground" placeholder="methanium.net" value={newCommunityDomain} onChange={(e) => handleCommunityInputChange(e.target.value)} onSubmit={handleCommunitySubmit} />
+                                        <div className="flex flex-col gap-5">
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="new-community-domain">Domain</Label>
+                                                <Input id="new-community-domain" className="text-foreground" placeholder="methanium.net" value={newCommunityDomain} onChange={(e) => setNewCommunityDomain(e.target.value)} onSubmit={handleCommunitySubmit} />
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="new-community-title">Title</Label>
+                                                <Input id="new-community-title" className="text-foreground" placeholder="Community" value={newCommunityTitle} onChange={(e) => setNewCommunityTitle(e.target.value)} onSubmit={handleCommunitySubmit} />
+                                            </div>
+                                        </div>
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

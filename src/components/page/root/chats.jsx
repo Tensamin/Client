@@ -40,7 +40,7 @@ export function Chats() {
 
   return (
     <div className="flex flex-col gap-2 mr-2 ml-3">
-      {chatsArray.map((chat) => (
+      {chatsArray.length > 0 ? chatsArray.map((chat) => (
         <SidebarMenuItem key={chat.user_id}>
           <Button
             className="w-full h-full p-1 pr-2.5 pl-0 rounded-2xl transition-all duration-200 ease-in-out"
@@ -71,7 +71,9 @@ export function Chats() {
             </div>
           </Button>
         </SidebarMenuItem>
-      ))}
+      )) : (
+        <p className="w-full text-xs text-center">No Chats</p>
+      )}
     </div>
   );
 }
