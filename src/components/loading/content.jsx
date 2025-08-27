@@ -31,7 +31,9 @@ export function Loading({ message = "Loading...", error = false, allowDebugToFor
                 className="w-75 h-75 rounded-4xl select-none"
                 loading="eager"
             />
-            <p className="font-bold font-mono text-2xl text-[#c8ccf4]/30 w-2/3 text-center">{coolMessage}</p>
+            {error || debug ? (
+                <p className="font-bold font-mono text-2xl text-[#c8ccf4]/30 w-2/3 text-center">{coolMessage}</p>
+            ) : null}
             {debug && allowDebugToForceLoad ? (
                 <Button
                     className=""
