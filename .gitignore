@@ -3,5 +3,6 @@
 /out/
 /release/
 /work/
+/dist/
 package-lock.json
 tensamin.pkg.tar.zst
