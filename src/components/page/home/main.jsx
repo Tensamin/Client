@@ -34,7 +34,7 @@ export function Main() {
     let [open, setOpen] = useState(false);
     let [newChatUsername, setNewChatUUID] = useState("");
     let [newCommunityDomain, setNewCommunityDomain] = useState("");
-    let { setConnectToCommunity, connected, setPort, setDomain, setSecureConnection, secureConnection } = useCommunityContext();
+    let { setConnectToCommunity, connected, setPort, setDomain } = useCommunityContext();
     let { send } = useWebSocketContext();
     let { doChatRefresh } = useUsersContext();
 
@@ -90,7 +90,9 @@ export function Main() {
             let split = newCommunityDomain.split(":");
             setDomain(split[0]);
             setPort(split[1] || 1984);
+            console.log(split[0], split[1] || 1984)
             setConnectToCommunity(true);
+            console.log("Starting to connect")
         } catch (err) {
             log(err.message, "error")
         }
@@ -146,13 +148,7 @@ export function Main() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Enter a domain</AlertDialogTitle>
                                     <AlertDialogDescription asChild>
-                                        <div className="flex flex-col gap-5">
-                                            <Input className="text-foreground" placeholder="methanium.net" value={newCommunityDomain} onChange={(e) => handleCommunityInputChange(e.target.value)} onSubmit={handleCommunitySubmit}></Input>
-                                            <div className="flex gap-2">
-                                                <Checkbox id="use-secure-connection" checked={secureConnection} onCheckedChange={setSecureConnection} />
-                                                <Label className="text-foreground" htmlFor="use-secure-connection">Use secure connection</Label>
-                                            </div>
-                                        </div>
+                                        <Input className="text-foreground" placeholder="methanium.net" value={newCommunityDomain} onChange={(e) => handleCommunityInputChange(e.target.value)} onSubmit={handleCommunitySubmit} />
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

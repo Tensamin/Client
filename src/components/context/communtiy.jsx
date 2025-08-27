@@ -53,12 +53,10 @@ export let CommunityProvider = ({ children }) => {
 
     // Community
     let [domain, setDomain] = useState(null);
-    let [invalidDomain, setInvalidDomain] = useState(false);
     let [port, setPort] = useState(null);
     let [connectToCommunity, setConnectToCommunity] = useState(false);
     let [connected, setConnected] = useState(false);
     let [clientPing, setClientPing] = useState("?");
-    let [secureConnection, setSecureConnection] = useState(true);
     let [identified, setIdentified] = useState(false);
 
     // Handle WebSocket Messages
@@ -93,10 +91,10 @@ export let CommunityProvider = ({ children }) => {
 
     // Init WebSocket
     let { sendMessage, readyState } = useWebSocket(
-        connectToCommunity && !invalidDomain && domain && port ? `${secureConnection ? "wss" : "ws"}://${domain}:${port}` : null,
+        connectToCommunity && domain && port ? `wss://${domain}:${port}` : null,
         {
             onOpen: async () => {
-                logFunction("Community connected", "info", "Community WebSocket:");
+                logFunction(`Community connected (wss://${domain}:${port})`, "info", "Community WebSocket:");
             },
             onClose: () => {
                 logFunction("Community disconnected", "info", "Community WebSocket:");
@@ -108,8 +106,11 @@ export let CommunityProvider = ({ children }) => {
                 });
                 pendingRequests.current.clear();
             },
+            onError: () => {
+                console.log("TEST")
+            },
             onMessage: handleWebSocketMessage,
-            shouldReconnect: () => connectToCommunity && !invalidDomain && domain && port,
+            shouldReconnect: () => connectToCommunity && domain && port,
             share: true,
             reconnectAttempts: 5,
             reconnectInterval: 3000,
@@ -249,9 +250,6 @@ export let CommunityProvider = ({ children }) => {
             setDomain,
             port,
             setPort,
-            invalidDomain,
-            secureConnection,
-            setSecureConnection,
             clientPing,
             setConnectToCommunity,
         }}>
