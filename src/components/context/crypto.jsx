@@ -29,9 +29,7 @@ let CryptoContext = createContext();
 export function useCryptoContext() {
   let context = useContext(CryptoContext);
   if (context === undefined) {
-    throw new Error(
-      "useCryptoContext must be used within a CryptoProvider",
-    );
+    throw new Error("useCryptoContext must be used within a CryptoProvider");
   }
   return context;
 }
@@ -64,7 +62,7 @@ export function CryptoProvider({ children }) {
 
       let encrypted_private_key = ls.get("auth_private_key");
       let uuid = ls.get("auth_uuid");
-      let cred_id = ls.get("auth_cred_id")
+      let cred_id = ls.get("auth_cred_id");
 
       if (!encrypted_private_key || !uuid) {
         if (window.location.pathname !== "/login" && isMounted) {
@@ -78,56 +76,64 @@ export function CryptoProvider({ children }) {
         let lambda;
 
         if (isElectron()) {
-          let username = await get(uuid).then(data => data.username);
-          lambda = await window?.keyring?.get('net.methanium.tensamin', username);
-        } if (ls.get('auth_lambda')) {
-          lambda = await decrypt_base64_using_aes(ls.get('auth_lambda'), await getDeviceFingerprint())
+          let username = await get(uuid).then((data) => data.username);
+          lambda = await window?.keyring?.get(
+            "net.methanium.tensamin",
+            username
+          );
+        } else if (ls.get("auth_lambda")) {
+          lambda = await decrypt_base64_using_aes(
+            ls.get("auth_lambda"),
+            await getDeviceFingerprint()
+          );
         } else {
-          let options;
-
-          let resp = await fetch(`${endpoint.webauthn_login_options}${uuid}/${cred_id}`);
+          let resp = await fetch(
+            `${endpoint.webauthn_login_options}${uuid}/${cred_id}`
+          );
           let data = await resp.json();
           if (data?.type === "error") {
             throw new Error(data.log?.message || "Failed to get options");
           }
-          options = JSON.parse(atob(data.data.options));
+          let options = JSON.parse(atob(data.data.options));
 
           let attestation = await startAuthentication(options);
 
-          let verifyResp = await fetch(`${endpoint.webauthn_login_verify}${uuid}/${cred_id}`, {
-            method: "POST",
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ attestation }),
-          });
+          let verifyResp = await fetch(
+            `${endpoint.webauthn_login_verify}${uuid}/${cred_id}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ attestation }),
+            }
+          );
 
           let verifyData = await verifyResp.json();
           if (verifyData?.type === "error") {
-            throw new Error(verifyData.log?.message || "Passkey verify failed");
+            throw new Error(
+              verifyData.log?.message || "Passkey verify failed"
+            );
           }
           lambda = verifyData.data.lambda;
         }
 
-        retryCountRef.current = 0;
+        const rawDecryptedKey = await decrypt_base64_using_aes(
+          encrypted_private_key,
+          lambda
+        );
+        const decryptedKey = JSON.parse(atob(rawDecryptedKey));
 
-        let rawDecryptedKey = await decrypt_base64_using_aes(encrypted_private_key, lambda);
-        let decryptedKey = JSON.parse(atob(rawDecryptedKey));
-
-        let newPrivateKeyHash = await sha256(decryptedKey.d);
+        const newPrivateKeyHash = await sha256(decryptedKey.d);
 
         if (isMounted) {
           setPrivateKeyHash(newPrivateKeyHash);
           setPrivateKey(decryptedKey);
           setIsInitialized(true);
         }
-      } catch (err) {
-        log(
-          err?.message || String(err),
-          "error",
-          "Crypto Provider:",
-        );
 
+        retryCountRef.current = 0;
+      } catch (err) {
         if (!isMounted) return;
 
         retryCountRef.current += 1;
