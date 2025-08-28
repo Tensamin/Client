@@ -140,10 +140,9 @@ export let WebSocketProvider = ({ children }) => {
         } catch (err) {
           logFunction(err.message, 'error');
         }
-        
         return;
       }
-      
+
       return new Promise((resolve, reject) => {
         let id = v7();
 
@@ -249,7 +248,7 @@ export let WebSocketProvider = ({ children }) => {
     };
   }, []);
 
-  return connected && ((identified && !identificationFailed) || forceLoad) ? (
+  return (connected && ((identified && !identificationFailed)) || forceLoad) ? (
     <WebSocketContext.Provider value={{
       send,
       wsSend: send,
@@ -262,16 +261,14 @@ export let WebSocketProvider = ({ children }) => {
     }}>
       {children}
     </WebSocketContext.Provider>
-  ) : identificationFailed ?
+  ) : identificationFailed && !forceLoad ?
     <Loading
       key={identificationFailed}
       message={failedIdentificationMessage}
       error={true}
       allowDebugToForceLoad={true}
-      returnDebug={(shouldLoad) => {
-        if (shouldLoad) {
-          setForceLoad(true)
-        }
+      returnDebug={() => {
+        setForceLoad(true)
       }}
     /> :
     <Loading message="Connecting to Omikron..." />;
