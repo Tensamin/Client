@@ -116,7 +116,11 @@ export let WebSocketProvider = ({ children }) => {
       shouldReconnect: () => true,
       share: true,
       reconnectAttempts: 5,
-      reconnectInterval: 3000,
+      reconnectInterval: 1000,
+      onReconnectStop: () => {
+        setFailedIdentificationMessage("Failed to connect to Omikron")
+        setIdentificationFailed(true);
+      }
     }
   );
 

@@ -32,11 +32,11 @@ export function Loading({ message = "Loading...", error = false, allowDebugToFor
                 loading="eager"
             />
             {error || debug ? (
-                <p className="font-bold font-mono text-2xl text-[#c8ccf4]/30 w-2/3 text-center">{coolMessage}</p>
+                <p className="font-bold font-mono text-2xl w-2/3 text-center">{debug ? message : coolMessage}</p>
             ) : null}
             {debug && allowDebugToForceLoad ? (
                 <Button
-                    className=""
+                    variant="outline"
                     onClick={() => {
                         returnDebug(true)
                     }}
