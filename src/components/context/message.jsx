@@ -268,11 +268,10 @@ export function MessageProvider({ children }) {
             (a, b) => a.message_time - b.message_time,
           );
 
-          // Decrypt all messages in the chunk
-          const decryptedChunks = await Promise.all(
+          let decryptedChunks = await Promise.all(
             sortedChunk.map(async (chunk) => {
               try {
-                const decryptedContent = atob(
+                let decryptedContent = atob(
                   await decrypt_base64_using_aes(
                     chunk.message_content,
                     sharedSecret,
@@ -295,7 +294,7 @@ export function MessageProvider({ children }) {
                 } else {
                   log(stringErr, "error");
                 }
-                return null; // Skip failed decryptions
+                return null;
               }
             }),
           );
@@ -328,17 +327,17 @@ export function MessageProvider({ children }) {
 
         updateNavbarLoading(true);
         setNavbarLoadingMessage("Loading receiver information.");
-        const user = await get(receiver);
+        let user = await get(receiver);
         if (cancelled) return;
         setReceiverPublicKey(user.public_key);
 
         setNavbarLoadingMessage("Computing shared secret.");
-        const secret = await get_shared_secret(privateKey, user.public_key);
+        let secret = await get_shared_secret(privateKey, user.public_key);
         if (cancelled) return;
         setSharedSecret(secret.sharedSecretHex);
 
         setNavbarLoadingMessage("Loading messages.");
-        const data = await send(
+        let data = await send(
           "message_get",
           {
             message: "Getting messages",
@@ -356,10 +355,10 @@ export function MessageProvider({ children }) {
           let sortedChunk = [...data.data.message_chunk].sort(
             (a, b) => a.message_time - b.message_time,
           );
-          const decryptedMessages = await Promise.all(
+          let decryptedMessages = await Promise.all(
             sortedChunk.map(async (chunk) => {
               try {
-                const decryptedContent = atob(
+                let decryptedContent = atob(
                   await decrypt_base64_using_aes(
                     chunk.message_content,
                     secret.sharedSecretHex,
@@ -412,35 +411,37 @@ export function MessageProvider({ children }) {
   // Live Messages
   useEffect(() => {
     async function doStuff() {
-      if (connected && message !== null && message.type === "message_live") {
-        let messageSender = message.data.sender_id;
-        let messageContent = message.data.message;
-        if (messageSender === receiver) {
-          await processAndAddMessage(
-            message.data.send_time,
-            messageSender,
-            messageContent,
-          );
-        } else {
-          get(messageSender).then(async (data) => {
-            let tmpSharedSecret;
-            get_shared_secret(privateKey, data.public_key)
-              .then(secret => {
-                tmpSharedSecret = secret.sharedSecretHex;
-                setNavbarLoadingMessage("");
-                updateNavbarLoading(false);
-              });
+      if (!connected || !message || message.type !== "message_live") return;
 
-            makeChatTop(messageSender);
-            sendNotification(
-              data.display,
-              atob(
-                await decrypt_base64_using_aes(messageContent, tmpSharedSecret),
-              ),
-              data.avatar,
-            );
-          });
-        }
+      let messageSender = message.data.sender_id;
+      let messageContent = message.data.message;
+
+      if (messageSender === receiver) {
+        await processAndAddMessage(
+          message.data.send_time,
+          messageSender,
+          messageContent,
+        );
+        return;
+      }
+
+      try {
+        let data = await get(messageSender);
+        let secret = await get_shared_secret(privateKey, data.public_key);
+        let tmpSharedSecret = secret.sharedSecretHex;
+
+        makeChatTop(messageSender);
+
+        let body = atob(
+          await decrypt_base64_using_aes(messageContent, tmpSharedSecret),
+        );
+
+        sendNotification(data.display, body, data.avatar);
+      } catch (err) {
+        log(err?.message || String(err), "error");
+      } finally {
+        setNavbarLoadingMessage("");
+        updateNavbarLoading(false);
       }
     }
     doStuff();

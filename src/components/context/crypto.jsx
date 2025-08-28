@@ -13,7 +13,7 @@ import { startAuthentication } from "@simplewebauthn/browser";
 
 // Lib Imports
 import { endpoint } from "@/lib/endpoints";
-import { getDeviceFingerprint, isElectron, log, sha256 } from "@/lib/utils";
+import { getDeviceFingerprint, isElectron, sha256, RETRIES } from "@/lib/utils";
 import ls from "@/lib/localStorageManager";
 
 // Context Imports
@@ -41,7 +41,6 @@ export function CryptoProvider({ children }) {
   let { decrypt_base64_using_aes } = useEncryptionContext();
   let { get } = useUsersContext();
   let retryCountRef = useRef(0);
-  let MAX_PASSKEY_RETRIES = 5;
 
   let router = useRouter();
 
@@ -138,7 +137,7 @@ export function CryptoProvider({ children }) {
 
         retryCountRef.current += 1;
 
-        if (retryCountRef.current >= MAX_PASSKEY_RETRIES) {
+        if (retryCountRef.current >= RETRIES) {
           if (isMounted) {
             router.push("/login");
             setIsInitialized(true);

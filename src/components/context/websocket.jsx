@@ -13,7 +13,7 @@ import useWebSocket, { ReadyState } from "react-use-websocket";
 import { v7 } from "uuid"
 
 // Lib Imports
-import { log as logFunction } from "@/lib/utils";
+import { log as logFunction, RETRIES } from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
 import ls from "@/lib/localStorageManager";
 
@@ -115,7 +115,7 @@ export let WebSocketProvider = ({ children }) => {
       onMessage: handleWebSocketMessage,
       shouldReconnect: () => true,
       share: true,
-      reconnectAttempts: 3,
+      reconnectAttempts: RETRIES,
       reconnectInterval: 500,
       onReconnectStop: () => {
         setFailedIdentificationMessage("Failed to connect to Omikron")

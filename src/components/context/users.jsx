@@ -9,7 +9,7 @@ import React, {
 } from "react";
 
 // Lib Imports
-import { log, getDisplayFromUsername } from "@/lib/utils";
+import { log, getDisplayFromUsername, RETRIES } from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
 import ls from "@/lib/localStorageManager";
 
@@ -97,22 +97,21 @@ export function UsersProvider({ children }) {
 				return fetchedUsers[uuid];
 			} else {
 				let fetchedUser = null;
-				const maxRetries = 5;
-				for (let attempt = 0; attempt <= maxRetries; attempt++) {
+				for (let attempt = 0; attempt <= RETRIES; attempt++) {
 					try {
-						const res = await fetch(`${endpoint.user}${uuid}`);
+						let res = await fetch(`${endpoint.user}${uuid}`);
 						if (!res.ok) throw new Error(`HTTP ${res.status}`);
-						const data = await res.json();
+						let data = await res.json();
 						if (data && data.type !== "error" && data.data) {
 							fetchedUser = data.data;
 							break;
 						}
 						throw new Error("API responded with error type");
 					} catch (err) {
-						if (attempt < maxRetries) {
-							const delay = 200 * Math.pow(2, attempt);
+						if (attempt < RETRIES) {
+							let delay = 200 * Math.pow(2, attempt);
 							log(
-								`Retry ${attempt + 1}/${maxRetries} fetching user ${uuid} after error: ${err?.message ?? err}`,
+								`Retry ${attempt + 1}/${RETRIES} fetching user ${uuid} after error: ${err?.message ?? err}`,
 								"debug",
 							);
 							await sleep(delay);

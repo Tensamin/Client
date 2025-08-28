@@ -3,6 +3,8 @@ import { clsx } from "clsx";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 
+export let RETRIES = 3;
+
 // Main
 export function cn(...inputs) {
   return twMerge(clsx(inputs));

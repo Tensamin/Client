@@ -12,7 +12,7 @@ import {
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { v7 } from "uuid";
 
-import { log, log as logFunction, sha256 } from "@/lib/utils";
+import { log, log as logFunction, sha256, RETRIES } from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
 import ls from "@/lib/localStorageManager";
 
@@ -300,20 +300,25 @@ export let CallProvider = ({ children }) => {
     // Handle incoming call invitations.
     useEffect(() => {
         async function doStuff() {
-            if (message.type === "new_call") {
+            if (!message || message.type !== "new_call") return;
+            try {
                 setInviteData({
                     callerId: message.data.sender_id,
                     callId: message.data.call_id,
-                    callSecret: atob(await decrypt_base64_using_aes(
-                        message.data.call_secret,
-                        await get_shared_secret(
-                            privateKey,
-                            await get(message.data.sender_id)
-                                .then(data => data.public_key)
+                    callSecret: atob(
+                        await decrypt_base64_using_aes(
+                            message.data.call_secret,
+                            // Compute shared secret string before decrypting
+                            (await get_shared_secret(
+                                privateKey,
+                                (await get(message.data.sender_id)).public_key
+                            )).sharedSecretHex
                         )
-                    )),
-                })
-                setInvitedToCall(true)
+                    ),
+                });
+                setInvitedToCall(true);
+            } catch (e) {
+                logFunction(`Failed to process new_call: ${e.message}`, 'error');
             }
         }
         doStuff();
@@ -587,7 +592,7 @@ export let CallProvider = ({ children }) => {
             onMessage: handleWebSocketMessage,
             shouldReconnect: () => createCall && callId && callSecret,
             share: true,
-            reconnectAttempts: 5,
+            reconnectAttempts: RETRIES,
             reconnectInterval: 3000,
         }
     );
