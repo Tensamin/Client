@@ -49,6 +49,8 @@ export let WebSocketProvider = ({ children }) => {
   let [identified, setIdentified] = useState(false);
   let [identificationFailed, setIdentificationFailed] = useState(false);
   let [failedIdentificationMessage, setFailedIdentificationMessage] = useState(null)
+  let [allowReconnect, setAllowReconnect] = useState(true);
+  let connectTimeoutRef = useRef(null);
 
   let [lastMessage, setLastMessage] = useState(null);
 
@@ -113,7 +115,7 @@ export let WebSocketProvider = ({ children }) => {
         pendingRequests.current.clear();
       },
       onMessage: handleWebSocketMessage,
-      shouldReconnect: () => true,
+      shouldReconnect: () => allowReconnect && !forceLoad,
       share: true,
       reconnectAttempts: RETRIES,
       reconnectInterval: 500,
@@ -208,6 +210,39 @@ export let WebSocketProvider = ({ children }) => {
 
     return () => clearInterval(interval);
   }, [connected, send, forceLoad]);
+
+  useEffect(() => {
+    if (forceLoad) return;
+    if (readyState === ReadyState.CONNECTING && allowReconnect && !connectTimeoutRef.current) {
+      connectTimeoutRef.current = setTimeout(() => {
+        if (readyState !== ReadyState.OPEN) {
+          setFailedIdentificationMessage("Failed to connect to Omikron");
+          setIdentificationFailed(true);
+          setAllowReconnect(false);
+        }
+      }, 10000);
+    }
+
+    if (readyState === ReadyState.OPEN || readyState === ReadyState.CLOSED) {
+      if (connectTimeoutRef.current) {
+        clearTimeout(connectTimeoutRef.current);
+        connectTimeoutRef.current = null;
+      }
+    }
+
+    if (readyState === ReadyState.OPEN) {
+      setIdentificationFailed(false);
+      setFailedIdentificationMessage(null);
+      setAllowReconnect(true);
+    }
+
+    return () => {
+      if (connectTimeoutRef.current && (readyState === ReadyState.OPEN || readyState === ReadyState.CLOSED)) {
+        clearTimeout(connectTimeoutRef.current);
+        connectTimeoutRef.current = null;
+      }
+    };
+  }, [readyState, allowReconnect, forceLoad]);
 
   // Identification
   useEffect(() => {
