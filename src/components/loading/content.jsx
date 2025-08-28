@@ -32,7 +32,7 @@ export function Loading({ message = "Loading...", error = false, allowDebugToFor
                 loading="eager"
             />
             {error || debug ? (
-                <p className="font-bold font-mono text-2xl w-2/3 text-center">{debug ? message : coolMessage}</p>
+                <p className="font-bold font-mono text-2xl text-[#c6d0f5] w-2/3 text-center">{debug ? message : coolMessage}</p>
             ) : null}
             {debug && allowDebugToForceLoad ? (
                 <Button
