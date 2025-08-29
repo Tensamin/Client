@@ -77,6 +77,7 @@ export function Navbar() {
             ) : null}
             <motion.div
                 className="bg-sidebar flex-1 flex items-center gap-3"
+                style={{ WebkitAppRegion: 'no-drag' }}
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -202,7 +203,7 @@ export function Navbar() {
                     {isElectron() && (
                         <motion.div
                             layout="position"
-                            key="call-button"
+                            key="window-close-button"
                             variants={itemVariants}
                             initial="hidden"
                             animate="visible"
