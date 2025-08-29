@@ -133,6 +133,7 @@ export function LoginForm() {
         <Card className="w-auto h-auto" style={{ WebkitAppRegion: 'no-drag' }}>
           <CardContent className="flex flex-col">
             <form
+              autoComplete="on"
               className="flex flex-col gap-6"
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -216,7 +217,8 @@ export function LoginForm() {
                         let encryptedLambda = await encrypt_base64_using_aes(lambda, fingerprint);
                         ls.set('auth_lambda', encryptedLambda);
                       } else ls.remove('auth_lambda');
-
+                      // Best-effort ask browser to save credentials (if supported)
+                      await storeCredentialsIfSupported(username, password);
                       window.location.href = "/";
                     } else {
                       setFailed(true);
