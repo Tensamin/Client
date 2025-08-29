@@ -35,7 +35,7 @@ export function LoadingWrapper() {
         let private_key = ls.get("auth_private_key");
         let uuid = ls.get("auth_uuid");
 
-        const authenticated = (private_key && uuid);
+        let authenticated = (private_key && uuid);
         setIsAuthenticated(authenticated);
 
         if (pathname === '/login') {
@@ -64,7 +64,7 @@ export function LoadingWrapper() {
     }, [isAuthenticated, pathname]);
 
     useEffect(() => {
-        setInterval(() => {
+        let intervalId = setInterval(() => {
             let warningMessage = `
   %cDO NOT PASTE ANYTHING IN HERE!
 `, styles = [
@@ -76,6 +76,7 @@ export function LoadingWrapper() {
                 console.log("Enabled debug mode to hide this warning.")
             }
         }, 3000)
+        return () => clearInterval(intervalId);
     }, [])
 
     return isLoading ? (

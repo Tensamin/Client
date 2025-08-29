@@ -125,6 +125,7 @@ export function VoiceRearrangement() {
   // Draggable positions: { [userId]: { x, y } }
   let nodeRefs = useRef(new Map());
   let draggingIdsRef = useRef(new Set());
+  let activeDragsRef = useRef(new Set());
   let [, setDragRev] = useState(0);
 
   let canvasRef = useRef(null);
@@ -204,31 +205,31 @@ export function VoiceRearrangement() {
 
       let targetX = startPos.x;
       let targetY = startPos.y;
-      let rafId = null;
+      let dragState = { rafId: null };
       let updating = false;
 
-      const apply = () => {
-        rafId = null;
+      let apply = () => {
+        dragState.rafId = null;
         el.style.willChange = "transform";
         el.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
         updating = false;
       };
 
-      const handleMove = (ev) => {
+      let handleMove = (ev) => {
         targetX = startPos.x + (ev.clientX - startX);
         targetY = startPos.y + (ev.clientY - startY);
         if (!updating) {
           updating = true;
-          rafId = requestAnimationFrame(apply);
+          dragState.rafId = requestAnimationFrame(apply);
         }
       };
 
-      const finalize = () => {
+      let finalize = () => {
         window.removeEventListener("pointermove", handleMove);
         window.removeEventListener("pointerup", finalize);
         window.removeEventListener("pointercancel", finalize);
         try { el.releasePointerCapture?.(e.pointerId); } catch { }
-        if (rafId) cancelAnimationFrame(rafId);
+        if (dragState.rafId) cancelAnimationFrame(dragState.rafId);
         setPositions((prev) => ({
           ...prev,
           [id]: { x: targetX, y: targetY },
@@ -238,14 +239,43 @@ export function VoiceRearrangement() {
         document.body.style.userSelect = previousUserSelect;
         draggingIdsRef.current.delete(id);
         setDragRev((r) => (r + 1) & 0xffff);
+
+        // Remove from active drags set
+        try {
+          activeDragsRef.current.forEach((rec) => {
+            if (rec.id === id && rec.finalize === finalize) {
+              activeDragsRef.current.delete(rec);
+            }
+          });
+        } catch { }
       };
 
       window.addEventListener("pointermove", handleMove, { passive: true });
       window.addEventListener("pointerup", finalize, { once: true });
       window.addEventListener("pointercancel", finalize, { once: true });
+
+      // Track active drag so we can cleanup on unmount
+      activeDragsRef.current.add({ id, handleMove, finalize, state: dragState });
     },
     [positions, setPositions, endUserDrag]
   );
+
+  // Ensure global listeners/rAF are cleared if unmounted mid-drag
+  useEffect(() => {
+    return () => {
+      try {
+        activeDragsRef.current.forEach((rec) => {
+          try { window.removeEventListener("pointermove", rec.handleMove); } catch { }
+          try { window.removeEventListener("pointerup", rec.finalize); } catch { }
+          try { window.removeEventListener("pointercancel", rec.finalize); } catch { }
+          try { if (rec.state?.rafId) cancelAnimationFrame(rec.state.rafId); } catch { }
+        });
+        activeDragsRef.current.clear();
+        // Best-effort restore of user-select
+        try { document.body.style.userSelect = ""; } catch { }
+      } catch { }
+    };
+  }, []);
 
   return (
     <div className="flex h-full w-full flex-col gap-4 overflow-hidden">
@@ -275,7 +305,7 @@ export function VoiceRearrangement() {
             .filter((user) => user !== ownUuid)
             .map((user) => {
               let pos = positions[user] || { x: 0, y: 0 };
-              const isDragging = draggingIdsRef.current.has(user);
+              let isDragging = draggingIdsRef.current.has(user);
               return (
                 <div
                   key={`free-${user}`}
@@ -315,6 +345,7 @@ export function Main() {
   let [focused, setFocused] = useState("");
   let nodeRefs = useRef(new Map());
   let draggingIdsRef = useRef(new Set());
+  let activeDragsRef = useRef(new Set());
   let [, setDragRev] = useState(0);
 
   useEffect(() => {
@@ -402,32 +433,32 @@ export function Main() {
 
       let targetX = startPos.x;
       let targetY = startPos.y;
-      let rafId = null;
+      let dragState = { rafId: null };
       let updating = false;
 
-      const apply = () => {
-        rafId = null;
+      let apply = () => {
+        dragState.rafId = null;
         // Hint to browser for smoother transform
         el.style.willChange = "transform";
         el.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
         updating = false;
       };
 
-      const handleMove = (ev) => {
+      let handleMove = (ev) => {
         targetX = startPos.x + (ev.clientX - startX);
         targetY = startPos.y + (ev.clientY - startY);
         if (!updating) {
           updating = true;
-          rafId = requestAnimationFrame(apply);
+          dragState.rafId = requestAnimationFrame(apply);
         }
       };
 
-      const finalize = () => {
+      let finalize = () => {
         window.removeEventListener("pointermove", handleMove);
         window.removeEventListener("pointerup", finalize);
         window.removeEventListener("pointercancel", finalize);
         try { el.releasePointerCapture?.(e.pointerId); } catch { }
-        if (rafId) cancelAnimationFrame(rafId);
+        if (dragState.rafId) cancelAnimationFrame(dragState.rafId);
         // Commit final position once to context, then notify end of drag
         setPositions((prev) => ({
           ...prev,
@@ -441,14 +472,42 @@ export function Main() {
         // Unmark dragging and trigger a render to restore React-driven transform
         draggingIdsRef.current.delete(id);
         setDragRev((r) => (r + 1) & 0xffff);
+
+        // Remove from active drags set
+        try {
+          activeDragsRef.current.forEach((rec) => {
+            if (rec.id === id && rec.finalize === finalize) {
+              activeDragsRef.current.delete(rec);
+            }
+          });
+        } catch { }
       };
 
       window.addEventListener("pointermove", handleMove, { passive: true });
       window.addEventListener("pointerup", finalize, { once: true });
       window.addEventListener("pointercancel", finalize, { once: true });
+
+      // Track active drag so we can cleanup on unmount
+      activeDragsRef.current.add({ id, handleMove, finalize, state: dragState });
     },
     [positions, setPositions, endUserDrag]
   );
+
+  // Ensure global listeners/rAF are cleared if unmounted mid-drag
+  useEffect(() => {
+    return () => {
+      try {
+        activeDragsRef.current.forEach((rec) => {
+          try { window.removeEventListener("pointermove", rec.handleMove); } catch { }
+          try { window.removeEventListener("pointerup", rec.finalize); } catch { }
+          try { window.removeEventListener("pointercancel", rec.finalize); } catch { }
+          try { if (rec.state?.rafId) cancelAnimationFrame(rec.state.rafId); } catch { }
+        });
+        activeDragsRef.current.clear();
+        try { document.body.style.userSelect = ""; } catch { }
+      } catch { }
+    };
+  }, []);
 
   return (
     <div className="flex h-full w-full flex-col gap-4 overflow-hidden">
@@ -485,7 +544,7 @@ export function Main() {
               .filter((user) => user !== ownUuid)
               .map((user) => {
                 let pos = positions[user] || { x: 0, y: 0 };
-                const isDragging = draggingIdsRef.current.has(user);
+                let isDragging = draggingIdsRef.current.has(user);
                 return (
                   <div
                     key={`free-${user}`}

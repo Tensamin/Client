@@ -103,14 +103,23 @@ export function Message({ message }) {
               </div>
             </div>
             <div className="text-sm break-all">
-              {message.subMessages.map((message, index) => (
-                <div key={index}>
-                  <div className="p-1">
-                    <Separator className="bg-border/40" />
+              {message.subMessages.map((message, index) => {
+                return message.content !== "" ? (
+                  <div key={index}>
+                    <div className="p-1">
+                      <Separator className="bg-border/40" />
+                    </div>
+                    <SmolMessage message={message} sendToServer={message.sendToServer} />
                   </div>
-                  <SmolMessage message={message} sendToServer={message.sendToServer} />
-                </div>
-              ))}
+                ) : (
+                  <div key={index}>
+                    <div className="p-1">
+                      <Separator className="bg-border/40" />
+                    </div>
+                    <SmolMessage sendToServer={false} failed />
+                  </div>
+                )
+              })}
             </div>
           </div>
         </ContextMenuTrigger>

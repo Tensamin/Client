@@ -19,15 +19,10 @@ import {
 } from "@/components/ui/context-menu";
 import { MarkdownToReactComponents } from "@/components/page/chat/markdown";
 
-// Allow only base64 raster images (png, jpg, jpeg, gif, webp, avif)
-const BASE64_IMG_RE =
-    /^data:image\/(png|jpe?g|gif|webp|avif);base64,/i;
+const BASE64_IMG_RE = /^data:image\/(png|jpe?g|gif|webp|avif);base64,/i;
 
-// Pass data: through unchanged; keep defaults for everything else
-const urlTransform = (url) =>
-    url && url.startsWith("data:") ? url : defaultUrlTransform(url);
+const urlTransform = (url) => url && url.startsWith("data:") ? url : defaultUrlTransform(url);
 
-// Only allow <img> nodes that are base64 image data URIs
 const allowElement = (element) => {
     if (element.tagName === "img") {
         const src = element.properties?.src;
@@ -37,7 +32,6 @@ const allowElement = (element) => {
     return true;
 };
 
-// Render <img> only for base64 images; hide others
 function ImgBase64Only({ src, alt, title, ...rest }) {
     if (typeof src !== "string" || !BASE64_IMG_RE.test(src)) return null;
     return (
@@ -52,7 +46,7 @@ function ImgBase64Only({ src, alt, title, ...rest }) {
 }
 
 // Main
-export function SmolMessage({ message, sendToServer }) {
+export function SmolMessage({ message = {}, sendToServer, failed = false }) {
     let [showLoading, setShowLoading] = useState(false);
 
     let niceMessage = message.content;
@@ -64,7 +58,6 @@ export function SmolMessage({ message, sendToServer }) {
         }
     }, [sendToServer]);
 
-    // Merge your existing component map but force our <img> override
     const mergedComponents = {
         ...MarkdownToReactComponents,
         img: ImgBase64Only,

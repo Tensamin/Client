@@ -65,7 +65,7 @@ export function Main() {
                             variant="outline"
                             key={item.id}
                             onClick={() => select(item.id)}
-                            className={`${isSelectedClassNames(item.id)} select-none text-lg md:text-sm h-11 md:h-9`}
+                            className={`${isSelectedClassNames(item.id)} select-none text-md md:text-sm h-11 md:h-9`}
                         >{item.name}</Button>
                     ))}
                     <Button
@@ -76,7 +76,7 @@ export function Main() {
                             ls.remove('auth_private_key');
                             window.location.reload();
                         }}
-                        className="select-none text-lg md:text-sm h-11 md:h-9"
+                        className="select-none text-md md:text-sm h-11 md:h-9"
                     >Logout</Button>
                 </CardContent>
                 <CardFooter className="absolute bottom-0 left-0 p-0 m-3">
