@@ -143,7 +143,7 @@ export function MessageSend() {
         </Button>
         <textarea
           ref={textareaRef}
-          className="p-2.5 w-full rounded-xl text-sm resize-none placeholder:text-muted-foreground border outline-0 text-md border-input bg-card overflow-hidden"
+          className="placeholder:select-none p-2.5 w-full rounded-xl text-sm resize-none placeholder:text-muted-foreground border outline-0 text-md border-input bg-card overflow-hidden"
           placeholder={navbarLoading ? navbarLoadingMessage || "Send a message..." : "Send a message..."}
           id="message"
           name="message"
