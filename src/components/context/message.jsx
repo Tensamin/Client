@@ -61,6 +61,7 @@ export function MessageProvider({ children }) {
   let [loadedAllMessages, setLoadedAllMessages] = useState(false);
   let [noMessageWithUser, setNoMessageWithUser] = useState(false);
   let navbarLoadingTimeoutRef = useRef(null);
+  let notificationSoundRef = useRef(null);
 
   // Notifications
   let [notificationPermission, setNotificationPermission] = useState("default");
@@ -91,11 +92,30 @@ export function MessageProvider({ children }) {
     } catch (err) {
       return "Error requesting notification permission: " + err.message;
     }
-  });
+  }, []);
+
+  const playMessageSound = useCallback(() => {
+    try {
+      let audio = notificationSoundRef.current;
+      if (!audio) {
+        audio = new Audio("/sounds/message.webm");
+        audio.preload = "auto";
+        notificationSoundRef.current = audio;
+      }
+      audio.currentTime = 0;
+      audio.play()?.catch(() => { });
+    } catch (_) {
+      // no-op
+    }
+  }, []);
 
   function sendNotification(sender, body, icon) {
+    playMessageSound();
+
     if (!("Notification" in window)) {
-      log("Notifications are not supported by this browser.", "warning");
+      toast.info(
+        `${sender} sent you a message, enable notifications in the settings!`,
+      );
       return;
     }
 
@@ -103,6 +123,7 @@ export function MessageProvider({ children }) {
       new Notification(sender, {
         body: body,
         icon: icon,
+        silent: true,
       });
     } else {
       toast.info(
