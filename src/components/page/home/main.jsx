@@ -117,7 +117,7 @@ export function Main() {
                                     <button
                                         role="combobox"
                                         aria-expanded={open}
-                                        className="flex"
+                                        className="flex select-none"
                                     >
                                         <Badge>
                                             Add Chat
@@ -144,7 +144,7 @@ export function Main() {
                                     <button
                                         role="combobox"
                                         aria-expanded={open}
-                                        className="flex"
+                                        className="flex select-none"
                                     >
                                         <Badge>
                                             Add Community

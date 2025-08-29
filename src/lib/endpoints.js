@@ -1,4 +1,4 @@
-let authServer = process.env.NODE_ENV === "development" ? "https://dev.auth.tensamin.methanium.net" : "https://auth.tensamin.methanium.net"
+let authServer = process.env.NODE_ENV === "development" ? "https://devauth.tensamin.methanium.net" : "https://auth.tensamin.methanium.net"
 
 export let endpoint = {
     username_to_uuid: authServer + "/api/get/uuid/",

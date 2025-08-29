@@ -43,7 +43,7 @@ export function Chats() {
   }, [connected, identified, forceLoad, fetchChats]);
 
   return (
-    <div className="flex flex-col gap-2 mr-2 ml-3">
+    <div className="flex flex-col gap-2 mx-3">
       {chatsArray.length > 0 ? chatsArray.map((chat) => (
         <SidebarMenuItem key={chat.user_id}>
           <Button

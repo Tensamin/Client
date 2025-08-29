@@ -29,7 +29,7 @@ export function AppSidebar(props) {
 
   return (
     <Sidebar side={sidebarRightSide ? "right" : "left"} variant="inset" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="pb-0">
         <SidebarMenu>
           <SidebarMenuItem className="border-1 bg-card rounded-xl">
             <SidebarMenuButton size="lg" asChild>
@@ -54,7 +54,7 @@ export function AppSidebar(props) {
             <div className="border flex w-full justify-center rounded-full bg-card py-1 px-1.5 gap-1">
               <Button
                 variant={sidebarCategory !== "communities" ? "ghost" : "outline"}
-                className="w-1/2 rounded-full"
+                className="w-1/2 rounded-full select-none"
                 disabled={forceLoad}
                 onClick={() => {
                   if (sidebarCategory !== "communities") {
@@ -66,7 +66,7 @@ export function AppSidebar(props) {
               </Button>
               <Button
                 variant={sidebarCategory !== "chats" ? "ghost" : "outline"}
-                className="w-1/2 rounded-full"
+                className="w-1/2 rounded-full select-none"
                 disabled={forceLoad}
                 onClick={() => {
                   if (sidebarCategory !== "chats") {
@@ -80,7 +80,7 @@ export function AppSidebar(props) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="pt-2">
         <SidebarMenu>
           {sidebarCategory === "chats" ? <Chats /> : <Communities />}
         </SidebarMenu>

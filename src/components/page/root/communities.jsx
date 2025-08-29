@@ -43,7 +43,7 @@ export function Communities() {
   }, [connected, identified, forceLoad, fetchCommunities]);
 
   return (
-    <div className="flex flex-col gap-2 mr-2 ml-3">
+    <div className="flex flex-col gap-2 mx-3">
       {communitiesArray.length > 0 ? communitiesArray.map((community) => {
         let betterCommunityDomain = JSON.parse(community.community_address);
 
