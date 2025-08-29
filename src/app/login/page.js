@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, use } from 'react';
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import * as Icon from "lucide-react";
 import { v7 } from 'uuid';
@@ -22,7 +22,8 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Checkbox } from "@/components/ui/checkbox"
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 
 // Helper Functions
 function readFileAsText(file) {
@@ -56,6 +57,8 @@ export function LoginForm() {
   let [failed, setFailed] = useState(false);
   let [error, setError] = useState("");
   let [staySignedIn, setStaySignedIn] = useState(false);
+  let [showBase64Input, setShowBase64Input] = useState(false);
+  let [password, setPassword] = useState("");
   let { encrypt_base64_using_aes } = useEncryptionContext();
   let privateKeyFileRef = useRef(null);
   let counter = useRef(0);
@@ -87,103 +90,6 @@ export function LoginForm() {
     e.dataTransfer.dropEffect = 'copy';
   }
 
-  async function login() {
-    try {
-      let uuid;
-      let options;
-      let verified;
-      let cred_id;
-      let attestation;
-      let lambda;
-
-      // Turn Username into UUID
-      await fetch(endpoint.username_to_uuid + username.toLowerCase())
-        .then(response => response.json())
-        .then(data => {
-          if (data.type === "error") {
-            throw new Error(data.log.message)
-          } else {
-            uuid = data.data.user_id;
-          }
-        });
-
-      if (isElectron()) {
-        // use Keyring
-        let secret = v7();
-        window.keyring.set('net.methanium.tensamin', username.toLowerCase(), secret)
-        let encrypted_private_key = await encrypt_base64_using_aes(btoa(JSON.stringify(privateKey)), secret)
-        ls.set('auth_private_key', encrypted_private_key);
-        ls.set('auth_uuid', uuid);
-        window.location.href = "/";
-      } else {
-        // use Passkey
-        await fetch(endpoint.webauthn_register_options + uuid, {
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            private_key_hash: await sha256(privateKey.d)
-          })
-        })
-          .then(response => response.json())
-          .then(data => {
-            if (data.type === "error") {
-              throw new Error(data.log.message)
-            } else {
-              options = JSON.parse(atob(data.data.options));
-            }
-          });
-
-        attestation = await startRegistration(options);
-
-        await fetch(endpoint.webauthn_register_verify + uuid, {
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ private_key_hash: await sha256(privateKey.d), attestation })
-        })
-          .then(response => response.json())
-          .then(data => {
-            if (data.type === "error") {
-              verified = false;
-              throw new Error(data.log.message)
-            } else {
-              lambda = data.data.lambda;
-              cred_id = attestation.id;
-              verified = true;
-            }
-          });
-        if (verified) {
-          let encrypted_private_key = await encrypt_base64_using_aes(btoa(JSON.stringify(privateKey)), lambda)
-          ls.set('auth_private_key', encrypted_private_key);
-          ls.set('auth_uuid', uuid);
-          ls.set('auth_cred_id', cred_id);
-
-          if (staySignedIn) {
-            let fingerprint = await getDeviceFingerprint();
-            let encryptedLambda = await encrypt_base64_using_aes(lambda, fingerprint);
-            ls.set('auth_lambda', encryptedLambda);
-          } else ls.remove('auth_lambda');
-          
-          window.location.href = "/";
-        } else {
-          setFailed(true);
-        }
-      }
-    } catch (err) {
-      setFailed(true);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  function handleUsernameChange(event) {
-    setUsername(event.target.value)
-  };
-
   async function handlePrivateKeyFileChange(files) {
     if (files[0]) {
       let rawJwk = await readFileAsText(files[0]);
@@ -207,12 +113,9 @@ export function LoginForm() {
 
       setFailed(false);
       setError("");
+      setPassword(btoa(rawJwk));
       setPrivateKey(jwk);
     }
-  };
-
-  function handlePrivateKeyClick() {
-    privateKeyFileRef.current.click();
   };
 
   return (
@@ -228,93 +131,198 @@ export function LoginForm() {
         className="z-10 flex flex-col justify-center items-center w-full h-screen"
       >
         <Card className="w-auto h-auto" style={{ WebkitAppRegion: 'no-drag' }}>
-          <CardContent className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="the_real_john_doe"
-                value={username}
-                onChange={handleUsernameChange}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="private-key">JWK</Label>
-              <div
-                className="w-full h-full py-3 border border-input rounded-lg bg-input/30 hover:bg-input/50 flex"
-                onClick={handlePrivateKeyClick}
-              >
-                <input
-                  ref={privateKeyFileRef}
-                  onChange={(e) => handlePrivateKeyFileChange(Array.from(e.target.files || []))}
-                  className="hidden"
-                  id="private-key-file"
-                  type="file"
-                />
-                <div className="h-full w-auto flex items-center pl-3">
-                  {canRelease ?
-                    <Icon.FileDown size={25} strokeWidth={1.5} /> : privateKey === "" ?
-                      <Icon.FileKey2 size={25} strokeWidth={1.5} /> :
-                      <Icon.FileCheck size={25} strokeWidth={1.5} />
+          <CardContent className="flex flex-col">
+            <form
+              className="flex flex-col gap-6"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setFailed(false);
+                setLoading(true);
+                try {
+                  let uuid;
+                  let options;
+                  let verified;
+                  let cred_id;
+                  let attestation;
+                  let lambda;
+
+                  // Turn Username into UUID
+                  await fetch(endpoint.username_to_uuid + username.toLowerCase())
+                    .then(response => response.json())
+                    .then(data => {
+                      if (data.type === "error") {
+                        throw new Error(data.log.message)
+                      } else {
+                        uuid = data.data.user_id;
+                      }
+                    });
+
+                  if (isElectron()) {
+                    // use Keyring
+                    let secret = v7();
+                    window.keyring.set('net.methanium.tensamin', username.toLowerCase(), secret)
+                    let encrypted_private_key = await encrypt_base64_using_aes(btoa(JSON.stringify(privateKey)), secret)
+                    ls.set('auth_private_key', encrypted_private_key);
+                    ls.set('auth_uuid', uuid);
+                    window.location.href = "/";
+                  } else {
+                    // use Passkey
+                    await fetch(endpoint.webauthn_register_options + uuid, {
+                      method: "POST",
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        private_key_hash: await sha256(privateKey.d)
+                      })
+                    })
+                      .then(response => response.json())
+                      .then(data => {
+                        if (data.type === "error") {
+                          throw new Error(data.log.message)
+                        } else {
+                          options = JSON.parse(atob(data.data.options));
+                        }
+                      });
+
+                    attestation = await startRegistration(options);
+
+                    await fetch(endpoint.webauthn_register_verify + uuid, {
+                      method: "POST",
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({ private_key_hash: await sha256(privateKey.d), attestation })
+                    })
+                      .then(response => response.json())
+                      .then(data => {
+                        if (data.type === "error") {
+                          verified = false;
+                          throw new Error(data.log.message)
+                        } else {
+                          lambda = data.data.lambda;
+                          cred_id = attestation.id;
+                          verified = true;
+                        }
+                      });
+                    if (verified) {
+                      let encrypted_private_key = await encrypt_base64_using_aes(btoa(JSON.stringify(privateKey)), lambda)
+                      ls.set('auth_private_key', encrypted_private_key);
+                      ls.set('auth_uuid', uuid);
+                      ls.set('auth_cred_id', cred_id);
+
+                      if (staySignedIn) {
+                        let fingerprint = await getDeviceFingerprint();
+                        let encryptedLambda = await encrypt_base64_using_aes(lambda, fingerprint);
+                        ls.set('auth_lambda', encryptedLambda);
+                      } else ls.remove('auth_lambda');
+
+                      window.location.href = "/";
+                    } else {
+                      setFailed(true);
+                    }
                   }
+                } catch (err) {
+                  setFailed(true);
+                  setError(err.message);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  name="username"
+                  autoComplete="username"
+                  placeholder="cool"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Label htmlFor="private-key">JWK</Label>
+                  <div className="w-full" />
+                  <Switch id="switch-for-private-key" checked={showBase64Input} onCheckedChange={setShowBase64Input} />
+                  <Label htmlFor="switch-for-private-key" className="whitespace-nowrap">Show String</Label>
                 </div>
-                <div className="h-full w-full flex flex-col items-center justify-center text-xs select-none">
-                  {canRelease ? <>
-                    <p>Drop it, i&apos;ll catch it!</p>
-                    <p className='text-muted-foreground'>I&apos;m a good catcher</p>
-                  </> : privateKey === "" ? <>
-                    <p>Drag & Drop your JWK</p>
-                    <p className='text-muted-foreground'>It will never leave your device.</p>
-                  </> : <>
-                    <p>JWK selected!</p>
-                    <p className='text-muted-foreground'>You can still change it.</p>
-                  </>}
+                <div
+                  className={`${showBase64Input ? "py-0 bg-transparent" : "py-3 border"} w-full h-full border-input rounded-lg bg-input/30 hover:bg-input/50 flex`}
+                  onClick={() => showBase64Input ? null : privateKeyFileRef.current?.click()}
+                >
+                  <input
+                    ref={privateKeyFileRef}
+                    onChange={(e) => handlePrivateKeyFileChange(Array.from(e.target.files || []))}
+                    hidden
+                    id="private-key-file"
+                    type="file"
+                  />
+                  <Input
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="base64 jwk"
+                    id="password"
+                    type="password"
+                    name="password"
+                    autoComplete="current-password"
+                    className={showBase64Input ? "" : "w-0 h-0 p-0 m-0 invisible"}
+                  />
+                      <div hidden={showBase64Input} className="h-full w-auto flex items-center pl-3">
+                        {canRelease ?
+                          <Icon.FileDown size={25} strokeWidth={1.5} /> : privateKey === "" ?
+                            <Icon.FileKey2 size={25} strokeWidth={1.5} /> :
+                            <Icon.FileCheck size={25} strokeWidth={1.5} />
+                        }
+                      </div>
+                      <div hidden={showBase64Input} className="h-full w-full flex flex-col items-center justify-center text-xs select-none">
+                        {canRelease ? <>
+                          <p>Drop it, i&apos;ll catch it!</p>
+                          <p className='text-muted-foreground'>I&apos;m a good catcher</p>
+                        </> : privateKey === "" ? <>
+                          <p>Drag & Drop your JWK</p>
+                          <p className='text-muted-foreground'>It will never leave your device.</p>
+                        </> : <>
+                          <p>JWK selected!</p>
+                          <p className='text-muted-foreground'>You can still change it.</p>
+                        </>}
+                      </div>
                 </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Checkbox id="stay-signed-in" checked={staySignedIn} onCheckedChange={setStaySignedIn} /><Label htmlFor="stay-signed-in">Stay signed in</Label>
-            </div>
-            <Separator />
-            <div className="flex flex-col gap-2 w-full">
-              {failed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="destructive"
-                      className="w-full"
-                      onClick={() => {
-                        if (username !== "") {
-                          setFailed(false);
-                          setLoading(true);
-                          login();
-                        }
-                      }}
-                    >
-                      Failed
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {error}
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <Button
-                  variant={loading ? "outline" : "outline"}
-                  className="w-full"
-                  onClick={() => {
-                    if (username !== "") {
-                      setLoading(true);
-                      login();
-                    }
-                  }}
-                  disabled={loading || username === ""}
-                >
-                  {loading ? "Loading..." : "Login"}
-                </Button>
-              )}
-            </div>
+              <div className="flex gap-2">
+                <Checkbox id="stay-signed-in" checked={staySignedIn} onCheckedChange={setStaySignedIn} /><Label htmlFor="stay-signed-in">Stay signed in</Label>
+              </div>
+              <Separator />
+              <div className="flex flex-col gap-2 w-full">
+                {failed ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        className="w-full"
+                        type="submit"
+                      >
+                        Failed
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {error}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    variant={loading ? "outline" : "outline"}
+                    className="w-full"
+                    type="submit"
+                    disabled={loading || username === ""}
+                  >
+                    {loading ? "Loading..." : "Login"}
+                  </Button>
+                )}
+              </div>
+            </form>
           </CardContent>
         </Card>
         <br />
