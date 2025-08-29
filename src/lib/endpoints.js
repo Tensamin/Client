@@ -15,4 +15,7 @@ export let endpoint = {
     webauthn_register_verify: authServer + "/api/register/verify/",
     webauthn_login_options: authServer + "/api/login/options/",
     webauthn_login_verify: authServer + "/api/login/verify/",
+
+    sound_call: "/sounds/call.wav",
+    sound_message: "/sounds/message.wav",
 }

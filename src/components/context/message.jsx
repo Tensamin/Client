@@ -98,7 +98,7 @@ export function MessageProvider({ children }) {
     try {
       let audio = notificationSoundRef.current;
       if (!audio) {
-        audio = new Audio("/sounds/message.webm");
+        audio = new Audio(endpoint.sound_message);
         audio.preload = "auto";
         notificationSoundRef.current = audio;
       }

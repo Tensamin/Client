@@ -5,6 +5,7 @@ import * as Icon from "lucide-react"
 
 // Lib Imports
 import { convertDisplayNameToInitials, log, sha256 } from "@/lib/utils"
+import { endpoint } from "@/lib/endpoints";
 
 // Context Imports
 import { useUsersContext } from "@/components/context/users";
@@ -21,17 +22,126 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MiniUserModal, CallModal } from "@/components/page/root/user-modal/main";
 
 export function GettingCalled() {
-    let { invitedToCall, setInvitedToCall, inviteData, setCallId, setCallSecret, startCall, stopCall } = useCallContext();
+    let { invitedToCall, setInvitedToCall, inviteData, startCall } = useCallContext();
 
     let [callerId, setCallerId] = useState("");
     let [tempCallId, setTempCallId] = useState("");
     let [tempCallSecret, setTempCallSecret] = useState("");
+    const ringtoneRef = useRef(null);
+    const unlockHandlerRef = useRef(null);
+    const invitedToCallRef = useRef(invitedToCall);
+
+    useEffect(() => {
+        invitedToCallRef.current = invitedToCall;
+    }, [invitedToCall]);
 
     useEffect(() => {
         setCallerId(inviteData.callerId)
         setTempCallId(inviteData.callId)
         setTempCallSecret(inviteData.callSecret)
     }, [inviteData]);
+
+    useEffect(() => {
+        if (!ringtoneRef.current) {
+            const audio = new Audio();
+            audio.loop = true;
+            audio.preload = "auto";
+            try { audio.load?.(); } catch (_) { }
+            ringtoneRef.current = audio;
+
+            try {
+                fetch(endpoint.sound_call, { cache: "force-cache" })
+                    .then(res => res.ok ? res.blob() : Promise.reject(new Error("Failed to fetch ringtone")))
+                    .then(blob => {
+                        const objectUrl = URL.createObjectURL(blob);
+                        audio.src = objectUrl;
+                        audio.dataset.objectUrl = objectUrl;
+                        try { audio.load?.(); } catch (_) { }
+                    })
+                    .catch(() => {
+                        audio.src = endpoint.sound_call;
+                        try { audio.load?.(); } catch (_) { }
+                    });
+            } catch (_) {
+                audio.src = endpoint.sound_call;
+                try { audio.load?.(); } catch (_) { }
+            }
+
+            unlockHandlerRef.current = async () => {
+                try {
+                    await audio.play();
+                    audio.pause();
+                    audio.currentTime = 0;
+                } catch (_) { }
+                try {
+                    if (invitedToCallRef.current) {
+                        await audio.play();
+                    }
+                } catch (_) { }
+                document.removeEventListener("pointerdown", unlockHandlerRef.current);
+                document.removeEventListener("keydown", unlockHandlerRef.current);
+                document.removeEventListener("touchstart", unlockHandlerRef.current);
+            };
+
+            document.addEventListener("pointerdown", unlockHandlerRef.current, { once: true });
+            document.addEventListener("keydown", unlockHandlerRef.current, { once: true });
+            document.addEventListener("touchstart", unlockHandlerRef.current, { once: true });
+        }
+
+        return () => {
+            if (ringtoneRef.current) {
+                try {
+                    ringtoneRef.current.pause();
+                    ringtoneRef.current.currentTime = 0;
+                } catch (_) { }
+                const url = ringtoneRef.current?.dataset?.objectUrl;
+                if (url) {
+                    try { URL.revokeObjectURL(url); } catch (_) { }
+                }
+            }
+            if (unlockHandlerRef.current) {
+                document.removeEventListener("pointerdown", unlockHandlerRef.current);
+                document.removeEventListener("keydown", unlockHandlerRef.current);
+                document.removeEventListener("touchstart", unlockHandlerRef.current);
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        const audio = ringtoneRef.current;
+        if (!audio) return;
+        let retryHandler;
+        if (invitedToCall) {
+            audio.play().catch(() => {
+                retryHandler = async () => {
+                    try { await audio.play(); } catch (_) { /* ignore */ }
+                    document.removeEventListener("pointerdown", retryHandler);
+                    document.removeEventListener("keydown", retryHandler);
+                    document.removeEventListener("touchstart", retryHandler);
+                };
+                document.addEventListener("pointerdown", retryHandler, { once: true });
+                document.addEventListener("keydown", retryHandler, { once: true });
+                document.addEventListener("touchstart", retryHandler, { once: true });
+            });
+        } else {
+            try {
+                audio.pause();
+                audio.currentTime = 0;
+            } catch (_) { }
+            if (retryHandler) {
+                document.removeEventListener("pointerdown", retryHandler);
+                document.removeEventListener("keydown", retryHandler);
+                document.removeEventListener("touchstart", retryHandler);
+            }
+        }
+        return () => {
+            if (retryHandler) {
+                document.removeEventListener("pointerdown", retryHandler);
+                document.removeEventListener("keydown", retryHandler);
+                document.removeEventListener("touchstart", retryHandler);
+            }
+        };
+    }, [invitedToCall]);
 
     return (
         <CommandDialog
@@ -42,7 +152,7 @@ export function GettingCalled() {
             className="rounded-3xl border shadow-md w-75 h-auto"
         >
             <div className="flex flex-col justify-center items-center w-full gap-5 p-5">
-                <CallModal id={callerId}/>
+                <CallModal id={callerId} />
                 <div className="flex gap-10">
                     <Button
                         className="size-15 rounded-2xl"
@@ -86,7 +196,7 @@ export function VideoStream({ id, local = false, className, onPlay }) {
             setMediaStream(getScreenStream());
         } else {
             let track = getScreenStream(id);
-            if (typeof(track) !== "undefined") {
+            if (typeof (track) !== "undefined") {
                 setMediaStream(getScreenStream(id));
             } else {
                 setUpdate(update + 1);

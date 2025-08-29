@@ -3,6 +3,7 @@ import { JetBrains_Mono } from "next/font/google";
 
 // Components
 import "./globals.css";
+import { endpoint } from "@/lib/endpoints";
 
 // Main
 const jetbrainsMono = JetBrains_Mono({
@@ -19,7 +20,11 @@ export let metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preload" as="audio" href={endpoint.sound_call} />
+      </head>
       <body className={`${jetbrainsMono.variable} antialiased`}>
+        <audio src={endpoint.sound_call} preload="auto" muted playsInline style={{ display: "none" }} />
         {children}
       </body>
     </html>
