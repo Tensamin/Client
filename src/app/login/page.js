@@ -5,11 +5,13 @@ import { useState, useRef, useEffect, use } from 'react';
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import * as Icon from "lucide-react";
 import { v7 } from 'uuid';
+import { Ring } from 'ldrs/react'
+import 'ldrs/react/Ring.css'
 
 // Lib Imports
 import { endpoint } from '@/lib/endpoints';
 import { sha256, isElectron, getDeviceFingerprint } from "@/lib/utils"
-import ls from '@/lib/localStorageManager';
+import ls, { set } from '@/lib/localStorageManager';
 
 // Context Imports
 import { useEncryptionContext } from '@/components/context/encryption';
@@ -23,7 +25,6 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 
 // Helper Functions
 function readFileAsText(file) {
@@ -57,10 +58,9 @@ export function LoginForm() {
   let [failed, setFailed] = useState(false);
   let [error, setError] = useState("");
   let [staySignedIn, setStaySignedIn] = useState(false);
-  let [showBase64Input, setShowBase64Input] = useState(false);
-  let [password, setPassword] = useState("");
   let { encrypt_base64_using_aes } = useEncryptionContext();
   let privateKeyFileRef = useRef(null);
+  let passwordFieldRef = useRef(null);
   let counter = useRef(0);
 
   let drop = (e) => {
@@ -113,7 +113,11 @@ export function LoginForm() {
 
       setFailed(false);
       setError("");
-      setPassword(btoa(rawJwk));
+
+      passwordFieldRef.current.value = btoa(rawJwk);
+      passwordFieldRef.current.dispatchEvent(new Event("change", { bubbles: true }));
+      passwordFieldRef.current.dispatchEvent(new Event("input", { bubbles: true }));
+      passwordFieldRef.current.focus();
       setPrivateKey(jwk);
     }
   };
@@ -127,9 +131,7 @@ export function LoginForm() {
       onDragOver={over}
       onDragLeave={leave}
     >
-      <div
-        className="z-10 flex flex-col justify-center items-center w-full h-screen"
-      >
+      <div className="z-10 flex flex-col justify-center items-center w-full h-screen">
         <Card className="w-auto h-auto" style={{ WebkitAppRegion: 'no-drag' }}>
           <CardContent className="flex flex-col">
             <form
@@ -137,8 +139,10 @@ export function LoginForm() {
               className="flex flex-col gap-6"
               onSubmit={async (e) => {
                 e.preventDefault();
+
                 setFailed(false);
                 setLoading(true);
+
                 try {
                   let uuid;
                   let options;
@@ -217,17 +221,16 @@ export function LoginForm() {
                         let encryptedLambda = await encrypt_base64_using_aes(lambda, fingerprint);
                         ls.set('auth_lambda', encryptedLambda);
                       } else ls.remove('auth_lambda');
-                      // Best-effort ask browser to save credentials (if supported)
-                      await storeCredentialsIfSupported(username, password);
+                      setLoading(true);
                       window.location.href = "/";
                     } else {
                       setFailed(true);
+                      setLoading(false);
                     }
                   }
                 } catch (err) {
-                  setFailed(true);
                   setError(err.message);
-                } finally {
+                  setFailed(true);
                   setLoading(false);
                 }
               }}
@@ -245,15 +248,9 @@ export function LoginForm() {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
-                  <Label htmlFor="private-key">JWK</Label>
-                  <div className="w-full" />
-                  <Switch id="switch-for-private-key" checked={showBase64Input} onCheckedChange={setShowBase64Input} />
-                  <Label htmlFor="switch-for-private-key" className="whitespace-nowrap">Show String</Label>
-                </div>
+                <Label htmlFor="private-key">JWK</Label>
                 <div
-                  className={`${showBase64Input ? "py-0 bg-transparent" : "py-3 border"} w-full h-full border-input rounded-lg bg-input/30 hover:bg-input/50 flex`}
-                  onClick={() => showBase64Input ? null : privateKeyFileRef.current?.click()}
+                  className="w-full h-full flex"
                 >
                   <input
                     ref={privateKeyFileRef}
@@ -262,39 +259,64 @@ export function LoginForm() {
                     id="private-key-file"
                     type="file"
                   />
-                  <Input
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="base64 jwk"
-                    id="password"
-                    type="password"
-                    name="password"
-                    autoComplete="current-password"
-                    className={showBase64Input ? "" : "w-0 h-0 p-0 m-0 invisible"}
-                  />
-                      <div hidden={showBase64Input} className="h-full w-auto flex items-center pl-3">
-                        {canRelease ?
-                          <Icon.FileDown size={25} strokeWidth={1.5} /> : privateKey === "" ?
-                            <Icon.FileKey2 size={25} strokeWidth={1.5} /> :
-                            <Icon.FileCheck size={25} strokeWidth={1.5} />
+                  <div className="flex gap-2">
+                    <Input
+                      className="w-full"
+                      placeholder="base64 jwk"
+                      id="password"
+                      type="password"
+                      name="password"
+                      autoComplete="current-password"
+                      ref={passwordFieldRef}
+                      onChange={() => {
+                        try {
+                          setPrivateKey(JSON.parse(atob(passwordFieldRef.current.value)));
+                        } catch {
+                          setPrivateKey("");
                         }
-                      </div>
-                      <div hidden={showBase64Input} className="h-full w-full flex flex-col items-center justify-center text-xs select-none">
-                        {canRelease ? <>
-                          <p>Drop it, i&apos;ll catch it!</p>
-                          <p className='text-muted-foreground'>I&apos;m a good catcher</p>
-                        </> : privateKey === "" ? <>
-                          <p>Drag & Drop your JWK</p>
-                          <p className='text-muted-foreground'>It will never leave your device.</p>
-                        </> : <>
-                          <p>JWK selected!</p>
-                          <p className='text-muted-foreground'>You can still change it.</p>
-                        </>}
-                      </div>
+                      }}
+                    />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          className="h-9 w-9 flex items-center pl-3"
+                          variant="outline"
+                          id="select-private-key-button"
+                          onClick={() => privateKeyFileRef.current?.click()}
+                        >
+                          {canRelease ?
+                            <Icon.FileDown /> : privateKey === "" ?
+                              <Icon.FileKey2 /> :
+                              <Icon.FileCheck />
+                          }
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {canRelease ? "Release to select" : privateKey === "" ? "Select your JWK" : "Change your JWK"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  {/*
+                  <div className="h-full w-full flex flex-col items-center justify-center text-xs select-none">
+                    {canRelease ? <>
+                      <p>Drop it, i&apos;ll catch it!</p>
+                      <p className='text-muted-foreground'>I&apos;m a good catcher</p>
+                    </> : privateKey === "" ? <>
+                      <p>Drag & Drop your JWK</p>
+                      <p className='text-muted-foreground'>It will never leave your device.</p>
+                    </> : <>
+                      <p>JWK selected!</p>
+                      <p className='text-muted-foreground'>You can still change it.</p>
+                    </>}
+                  </div>
+                  */}
                 </div>
+                <Label htmlFor="select-private-key-button" className="pl-1 underline w-full text-center text-muted-foreground text-xs select-none">
+                  Drag & drop your .jwk file or click me to select it.
+                </Label>
               </div>
               <div className="flex gap-2">
-                <Checkbox id="stay-signed-in" checked={staySignedIn} onCheckedChange={setStaySignedIn} /><Label htmlFor="stay-signed-in">Stay signed in</Label>
+                <Checkbox id="stay-signed-in" checked={staySignedIn} onCheckedChange={setStaySignedIn} /><Label htmlFor="stay-signed-in">Stay logged in</Label>
               </div>
               <Separator />
               <div className="flex flex-col gap-2 w-full">
@@ -318,9 +340,15 @@ export function LoginForm() {
                     variant={loading ? "outline" : "outline"}
                     className="w-full"
                     type="submit"
-                    disabled={loading || username === ""}
+                    disabled={loading || username === "" || passwordFieldRef.current.value === ""}
                   >
-                    {loading ? "Loading..." : "Login"}
+                    {loading ? <Ring
+                      size="17"
+                      stroke="2"
+                      bgOpacity="0"
+                      speed="2"
+                      color="var(--foreground)"
+                    /> : "Login"}
                   </Button>
                 )}
               </div>
