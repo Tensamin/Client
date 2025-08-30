@@ -34,7 +34,7 @@ jobs:
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: electron-app-linux
+          name: tensamin-linux
           path: out/
 
   build-windows:
@@ -59,7 +59,7 @@ jobs:
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: electron-app-windows
+          name: tensamin-windows
           path: out/
 
   build-macos:
@@ -84,5 +84,30 @@ jobs:
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: electron-app-macos
+          name: tensamin-macos
           path: out/
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all workflow artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: ./artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Apps ${{ github.ref_name }}
+          body: |
+            Automated Release for ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            ./artifacts/tensamin-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
