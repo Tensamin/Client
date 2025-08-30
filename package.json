@@ -1,6 +1,6 @@
 {
   "name": "tensamin",
-  "productName": "tensamin",
+  "productName": "Tensamin",
   "version": "0.1.1",
   "private": true,
   "description": "Super secure messaging app",
@@ -25,7 +25,7 @@
     "lint": "next lint",
     "electron": "npm run build && npm run electron-no-build",
     "dev:electron": "NODE_ENV=development electron-forge start",
-    "make": "npm run build && electron-forge make",
+    "make": "rm -rf dist && npm run build && electron-forge make",
     "make:archlinux": "./src/mkarchpkg.sh"
   },
   "dependencies": {
