@@ -26,6 +26,7 @@
     "electron": "npm run build && npm run electron-no-build",
     "dev:electron": "NODE_ENV=development electron-forge start",
     "make": "rm -rf dist && npm run build && electron-forge make",
+    "make:no-build": "electron-forge make",
     "make:archlinux": "./src/mkarchpkg.sh"
   },
   "dependencies": {
