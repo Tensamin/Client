@@ -30,9 +30,7 @@ let initialMessages = 40;
 export function useMessageContext() {
   let context = useContext(MessageContext);
   if (context === undefined) {
-    throw new Error(
-      "useMessageContext must be used within a MessageProvider",
-    );
+    throw new Error("useMessageContext must be used within a MessageProvider");
   }
   return context;
 }
@@ -103,7 +101,7 @@ export function MessageProvider({ children }) {
         notificationSoundRef.current = audio;
       }
       audio.currentTime = 0;
-      audio.play()?.catch(() => { });
+      audio.play()?.catch(() => {});
     } catch (_) {
       // no-op
     }
@@ -179,7 +177,7 @@ export function MessageProvider({ children }) {
     setMessagesAmount(initialMessages);
     setMoreMessagesLoadedOnce(false);
     setLoadedAllMessages(false);
-    setNoMessageWithUser(false)
+    setNoMessageWithUser(false);
   }
 
   function removeSecondsFromUnixTimestamp(oldTime) {
@@ -201,7 +199,7 @@ export function MessageProvider({ children }) {
       if (
         stringErr === "OperationError" ||
         stringErr ===
-        "OperationError: The operation failed for an operation-specific reason"
+          "OperationError: The operation failed for an operation-specific reason"
       ) {
         setFailedMessages((prev) => prev + 1);
       } else {
@@ -218,7 +216,7 @@ export function MessageProvider({ children }) {
         if (
           lastGroup.sender === newMessageData.sender &&
           removeSecondsFromUnixTimestamp(lastGroup.id) ===
-          removeSecondsFromUnixTimestamp(newMessageData.id)
+            removeSecondsFromUnixTimestamp(newMessageData.id)
         ) {
           let newLastGroup = new Message({
             id: lastGroup.id,
@@ -242,7 +240,7 @@ export function MessageProvider({ children }) {
       if (
         lastGroup.sender === newMessageData.sender &&
         removeSecondsFromUnixTimestamp(lastGroup.id) ===
-        removeSecondsFromUnixTimestamp(newMessageData.id)
+          removeSecondsFromUnixTimestamp(newMessageData.id)
       ) {
         let newLastGroup = new Message({
           id: lastGroup.id,
@@ -309,7 +307,7 @@ export function MessageProvider({ children }) {
                 if (
                   stringErr === "OperationError" ||
                   stringErr ===
-                  "OperationError: The operation failed for an operation-specific reason"
+                    "OperationError: The operation failed for an operation-specific reason"
                 ) {
                   setFailedMessages((prev) => prev + 1);
                 } else {
@@ -396,7 +394,7 @@ export function MessageProvider({ children }) {
                 if (
                   stringErr === "OperationError" ||
                   stringErr ===
-                  "OperationError: The operation failed for an operation-specific reason"
+                    "OperationError: The operation failed for an operation-specific reason"
                 ) {
                   setFailedMessages((prev) => prev + 1);
                 } else {

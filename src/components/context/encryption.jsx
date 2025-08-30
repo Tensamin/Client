@@ -13,7 +13,7 @@ import { v7 as uuidv7 } from "uuid";
 import { x448 } from "@noble/curves/ed448";
 
 // Lib Imports
-import { log } from "@/lib/utils"
+import { log } from "@/lib/utils";
 
 // Components
 import { Loading } from "@/components/loading/content";
@@ -25,7 +25,9 @@ const EncryptionContext = createContext();
 export function useEncryptionContext() {
   const context = useContext(EncryptionContext);
   if (context === undefined) {
-    throw new Error("useEncryptionContext must be used within a EncryptionProvider");
+    throw new Error(
+      "useEncryptionContext must be used within a EncryptionProvider",
+    );
   }
   return context;
 }
@@ -57,7 +59,11 @@ export function EncryptionProvider({ children }) {
       };
 
       setWorker(encryptionWorker);
-      log("Encryption worker initialized and started.", "debug", "Encryption Provider:");
+      log(
+        "Encryption worker initialized and started.",
+        "debug",
+        "Encryption Provider:",
+      );
 
       return () => {
         requestResolvers.current.forEach(({ reject }) => {
@@ -131,7 +137,7 @@ export function EncryptionProvider({ children }) {
 
   async function get_shared_secret(own_jwk, other_jwk_raw) {
     let other_jwk = { kty: "OKP", crv: "X448", x: other_jwk_raw };
-    
+
     // --- utils ---
     function bytesToHex(u8) {
       return Array.from(u8)
@@ -156,7 +162,8 @@ export function EncryptionProvider({ children }) {
 
     function b64uToBytes(s) {
       const b64 =
-        s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4);
+        s.replace(/-/g, "+").replace(/_/g, "/") +
+        "===".slice((s.length + 3) % 4);
       return b64ToBytes(b64);
     }
 
@@ -215,7 +222,8 @@ export function EncryptionProvider({ children }) {
       const outer = readTLV(view, 0);
       if (outer.tag !== 0x30) throw new Error("SPKI: expected SEQUENCE");
       const alg = readTLV(view, outer.start);
-      if (alg.tag !== 0x30) throw new Error("SPKI: expected AlgorithmIdentifier");
+      if (alg.tag !== 0x30)
+        throw new Error("SPKI: expected AlgorithmIdentifier");
       if (!ensureOidX448(view, alg.start)) throw new Error("SPKI: not X448");
       const bitstr = readTLV(view, alg.end);
       if (bitstr.tag !== 0x03) throw new Error("SPKI: expected BIT STRING");
@@ -275,7 +283,7 @@ export function EncryptionProvider({ children }) {
         } catch {
           if (xBytes.length !== 56) {
             throw new Error(
-              `${label}: "x" is not a valid X448 SPKI or raw 56-byte key`
+              `${label}: "x" is not a valid X448 SPKI or raw 56-byte key`,
             );
           }
           rawX = xBytes;
@@ -291,7 +299,7 @@ export function EncryptionProvider({ children }) {
         } catch {
           if (dBytes.length !== 56) {
             throw new Error(
-              `${label}: "d" is not a valid X448 PKCS#8 or raw 56-byte key`
+              `${label}: "d" is not a valid X448 PKCS#8 or raw 56-byte key`,
             );
           }
           rawD = dBytes;
@@ -311,7 +319,7 @@ export function EncryptionProvider({ children }) {
         // eslint-disable-next-line no-undef
         const nodeCrypto = require("crypto");
         if (nodeCrypto?.webcrypto?.subtle) return nodeCrypto.webcrypto.subtle;
-      } catch { }
+      } catch {}
       return undefined;
     }
 
@@ -319,9 +327,13 @@ export function EncryptionProvider({ children }) {
       const subtle = getSubtle();
       if (!subtle) throw new Error("WebCrypto subtle not available");
       const info = new TextEncoder().encode(infoStr);
-      const baseKey = await subtle.importKey("raw", sharedSecret, "HKDF", false, [
-        "deriveKey",
-      ]);
+      const baseKey = await subtle.importKey(
+        "raw",
+        sharedSecret,
+        "HKDF",
+        false,
+        ["deriveKey"],
+      );
       const aeadKey = await subtle.deriveKey(
         {
           name: "HKDF",
@@ -332,7 +344,7 @@ export function EncryptionProvider({ children }) {
         baseKey,
         { name: "AES-GCM", length: 256 },
         false,
-        ["encrypt", "decrypt"]
+        ["encrypt", "decrypt"],
       );
       return aeadKey;
     }
@@ -342,7 +354,9 @@ export function EncryptionProvider({ children }) {
     const peerJwk = normalizeOkpX448Jwk(other_jwk, "other_jwk");
 
     if (!myJwk.d || !myJwk.x) {
-      throw new Error('own_jwk must contain both "d" (private) and "x" (public)');
+      throw new Error(
+        'own_jwk must contain both "d" (private) and "x" (public)',
+      );
     }
     if (!peerJwk.x) {
       throw new Error('other_jwk must contain "x" (public)');
@@ -360,19 +374,19 @@ export function EncryptionProvider({ children }) {
           myJwk,
           { name: "ECDH", namedCurve: "X448" },
           false,
-          ["deriveBits"]
+          ["deriveBits"],
         );
         const peerPub = await subtle.importKey(
           "jwk",
           peerJwk,
           { name: "ECDH", namedCurve: "X448" },
           false,
-          []
+          [],
         );
         const sharedBits = await subtle.deriveBits(
           { name: "ECDH", public: peerPub },
           myPriv,
-          448
+          448,
         );
         const sharedSecret = new Uint8Array(sharedBits);
         const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
@@ -393,19 +407,19 @@ export function EncryptionProvider({ children }) {
           myJwk,
           { name: "X448" },
           false,
-          ["deriveBits"]
+          ["deriveBits"],
         );
         const peerPub = await subtle.importKey(
           "jwk",
           peerJwk,
           { name: "X448" },
           false,
-          []
+          [],
         );
         const sharedBits = await subtle.deriveBits(
           { name: "X448", public: peerPub },
           myPriv,
-          448
+          448,
         );
         const sharedSecret = new Uint8Array(sharedBits);
         const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);

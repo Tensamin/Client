@@ -1,8 +1,8 @@
 // Package Imports
-import { toast } from "sonner"
-import Image from "next/image"
-import * as Icon from "lucide-react"
-import { useEffect, useState } from "react"
+import { toast } from "sonner";
+import Image from "next/image";
+import * as Icon from "lucide-react";
+import { useEffect, useState } from "react";
 
 // Lib Imports
 import {
@@ -10,16 +10,13 @@ import {
   statusColors,
   convertDisplayNameToInitials,
   formatUserStatus,
-} from "@/lib/utils"
+} from "@/lib/utils";
 
 // Context Imports
-import { useUsersContext } from "@/components/context/users"
+import { useUsersContext } from "@/components/context/users";
 
 // Components
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Tooltip,
   TooltipContent,
@@ -29,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useCryptoContext } from "@/components/context/crypto";
 import { useEncryptionContext } from "@/components/context/encryption";
-import { useCallContext } from "@/components/context/call"
+import { useCallContext } from "@/components/context/call";
 
 // User Modal for Sidebar Chats
 export function SmallCommunityModal({ ip, port, title, forceLoad = false }) {
@@ -68,14 +65,18 @@ export function SmallCommunityModal({ ip, port, title, forceLoad = false }) {
         <div className="flex gap-2 text-[15px] overflow-hidden whitespace-nowrap text-overflow-ellipsis">
           <div className="flex flex-col">
             <div className="flex gap-2">
-              {title !== "..." || forceLoad ?
+              {title !== "..." || forceLoad ? (
                 <p>{forceLoad ? "Debug Mode" : title}</p>
-                :
-                <Skeleton><p className="invisible">Tensamin :3</p></Skeleton>
-              }
+              ) : (
+                <Skeleton>
+                  <p className="invisible">Tensamin :3</p>
+                </Skeleton>
+              )}
             </div>
             <div className="flex gap-1">
-              <p className="text-xs text-foreground/75">{forceLoad ? "Chats wont load!" : `${ip}:${port}`}</p>
+              <p className="text-xs text-foreground/75">
+                {forceLoad ? "Chats wont load!" : `${ip}:${port}`}
+              </p>
             </div>
           </div>
         </div>

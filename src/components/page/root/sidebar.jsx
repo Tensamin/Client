@@ -15,7 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { UserModal } from "@/components/page/root/user-modal/main"
+import { UserModal } from "@/components/page/root/user-modal/main";
 import { Chats } from "@/components/page/root/chats";
 import { Communities } from "@/components/page/root/communities";
 import { VoiceControls } from "@/components/page/voice/controls";
@@ -28,15 +28,17 @@ export function AppSidebar(props) {
   let { sidebarCategory, setSidebarCategory } = usePageContext();
 
   return (
-    <Sidebar side={sidebarRightSide ? "right" : "left"} variant="inset" {...props}>
-      <SidebarHeader className="pb-0">
+    <Sidebar
+      className="p-0.5 pr-1"
+      side={sidebarRightSide ? "right" : "left"}
+      variant="inset"
+      {...props}
+    >
+      <SidebarHeader className="pb-0.5">
         <SidebarMenu>
           <SidebarMenuItem className="border-1 bg-card rounded-xl">
             <SidebarMenuButton size="lg" asChild>
-              <UserModal
-                id={ownUuid}
-                state="ONLINE"
-              />
+              <UserModal id={ownUuid} state="ONLINE" />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -53,7 +55,9 @@ export function AppSidebar(props) {
           <SidebarMenuItem>
             <div className="border flex w-full justify-center rounded-full bg-card py-1 px-1.5 gap-1">
               <Button
-                variant={sidebarCategory !== "communities" ? "ghost" : "outline"}
+                variant={
+                  sidebarCategory !== "communities" ? "ghost" : "outline"
+                }
                 className="w-1/2 rounded-full select-none"
                 disabled={forceLoad}
                 onClick={() => {
@@ -85,8 +89,7 @@ export function AppSidebar(props) {
           {sidebarCategory === "chats" ? <Chats /> : <Communities />}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
-      </SidebarFooter>
+      <SidebarFooter></SidebarFooter>
     </Sidebar>
   );
 }

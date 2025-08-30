@@ -18,24 +18,14 @@ let H2 = ({ children }) => (
   </h2>
 );
 let H3 = ({ children }) => (
-  <h3 className="text-2xl font-semibold mb-2  leading-snug">
-    {children}
-  </h3>
+  <h3 className="text-2xl font-semibold mb-2  leading-snug">{children}</h3>
 );
 let H4 = ({ children }) => (
-  <h4 className="text-xl font-medium mb-1  leading-normal">
-    {children}
-  </h4>
+  <h4 className="text-xl font-medium mb-1  leading-normal">{children}</h4>
 );
-let H5 = ({ children }) => (
-  <h5 className="text-lg font-medium ">
-    {children}
-  </h5>
-);
+let H5 = ({ children }) => <h5 className="text-lg font-medium ">{children}</h5>;
 let H6 = ({ children }) => (
-  <h6 className="text-base font-medium ">
-    {children}
-  </h6>
+  <h6 className="text-base font-medium ">{children}</h6>
 );
 
 export let Heading = ({ level, children }) => {
@@ -121,9 +111,7 @@ export let HorizontalRule = () => (
 );
 
 // --- List Items ---
-export let ListItem = ({ children }) => (
-  <li className="mb-2 ">{children}</li>
-);
+export let ListItem = ({ children }) => <li className="mb-2 ">{children}</li>;
 
 // --- Unordered List ---
 export let UnorderedList = ({ children }) => (
@@ -148,9 +136,7 @@ export let TableHeaderGroup = ({ children }) => (
   <thead className="bg-muted">{children}</thead>
 );
 
-export let TableBodyGroup = ({ children }) => (
-  <tbody>{children}</tbody>
-);
+export let TableBodyGroup = ({ children }) => <tbody>{children}</tbody>;
 
 export let TableRow = ({ children }) => (
   <tr className="border-b border-border last:border-b-0 even:bg-muted">

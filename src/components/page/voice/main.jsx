@@ -30,7 +30,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InviteItem, VideoStream } from "@/components/page/voice/parts";
-import { Switch } from "@/components/ui/switch"
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
 // Tunables
@@ -94,7 +94,7 @@ export function VoiceExpanded() {
         <div className="flex w-full flex-none gap-2 overflow-x-auto px-1 pb-1 pt-2">
           {connectedUsers
             .filter((user) => user !== ownUuid)
-            .map((user) => (
+            .map((user) =>
               focused === user ? null : (
                 <div key={`thumb-${user}`} className="w-[280px] flex-shrink-0">
                   <VoiceModal
@@ -106,8 +106,8 @@ export function VoiceExpanded() {
                     focused={false}
                   />
                 </div>
-              )
-            ))}
+              ),
+            )}
         </div>
       </div>
     </div>
@@ -117,7 +117,19 @@ export function VoiceExpanded() {
 export function VoiceRearrangement() {
   // Context
   let { ownUuid, chatsArray } = useUsersContext();
-  let { connected, connectedUsers, streamingUsers, positions, setPositions, audioPositions, setAudioPositions, directionalAudio, setDirectionalAudio, setCanvasSize, endUserDrag } = useCallContext();
+  let {
+    connected,
+    connectedUsers,
+    streamingUsers,
+    positions,
+    setPositions,
+    audioPositions,
+    setAudioPositions,
+    directionalAudio,
+    setDirectionalAudio,
+    setCanvasSize,
+    endUserDrag,
+  } = useCallContext();
 
   // UI state
   let [inviteOpen, setInviteOpen] = useState(false);
@@ -146,7 +158,7 @@ export function VoiceRearrangement() {
       // New users: simple grid layout
       let cols = Math.max(
         1,
-        Math.floor((canvasW + TILE_GAP) / (AVATAR_TILE_WIDTH + TILE_GAP))
+        Math.floor((canvasW + TILE_GAP) / (AVATAR_TILE_WIDTH + TILE_GAP)),
       );
       connectedUsers.forEach((user, i) => {
         if (next[user]) return;
@@ -187,11 +199,13 @@ export function VoiceRearrangement() {
       try {
         e.preventDefault();
         e.stopPropagation();
-      } catch { }
+      } catch {}
 
       let el = nodeRefs.current.get(id) || e.currentTarget;
       if (!el) return;
-      try { el.setPointerCapture?.(e.pointerId); } catch { }
+      try {
+        el.setPointerCapture?.(e.pointerId);
+      } catch {}
 
       let previousUserSelect = document.body.style.userSelect;
       document.body.style.userSelect = "none";
@@ -228,13 +242,17 @@ export function VoiceRearrangement() {
         window.removeEventListener("pointermove", handleMove);
         window.removeEventListener("pointerup", finalize);
         window.removeEventListener("pointercancel", finalize);
-        try { el.releasePointerCapture?.(e.pointerId); } catch { }
+        try {
+          el.releasePointerCapture?.(e.pointerId);
+        } catch {}
         if (dragState.rafId) cancelAnimationFrame(dragState.rafId);
         setPositions((prev) => ({
           ...prev,
           [id]: { x: targetX, y: targetY },
         }));
-        try { endUserDrag(id); } catch { }
+        try {
+          endUserDrag(id);
+        } catch {}
         el.style.willChange = "";
         document.body.style.userSelect = previousUserSelect;
         draggingIdsRef.current.delete(id);
@@ -247,7 +265,7 @@ export function VoiceRearrangement() {
               activeDragsRef.current.delete(rec);
             }
           });
-        } catch { }
+        } catch {}
       };
 
       window.addEventListener("pointermove", handleMove, { passive: true });
@@ -255,9 +273,14 @@ export function VoiceRearrangement() {
       window.addEventListener("pointercancel", finalize, { once: true });
 
       // Track active drag so we can cleanup on unmount
-      activeDragsRef.current.add({ id, handleMove, finalize, state: dragState });
+      activeDragsRef.current.add({
+        id,
+        handleMove,
+        finalize,
+        state: dragState,
+      });
     },
-    [positions, setPositions, endUserDrag]
+    [positions, setPositions, endUserDrag],
   );
 
   // Ensure global listeners/rAF are cleared if unmounted mid-drag
@@ -265,15 +288,25 @@ export function VoiceRearrangement() {
     return () => {
       try {
         activeDragsRef.current.forEach((rec) => {
-          try { window.removeEventListener("pointermove", rec.handleMove); } catch { }
-          try { window.removeEventListener("pointerup", rec.finalize); } catch { }
-          try { window.removeEventListener("pointercancel", rec.finalize); } catch { }
-          try { if (rec.state?.rafId) cancelAnimationFrame(rec.state.rafId); } catch { }
+          try {
+            window.removeEventListener("pointermove", rec.handleMove);
+          } catch {}
+          try {
+            window.removeEventListener("pointerup", rec.finalize);
+          } catch {}
+          try {
+            window.removeEventListener("pointercancel", rec.finalize);
+          } catch {}
+          try {
+            if (rec.state?.rafId) cancelAnimationFrame(rec.state.rafId);
+          } catch {}
         });
         activeDragsRef.current.clear();
         // Best-effort restore of user-select
-        try { document.body.style.userSelect = ""; } catch { }
-      } catch { }
+        try {
+          document.body.style.userSelect = "";
+        } catch {}
+      } catch {}
     };
   }, []);
 
@@ -291,9 +324,7 @@ export function VoiceRearrangement() {
           {/* Centered Volume icon with 3 rings */}
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
             <div className="relative h-28 w-28">
-              <Icon.Volume2
-                className="absolute left-1/2 top-1/2 z-10 h-10 w-10 -translate-x-1/2 -translate-y-1/2 text-foreground"
-              />
+              <Icon.Volume2 className="absolute left-1/2 top-1/2 z-10 h-10 w-10 -translate-x-1/2 -translate-y-1/2 text-foreground" />
               <span className="absolute inset-0 rounded-full border border-border/75" />
               <span className="absolute -inset-10 rounded-full border border-border/50" />
               <span className="absolute -inset-20 rounded-full border border-border/25" />
@@ -311,7 +342,11 @@ export function VoiceRearrangement() {
                   key={`free-${user}`}
                   className="absolute cursor-grab active:cursor-grabbing"
                   style={{
-                    ...(isDragging ? {} : { transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }),
+                    ...(isDragging
+                      ? {}
+                      : {
+                          transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
+                        }),
                     width: `${AVATAR_TILE_WIDTH}px`,
                     touchAction: "none",
                   }}
@@ -325,7 +360,9 @@ export function VoiceRearrangement() {
                     id={user}
                     streams={streamingUsers.includes(user)}
                     focused={false}
-                    onFocus={() => { /* no-op in rearrangement mode */ }}
+                    onFocus={() => {
+                      /* no-op in rearrangement mode */
+                    }}
                     mode="avatarOnly"
                   />
                 </div>
@@ -339,7 +376,19 @@ export function VoiceRearrangement() {
 
 export function Main() {
   let { ownUuid, chatsArray } = useUsersContext();
-  let { connected, connectedUsers, streamingUsers, positions, setPositions, audioPositions, setAudioPositions, directionalAudio, setDirectionalAudio, setCanvasSize, endUserDrag } = useCallContext();
+  let {
+    connected,
+    connectedUsers,
+    streamingUsers,
+    positions,
+    setPositions,
+    audioPositions,
+    setAudioPositions,
+    directionalAudio,
+    setDirectionalAudio,
+    setCanvasSize,
+    endUserDrag,
+  } = useCallContext();
 
   let [inviteOpen, setInviteOpen] = useState(false);
   let [focused, setFocused] = useState("");
@@ -371,7 +420,7 @@ export function Main() {
       // New users: simple grid layout
       let cols = Math.max(
         1,
-        Math.floor((canvasW + TILE_GAP) / (AVATAR_TILE_WIDTH + TILE_GAP))
+        Math.floor((canvasW + TILE_GAP) / (AVATAR_TILE_WIDTH + TILE_GAP)),
       );
       connectedUsers.forEach((user, i) => {
         if (next[user]) return;
@@ -413,11 +462,13 @@ export function Main() {
       try {
         e.preventDefault();
         e.stopPropagation();
-      } catch { }
+      } catch {}
 
       let el = nodeRefs.current.get(id) || e.currentTarget;
       if (!el) return;
-      try { el.setPointerCapture?.(e.pointerId); } catch { }
+      try {
+        el.setPointerCapture?.(e.pointerId);
+      } catch {}
 
       // Disable text selection during drag
       let previousUserSelect = document.body.style.userSelect;
@@ -457,14 +508,18 @@ export function Main() {
         window.removeEventListener("pointermove", handleMove);
         window.removeEventListener("pointerup", finalize);
         window.removeEventListener("pointercancel", finalize);
-        try { el.releasePointerCapture?.(e.pointerId); } catch { }
+        try {
+          el.releasePointerCapture?.(e.pointerId);
+        } catch {}
         if (dragState.rafId) cancelAnimationFrame(dragState.rafId);
         // Commit final position once to context, then notify end of drag
         setPositions((prev) => ({
           ...prev,
           [id]: { x: targetX, y: targetY },
         }));
-        try { endUserDrag(id); } catch { }
+        try {
+          endUserDrag(id);
+        } catch {}
         // Restore styles
         el.style.willChange = "";
         // Keep transform; React will reconcile to same final transform via props
@@ -480,7 +535,7 @@ export function Main() {
               activeDragsRef.current.delete(rec);
             }
           });
-        } catch { }
+        } catch {}
       };
 
       window.addEventListener("pointermove", handleMove, { passive: true });
@@ -488,9 +543,14 @@ export function Main() {
       window.addEventListener("pointercancel", finalize, { once: true });
 
       // Track active drag so we can cleanup on unmount
-      activeDragsRef.current.add({ id, handleMove, finalize, state: dragState });
+      activeDragsRef.current.add({
+        id,
+        handleMove,
+        finalize,
+        state: dragState,
+      });
     },
-    [positions, setPositions, endUserDrag]
+    [positions, setPositions, endUserDrag],
   );
 
   // Ensure global listeners/rAF are cleared if unmounted mid-drag
@@ -498,14 +558,24 @@ export function Main() {
     return () => {
       try {
         activeDragsRef.current.forEach((rec) => {
-          try { window.removeEventListener("pointermove", rec.handleMove); } catch { }
-          try { window.removeEventListener("pointerup", rec.finalize); } catch { }
-          try { window.removeEventListener("pointercancel", rec.finalize); } catch { }
-          try { if (rec.state?.rafId) cancelAnimationFrame(rec.state.rafId); } catch { }
+          try {
+            window.removeEventListener("pointermove", rec.handleMove);
+          } catch {}
+          try {
+            window.removeEventListener("pointerup", rec.finalize);
+          } catch {}
+          try {
+            window.removeEventListener("pointercancel", rec.finalize);
+          } catch {}
+          try {
+            if (rec.state?.rafId) cancelAnimationFrame(rec.state.rafId);
+          } catch {}
         });
         activeDragsRef.current.clear();
-        try { document.body.style.userSelect = ""; } catch { }
-      } catch { }
+        try {
+          document.body.style.userSelect = "";
+        } catch {}
+      } catch {}
     };
   }, []);
 
@@ -524,18 +594,10 @@ export function Main() {
             {/* Centered Volume icon with 3 rings */}
             <div className="pointer-events-none absolute inset-0 grid place-items-center">
               <div className="relative h-28 w-28">
-                <Icon.Volume2
-                  className="absolute left-1/2 top-1/2 z-10 h-10 w-10 -translate-x-1/2 -translate-y-1/2 text-foreground"
-                />
-                <span
-                  className="absolute inset-0 rounded-full border border-border/75"
-                />
-                <span
-                  className="absolute -inset-10 rounded-full border border-border/50"
-                />
-                <span
-                  className="absolute -inset-20 rounded-full border border-border/25"
-                />
+                <Icon.Volume2 className="absolute left-1/2 top-1/2 z-10 h-10 w-10 -translate-x-1/2 -translate-y-1/2 text-foreground" />
+                <span className="absolute inset-0 rounded-full border border-border/75" />
+                <span className="absolute -inset-10 rounded-full border border-border/50" />
+                <span className="absolute -inset-20 rounded-full border border-border/25" />
               </div>
             </div>
 
@@ -550,7 +612,11 @@ export function Main() {
                     key={`free-${user}`}
                     className="absolute cursor-grab active:cursor-grabbing"
                     style={{
-                      ...(isDragging ? {} : { transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }),
+                      ...(isDragging
+                        ? {}
+                        : {
+                            transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
+                          }),
                       width: `${AVATAR_TILE_WIDTH}px`,
                       touchAction: "none",
                     }}
@@ -609,7 +675,7 @@ export function Main() {
                         focused={false}
                       />
                     </div>
-                  )
+                  ),
                 )}
             </div>
           </div>
@@ -744,7 +810,10 @@ function VoiceModal({
 
       {fitToParent ? (
         // Fit to parent available height (keeps thumbnails visible)
-        <div ref={fitAreaRef} className="relative grid h-full place-items-center">
+        <div
+          ref={fitAreaRef}
+          className="relative grid h-full place-items-center"
+        >
           <div
             className="relative overflow-hidden rounded-xl border bg-background/40"
             style={{
@@ -764,32 +833,32 @@ function VoiceModal({
               ownUuid,
               voiceSend,
               onFocus,
-              children: <div className="flex items-center justify-center">
-                {avatar !== "..." ? (
-                  <button
-                    className="inline-flex items-center justify-center rounded-full border bg-background/60 hover:bg-background"
-                  >
-                    <Avatar className="size-25 bg-background/10">
-                      {avatar !== "" ? (
-                        <Image
-                          className="object-cover"
-                          data-slot="avatar-image"
-                          width={250}
-                          height={250}
-                          src={avatar}
-                          alt=""
-                          onError={() => setAvatar("")}
-                        />
-                      ) : null}
-                      <AvatarFallback>
-                        {convertDisplayNameToInitials(username)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </button>
-                ) : (
-                  <Skeleton className="size-14 rounded-full" />
-                )}
-              </div>
+              children: (
+                <div className="flex items-center justify-center">
+                  {avatar !== "..." ? (
+                    <button className="inline-flex items-center justify-center rounded-full border bg-background/60 hover:bg-background">
+                      <Avatar className="size-25 bg-background/10">
+                        {avatar !== "" ? (
+                          <Image
+                            className="object-cover"
+                            data-slot="avatar-image"
+                            width={250}
+                            height={250}
+                            src={avatar}
+                            alt=""
+                            onError={() => setAvatar("")}
+                          />
+                        ) : null}
+                        <AvatarFallback>
+                          {convertDisplayNameToInitials(username)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  ) : (
+                    <Skeleton className="size-14 rounded-full" />
+                  )}
+                </div>
+              ),
             })}
           </div>
         </div>
@@ -810,32 +879,32 @@ function VoiceModal({
             ownUuid,
             voiceSend,
             onFocus,
-            children: <div className="flex items-center justify-center">
-              {avatar !== "..." ? (
-                <button
-                  className="inline-flex items-center justify-center rounded-full border bg-background/60 hover:bg-background"
-                >
-                  <Avatar className="size-15 bg-background/10">
-                    {avatar !== "" ? (
-                      <Image
-                        className="object-cover"
-                        data-slot="avatar-image"
-                        width={250}
-                        height={250}
-                        src={avatar}
-                        alt=""
-                        onError={() => setAvatar("")}
-                      />
-                    ) : null}
-                    <AvatarFallback>
-                      {convertDisplayNameToInitials(username)}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              ) : (
-                <Skeleton className="size-14 rounded-full" />
-              )}
-            </div>
+            children: (
+              <div className="flex items-center justify-center">
+                {avatar !== "..." ? (
+                  <button className="inline-flex items-center justify-center rounded-full border bg-background/60 hover:bg-background">
+                    <Avatar className="size-15 bg-background/10">
+                      {avatar !== "" ? (
+                        <Image
+                          className="object-cover"
+                          data-slot="avatar-image"
+                          width={250}
+                          height={250}
+                          src={avatar}
+                          alt=""
+                          onError={() => setAvatar("")}
+                        />
+                      ) : null}
+                      <AvatarFallback>
+                        {convertDisplayNameToInitials(username)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                ) : (
+                  <Skeleton className="size-14 rounded-full" />
+                )}
+              </div>
+            ),
           })}
         </div>
       )}
@@ -886,7 +955,7 @@ function renderVideoOrPlaceholder({
               want_to_watch: true,
               receiver_id: id,
             },
-            false
+            false,
           );
         }}
       >
@@ -941,16 +1010,14 @@ function useFitBox(containerRef, aspectW = 16, aspectH = 9) {
 }
 
 function Topbar() {
-  let { connected, directionalAudio, setDirectionalAudio, callId, callSecret } = useCallContext();
+  let { connected, directionalAudio, setDirectionalAudio, callId, callSecret } =
+    useCallContext();
   let { chatsArray } = useUsersContext();
   let [inviteOpen, setInviteOpen] = useState(false);
 
   return (
     <div className="flex w-full gap-2">
-      <Button
-        variant={connected ? "default" : "destructive"}
-        className="gap-2"
-      >
+      <Button variant={connected ? "default" : "destructive"} className="gap-2">
         {connected ? (
           <>
             <Icon.Wifi /> Connected
@@ -995,5 +1062,5 @@ function Topbar() {
         </CommandList>
       </CommandDialog>
     </div>
-  )
+  );
 }

@@ -53,7 +53,6 @@ export function Main({ data }) {
         !loadedAllMessages &&
         !noMessageWithUser
       ) {
-
         prevScrollHeightRef.current = container.scrollHeight;
         setLoadMoreMessages(true);
       }
@@ -61,7 +60,12 @@ export function Main({ data }) {
 
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [navbarLoading, loadedAllMessages, noMessageWithUser, setLoadMoreMessages]);
+  }, [
+    navbarLoading,
+    loadedAllMessages,
+    noMessageWithUser,
+    setLoadMoreMessages,
+  ]);
 
   return (
     <div className="flex h-full w-full flex-col gap-2 rounded-xl">
@@ -69,7 +73,6 @@ export function Main({ data }) {
         className="flex flex-grow flex-col items-center gap-0 overflow-y-auto px-2.5 py-0 font-normal"
         ref={containerRef}
       >
-
         {loadedAllMessages && !noMessageWithUser ? (
           <p className="p-2 text-sm">Loaded all messages.</p>
         ) : null}
@@ -80,19 +83,13 @@ export function Main({ data }) {
         {navbarLoading ? (
           <>
             {messages.map((message) => (
-              <MessageLoading
-                key={message.id}
-                message={message}
-              />
+              <MessageLoading key={message.id} message={message} />
             ))}
           </>
         ) : (
           <>
             {messages.map((message) => (
-              <Message
-                key={message.id}
-                message={message}
-              />
+              <Message key={message.id} message={message} />
             ))}
           </>
         )}

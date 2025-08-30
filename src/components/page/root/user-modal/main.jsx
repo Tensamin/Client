@@ -1,8 +1,8 @@
 // Package Imports
-import { toast } from "sonner"
-import Image from "next/image"
-import * as Icon from "lucide-react"
-import { useEffect, useState } from "react"
+import { toast } from "sonner";
+import Image from "next/image";
+import * as Icon from "lucide-react";
+import { useEffect, useState } from "react";
 
 // Lib Imports
 import {
@@ -10,16 +10,13 @@ import {
   statusColors,
   convertDisplayNameToInitials,
   formatUserStatus,
-} from "@/lib/utils"
+} from "@/lib/utils";
 
 // Context Imports
-import { useUsersContext } from "@/components/context/users"
+import { useUsersContext } from "@/components/context/users";
 
 // Components
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Tooltip,
   TooltipContent,
@@ -29,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useCryptoContext } from "@/components/context/crypto";
 import { useEncryptionContext } from "@/components/context/encryption";
-import { useCallContext } from "@/components/context/call"
+import { useCallContext } from "@/components/context/call";
 
 // User Modal for user
 export function UserModal({ id, state }) {
@@ -39,13 +36,13 @@ export function UserModal({ id, state }) {
   let { get, refetchUser } = useUsersContext();
 
   useEffect(() => {
-    if (id !== "") get(id)
-      .then(data => {
+    if (id !== "")
+      get(id).then((data) => {
         setAvatar(data.avatar);
         setUsername(data.username);
         setDisplay(data.display);
       });
-  }, [id, refetchUser])
+  }, [id, refetchUser]);
 
   return (
     <div className="rounded-xl flex flex-col items-center p-3 gap-3 justify-center">
@@ -62,7 +59,7 @@ export function UserModal({ id, state }) {
                   src={avatar}
                   alt=""
                   onError={() => {
-                    setAvatar("")
+                    setAvatar("");
                   }}
                 />
               ) : null}
@@ -74,8 +71,17 @@ export function UserModal({ id, state }) {
             <Skeleton className="rounded-full size-8" />
           )}
           <Tooltip>
-            <TooltipTrigger asChild className="absolute bottom-0 right-0 w-[15px] h-[15px]">
-              <div onClick={() => toast("Huhu")} className={cn("cursor-pointer rounded-full border-3 border-card", statusColors[state] || "bg-white")} />
+            <TooltipTrigger
+              asChild
+              className="absolute bottom-0 right-0 w-[15px] h-[15px]"
+            >
+              <div
+                onClick={() => toast("Huhu")}
+                className={cn(
+                  "cursor-pointer rounded-full border-3 border-card",
+                  statusColors[state] || "bg-white",
+                )}
+              />
             </TooltipTrigger>
             <TooltipContent className="border-1">
               <p>{formatUserStatus(state)}</p>
@@ -84,27 +90,39 @@ export function UserModal({ id, state }) {
         </div>
         <div className="w-full">
           <div className="text-[14px] font-bold">
-            {display !== "..." ?
+            {display !== "..." ? (
               <p>{display}</p>
-              :
-              <Skeleton className="mr-20"><p className="invisible">🥴</p></Skeleton>
-            }
+            ) : (
+              <Skeleton className="mr-20">
+                <p className="invisible">🥴</p>
+              </Skeleton>
+            )}
           </div>
           <div className="text-[12px] font-bold text-foreground/67">
-            {username !== "..." ?
+            {username !== "..." ? (
               <p>{username}</p>
-              :
-              <Skeleton className="mr-8 mt-1"><p className="invisible">🥴</p></Skeleton>
-            }
+            ) : (
+              <Skeleton className="mr-8 mt-1">
+                <p className="invisible">🥴</p>
+              </Skeleton>
+            )}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // User Modal for Sidebar Chats
-export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = false, callActive = false, callId = "", encCallSecret = "" }) {
+export function SmallUserModal({
+  id,
+  state,
+  showIotaStatus = false,
+  forceLoad = false,
+  callActive = false,
+  callId = "",
+  encCallSecret = "",
+}) {
   let [avatar, setAvatar] = useState("...");
   let [username, setUsername] = useState("...");
   let [display, setDisplay] = useState("...");
@@ -120,22 +138,30 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
   useEffect(() => {
     if (encCallSecret !== "") {
       async function decrypt() {
-        let enc = atob(await decrypt_base64_using_aes(encCallSecret, await get_shared_secret(privateKey, await get(id).then(data => data.public_key))));
+        let enc = atob(
+          await decrypt_base64_using_aes(
+            encCallSecret,
+            await get_shared_secret(
+              privateKey,
+              await get(id).then((data) => data.public_key),
+            ),
+          ),
+        );
         setCallSecret(enc);
       }
-      decrypt()
+      decrypt();
     }
-  }, [encCallSecret])
+  }, [encCallSecret]);
 
   useEffect(() => {
-    if (id !== "") get(id)
-      .then(data => {
+    if (id !== "")
+      get(id).then((data) => {
         setAvatar(data.avatar);
         setUsername(data.username);
         setDisplay(data.display);
         setStatus(data.status);
       });
-  }, [id, refetchUser])
+  }, [id, refetchUser]);
 
   return (
     <div className="rounded-xl flex items-center h-12 pl-3 gap-3">
@@ -153,7 +179,7 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
                     src={avatar}
                     alt=""
                     onError={() => {
-                      setAvatar("")
+                      setAvatar("");
                     }}
                   />
                 )}
@@ -165,14 +191,22 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
               <Skeleton className="rounded-full size-8" />
             )}
             <Tooltip>
-              <TooltipTrigger asChild className="absolute -bottom-2 -right-2 w-[15px] h-[15px]">
-                {state === "none" ?
+              <TooltipTrigger
+                asChild
+                className="absolute -bottom-2 -right-2 w-[15px] h-[15px]"
+              >
+                {state === "none" ? (
                   <div className="cursor-pointer rounded-full border-3 border-card bg-card">
                     <Skeleton className="bg-white w-full h-full" />
                   </div>
-                  :
-                  <div className={cn("cursor-pointer rounded-full border-3 border-card", statusColors[state] || "bg-white")} />
-                }
+                ) : (
+                  <div
+                    className={cn(
+                      "cursor-pointer rounded-full border-3 border-card",
+                      statusColors[state] || "bg-white",
+                    )}
+                  />
+                )}
               </TooltipTrigger>
               <TooltipContent className="border-1">
                 <p>{formatUserStatus(state)}</p>
@@ -183,17 +217,23 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
       )}
 
       <div className="min-w-0 flex-grow w-full">
-        <div className={`${showIotaStatus && state !== "IOTA_OFFLINE" ? "flex" : ""} gap-2 text-[15px] overflow-hidden whitespace-nowrap text-overflow-ellipsis`}>
+        <div
+          className={`${showIotaStatus && state !== "IOTA_OFFLINE" ? "flex" : ""} gap-2 text-[15px] overflow-hidden whitespace-nowrap text-overflow-ellipsis`}
+        >
           <div className="flex flex-col">
             <div className="flex gap-2">
-              {display !== "..." || forceLoad ?
+              {display !== "..." || forceLoad ? (
                 <p>{forceLoad ? "Debug Mode" : display}</p>
-                :
-                <Skeleton><p className="invisible">Tensamin :3</p></Skeleton>
-              }
+              ) : (
+                <Skeleton>
+                  <p className="invisible">Tensamin :3</p>
+                </Skeleton>
+              )}
             </div>
             <div className="flex gap-1">
-              <p className="text-xs text-foreground/75">{forceLoad ? "Chats wont load!" : status}</p>
+              <p className="text-xs text-foreground/75">
+                {forceLoad ? "Chats wont load!" : status}
+              </p>
             </div>
           </div>
         </div>
@@ -203,10 +243,7 @@ export function SmallUserModal({ id, state, showIotaStatus = false, forceLoad = 
         <div className="flex justify-center items-center">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge
-                variant="destructive"
-                className="w-7 h-7"
-              >
+              <Badge variant="destructive" className="w-7 h-7">
                 <Icon.Activity />
               </Badge>
             </TooltipTrigger>
@@ -250,13 +287,13 @@ export function MiniUserModal({ id }) {
   let { get, refetchUser } = useUsersContext();
 
   useEffect(() => {
-    if (id !== "") get(id)
-      .then(data => {
+    if (id !== "")
+      get(id).then((data) => {
         setAvatar(data.avatar);
         setUsername(data.username);
         setDisplay(data.display);
       });
-  }, [id, refetchUser])
+  }, [id, refetchUser]);
 
   return (
     <div className="rounded-xl flex items-center h-7 gap-3">
@@ -272,7 +309,7 @@ export function MiniUserModal({ id }) {
                 src={avatar}
                 alt=""
                 onError={() => {
-                  setAvatar("")
+                  setAvatar("");
                 }}
               />
             ) : null}
@@ -283,11 +320,15 @@ export function MiniUserModal({ id }) {
         ) : (
           <Skeleton className="rounded-full size-8" />
         )}
-        {display !== "..." ?
-          <p className="text-[15px] overflow-hidden whitespace-nowrap text-overflow-ellipsis">{display}</p>
-          :
-          <Skeleton className="mr-20"><p className="invisible">🥴</p></Skeleton>
-        }
+        {display !== "..." ? (
+          <p className="text-[15px] overflow-hidden whitespace-nowrap text-overflow-ellipsis">
+            {display}
+          </p>
+        ) : (
+          <Skeleton className="mr-20">
+            <p className="invisible">🥴</p>
+          </Skeleton>
+        )}
       </>
     </div>
   );
@@ -301,13 +342,13 @@ export function MiniMiniUserModal({ id }) {
   let { get, refetchUser } = useUsersContext();
 
   useEffect(() => {
-    if (id !== "") get(id)
-      .then(data => {
+    if (id !== "")
+      get(id).then((data) => {
         setAvatar(data.avatar);
         setUsername(data.username);
         setDisplay(data.display);
       });
-  }, [id, refetchUser])
+  }, [id, refetchUser]);
 
   return (
     <div className="rounded-xl flex items-center h-5.5 w-5.5 m-1">
@@ -324,7 +365,7 @@ export function MiniMiniUserModal({ id }) {
                   src={avatar}
                   alt=""
                   onError={() => {
-                    setAvatar("")
+                    setAvatar("");
                   }}
                 />
               ) : null}
@@ -335,11 +376,13 @@ export function MiniMiniUserModal({ id }) {
           ) : null}
         </TooltipTrigger>
         <TooltipContent>
-          {display !== "..." ?
+          {display !== "..." ? (
             <p>{display}</p>
-            :
-            <Skeleton className="mr-20"><p className="invisible">🥴</p></Skeleton>
-          }
+          ) : (
+            <Skeleton className="mr-20">
+              <p className="invisible">🥴</p>
+            </Skeleton>
+          )}
         </TooltipContent>
       </Tooltip>
     </div>
@@ -354,13 +397,13 @@ export function CallModal({ id }) {
   let { get, refetchUser } = useUsersContext();
 
   useEffect(() => {
-    if (id !== "") get(id)
-      .then(data => {
+    if (id !== "")
+      get(id).then((data) => {
         setAvatar(data.avatar);
         setUsername(data.username);
         setDisplay(data.display);
       });
-  }, [id, refetchUser])
+  }, [id, refetchUser]);
 
   return (
     <div className="rounded-xl flex flex-col items-center p-3 gap-3 justify-center">
@@ -377,7 +420,7 @@ export function CallModal({ id }) {
                   src={avatar}
                   alt=""
                   onError={() => {
-                    setAvatar("")
+                    setAvatar("");
                   }}
                 />
               ) : null}
@@ -391,21 +434,25 @@ export function CallModal({ id }) {
         </div>
         <div className="w-full">
           <div className="text-4xl font-bold">
-            {display !== "..." ?
+            {display !== "..." ? (
               <p>{display}</p>
-              :
-              <Skeleton className="mr-20"><p className="invisible">🥴</p></Skeleton>
-            }
+            ) : (
+              <Skeleton className="mr-20">
+                <p className="invisible">🥴</p>
+              </Skeleton>
+            )}
           </div>
           <div className="text-lg font-bold text-foreground/67">
-            {username !== "..." ?
+            {username !== "..." ? (
               <p>{username}</p>
-              :
-              <Skeleton className="mr-8 mt-1"><p className="invisible">🥴</p></Skeleton>
-            }
+            ) : (
+              <Skeleton className="mr-8 mt-1">
+                <p className="invisible">🥴</p>
+              </Skeleton>
+            )}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

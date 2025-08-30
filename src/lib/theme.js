@@ -1,6 +1,11 @@
 // Package Imports
 import chroma from "chroma-js";
-import { argbFromHex, themeFromSourceColor, hexFromArgb, Hct } from "@material/material-color-utilities";
+import {
+  argbFromHex,
+  themeFromSourceColor,
+  hexFromArgb,
+  Hct,
+} from "@material/material-color-utilities";
 import { Scheme } from "@material/material-color-utilities";
 
 // Hard Tint
@@ -114,11 +119,11 @@ let createOklchColor = (ref, options) => {
   if (ref.alpha !== undefined) {
     newColor = newColor.alpha(ref.alpha);
   }
-  return newColor.css('oklch');
+  return newColor.css("oklch");
 };
 
 export function generateTintPalette(baseHex, controls, colorScheme) {
-  controls = controls || THEME_CONTROLS
+  controls = controls || THEME_CONTROLS;
   try {
     let useDarkTheme = colorScheme === "dark";
 
@@ -127,7 +132,7 @@ export function generateTintPalette(baseHex, controls, colorScheme) {
       : controls.LIGHT_THEME_PRIMARY_SATURATION_FACTOR;
 
     let baseColor = chroma(baseHex).set(
-      'oklch.c',
+      "oklch.c",
       `*${currentPrimarySaturationFactor}`,
     );
     let [baseL, baseC, baseH] = baseColor.oklch();
@@ -155,13 +160,14 @@ export function generateTintPalette(baseHex, controls, colorScheme) {
       ? controls.DARK_THEME_HUE_SHIFT_AMOUNT
       : controls.LIGHT_THEME_HUE_SHIFT_AMOUNT;
 
-    let createColor = (ref, type = 'base', useOwnHue = false) => {
+    let createColor = (ref, type = "base", useOwnHue = false) => {
       let colorizationStrength =
-        type === 'accent'
+        type === "accent"
           ? currentAccentColorizationStrength
           : currentBaseColorizationStrength;
 
-      let hueShift = type === 'accent' && !useOwnHue ? currentHueShiftAmount : 0;
+      let hueShift =
+        type === "accent" && !useOwnHue ? currentHueShiftAmount : 0;
 
       return createOklchColor(ref, {
         baseHue: useOwnHue ? ref.h : resolvedBaseH,
@@ -175,44 +181,54 @@ export function generateTintPalette(baseHex, controls, colorScheme) {
     };
 
     return {
-      '--radius': '0.5rem',
-      '--background': createColor(refs.background),
-      '--foreground': createColor(refs.foreground),
-      '--card': createColor(refs.card),
-      '--card-foreground': createColor(refs.card_foreground),
-      '--popover': createColor(refs.popover),
-      '--popover-foreground': createColor(refs.popover_foreground),
-      '--primary': createColor(refs.primary),
-      '--primary-foreground': createColor(refs.primary_foreground),
-      '--secondary': createColor(refs.secondary, 'accent'),
-      '--secondary-foreground': createColor(refs.secondary_foreground, 'accent'),
-      '--muted': createColor(refs.muted, 'accent'),
-      '--muted-foreground': createColor(refs.muted_foreground, 'accent'),
-      '--accent': createColor(refs.accent, 'accent'),
-      '--accent-foreground': createColor(refs.accent_foreground, 'accent'),
-      '--destructive': createColor(refs.destructive, 'accent'),
-      '--border': createColor(refs.border),
-      '--input': createColor(refs.input),
-      '--ring': createColor(refs.ring, 'accent'),
-      '--chart-1': createColor(refs.chart1, 'base', true),
-      '--chart-2': createColor(refs.chart2, 'base', true),
-      '--chart-3': createColor(refs.chart3, 'base', true),
-      '--chart-4': createColor(refs.chart4, 'base', true),
-      '--chart-5': createColor(refs.chart5, 'base', true),
-      '--sidebar': createColor(refs.sidebar),
-      '--sidebar-foreground': createColor(refs.sidebar_foreground),
-      '--sidebar-primary': createColor(refs.sidebar_primary, 'base', true),
-      '--sidebar-primary_foreground': createColor(refs.sidebar_primary_foreground, 'base', true),
-      '--sidebar-accent': createColor(refs.sidebar_accent, 'accent'),
-      '--sidebar-accent_foreground': createColor(refs.sidebar_accent_foreground, 'accent'),
-      '--sidebar-border': createColor(refs.sidebar_border),
-      '--sidebar-ring': createColor(refs.sidebar_ring, 'accent'),
+      "--radius": "0.5rem",
+      "--background": createColor(refs.background),
+      "--foreground": createColor(refs.foreground),
+      "--card": createColor(refs.card),
+      "--card-foreground": createColor(refs.card_foreground),
+      "--popover": createColor(refs.popover),
+      "--popover-foreground": createColor(refs.popover_foreground),
+      "--primary": createColor(refs.primary),
+      "--primary-foreground": createColor(refs.primary_foreground),
+      "--secondary": createColor(refs.secondary, "accent"),
+      "--secondary-foreground": createColor(
+        refs.secondary_foreground,
+        "accent",
+      ),
+      "--muted": createColor(refs.muted, "accent"),
+      "--muted-foreground": createColor(refs.muted_foreground, "accent"),
+      "--accent": createColor(refs.accent, "accent"),
+      "--accent-foreground": createColor(refs.accent_foreground, "accent"),
+      "--destructive": createColor(refs.destructive, "accent"),
+      "--border": createColor(refs.border),
+      "--input": createColor(refs.input),
+      "--ring": createColor(refs.ring, "accent"),
+      "--chart-1": createColor(refs.chart1, "base", true),
+      "--chart-2": createColor(refs.chart2, "base", true),
+      "--chart-3": createColor(refs.chart3, "base", true),
+      "--chart-4": createColor(refs.chart4, "base", true),
+      "--chart-5": createColor(refs.chart5, "base", true),
+      "--sidebar": createColor(refs.sidebar),
+      "--sidebar-foreground": createColor(refs.sidebar_foreground),
+      "--sidebar-primary": createColor(refs.sidebar_primary, "base", true),
+      "--sidebar-primary_foreground": createColor(
+        refs.sidebar_primary_foreground,
+        "base",
+        true,
+      ),
+      "--sidebar-accent": createColor(refs.sidebar_accent, "accent"),
+      "--sidebar-accent_foreground": createColor(
+        refs.sidebar_accent_foreground,
+        "accent",
+      ),
+      "--sidebar-border": createColor(refs.sidebar_border),
+      "--sidebar-ring": createColor(refs.sidebar_ring, "accent"),
     };
   } catch (error) {
-    console.error('Invalid hex color for palette generation:', baseHex, error);
+    console.error("Invalid hex color for palette generation:", baseHex, error);
     return {};
   }
-};
+}
 
 // Soft Tint
 function adjustTone(argb, amount) {
@@ -226,10 +242,10 @@ function adjustTone(argb, amount) {
 
 export function generateMaterialYouPalette(baseHex, colorScheme = "light") {
   let theme = themeFromSourceColor(argbFromHex(baseHex));
-  console.log(theme)
-  console.log(colorScheme)
+  console.log(theme);
+  console.log(colorScheme);
   let selectedScheme = new Scheme(theme.schemes[colorScheme]);
-  console.log(selectedScheme)
+  console.log(selectedScheme);
 
   let isLight = colorScheme === "light";
   let baseSurface = selectedScheme.surface;
@@ -242,10 +258,10 @@ export function generateMaterialYouPalette(baseHex, colorScheme = "light") {
   let surfaceContainerLow = adjustTone(baseSurface, lowStep);
   let surfaceContainerHighest = adjustTone(baseSurface, highStep);
 
-  let accent = adjustTone(selectedScheme.background, bigStep)
-  let accentForeground = adjustTone(selectedScheme.secondary, giantStep)
+  let accent = adjustTone(selectedScheme.background, bigStep);
+  let accentForeground = adjustTone(selectedScheme.secondary, giantStep);
 
-  let border = adjustTone(selectedScheme.surface, bigStep)
+  let border = adjustTone(selectedScheme.surface, bigStep);
 
   return {
     "--radius": "0.5rem",

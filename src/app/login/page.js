@@ -1,29 +1,36 @@
 "use client";
 
 // Package Imports
-import { useState, useRef, useEffect, use } from 'react';
-import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
+import { useState, useRef, useEffect, use } from "react";
+import {
+  startAuthentication,
+  startRegistration,
+} from "@simplewebauthn/browser";
 import * as Icon from "lucide-react";
-import { v7 } from 'uuid';
-import { Ring } from 'ldrs/react'
-import 'ldrs/react/Ring.css'
+import { v7 } from "uuid";
+import { Ring } from "ldrs/react";
+import "ldrs/react/Ring.css";
 
 // Lib Imports
-import { endpoint } from '@/lib/endpoints';
-import { sha256, isElectron, getDeviceFingerprint } from "@/lib/utils"
-import ls, { set } from '@/lib/localStorageManager';
+import { endpoint } from "@/lib/endpoints";
+import { sha256, isElectron, getDeviceFingerprint } from "@/lib/utils";
+import ls, { set } from "@/lib/localStorageManager";
 
 // Context Imports
-import { useEncryptionContext } from '@/components/context/encryption';
+import { useEncryptionContext } from "@/components/context/encryption";
 
 // Components
-import { Card, CardContent } from "@/components/ui/card"
-import { EncryptionProvider } from '@/components/context/encryption';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Card, CardContent } from "@/components/ui/card";
+import { EncryptionProvider } from "@/components/context/encryption";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Helper Functions
@@ -38,7 +45,7 @@ function readFileAsText(file) {
     };
     reader.readAsText(file);
   });
-};
+}
 
 // Wrapper
 export default function EncryptionWrapper() {
@@ -46,8 +53,8 @@ export default function EncryptionWrapper() {
     <EncryptionProvider>
       <LoginForm />
     </EncryptionProvider>
-  )
-};
+  );
+}
 
 // Main
 export function LoginForm() {
@@ -70,25 +77,25 @@ export function LoginForm() {
     setCanRelease(false);
     let dt = e.dataTransfer;
     let files = dt.files;
-    handlePrivateKeyFileChange(files)
-  }
+    handlePrivateKeyFileChange(files);
+  };
 
   let enter = (e) => {
     e.preventDefault();
     counter.current++;
     if (counter.current === 1) setCanRelease(true);
-  }
+  };
 
   let leave = (e) => {
     e.preventDefault();
     counter.current--;
     if (counter.current === 0) setCanRelease(false);
-  }
+  };
 
   let over = (e) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-  }
+    e.dataTransfer.dropEffect = "copy";
+  };
 
   async function handlePrivateKeyFileChange(files) {
     if (files[0]) {
@@ -115,16 +122,20 @@ export function LoginForm() {
       setError("");
 
       passwordFieldRef.current.value = btoa(rawJwk);
-      passwordFieldRef.current.dispatchEvent(new Event("change", { bubbles: true }));
-      passwordFieldRef.current.dispatchEvent(new Event("input", { bubbles: true }));
+      passwordFieldRef.current.dispatchEvent(
+        new Event("change", { bubbles: true }),
+      );
+      passwordFieldRef.current.dispatchEvent(
+        new Event("input", { bubbles: true }),
+      );
       passwordFieldRef.current.focus();
       setPrivateKey(jwk);
     }
-  };
+  }
 
   return (
     <div
-      style={{ WebkitAppRegion: 'drag' }}
+      style={{ WebkitAppRegion: "drag" }}
       className="z-20 w-full h-full"
       onDrop={drop}
       onDragEnter={enter}
@@ -132,7 +143,16 @@ export function LoginForm() {
       onDragLeave={leave}
     >
       <div className="z-10 flex flex-col justify-center items-center w-full h-screen">
-        <Card className="w-auto h-auto" style={{ WebkitAppRegion: 'no-drag' }}>
+        <input
+          ref={privateKeyFileRef}
+          onChange={(e) =>
+            handlePrivateKeyFileChange(Array.from(e.target.files || []))
+          }
+          hidden
+          id="private-key-file"
+          type="file"
+        />
+        <Card className="w-auto h-auto" style={{ WebkitAppRegion: "no-drag" }}>
           <CardContent className="flex flex-col">
             <form
               autoComplete="on"
@@ -152,11 +172,13 @@ export function LoginForm() {
                   let lambda;
 
                   // Turn Username into UUID
-                  await fetch(endpoint.username_to_uuid + username.toLowerCase())
-                    .then(response => response.json())
-                    .then(data => {
+                  await fetch(
+                    endpoint.username_to_uuid + username.toLowerCase(),
+                  )
+                    .then((response) => response.json())
+                    .then((data) => {
                       if (data.type === "error") {
-                        throw new Error(data.log.message)
+                        throw new Error(data.log.message);
                       } else {
                         uuid = data.data.user_id;
                       }
@@ -165,26 +187,33 @@ export function LoginForm() {
                   if (isElectron()) {
                     // use Keyring
                     let secret = v7();
-                    window.keyring.set('net.methanium.tensamin', username.toLowerCase(), secret)
-                    let encrypted_private_key = await encrypt_base64_using_aes(btoa(JSON.stringify(privateKey)), secret)
-                    ls.set('auth_private_key', encrypted_private_key);
-                    ls.set('auth_uuid', uuid);
-                    window.location.href = "/";
+                    window.keyring.set(
+                      "net.methanium.tensamin",
+                      username.toLowerCase(),
+                      secret,
+                    );
+                    let encrypted_private_key = await encrypt_base64_using_aes(
+                      btoa(JSON.stringify(privateKey)),
+                      secret,
+                    );
+                    ls.set("auth_private_key", encrypted_private_key);
+                    ls.set("auth_uuid", uuid);
+                    window.location.href = "app://dist/index.html";
                   } else {
                     // use Passkey
                     await fetch(endpoint.webauthn_register_options + uuid, {
                       method: "POST",
                       headers: {
-                        'Content-Type': 'application/json'
+                        "Content-Type": "application/json",
                       },
                       body: JSON.stringify({
-                        private_key_hash: await sha256(privateKey.d)
-                      })
+                        private_key_hash: await sha256(privateKey.d),
+                      }),
                     })
-                      .then(response => response.json())
-                      .then(data => {
+                      .then((response) => response.json())
+                      .then((data) => {
                         if (data.type === "error") {
-                          throw new Error(data.log.message)
+                          throw new Error(data.log.message);
                         } else {
                           options = JSON.parse(atob(data.data.options));
                         }
@@ -195,15 +224,18 @@ export function LoginForm() {
                     await fetch(endpoint.webauthn_register_verify + uuid, {
                       method: "POST",
                       headers: {
-                        'Content-Type': 'application/json'
+                        "Content-Type": "application/json",
                       },
-                      body: JSON.stringify({ private_key_hash: await sha256(privateKey.d), attestation })
+                      body: JSON.stringify({
+                        private_key_hash: await sha256(privateKey.d),
+                        attestation,
+                      }),
                     })
-                      .then(response => response.json())
-                      .then(data => {
+                      .then((response) => response.json())
+                      .then((data) => {
                         if (data.type === "error") {
                           verified = false;
-                          throw new Error(data.log.message)
+                          throw new Error(data.log.message);
                         } else {
                           lambda = data.data.lambda;
                           cred_id = attestation.id;
@@ -211,16 +243,23 @@ export function LoginForm() {
                         }
                       });
                     if (verified) {
-                      let encrypted_private_key = await encrypt_base64_using_aes(btoa(JSON.stringify(privateKey)), lambda)
-                      ls.set('auth_private_key', encrypted_private_key);
-                      ls.set('auth_uuid', uuid);
-                      ls.set('auth_cred_id', cred_id);
+                      let encrypted_private_key =
+                        await encrypt_base64_using_aes(
+                          btoa(JSON.stringify(privateKey)),
+                          lambda,
+                        );
+                      ls.set("auth_private_key", encrypted_private_key);
+                      ls.set("auth_uuid", uuid);
+                      ls.set("auth_cred_id", cred_id);
 
                       if (staySignedIn) {
                         let fingerprint = await getDeviceFingerprint();
-                        let encryptedLambda = await encrypt_base64_using_aes(lambda, fingerprint);
-                        ls.set('auth_lambda', encryptedLambda);
-                      } else ls.remove('auth_lambda');
+                        let encryptedLambda = await encrypt_base64_using_aes(
+                          lambda,
+                          fingerprint,
+                        );
+                        ls.set("auth_lambda", encryptedLambda);
+                      } else ls.remove("auth_lambda");
                       setLoading(true);
                       window.location.href = "/";
                     } else {
@@ -249,16 +288,7 @@ export function LoginForm() {
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="private-key">JWK</Label>
-                <div
-                  className="w-full h-full flex"
-                >
-                  <input
-                    ref={privateKeyFileRef}
-                    onChange={(e) => handlePrivateKeyFileChange(Array.from(e.target.files || []))}
-                    hidden
-                    id="private-key-file"
-                    type="file"
-                  />
+                <div className="w-full h-full flex">
                   <div className="flex gap-2">
                     <Input
                       className="w-full"
@@ -270,7 +300,9 @@ export function LoginForm() {
                       ref={passwordFieldRef}
                       onChange={() => {
                         try {
-                          setPrivateKey(JSON.parse(atob(passwordFieldRef.current.value)));
+                          setPrivateKey(
+                            JSON.parse(atob(passwordFieldRef.current.value)),
+                          );
                         } catch {
                           setPrivateKey("");
                         }
@@ -282,17 +314,24 @@ export function LoginForm() {
                           className="h-9 w-9 flex items-center pl-3"
                           variant="outline"
                           id="select-private-key-button"
+                          type="button"
                           onClick={() => privateKeyFileRef.current?.click()}
                         >
-                          {canRelease ?
-                            <Icon.FileDown /> : privateKey === "" ?
-                              <Icon.FileKey2 /> :
-                              <Icon.FileCheck />
-                          }
+                          {canRelease ? (
+                            <Icon.FileDown />
+                          ) : privateKey === "" ? (
+                            <Icon.FileKey2 />
+                          ) : (
+                            <Icon.FileCheck />
+                          )}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {canRelease ? "Release to select" : privateKey === "" ? "Select your JWK" : "Change your JWK"}
+                        {canRelease
+                          ? "Release to select"
+                          : privateKey === ""
+                            ? "Select your JWK"
+                            : "Change your JWK"}
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -311,12 +350,20 @@ export function LoginForm() {
                   </div>
                   */}
                 </div>
-                <Label htmlFor="select-private-key-button" className="pl-1 underline w-full text-center text-muted-foreground text-xs select-none">
+                <Label
+                  htmlFor="select-private-key-button"
+                  className="pl-1 underline w-full text-center text-muted-foreground text-xs select-none"
+                >
                   Drag & drop your .jwk file or click me to select it.
                 </Label>
               </div>
               <div className="flex gap-2">
-                <Checkbox id="stay-signed-in" checked={staySignedIn} onCheckedChange={setStaySignedIn} /><Label htmlFor="stay-signed-in">Stay logged in</Label>
+                <Checkbox
+                  id="stay-signed-in"
+                  checked={staySignedIn}
+                  onCheckedChange={setStaySignedIn}
+                />
+                <Label htmlFor="stay-signed-in">Stay logged in</Label>
               </div>
               <Separator />
               <div className="flex flex-col gap-2 w-full">
@@ -331,24 +378,30 @@ export function LoginForm() {
                         Failed
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      {error}
-                    </TooltipContent>
+                    <TooltipContent>{error}</TooltipContent>
                   </Tooltip>
                 ) : (
                   <Button
                     variant={loading ? "outline" : "outline"}
                     className="w-full"
                     type="submit"
-                    disabled={loading || username === "" || passwordFieldRef.current.value === ""}
+                    disabled={
+                      loading ||
+                      username === "" ||
+                      passwordFieldRef.current.value === ""
+                    }
                   >
-                    {loading ? <Ring
-                      size="17"
-                      stroke="2"
-                      bgOpacity="0"
-                      speed="2"
-                      color="var(--foreground)"
-                    /> : "Login"}
+                    {loading ? (
+                      <Ring
+                        size="17"
+                        stroke="2"
+                        bgOpacity="0"
+                        speed="2"
+                        color="var(--foreground)"
+                      />
+                    ) : (
+                      "Login"
+                    )}
                   </Button>
                 )}
               </div>
@@ -362,9 +415,14 @@ export function LoginForm() {
         <p className="text-[11px] text-muted-foreground">
           <a href={endpoint.tos} className="underline">
             Terms of Service
-          </a> and <a href={endpoint.pp} className="underline">Privacy Policy</a>.
+          </a>{" "}
+          and{" "}
+          <a href={endpoint.pp} className="underline">
+            Privacy Policy
+          </a>
+          .
         </p>
       </div>
     </div>
-  )
-};
+  );
+}

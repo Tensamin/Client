@@ -51,12 +51,12 @@ export function EditableImage({ avatarUrl, onSave, className }) {
       };
 
       reader.onerror = (err) => {
-        log(err.message, "showError")
+        log(err.message, "showError");
         setError("Failed to read file.");
         setLoading(false);
       };
     } catch (err) {
-      log(err.message, "showError")
+      log(err.message, "showError");
       setError("Error processing image.");
       setLoading(false);
     } finally {
@@ -66,9 +66,9 @@ export function EditableImage({ avatarUrl, onSave, className }) {
 
   useEffect(() => {
     if (error !== "" && error !== null) {
-      toast.error(error)
+      toast.error(error);
     }
-  }, [error])
+  }, [error]);
 
   return (
     <div
@@ -79,13 +79,11 @@ export function EditableImage({ avatarUrl, onSave, className }) {
         src={avatarUrl}
         alt="User Avatar"
         className={`border-1 bg-input/15 w-full h-full object-cover rounded-full transition-all duration-300
-                    ${loading
-            ? "opacity-50"
-            : "group-hover:opacity-75"
-          }`}
+                    ${loading ? "opacity-50" : "group-hover:opacity-75"}`}
         onError={(e) => {
           e.target.onerror = null;
-          e.target.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC";
+          e.target.src =
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC";
         }}
       />
 
@@ -100,7 +98,7 @@ export function EditableImage({ avatarUrl, onSave, className }) {
             color="var(--foreground)"
           />
         ) : (
-          <Icon.Upload size={20}/>
+          <Icon.Upload size={20} />
         )}
       </div>
 

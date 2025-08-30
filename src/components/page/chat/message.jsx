@@ -1,7 +1,7 @@
 // Package Imports
 import React, { useEffect, useState } from "react";
 import * as Icon from "lucide-react";
-import Image from "next/image"
+import Image from "next/image";
 
 // Lib Imports
 import { convertDisplayNameToInitials, copyTextToClipboard } from "@/lib/utils";
@@ -19,54 +19,53 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "@/components/ui/context-menu"
-import { SmolMessage } from "@/components/page/chat/smol_message"
+} from "@/components/ui/context-menu";
+import { SmolMessage } from "@/components/page/chat/smol_message";
 
 // Main
 export function Message({ message }) {
   let dateObject = new Date(message.id);
   let is24HourClock = true;
 
-  let [username, setUsername] = useState("...")
-  let [display, setDisplay] = useState("...")
-  let [avatar, setAvatar] = useState("")
+  let [username, setUsername] = useState("...");
+  let [display, setDisplay] = useState("...");
+  let [avatar, setAvatar] = useState("");
 
   let { get } = useUsersContext();
   let { receiver } = useMessageContext();
 
   useEffect(() => {
     if (message.sender !== "") {
-      get(message.sender)
-        .then(data => {
-          setUsername(data.username)
-          setDisplay(data.display)
-          setAvatar(data.avatar)
-        })
+      get(message.sender).then((data) => {
+        setUsername(data.username);
+        setDisplay(data.display);
+        setAvatar(data.avatar);
+      });
     }
-  }, [message.sender, receiver])
+  }, [message.sender, receiver]);
 
   try {
     let dtfForClockCheck = new Intl.DateTimeFormat(undefined, {
-      hour: 'numeric',
+      hour: "numeric",
       hour12: true,
     });
     let testDate = new Date(2000, 0, 1, 13, 0, 0);
     let formattedTestTime = dtfForClockCheck.format(testDate);
     is24HourClock =
-      !formattedTestTime.includes('AM') && !formattedTestTime.includes('PM');
+      !formattedTestTime.includes("AM") && !formattedTestTime.includes("PM");
   } catch (err) {
-    log(err.message, "error")
+    log(err.message, "error");
   }
 
   let options = {
-    hour: 'numeric',
-    minute: 'numeric',
+    hour: "numeric",
+    minute: "numeric",
     hour12: !is24HourClock,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   };
 
   let timestamp = new Intl.DateTimeFormat(undefined, options).format(
-    dateObject
+    dateObject,
   );
 
   return message.subMessages ? (
@@ -86,7 +85,7 @@ export function Message({ message }) {
                       src={avatar}
                       alt=""
                       onError={() => {
-                        setAvatar("")
+                        setAvatar("");
                       }}
                     />
                   ) : null}
@@ -109,7 +108,10 @@ export function Message({ message }) {
                     <div className="p-1">
                       <Separator className="bg-border/40" />
                     </div>
-                    <SmolMessage message={message} sendToServer={message.sendToServer} />
+                    <SmolMessage
+                      message={message}
+                      sendToServer={message.sendToServer}
+                    />
                   </div>
                 ) : (
                   <div key={index}>
@@ -118,25 +120,32 @@ export function Message({ message }) {
                     </div>
                     <SmolMessage sendToServer={false} failed />
                   </div>
-                )
+                );
               })}
             </div>
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-52">
-          <ContextMenuItem onClick={() => {
-            copyTextToClipboard(new Date(message.id))
-          }}>
+          <ContextMenuItem
+            onClick={() => {
+              copyTextToClipboard(new Date(message.id));
+            }}
+          >
             <Icon.Calendar /> Copy Date
           </ContextMenuItem>
-          <ContextMenuItem onClick={() => {
-            copyTextToClipboard(message.id)
-          }}>
+          <ContextMenuItem
+            onClick={() => {
+              copyTextToClipboard(message.id);
+            }}
+          >
             <Icon.Cpu /> Copy UNIX Time
           </ContextMenuItem>
-          <ContextMenuItem disabled={avatar === ""} onClick={() => {
-            copyTextToClipboard(avatar)
-          }}>
+          <ContextMenuItem
+            disabled={avatar === ""}
+            onClick={() => {
+              copyTextToClipboard(avatar);
+            }}
+          >
             <Icon.User /> Copy Avatar
           </ContextMenuItem>
         </ContextMenuContent>
@@ -154,9 +163,13 @@ export function MessageLoading({ message }) {
             <Skeleton className="rounded-full size-8" />
           </div>
           <div className="text-[15px] w-full font-bold">
-            <Skeleton className={`mr-${Math.floor(Math.random() * 16) + 10}`}><p className="invisible">🥴</p></Skeleton>
+            <Skeleton className={`mr-${Math.floor(Math.random() * 16) + 10}`}>
+              <p className="invisible">🥴</p>
+            </Skeleton>
             <div className="text-[11.5px] text-foreground/67 pt-0.5">
-              <Skeleton className="mr-25"><p className="invisible">🥴</p></Skeleton>
+              <Skeleton className="mr-25">
+                <p className="invisible">🥴</p>
+              </Skeleton>
             </div>
           </div>
         </div>
@@ -166,7 +179,9 @@ export function MessageLoading({ message }) {
               <div className="p-1">
                 <Separator className="bg-border/40" />
               </div>
-              <Skeleton className={`mr-${Math.floor(Math.random() * 16) + 10}`}><p className="invisible">🥴</p></Skeleton>
+              <Skeleton className={`mr-${Math.floor(Math.random() * 16) + 10}`}>
+                <p className="invisible">🥴</p>
+              </Skeleton>
             </div>
           ))}
         </div>

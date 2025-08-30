@@ -1,13 +1,7 @@
 "use client";
 
 // Package Imports
-import {
-  createContext,
-  useState,
-  useContext,
-  useEffect,
-  useRef,
-} from "react";
+import { createContext, useState, useContext, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
 
@@ -78,16 +72,16 @@ export function CryptoProvider({ children }) {
           let username = await get(uuid).then((data) => data.username);
           lambda = await window?.keyring?.get(
             "net.methanium.tensamin",
-            username
+            username,
           );
         } else if (ls.get("auth_lambda")) {
           lambda = await decrypt_base64_using_aes(
             ls.get("auth_lambda"),
-            await getDeviceFingerprint()
+            await getDeviceFingerprint(),
           );
         } else {
           let resp = await fetch(
-            `${endpoint.webauthn_login_options}${uuid}/${cred_id}`
+            `${endpoint.webauthn_login_options}${uuid}/${cred_id}`,
           );
           let data = await resp.json();
           if (data?.type === "error") {
@@ -105,21 +99,19 @@ export function CryptoProvider({ children }) {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({ attestation }),
-            }
+            },
           );
 
           let verifyData = await verifyResp.json();
           if (verifyData?.type === "error") {
-            throw new Error(
-              verifyData.log?.message || "Passkey verify failed"
-            );
+            throw new Error(verifyData.log?.message || "Passkey verify failed");
           }
           lambda = verifyData.data.lambda;
         }
 
         const rawDecryptedKey = await decrypt_base64_using_aes(
           encrypted_private_key,
-          lambda
+          lambda,
         );
         const decryptedKey = JSON.parse(atob(rawDecryptedKey));
 

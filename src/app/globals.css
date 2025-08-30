@@ -144,8 +144,8 @@
 }
 
 .placeholder:empty::before {
-    content: attr(data-placeholder);
-    color: var(--color-ring);
+  content: attr(data-placeholder);
+  color: var(--color-ring);
 }
 
 @layer base {

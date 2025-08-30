@@ -58,24 +58,32 @@ export function EditableText({ value, onSave, className, placeholder }) {
   );
 }
 
-export function EditableTextarea({ name, value, onSave, onChar, maxChars, className, placeholder }) {
-  let [editingValue, setEditingValue] = useState("")
+export function EditableTextarea({
+  name,
+  value,
+  onSave,
+  onChar,
+  maxChars,
+  className,
+  placeholder,
+}) {
+  let [editingValue, setEditingValue] = useState("");
 
   useEffect(() => {
-    setEditingValue(value)
-  }, [value])
+    setEditingValue(value);
+  }, [value]);
 
   function handleChange(event) {
-    setEditingValue(event.target.value)
-    onChar(event.target.value.length)
+    setEditingValue(event.target.value);
+    onChar(event.target.value.length);
   }
 
   function handleBlur() {
-    let tooLongMsg = `${name} too long!`
+    let tooLongMsg = `${name} too long!`;
     if (editingValue.length <= maxChars) {
-      onSave(editingValue)
+      onSave(editingValue);
     } else {
-      toast.error(tooLongMsg)
+      toast.error(tooLongMsg);
     }
   }
 
@@ -83,7 +91,7 @@ export function EditableTextarea({ name, value, onSave, onChar, maxChars, classN
     <Textarea
       className={cn(
         "placeholder break-words whitespace-pre-wrap outline-none cursor-text resize-none h-35",
-        className
+        className,
       )}
       onBlur={handleBlur}
       placeholder={placeholder}

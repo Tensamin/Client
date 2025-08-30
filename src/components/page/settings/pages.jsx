@@ -10,7 +10,14 @@ import {
   generateMaterialYouPalette,
   THEME_CONTROLS,
 } from "@/lib/theme";
-import { cn, isHexColor, log, capitalizeFirstLetter, downloadString, clippy } from "@/lib/utils";
+import {
+  cn,
+  isHexColor,
+  log,
+  capitalizeFirstLetter,
+  downloadString,
+  clippy,
+} from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
 import ls from "@/lib/localStorageManager";
 
@@ -19,7 +26,7 @@ import { useCryptoContext } from "@/components/context/crypto";
 import { useUsersContext } from "@/components/context/users";
 import { useMessageContext } from "@/components/context/message";
 import { useThemeContext } from "@/components/context/theme";
-import { useModsContext } from "@/components/context/mods"
+import { useModsContext } from "@/components/context/mods";
 import { useCallContext } from "@/components/context/call";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { usePageContext } from "@/components/context/page";
@@ -54,11 +61,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch"
-import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { EditableText, EditableTextarea } from "@/components/page/settings/editable/text"
-import { EditableImage } from "@/components/page/settings/editable/image"
-import { Slider } from "@/components/ui/slider"
+import { Switch } from "@/components/ui/switch";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  EditableText,
+  EditableTextarea,
+} from "@/components/page/settings/editable/text";
+import { EditableImage } from "@/components/page/settings/editable/image";
+import { Slider } from "@/components/ui/slider";
 
 // Helper Functions
 function readFileAsText(file) {
@@ -72,7 +89,7 @@ function readFileAsText(file) {
     };
     reader.readAsText(file);
   });
-};
+}
 
 // Main
 export function Profile() {
@@ -83,27 +100,27 @@ export function Profile() {
   let [profile, setProfile] = useState({
     username: "...",
     display: "...",
-    avatar: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC",
+    avatar:
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC",
     about: "...",
-    status: "..."
-  })
+    status: "...",
+  });
   let [aboutChars, setAboutChars] = useState(0);
 
   useEffect(() => {
-    get(ownUuid)
-      .then(data => {
-        setProfile({
-          username: data.username,
-          display: data.display,
-          avatar: data.avatar,
-          about: data.about,
-          status: data.status,
-          sub_level: data.sub_level,
-          sub_end: data.sub_end,
-        });
-        setAboutChars(data.about.length)
-      })
-  }, [])
+    get(ownUuid).then((data) => {
+      setProfile({
+        username: data.username,
+        display: data.display,
+        avatar: data.avatar,
+        about: data.about,
+        status: data.status,
+        sub_level: data.sub_level,
+        sub_end: data.sub_end,
+      });
+      setAboutChars(data.about.length);
+    });
+  }, []);
 
   function handleFieldUpdate(field, newValue) {
     setProfile((prevData) => ({
@@ -111,28 +128,34 @@ export function Profile() {
       [field]: newValue,
     }));
     fetch(`${endpoint.change}${field}/${ownUuid}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: `{"private_key_hash": "${privateKeyHash}", "${field}": "${field !== "about" ? newValue : btoa(newValue)}"}`
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: `{"private_key_hash": "${privateKeyHash}", "${field}": "${field !== "about" ? newValue : btoa(newValue)}"}`,
     })
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.type !== "error") {
-          toast.success(`Updated your ${field === "display" ? "Display Name" : capitalizeFirstLetter(field)}!`)
+          toast.success(
+            `Updated your ${field === "display" ? "Display Name" : capitalizeFirstLetter(field)}!`,
+          );
           clearFromCache(ownUuid);
-          send("client_changed", {
-            message: "Changed State",
-            log_level: 0
-          }, {
-            user_state: ownState,
-          }).catch(_ => { })
+          send(
+            "client_changed",
+            {
+              message: "Changed State",
+              log_level: 0,
+            },
+            {
+              user_state: ownState,
+            },
+          ).catch((_) => {});
         } else {
-          log(data.log.message, "showError")
+          log(data.log.message, "showError");
         }
       })
-      .catch(err => {
-        log(err.message, "error")
-      })
+      .catch((err) => {
+        log(err.message, "error");
+      });
   }
 
   return (
@@ -144,7 +167,9 @@ export function Profile() {
             <div className="flex">
               <EditableImage
                 avatarUrl={profile.avatar}
-                onSave={(newAvatarBase64) => handleFieldUpdate("avatar", newAvatarBase64)}
+                onSave={(newAvatarBase64) =>
+                  handleFieldUpdate("avatar", newAvatarBase64)
+                }
                 className="w-17 h-17 z-10"
               />
             </div>
@@ -169,7 +194,9 @@ export function Profile() {
                 />
                 <EditableText
                   value={profile.username}
-                  onSave={(newValue) => handleFieldUpdate("username", newValue.toLowerCase())}
+                  onSave={(newValue) =>
+                    handleFieldUpdate("username", newValue.toLowerCase())
+                  }
                   className="text-foreground/67 font-bold text-sm"
                 />
               </div>
@@ -188,22 +215,32 @@ export function Profile() {
             />
           </div>
           <div className="flex gap-2">
-            <p className={`text-xs ${aboutChars > 200 ? "text-destructive" : ""}`}>{aboutChars} / 200 </p>
+            <p
+              className={`text-xs ${aboutChars > 200 ? "text-destructive" : ""}`}
+            >
+              {aboutChars} / 200{" "}
+            </p>
           </div>
         </div>
         <div className="border-1 bg-input/20 p-4 rounded-xl flex flex-col w-full justify-center items-center">
           <p>This is reserved space for</p>
-          <p className="bg-clip-text text-transparent bg-gradient-to-r from-primary/60 to-primary">future customizations</p>
+          <p className="bg-clip-text text-transparent bg-gradient-to-r from-primary/60 to-primary">
+            future customizations
+          </p>
         </div>
       </div>
       <div className="flex">
-        <Button onClick={() => { handleFieldUpdate("avatar", clippy) }}>
+        <Button
+          onClick={() => {
+            handleFieldUpdate("avatar", clippy);
+          }}
+        >
           Use Clippy as profile picture
         </Button>
       </div>
     </div>
   );
-};
+}
 
 export function Appearance() {
   let {
@@ -219,9 +256,11 @@ export function Appearance() {
     setThemeScheme,
   } = useThemeContext();
   let { setSidebarCategory } = usePageContext();
-  let [draftCustomCss, setDraftCustomCss] = useState(customCss || '');
+  let [draftCustomCss, setDraftCustomCss] = useState(customCss || "");
 
-  let [sidebarCategoryPolicy, setSidebarCategoryPolicy] = useState(ls.get("layout_sidebar_category_policy") || "last")
+  let [sidebarCategoryPolicy, setSidebarCategoryPolicy] = useState(
+    ls.get("layout_sidebar_category_policy") || "last",
+  );
   let [tmpColor, setTmpColor] = useState(customHex || "");
   let [tint, setTint] = useState(themeTint || "soft");
   let [colorScheme, setColorScheme] = useState(themeScheme || "dark");
@@ -232,8 +271,8 @@ export function Appearance() {
     JSON.stringify(
       JSON.parse(ls.get("theme_control")) || THEME_CONTROLS,
       null,
-      2
-    )
+      2,
+    ),
   );
 
   // Drive provider from settings instead of mutating DOM directly
@@ -279,8 +318,6 @@ export function Appearance() {
         }
       }
 
-
-
       let styleObject = {};
 
       for (let colorName in palette) {
@@ -289,7 +326,7 @@ export function Appearance() {
 
       return styleObject;
     } catch (err) {
-      log(err.message, "error")
+      log(err.message, "error");
       return {};
     }
   }, [tmpColor, tint, colorScheme, inputValue]);
@@ -297,12 +334,12 @@ export function Appearance() {
   // Persistence of tint/scheme is handled by ThemeProvider
 
   useEffect(() => {
-    ls.set("layout_sidebar_category_policy", sidebarCategoryPolicy)
-  }, [sidebarCategoryPolicy])
+    ls.set("layout_sidebar_category_policy", sidebarCategoryPolicy);
+  }, [sidebarCategoryPolicy]);
 
   // Keep draft in sync when applied CSS changes from elsewhere (e.g., reset)
   useEffect(() => {
-    setDraftCustomCss(customCss || '');
+    setDraftCustomCss(customCss || "");
   }, [customCss]);
 
   function submitThemeControlsChange(event) {
@@ -322,8 +359,8 @@ export function Appearance() {
   function submitTmpColorChange(event) {
     event.preventDefault();
     if (isHexColor(tmpColor)) {
-  // No-op: tmpColor already set; provider effect runs
-  setCustomHex(tmpColor);
+      // No-op: tmpColor already set; provider effect runs
+      setCustomHex(tmpColor);
     }
   }
 
@@ -340,7 +377,11 @@ export function Appearance() {
                   aria-expanded={tintOpen}
                   className="w-[200px] justify-between"
                 >
-                  {tint === "soft" ? "Soft Tint" : tint === "hard" ? "Hard Tint" : "Hard Tint (Advanced)"}
+                  {tint === "soft"
+                    ? "Soft Tint"
+                    : tint === "hard"
+                      ? "Hard Tint"
+                      : "Hard Tint (Advanced)"}
                   <Icon.ChevronsUpDown className="opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -359,7 +400,7 @@ export function Appearance() {
                         <Icon.Check
                           className={cn(
                             "ml-auto",
-                            tint === "soft" ? "opacity-100" : "opacity-0"
+                            tint === "soft" ? "opacity-100" : "opacity-0",
                           )}
                         />
                       </CommandItem>
@@ -374,7 +415,7 @@ export function Appearance() {
                         <Icon.Check
                           className={cn(
                             "ml-auto",
-                            tint === "hard" ? "opacity-100" : "opacity-0"
+                            tint === "hard" ? "opacity-100" : "opacity-0",
                           )}
                         />
                       </CommandItem>
@@ -389,7 +430,7 @@ export function Appearance() {
                         <Icon.Check
                           className={cn(
                             "ml-auto",
-                            tint === "hard_a" ? "opacity-100" : "opacity-0"
+                            tint === "hard_a" ? "opacity-100" : "opacity-0",
                           )}
                         />
                       </CommandItem>
@@ -426,7 +467,9 @@ export function Appearance() {
                         <Icon.Check
                           className={cn(
                             "ml-auto",
-                            colorScheme === "dark" ? "opacity-100" : "opacity-0"
+                            colorScheme === "dark"
+                              ? "opacity-100"
+                              : "opacity-0",
                           )}
                         />
                       </CommandItem>
@@ -441,7 +484,9 @@ export function Appearance() {
                         <Icon.Check
                           className={cn(
                             "ml-auto",
-                            colorScheme === "light" ? "opacity-100" : "opacity-0"
+                            colorScheme === "light"
+                              ? "opacity-100"
+                              : "opacity-0",
                           )}
                         />
                       </CommandItem>
@@ -457,10 +502,7 @@ export function Appearance() {
                 onChange={handleTmpColorChange}
               />
             </form>
-            <HexColorPicker
-              color={tmpColor}
-              onChange={setTmpColor}
-            />
+            <HexColorPicker color={tmpColor} onChange={setTmpColor} />
           </div>
           <div className="flex flex-col gap-2 w-full h-auto">
             <Textarea
@@ -469,7 +511,7 @@ export function Appearance() {
               onChange={(e) => setDraftCustomCss(e.target.value)}
               onBlur={() => {
                 setCustomCss(draftCustomCss);
-                toast.success('Applied custom CSS');
+                toast.success("Applied custom CSS");
               }}
               className="border-1 resize-none h-full"
             />
@@ -509,8 +551,8 @@ export function Appearance() {
                 Are you sure you want to reset your color theme?
               </AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will delete your theme hex and
-                all your theme control data.
+                This action cannot be undone. This will delete your theme hex
+                and all your theme control data.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -522,7 +564,7 @@ export function Appearance() {
                   ls.remove("theme_scheme");
                   ls.remove("theme_hex");
                   ls.remove("theme_control");
-                  setCustomCss('');
+                  setCustomCss("");
                   window.location.reload();
                 }}
               >
@@ -542,13 +584,14 @@ export function Appearance() {
             checked={sidebarRightSide}
             onCheckedChange={setSidebarRightSide}
           />
-          <Label
-            htmlFor="sidebar-right-switch"
-          >Sidebar Right</Label>
+          <Label htmlFor="sidebar-right-switch">Sidebar Right</Label>
         </div>
 
         {/* Sidebar Category */}
-        <Popover open={sidebarCategoryOpen} onOpenChange={setSidebarCategoryOpen}>
+        <Popover
+          open={sidebarCategoryOpen}
+          onOpenChange={setSidebarCategoryOpen}
+        >
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -556,7 +599,11 @@ export function Appearance() {
               aria-expanded={tintOpen}
               className="w-[200px] justify-between"
             >
-              {sidebarCategoryPolicy === "last" ? "Last Selected" : sidebarCategoryPolicy === "chats" ? "Chats" : "Communities"}
+              {sidebarCategoryPolicy === "last"
+                ? "Last Selected"
+                : sidebarCategoryPolicy === "chats"
+                  ? "Chats"
+                  : "Communities"}
               <Icon.ChevronsUpDown className="opacity-50" />
             </Button>
           </PopoverTrigger>
@@ -575,7 +622,9 @@ export function Appearance() {
                     <Icon.Check
                       className={cn(
                         "ml-auto",
-                        sidebarCategoryPolicy === "last" ? "opacity-100" : "opacity-0"
+                        sidebarCategoryPolicy === "last"
+                          ? "opacity-100"
+                          : "opacity-0",
                       )}
                     />
                   </CommandItem>
@@ -591,7 +640,9 @@ export function Appearance() {
                     <Icon.Check
                       className={cn(
                         "ml-auto",
-                        sidebarCategoryPolicy === "chats" ? "opacity-100" : "opacity-0"
+                        sidebarCategoryPolicy === "chats"
+                          ? "opacity-100"
+                          : "opacity-0",
                       )}
                     />
                   </CommandItem>
@@ -607,7 +658,9 @@ export function Appearance() {
                     <Icon.Check
                       className={cn(
                         "ml-auto",
-                        sidebarCategoryPolicy === "communities" ? "opacity-100" : "opacity-0"
+                        sidebarCategoryPolicy === "communities"
+                          ? "opacity-100"
+                          : "opacity-0",
                       )}
                     />
                   </CommandItem>
@@ -619,30 +672,36 @@ export function Appearance() {
       </div>
     </div>
   );
-};
+}
 
 export function Notifications() {
-  let [loading, setLoading] = useState(ls.get('notifications') === 'enabled' ? true : false)
-  let [message, setMessage] = useState(ls.get('notifications') === 'enabled' ? "Notifications enabled." : "Enable Notifications")
-  let { requestNotificationPermission } = useMessageContext()
+  let [loading, setLoading] = useState(
+    ls.get("notifications") === "enabled" ? true : false,
+  );
+  let [message, setMessage] = useState(
+    ls.get("notifications") === "enabled"
+      ? "Notifications enabled."
+      : "Enable Notifications",
+  );
+  let { requestNotificationPermission } = useMessageContext();
 
   return (
     <div className="flex gap-2">
       <Button
         disabled={loading}
         onClick={async () => {
-          setMessage("Requesting Permission...")
-          setLoading(true)
-          requestNotificationPermission()
-            .then(data => {
-              if (data.success) {
-                ls.set('notifications', 'enabled')
-              } else {
-                setLoading(false)
-              }
-              setMessage(data.message)
-            })
-        }}>
+          setMessage("Requesting Permission...");
+          setLoading(true);
+          requestNotificationPermission().then((data) => {
+            if (data.success) {
+              ls.set("notifications", "enabled");
+            } else {
+              setLoading(false);
+            }
+            setMessage(data.message);
+          });
+        }}
+      >
         {message}
       </Button>
       {loading && (
@@ -650,16 +709,17 @@ export function Notifications() {
           variant="outline"
           className="w-9 h-9"
           onClick={async () => {
-            setMessage("Enable Notifications")
-            setLoading(false)
-            ls.remove('notifications')
-          }}>
+            setMessage("Enable Notifications");
+            setLoading(false);
+            ls.remove("notifications");
+          }}
+        >
           <Icon.Unlock />
         </Button>
       )}
     </div>
-  )
-};
+  );
+}
 
 export function Voice() {
   let [outputs, setOutputs] = useState([]);
@@ -668,20 +728,27 @@ export function Voice() {
   let [openInputs, setOpenInputs] = useState(false);
   let [denied, setDenied] = useState(null);
 
-  let { inputDeviceId, setInput, outputDeviceId, setOutput, inputSensitivity, setInputSensitivity } = useCallContext();
+  let {
+    inputDeviceId,
+    setInput,
+    outputDeviceId,
+    setOutput,
+    inputSensitivity,
+    setInputSensitivity,
+  } = useCallContext();
 
   async function getMicrophonePermissionState() {
     if (!navigator.permissions || !navigator.permissions.query) {
-      return 'unsupported';
+      return "unsupported";
     }
     try {
       const status = await navigator.permissions.query({
-        name: 'microphone',
+        name: "microphone",
       });
       // granted, denied, prompt
       return status.state;
     } catch (err) {
-      return 'unknown';
+      return "unknown";
     }
   }
 
@@ -689,25 +756,25 @@ export function Voice() {
     let mounted = true;
 
     async function loadDevices() {
-      setDenied(await getMicrophonePermissionState() !== 'granted');
+      setDenied((await getMicrophonePermissionState()) !== "granted");
 
-      if ('mediaDevices' in navigator) {
+      if ("mediaDevices" in navigator) {
         try {
           let devices = await navigator.mediaDevices.enumerateDevices();
-          let outputs = devices.filter(d => d.kind === 'audiooutput');
+          let outputs = devices.filter((d) => d.kind === "audiooutput");
           if (mounted) {
             setOutputs(outputs);
           }
-        } catch { }
+        } catch {}
 
         try {
           let devices = await navigator.mediaDevices.enumerateDevices();
-          let inputs = devices.filter(d => d.kind === 'audioinput');
+          let inputs = devices.filter((d) => d.kind === "audioinput");
           if (mounted) {
             setInputs(inputs);
           }
-        } catch { }
-      };
+        } catch {}
+      }
     }
 
     loadDevices();
@@ -723,11 +790,12 @@ export function Voice() {
         <Button
           onClick={async () => {
             try {
-              await navigator.mediaDevices.getUserMedia({ audio: true })
+              await navigator.mediaDevices
+                .getUserMedia({ audio: true })
                 .then(() => {
                   window.location.reload();
-                })
-            } catch { }
+                });
+            } catch {}
           }}
         >
           Request microphone permission
@@ -744,9 +812,15 @@ export function Voice() {
               aria-expanded={openOutputs}
               className="justify-between w-[200px]"
             >
-              <p className="truncate">{denied ? "None" : outputDeviceId
-                ? outputs.find((output) => output.deviceId === outputDeviceId)?.label
-                : "Select device..."}</p>
+              <p className="truncate">
+                {denied
+                  ? "None"
+                  : outputDeviceId
+                    ? outputs.find(
+                        (output) => output.deviceId === outputDeviceId,
+                      )?.label
+                    : "Select device..."}
+              </p>
               <Icon.ChevronsUpDown className="opacity-50" />
             </Button>
           </PopoverTrigger>
@@ -760,15 +834,21 @@ export function Voice() {
                       key={device.deviceId}
                       value={device.deviceId}
                       onSelect={(currentValue) => {
-                        setOutput(currentValue === outputDeviceId ? "default" : currentValue)
-                        setOpenOutputs(false)
+                        setOutput(
+                          currentValue === outputDeviceId
+                            ? "default"
+                            : currentValue,
+                        );
+                        setOpenOutputs(false);
                       }}
                     >
                       {device.label || `Output ${device.deviceId}`}
                       <Icon.Check
                         className={cn(
                           "ml-auto",
-                          outputDeviceId === device.deviceId ? "opacity-100" : "opacity-0"
+                          outputDeviceId === device.deviceId
+                            ? "opacity-100"
+                            : "opacity-0",
                         )}
                       />
                     </CommandItem>
@@ -790,9 +870,14 @@ export function Voice() {
               aria-expanded={openInputs}
               className="justify-between w-[200px]"
             >
-              <p className="truncate">{denied ? "None" : inputDeviceId
-                ? inputs.find((input) => input.deviceId === inputDeviceId)?.label
-                : "Select device..."}</p>
+              <p className="truncate">
+                {denied
+                  ? "None"
+                  : inputDeviceId
+                    ? inputs.find((input) => input.deviceId === inputDeviceId)
+                        ?.label
+                    : "Select device..."}
+              </p>
               <Icon.ChevronsUpDown className="opacity-50" />
             </Button>
           </PopoverTrigger>
@@ -806,15 +891,21 @@ export function Voice() {
                       key={device.deviceId}
                       value={device.deviceId}
                       onSelect={(currentValue) => {
-                        setInput(currentValue === inputDeviceId ? "default" : currentValue)
-                        setOpenInputs(false)
+                        setInput(
+                          currentValue === inputDeviceId
+                            ? "default"
+                            : currentValue,
+                        );
+                        setOpenInputs(false);
                       }}
                     >
                       {device.label || `Input ${device.deviceId}`}
                       <Icon.Check
                         className={cn(
                           "ml-auto",
-                          inputDeviceId === device.deviceId ? "opacity-100" : "opacity-0"
+                          inputDeviceId === device.deviceId
+                            ? "opacity-100"
+                            : "opacity-0",
                         )}
                       />
                     </CommandItem>
@@ -828,7 +919,9 @@ export function Voice() {
       <div className="flex flex-col gap-2 w-full max-w-md">
         <div className="flex items-center justify-between">
           <Label htmlFor="input-sensitivity">Input Sensitivity</Label>
-          <span className="text-xs text-muted-foreground">{inputSensitivity}</span>
+          <span className="text-xs text-muted-foreground">
+            {inputSensitivity}
+          </span>
         </div>
         <div className="px-1">
           <Slider
@@ -843,25 +936,27 @@ export function Voice() {
             }}
           />
         </div>
-        <p className="text-xs text-muted-foreground">Lower means more sensitive; higher means you need to speak louder to transmit.</p>
+        <p className="text-xs text-muted-foreground">
+          Lower means more sensitive; higher means you need to speak louder to
+          transmit.
+        </p>
       </div>
     </div>
   );
 }
 
 export function ExtraBenefits() {
-  let { get, ownUuid } = useUsersContext()
+  let { get, ownUuid } = useUsersContext();
 
-  let [subLevel, setSubLevel] = useState(0)
-  let [subEnd, setSubEnd] = useState(0)
+  let [subLevel, setSubLevel] = useState(0);
+  let [subEnd, setSubEnd] = useState(0);
 
   useEffect(() => {
-    get(ownUuid)
-      .then(data => {
-        setSubLevel(data.sub_level)
-        setSubEnd(data.sub_end)
-      })
-  }, [])
+    get(ownUuid).then((data) => {
+      setSubLevel(data.sub_level);
+      setSubEnd(data.sub_end);
+    });
+  }, []);
 
   return (
     <Card>
@@ -880,14 +975,16 @@ export function ExtraBenefits() {
       </CardContent>
       <CardFooter>
         {subLevel >= 1 ? (
-          <p className={subEnd <= 7 ? "text-destructive" : ""}>Expires in {subEnd} Days.</p>
+          <p className={subEnd <= 7 ? "text-destructive" : ""}>
+            Expires in {subEnd} Days.
+          </p>
         ) : (
           <p>Premium not active</p>
         )}
       </CardFooter>
     </Card>
-  )
-};
+  );
+}
 
 export function Mods() {
   let { mods, setMods } = useModsContext();
@@ -910,8 +1007,8 @@ export function Mods() {
         let modName = jsonMod.name;
 
         fetch(jsonMod.src)
-          .then(response => response.text())
-          .then(data => {
+          .then((response) => response.text())
+          .then((data) => {
             setMods((prev) => ({
               ...prev,
               [modName]: {
@@ -923,7 +1020,7 @@ export function Mods() {
               },
             }));
             toast.success("Added Mod");
-          })
+          });
       } else {
         toast("Invalid Mod");
       }
@@ -981,10 +1078,7 @@ export function Mods() {
             <Switch checked={enabled} onCheckedChange={handleChange} />
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-9 h-9"
-                >
+                <Button variant="ghost" className="w-9 h-9">
                   <Icon.Trash />
                 </Button>
               </AlertDialogTrigger>
@@ -992,7 +1086,8 @@ export function Mods() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This is just a confirmation so you don't accidentally delete something.
+                    This is just a confirmation so you don't accidentally delete
+                    something.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -1005,7 +1100,9 @@ export function Mods() {
                         return newMods;
                       });
                     }}
-                  >Continue</AlertDialogAction>
+                  >
+                    Continue
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -1078,7 +1175,12 @@ export function Mods() {
       {mods && mods !== "" && Object.keys(mods).length >= 1 ? (
         <div>
           {Object.keys(mods).map((key) => (
-            <ModCard key={key} modKey={key} mod={mods[key]} onToggle={handleToggle} />
+            <ModCard
+              key={key}
+              modKey={key}
+              mod={mods[key]}
+              onToggle={handleToggle}
+            />
           ))}
         </div>
       ) : (
@@ -1096,30 +1198,36 @@ export function Mods() {
       )}
     </div>
   );
-};
+}
 
 export function Developer() {
-  let [debugMode, setDebugMode] = useState(ls.get("debug") === "true" || false)
+  let [debugMode, setDebugMode] = useState(ls.get("debug") === "true" || false);
 
   function debugModeChange(event) {
-    setDebugMode(event)
+    setDebugMode(event);
   }
 
   useEffect(() => {
     if (debugMode) {
-      ls.set("debug", "true")
+      ls.set("debug", "true");
     } else {
-      ls.remove("debug")
+      ls.remove("debug");
     }
-  }, [debugMode])
+  }, [debugMode]);
 
   return (
     <div className="flex gap-2 items-center">
-      <Switch id="debugMode" checked={debugMode} onCheckedChange={debugModeChange} />
+      <Switch
+        id="debugMode"
+        checked={debugMode}
+        onCheckedChange={debugModeChange}
+      />
       <div className="flex flex-col gap-1">
         <Label htmlFor="debugMode">Debug Mode</Label>
-        <p className="text-destructive text-xs">Sensitive data will be printed to the console!</p>
+        <p className="text-destructive text-xs">
+          Sensitive data will be printed to the console!
+        </p>
       </div>
     </div>
-  )
-};
+  );
+}

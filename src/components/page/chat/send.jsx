@@ -33,7 +33,8 @@ export function MessageSend() {
   let [message, setMessage] = useState("");
   let { ownUuid, makeChatTop } = useUsersContext();
   let { connected } = useWebSocketContext();
-  let { addMessage, navbarLoading, navbarLoadingMessage, receiver } = useMessageContext();
+  let { addMessage, navbarLoading, navbarLoadingMessage, receiver } =
+    useMessageContext();
   let textareaRef = useRef(null);
   let uploadFileRef = useRef(null);
 
@@ -98,7 +99,11 @@ export function MessageSend() {
     }
   }, [message]);
 
-  async function handleSubmit(event, useCustomMessage = false, customMessage = false) {
+  async function handleSubmit(
+    event,
+    useCustomMessage = false,
+    customMessage = false,
+  ) {
     event.preventDefault();
 
     if (connected) {
@@ -124,13 +129,21 @@ export function MessageSend() {
     if (!event.target.files[0]) return;
     let data = await fileToBase64(event.target.files[0]);
     let finalFile = `data:${event.target.files[0].type};base64,${data}`;
-    let finalMessage = `![${event.target.files[0].name}](${finalFile})`.replace("\n", "");
+    let finalMessage = `![${event.target.files[0].name}](${finalFile})`.replace(
+      "\n",
+      "",
+    );
     handleSubmit(event, true, finalMessage);
   }
 
   return (
     <>
-      <input ref={uploadFileRef} type="file" onChange={handleFileChange} hidden />
+      <input
+        ref={uploadFileRef}
+        type="file"
+        onChange={handleFileChange}
+        hidden
+      />
       <form className="flex gap-3 w-full items-center" onSubmit={handleSubmit}>
         <Button
           variant="outline"
@@ -144,7 +157,11 @@ export function MessageSend() {
         <textarea
           ref={textareaRef}
           className="placeholder:select-none p-2.5 w-full rounded-xl text-sm resize-none placeholder:text-muted-foreground border outline-0 text-md border-input bg-card overflow-hidden"
-          placeholder={navbarLoading ? navbarLoadingMessage || "Send a message..." : "Send a message..."}
+          placeholder={
+            navbarLoading
+              ? navbarLoadingMessage || "Send a message..."
+              : "Send a message..."
+          }
           id="message"
           name="message"
           value={message}

@@ -16,12 +16,12 @@ export let statusColors = {
   ONLINE: "bg-green-500",
   DND: "bg-red-600",
   IDLE: "bg-yellow-500",
-  WC: "bg-white"
-}
+  WC: "bg-white",
+};
 
 export function downloadString(filename, content) {
-  let blob = new Blob([content], { type: 'text/plain' });
-  let link = document.createElement('a');
+  let blob = new Blob([content], { type: "text/plain" });
+  let link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = filename;
   document.body.appendChild(link);
@@ -49,43 +49,43 @@ export function convertDisplayNameToInitials(displayName) {
 }
 
 export function capitalizeFirstLetter(str) {
-  if (typeof str !== 'string' || str.length === 0) {
-    return '';
+  if (typeof str !== "string" || str.length === 0) {
+    return "";
   }
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 export function log(msg, type, title) {
   if (msg !== "") {
-    let debug = localStorage.getItem('debug') === 'true';
+    let debug = localStorage.getItem("debug") === "true";
     switch (type) {
-      case 'error':
-        console.error(msg)
-        if (debug) toast.error(msg.toString())
+      case "error":
+        console.error(msg);
+        if (debug) toast.error(msg.toString());
         break;
 
-      case 'showError':
-        console.error(msg)
-        toast.error(msg.toString())
+      case "showError":
+        console.error(msg);
+        toast.error(msg.toString());
         break;
 
-      case 'warning':
-        if (debug) console.warn(title || "Debug:", msg)
-        toast.warning(msg)
+      case "warning":
+        if (debug) console.warn(title || "Debug:", msg);
+        toast.warning(msg);
         break;
 
-      case 'success':
-        if (debug) console.log(title || "Debug:", msg)
-        toast.success(msg)
+      case "success":
+        if (debug) console.log(title || "Debug:", msg);
+        toast.success(msg);
         break;
 
-      case 'info':
-        if (debug) console.log(title || "Debug:", msg)
-        if (debug) toast.info(msg)
+      case "info":
+        if (debug) console.log(title || "Debug:", msg);
+        if (debug) toast.info(msg);
         break;
 
-      case 'debug':
-        if (debug) console.log(title || "Debug:", msg)
+      case "debug":
+        if (debug) console.log(title || "Debug:", msg);
         break;
 
       default:
@@ -113,18 +113,18 @@ export function isHexColor(str) {
 
 export function getDisplayFromUsername(username, display_name) {
   if (display_name === "") {
-    return capitalizeFirstLetter(username)
+    return capitalizeFirstLetter(username);
   } else {
-    return display_name
+    return display_name;
   }
 }
 
 export async function copyTextToClipboard(text) {
   try {
     await navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard!")
+    toast.success("Copied to clipboard!");
   } catch (err) {
-    log(err.message, "showError")
+    log(err.message, "showError");
   }
 }
 
@@ -138,39 +138,39 @@ export function adjustAvatar(base64Input, bypass = false, quality = 80) {
     img.src = base64Input;
 
     img.onload = () => {
-      let canvas = document.createElement('canvas');
+      let canvas = document.createElement("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
 
-      let ctx = canvas.getContext('2d');
+      let ctx = canvas.getContext("2d");
       if (!ctx) {
-        return reject(new Error('Could not get 2D canvas context.'));
+        return reject(new Error("Could not get 2D canvas context."));
       }
 
       ctx.drawImage(img, 0, 0);
 
-      let compressedBase64 = canvas.toDataURL('image/webp', quality / 100);
+      let compressedBase64 = canvas.toDataURL("image/webp", quality / 100);
       resolve(compressedBase64);
     };
 
     img.onerror = (error) => {
-      reject(new Error('Failed to load the input image. ' + error));
+      reject(new Error("Failed to load the input image. " + error));
     };
   });
 }
 
 export function formatUserStatus(statusString) {
-  if (typeof statusString !== 'string' || statusString.length === 0) {
-    return '';
+  if (typeof statusString !== "string" || statusString.length === 0) {
+    return "";
   }
 
-  let parts = statusString.split('_');
+  let parts = statusString.split("_");
 
   let formattedParts = parts.map((part) =>
     capitalizeFirstLetter(part.toLowerCase()),
   );
 
-  return formattedParts.join(' ');
+  return formattedParts.join(" ");
 }
 
 export async function sha256(message) {
@@ -179,7 +179,7 @@ export async function sha256(message) {
   let hashBuffer = await crypto.subtle.digest("SHA-256", data);
 
   return Array.from(new Uint8Array(hashBuffer))
-    .map(byte => byte.toString(16).padStart(2, "0"))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
 }
 
@@ -204,36 +204,39 @@ export async function createPasskey(userId) {
     },
   });
 
-  localStorage.setItem(
-    "passkey_id",
-    creds.id,
-  );
+  localStorage.setItem("passkey_id", creds.id);
 
   return creds.id;
 }
 
 export function isElectron() {
-  if (typeof navigator !== 'undefined' &&
-    navigator.userAgent.includes('Electron')) {
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.userAgent.includes("Electron")
+  ) {
     return true;
   }
 
-  if (typeof process !== 'undefined' &&
-    process.versions && process.versions.electron) {
+  if (
+    typeof process !== "undefined" &&
+    process.versions &&
+    process.versions.electron
+  ) {
     return true;
   }
 
   try {
-    if (typeof window !== 'undefined' && window.require) {
-      const electron = window.require('electron');
+    if (typeof window !== "undefined" && window.require) {
+      const electron = window.require("electron");
       if (electron) return true;
     }
-  } catch (e) { }
+  } catch (e) {}
 
   return false;
 }
 
-export let clippy = "data:image/webp;base64,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";
+export let clippy =
+  "data:image/webp;base64,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";
 
 // Deprecated
 async function getDerivedKey(passkey_id) {
@@ -271,27 +274,18 @@ export async function getDeviceFingerprint({ debug = false } = {}) {
     ts: Date.now(),
   };
 
-  const [
-    ua,
-    display,
-    intl,
-    memCpu,
-    canvas2D,
-    webgl,
-    webgpu,
-    audio,
-    fonts,
-  ] = await Promise.all([
-    collectUA(),
-    collectDisplay(),
-    collectIntl(),
-    collectMemoryCpu(),
-    collectCanvas2DHash(),
-    collectWebGLInfoAndHash(),
-    collectWebGPUInfo(),
-    collectAudioFingerprint(),
-    collectFontsFingerprint(),
-  ]);
+  const [ua, display, intl, memCpu, canvas2D, webgl, webgpu, audio, fonts] =
+    await Promise.all([
+      collectUA(),
+      collectDisplay(),
+      collectIntl(),
+      collectMemoryCpu(),
+      collectCanvas2DHash(),
+      collectWebGLInfoAndHash(),
+      collectWebGPUInfo(),
+      collectAudioFingerprint(),
+      collectFontsFingerprint(),
+    ]);
 
   fp.ua = ua;
   fp.display = display;
@@ -389,9 +383,7 @@ function normalizeArchBits({ architecture, bitness, oscpu, ua }) {
 }
 
 function normalizePlatform({ platform, oscpu, ua }) {
-  const s = `${platform || ""} ${oscpu || ""} ${ua || ""}`
-    .toLowerCase()
-    .trim();
+  const s = `${platform || ""} ${oscpu || ""} ${ua || ""}`.toLowerCase().trim();
 
   if (/android/.test(s)) return "Android";
   if (/iphone|ipad|ipod|ios/.test(s)) return "iOS";
@@ -577,9 +569,15 @@ function get2DCanvas(width = 300, height = 120) {
 
 async function canvasToBytes(canvas) {
   try {
-    if (typeof OffscreenCanvas !== "undefined" && canvas instanceof OffscreenCanvas) {
+    if (
+      typeof OffscreenCanvas !== "undefined" &&
+      canvas instanceof OffscreenCanvas
+    ) {
       if (canvas.convertToBlob) {
-        const blob = await canvas.convertToBlob({ type: "image/png", quality: 0.92 });
+        const blob = await canvas.convertToBlob({
+          type: "image/png",
+          quality: 0.92,
+        });
         const buf = await blob.arrayBuffer();
         return new Uint8Array(buf);
       }
@@ -593,14 +591,20 @@ async function canvasToBytes(canvas) {
       return new TextEncoder().encode(dataUrl);
     }
   } catch (e) {
-    if (e && (e.name === "SecurityError" || /insecure|blocked/i.test(String(e)))) {
+    if (
+      e &&
+      (e.name === "SecurityError" || /insecure|blocked/i.test(String(e)))
+    ) {
       return { blocked: true };
     }
     throw e;
   }
   try {
     if (canvas.convertToBlob) {
-      const blob = await canvas.convertToBlob({ type: "image/png", quality: 0.92 });
+      const blob = await canvas.convertToBlob({
+        type: "image/png",
+        quality: 0.92,
+      });
       const buf = await blob.arrayBuffer();
       return new Uint8Array(buf);
     }
@@ -650,7 +654,10 @@ async function collectCanvas2DHash() {
       out.hash = "error";
     }
   } catch (e) {
-    if (e && (e.name === "SecurityError" || /insecure|blocked/i.test(String(e)))) {
+    if (
+      e &&
+      (e.name === "SecurityError" || /insecure|blocked/i.test(String(e)))
+    ) {
       out.hash = "blocked_canvas";
       out.blocked = true;
     } else {
@@ -716,7 +723,7 @@ async function collectWebGLInfoAndHash() {
       MAX_VARYING_VECTORS: safeGLGet(gl, gl.MAX_VARYING_VECTORS) ?? -1,
       MAX_COMBINED_TEXTURE_IMAGE_UNITS: numGLGet(
         gl,
-        gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS
+        gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS,
       ),
       ALIASED_LINE_WIDTH_RANGE: listGLGet(gl, gl.ALIASED_LINE_WIDTH_RANGE),
       ALIASED_POINT_SIZE_RANGE: listGLGet(gl, gl.ALIASED_POINT_SIZE_RANGE),
@@ -783,9 +790,7 @@ function getGLPrecisions(gl) {
   const spf = (shaderType, precisionType) => {
     try {
       const fmt = gl.getShaderPrecisionFormat(shaderType, precisionType);
-      return fmt
-        ? `${fmt.rangeMin},${fmt.rangeMax},${fmt.precision}`
-        : "n/a";
+      return fmt ? `${fmt.rangeMin},${fmt.rangeMax},${fmt.precision}` : "n/a";
     } catch {
       return "err";
     }
@@ -903,9 +908,9 @@ async function collectWebGPUInfo() {
       (await navGpu
         .requestAdapter({ powerPreference: "high-performance" })
         .catch(() => null)) ||
-      (await navGpu.requestAdapter({ powerPreference: "low-power" }).catch(
-        () => null
-      )) ||
+      (await navGpu
+        .requestAdapter({ powerPreference: "low-power" })
+        .catch(() => null)) ||
       (await navGpu.requestAdapter().catch(() => null));
 
     if (!adapter) return { unavailable: true, reason: "no_adapter" };

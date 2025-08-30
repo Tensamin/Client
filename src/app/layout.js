@@ -9,7 +9,7 @@ import { endpoint } from "@/lib/endpoints";
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
-})
+});
 
 export let metadata = {
   title: "Tensamin",
@@ -24,7 +24,13 @@ export default function RootLayout({ children }) {
         <link rel="preload" as="audio" href={endpoint.sound_call} />
       </head>
       <body className={`${jetbrainsMono.variable} antialiased`}>
-        <audio src={endpoint.sound_call} preload="auto" muted playsInline style={{ display: "none" }} />
+        <audio
+          src={endpoint.sound_call}
+          preload="auto"
+          muted
+          playsInline
+          style={{ display: "none" }}
+        />
         {children}
       </body>
     </html>
