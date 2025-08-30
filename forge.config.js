@@ -6,14 +6,16 @@ module.exports = {
     name: "Tensamin",
     asar: true,
     appCategoryType: "public.app-category.social-networking",
-    icon: "public/512x512.png",
+    icon: "public/icon/icon",
     executableName: "tensamin",
   },
   rebuildConfig: {},
   makers: [
     {
       name: "@electron-forge/maker-squirrel",
-      config: {},
+      config: {
+        setupIcon: "public/icon/icon.ico",
+      },
     },
     {
       name: "@electron-forge/maker-zip",

@@ -24,6 +24,7 @@ protocol.registerSchemesAsPrivileged([
 
 function createWindow() {
   mainWindow = new BrowserWindow({
+    icon: "app://dist/icon/icon.png",
     width: 1280,
     height: 720,
     frame: false,
