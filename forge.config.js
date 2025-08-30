@@ -14,6 +14,7 @@ module.exports = {
     {
       name: "@electron-forge/maker-squirrel",
       config: {
+        iconUrl: "https://tensamin.methanium.net/icon/icon.ico",
         setupIcon: "public/icon/icon.ico",
       },
     },
@@ -23,7 +24,11 @@ module.exports = {
     },
     {
       name: "@electron-forge/maker-deb",
-      config: {},
+      config: {
+        options: {
+          icon: "public/icon/icon.png",
+        },
+      },
     },
   ],
   plugins: [

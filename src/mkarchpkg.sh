@@ -104,8 +104,8 @@ optdepends=(${optdepends_str})
 provides=(${provides_str})
 conflicts=(${conflicts_str})
 
-source=("${deb_file}::${src_url}")
-sha256sums=("${sha256}")
+source_${ARCH_PACMAN}=("${deb_file}::${src_url}")
+sha256sums_${ARCH_PACMAN}=("${sha256}")
 
 package() {
   bsdtar -O -xf "\${srcdir}/${deb_file}" data.tar.* \\
