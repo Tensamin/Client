@@ -23,6 +23,7 @@ export function useThemeContext() {
 export function ThemeProvider({ children }) {
   let [customHex, setCustomHex] = useState("");
   let [mounted, setMounted] = useState(false);
+
   let [sidebarRightSide, setSidebarRightSide] = useState(
     ls.get("theme_sidebar") === "right",
   );
@@ -30,23 +31,22 @@ export function ThemeProvider({ children }) {
     ls.get("layout_hide_window_controls") === "true",
   );
   let [customCss, setCustomCss] = useState("");
-  // Hold computed CSS for the generated tint/palette so we can merge with custom CSS
   let [paletteCss, setPaletteCss] = useState("");
-  // Centralize theme tint and scheme in provider so palette recomputes on change
   let [themeTint, setThemeTint] = useState(ls.get("theme_tint") || "soft");
   let [themeScheme, setThemeScheme] = useState(
     ls.get("theme_scheme") || "dark",
   );
 
   useEffect(() => {
-    if (hideWindowControls) {
-      ls.set("layout_hide_window_controls", "true");
-    } else {
-      ls.remove("layout_hide_window_controls");
-    }
+    try {
+      if (hideWindowControls) {
+        ls.set("layout_hide_window_controls", "true");
+      } else {
+        ls.remove("layout_hide_window_controls");
+      }
+    } catch {}
   }, [hideWindowControls]);
 
-  // Helper: remove inline CSS custom properties to avoid overriding stylesheet rules
   const clearInlineVars = (vars) => {
     try {
       const roots = [document.documentElement, document.body].filter(Boolean);
@@ -57,10 +57,8 @@ export function ThemeProvider({ children }) {
           }
         }
       } else {
-        // Fallback: remove any inline --* vars if we don't know the exact list
         for (const el of roots) {
           const style = el.style;
-          // CSSStyleDeclaration isn't directly iterable, copy property names first
           const names = [];
           for (let i = 0; i < style.length; i++) {
             const prop = style.item(i);
@@ -72,7 +70,6 @@ export function ThemeProvider({ children }) {
     } catch {}
   };
 
-  // Ensure there's a single style element that always contains the merged CSS: palette + custom overrides
   useEffect(() => {
     if (!mounted) return;
     try {
@@ -82,10 +79,10 @@ export function ThemeProvider({ children }) {
         styleEl.id = "custom-css";
         document.head.appendChild(styleEl);
       }
-      // Merge palette first (base), then custom CSS (overrides)
+
       const merged = [paletteCss, customCss].filter(Boolean).join("\n\n");
       styleEl.textContent = merged;
-      // Ensure this style tag is the last in <head> so it wins CSS order
+
       if (
         styleEl.parentNode === document.head &&
         styleEl !== document.head.lastChild
@@ -93,7 +90,6 @@ export function ThemeProvider({ children }) {
         document.head.appendChild(styleEl);
       }
 
-      // Persist only the user-provided custom CSS
       if (customCss && customCss !== "") {
         ls.set("custom_css", customCss);
       } else {
@@ -102,28 +98,31 @@ export function ThemeProvider({ children }) {
     } catch {}
   }, [customCss, paletteCss, mounted]);
 
+  // Sidebar
   useEffect(() => {
-    if (sidebarRightSide) {
-      ls.set("theme_sidebar", "right");
-    } else {
-      ls.set("theme_sidebar", "left");
-    }
+    try {
+      if (sidebarRightSide) {
+        ls.set("theme_sidebar", "right");
+      } else {
+        ls.set("theme_sidebar", "left");
+      }
+    } catch {}
   }, [sidebarRightSide]);
 
+  // Initial load
   useEffect(() => {
     setMounted(true);
-    let storedHex = ls.get("theme_hex");
-    if (storedHex) {
-      setCustomHex(storedHex);
-    }
-    // Load persisted Custom CSS
-    let storedCss = ls.get("custom_css");
-    if (typeof storedCss === "string") {
-      setCustomCss(storedCss);
-    }
+
+    try {
+      const storedHex = ls.get("theme_hex");
+      if (storedHex) setCustomHex(storedHex);
+
+      const storedCss = ls.get("custom_css");
+      if (typeof storedCss === "string") setCustomCss(storedCss);
+    } catch {}
   }, []);
 
-  // Persist and reflect scheme/tint changes
+  // Tint
   useEffect(() => {
     if (!mounted) return;
     try {
@@ -135,9 +134,8 @@ export function ThemeProvider({ children }) {
     if (!mounted) return;
     try {
       ls.set("theme_scheme", themeScheme);
-      // Toggle scheme classes for live preview
-      let current = themeScheme === "dark" ? "dark" : "light";
-      let other = themeScheme === "dark" ? "light" : "dark";
+      const current = themeScheme === "dark" ? "dark" : "light";
+      const other = themeScheme === "dark" ? "light" : "dark";
       document.body.classList.add(current);
       document.body.classList.remove(other);
     } catch {}
@@ -146,50 +144,60 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     if (!mounted) return;
 
-    document.body.classList.add(themeScheme || "dark");
+    try {
+      document.body.classList.add(themeScheme || "dark");
+    } catch {}
 
     if (customHex) {
-      ls.set("theme_hex", customHex);
-      let palette;
-      switch (themeTint) {
-        case "soft":
-          palette = generateMaterialYouPalette(customHex, themeScheme);
-          break;
-
-        case "hard":
-          palette = generateTintPalette(customHex, null, themeScheme);
-          break;
-
-        case "hard_a":
-          palette = generateTintPalette(
-            customHex,
-            JSON.parse(ls.get("theme_control")),
-            themeScheme,
-          );
-          break;
-
-        default:
-          palette = generateMaterialYouPalette(customHex, themeScheme);
-          setThemeTint("soft");
-          break;
-      }
-
       try {
-        // Ensure no previous inline vars override stylesheet-defined ones
+        ls.set("theme_hex", customHex);
+
+        let palette;
+        switch (themeTint) {
+          case "soft":
+            palette = generateMaterialYouPalette(customHex, themeScheme);
+            break;
+          case "hard":
+            palette = generateTintPalette(customHex, null, themeScheme);
+            break;
+          case "hard_a": {
+            let control = null;
+            try {
+              control = JSON.parse(ls.get("theme_control"));
+            } catch {}
+            palette = generateTintPalette(customHex, control, themeScheme);
+            break;
+          }
+          default:
+            palette = generateMaterialYouPalette(customHex, themeScheme);
+            setThemeTint("soft");
+            break;
+        }
+
         const paletteVarNames = Object.keys(palette || {});
         clearInlineVars(paletteVarNames);
 
-        // Build CSS variables block applied to :root and body so all descendants inherit
-        const vars = Object.entries(palette)
+        const varLines = Object.entries(palette)
           .map(([cssVar, value]) => `${cssVar}: ${value};`)
           .join("\n");
-        setPaletteCss(`:root, body {\n${vars}\n}`);
+
+        const current = themeScheme === "dark" ? "dark" : "light";
+        const other = current === "dark" ? "light" : "dark";
+
+        const css = [
+          `:root, html, body {\n${varLines}\n}`,
+          `html.${current}, body.${current} {\n${varLines}\n}`,
+          `html.${other}, body.${other} {\n${varLines}\n}`,
+        ].join("\n\n");
+
+        setPaletteCss(css);
       } catch {
         setPaletteCss("");
       }
     } else {
-      ls.remove("theme_hex");
-      // Remove any lingering inline vars so custom CSS can still apply
+      try {
+        ls.remove("theme_hex");
+      } catch {}
       clearInlineVars();
       setPaletteCss("");
     }
@@ -200,17 +208,16 @@ export function ThemeProvider({ children }) {
       value={{
         sidebarRightSide,
         setSidebarRightSide,
+        hideWindowControls,
+        setHideWindowControls,
         customCss,
         setCustomCss,
-        // Expose theme controls
         customHex,
         setCustomHex,
         themeTint,
         setThemeTint,
         themeScheme,
         setThemeScheme,
-        hideWindowControls,
-        setHideWindowControls,
       }}
     >
       {children}
