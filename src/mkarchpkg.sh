@@ -63,6 +63,8 @@ main() {
   ensure_tool "bsdtar"
   ensure_tool "makepkg"
 
+  rm -rf "${AUR_DIR}"
+
   local deb_file="${_PKGNAME}_${PKGVER}_${DEB_ARCH}.deb"
   local src_url=""
   local sha256=""
@@ -73,7 +75,7 @@ main() {
       echo "Error: LOCAL_DEB_PATH not found: ${abs_local}" >&2
       exit 1
     fi
-    src_url="https://tensamin.methanium.net/download/tensamin_${PKGVER}_${PKGARCH}.deb"
+    src_url="https://tensamin.methanium.net/download/client/deb/x64/tensamin_${PKGVER}_${DEB_ARCH}.deb"
     sha256="$(sha256sum "${abs_local}" | awk '{print $1}')"
 
   local depends_str optdepends_str provides_str conflicts_str
