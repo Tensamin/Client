@@ -41,7 +41,7 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: Automated Update
           ssh_keyscan_types: ed25519
-          update_pkgver: true
+          update_pkgver: false
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
