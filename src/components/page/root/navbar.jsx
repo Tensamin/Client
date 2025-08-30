@@ -67,7 +67,7 @@ export function Navbar() {
 
   return (
     <div
-      className="flex-1 flex items-center pt-2"
+      className={`flex-1 flex items-center pt-2 mx-2.5`}
       style={{ WebkitAppRegion: "drag" }}
     >
       {!sidebarRightSide ? (
@@ -250,7 +250,7 @@ function WindowControls({ side }) {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="flex w-auto mx-2 border bg-input/50 rounded-lg"
+          className={`flex w-auto border bg-input/50 rounded-lg ${side === "left" ? "mr-3" : "ml-3"}`}
         >
           {side === "left" ? (
             <>
