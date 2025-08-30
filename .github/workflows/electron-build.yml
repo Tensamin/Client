@@ -28,6 +28,9 @@ jobs:
       - name: Build Electron app for Linux
         run: npm run make
 
+      - name: Create Arch Linux Package
+        run: npm run make:archlinux
+
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -51,7 +54,7 @@ jobs:
         run: npm install
 
       - name: Build Electron app for Windows
-        run: npm run make
+        run: npm run make:windows
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
