@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { v7 } from "uuid";
 
 // Lib Imports
-import { cn, isElectron } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 // Context Imports
 import { usePageContext } from "@/components/context/page";
@@ -238,9 +238,10 @@ export function Navbar() {
 
 function WindowControls({ side }) {
   let { hideWindowControls } = useThemeContext();
+  let { usingElectron } = useUsersContext();
 
   return (
-    isElectron() &&
+    usingElectron &&
     !hideWindowControls && (
       <>
         <motion.div

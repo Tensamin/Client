@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 // Lib Imports
-import { log, getDisplayFromUsername, RETRIES } from "@/lib/utils";
+import { log, getDisplayFromUsername, RETRIES, isElectron } from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
 import ls from "@/lib/localStorageManager";
 
@@ -31,6 +31,11 @@ export function UsersProvider({ children }) {
   let [refetchUser, setRefetchUser] = useState(false);
   let [fetchChats, setFetchChats] = useState(true);
   let [fetchCommunities, setFetchCommunities] = useState(true);
+  let [usingElectron, setUsingElectron] = useState(false);
+
+  useEffect(() => {
+    setUsingElectron(isElectron());
+  }, []);
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -183,6 +188,7 @@ export function UsersProvider({ children }) {
         setFetchCommunities,
         doChatRefresh,
         doCommunityRefresh,
+        usingElectron,
       }}
     >
       {children}

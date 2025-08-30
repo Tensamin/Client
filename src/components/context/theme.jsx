@@ -27,7 +27,7 @@ export function ThemeProvider({ children }) {
     ls.get("theme_sidebar") === "right",
   );
   let [hideWindowControls, setHideWindowControls] = useState(
-    (ls.get("layout_hide_window_controls") || false) === true,
+    ls.get("layout_hide_window_controls") === "true",
   );
   let [customCss, setCustomCss] = useState("");
   // Hold computed CSS for the generated tint/palette so we can merge with custom CSS
@@ -40,7 +40,7 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     if (hideWindowControls) {
-      ls.set("layout_hide_window_controls", true);
+      ls.set("layout_hide_window_controls", "true");
     } else {
       ls.remove("layout_hide_window_controls");
     }

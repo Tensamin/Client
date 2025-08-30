@@ -254,8 +254,10 @@ export function Appearance() {
     setThemeTint,
     themeScheme,
     setThemeScheme,
+    hideWindowControls,
+    setHideWindowControls,
   } = useThemeContext();
-  let { hideWindowControls, setHideWindowControls } = useThemeContext();
+  let { usingElectron } = useUsersContext();
 
   let [draftCustomCss, setDraftCustomCss] = useState(customCss || "");
 
@@ -583,16 +585,18 @@ export function Appearance() {
           <Label htmlFor="sidebar-right-switch">Sidebar Right</Label>
         </div>
 
-        <div className="flex gap-2">
-          <Switch
-            id="hide-window-controls-switch"
-            checked={hideWindowControls}
-            onCheckedChange={setHideWindowControls}
-          />
-          <Label htmlFor="hide-window-controls-switch">
-            Hide Window Controls
-          </Label>
-        </div>
+        {usingElectron && (
+          <div className="flex gap-2">
+            <Switch
+              id="hide-window-controls-switch"
+              checked={hideWindowControls}
+              onCheckedChange={setHideWindowControls}
+            />
+            <Label htmlFor="hide-window-controls-switch">
+              Hide Window Controls
+            </Label>
+          </div>
+        )}
 
         {/* Sidebar Category */}
         <Popover
