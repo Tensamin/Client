@@ -28,21 +28,6 @@ jobs:
       - name: Build Electron app for Linux
         run: npm run make
 
-      - name: Create Arch Linux Package
-        run: npm run make:archlinux
-
-      - name: Publish Arch Linux Package
-        uses: ulises-jeremias/github-actions-aur-publish@v1
-        with:
-          pkgname: tensamin-bin
-          pkgbuild: ./PKGBUILD
-          commit_username: ${{ secrets.AUR_USERNAME }}
-          commit_email: ${{ secrets.AUR_EMAIL }}
-          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Automated Update
-          ssh_keyscan_types: ed25519
-          update_pkgver: false
-
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -122,3 +107,23 @@ jobs:
           files: ./artifacts/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  aur-package:
+    name: Create AUR Package
+    runs-on: self-hosted
+
+    steps:
+      - name: Create Arch Linux Package
+        run: npm run make:archlinux
+
+      - name: Publish Arch Linux Package
+        uses: ulises-jeremias/github-actions-aur-publish@v1
+        with:
+          pkgname: tensamin-bin
+          pkgbuild: ./tensamin-aur/PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Automated Update
+          ssh_keyscan_types: ed25519
+          update_pkgver: false
