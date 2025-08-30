@@ -26,7 +26,7 @@
     "electron": "npm run build && npm run electron-no-build",
     "dev:electron": "NODE_ENV=development electron-forge start",
     "make": "rm -rf dist && npm run build && electron-forge make",
-    "make:windows": "IF EXIST \"dist\" ( rmdir /s /q \"dist\" ) && npm run build && electron-forge make",
+    "make:windows": "pwsh -Command \"Remove-Item -Path './dist' -Recurse -Force -ErrorAction SilentlyContinue\" && npm run build && electron-forge make",
     "make:archlinux": "./src/mkarchpkg.sh"
   },
   "dependencies": {
