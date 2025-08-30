@@ -66,7 +66,6 @@ main() {
   rm -rf "${AUR_DIR}"
 
   local deb_file="${_PKGNAME}_${PKGVER}_${DEB_ARCH}.deb"
-  local src_url=""
   local sha256=""
 
     local abs_local
@@ -75,7 +74,6 @@ main() {
       echo "Error: LOCAL_DEB_PATH not found: ${abs_local}" >&2
       exit 1
     fi
-    src_url="https://tensamin.methanium.net/download/client/deb/x64/tensamin_${PKGVER}_${DEB_ARCH}.deb"
     sha256="$(sha256sum "${abs_local}" | awk '{print $1}')"
 
   local depends_str optdepends_str provides_str conflicts_str
@@ -89,6 +87,8 @@ main() {
 
   rm -rf "${AUR_DIR}"
   mkdir -p "${AUR_DIR}"
+
+  cp "${abs_local}" "${AUR_DIR}/${deb_file}"
 
   cat >"${AUR_DIR}/PKGBUILD" <<EOF
 # Maintainer: Methanium
@@ -104,7 +104,7 @@ optdepends=(${optdepends_str})
 provides=(${provides_str})
 conflicts=(${conflicts_str})
 
-source_${ARCH_PACMAN}=("${deb_file}::${src_url}")
+source_${ARCH_PACMAN}=("${deb_file}")
 sha256sums_${ARCH_PACMAN}=("${sha256}")
 
 package() {
