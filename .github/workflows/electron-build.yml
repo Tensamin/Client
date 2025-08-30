@@ -97,7 +97,7 @@ jobs:
           path: ./artifacts
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@2.3.2
+        uses: softprops/action-gh-release@v2.3.2
         with:
           name: Desktop Apps
           body: Automated Release of Desktop Apps
@@ -110,6 +110,7 @@ jobs:
 
   aur-package:
     name: Create AUR Package
+    needs: release
     runs-on: self-hosted
 
     steps:
