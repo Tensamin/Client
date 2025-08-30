@@ -30,7 +30,6 @@ jobs:
 
       - name: Create Arch Linux Package
         run: npm run make:archlinux
-        run: cd tensamin-aur
 
       - name: Publish Arch Linux Package
         uses: ulises-jeremias/github-actions-aur-publish@v1

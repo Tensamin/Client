@@ -27,7 +27,7 @@
     "dev:electron": "NODE_ENV=development electron-forge start",
     "make": "npm run build && electron-forge make",
     "make:windows": "npm run build && electron-forge make",
-    "make:archlinux": "./src/mkarchpkg.sh"
+    "make:archlinux": "./src/mkarchpkg.sh && cd tensamin-aur"
   },
   "dependencies": {
     "@electron-forge/plugin-fuses": "^7.8.3",
