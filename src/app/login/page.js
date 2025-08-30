@@ -198,7 +198,11 @@ export function LoginForm() {
                     );
                     ls.set("auth_private_key", encrypted_private_key);
                     ls.set("auth_uuid", uuid);
-                    window.location.href = "app://dist/index.html";
+                    let url =
+                      process.env.NODE_ENV === "development"
+                        ? "https://ma-at-home.hackrland.dev"
+                        : "app://dist/index.html";
+                    window.location.href = url;
                   } else {
                     // use Passkey
                     await fetch(endpoint.webauthn_register_options + uuid, {

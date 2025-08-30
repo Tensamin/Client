@@ -35,7 +35,11 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadURL("app://dist/index.html");
+  let url =
+    process.env.NODE_ENV === "development"
+      ? "https://ma-at-home.hackrland.dev"
+      : "app://dist/index.html";
+  mainWindow.loadURL(url);
 
   mainWindow.on("maximize", () => {
     mainWindow?.webContents.send("window-maximized-changed", true);

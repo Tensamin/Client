@@ -255,7 +255,8 @@ export function Appearance() {
     themeScheme,
     setThemeScheme,
   } = useThemeContext();
-  let { setSidebarCategory } = usePageContext();
+  let { hideWindowControls, setHideWindowControls } = useThemeContext();
+
   let [draftCustomCss, setDraftCustomCss] = useState(customCss || "");
 
   let [sidebarCategoryPolicy, setSidebarCategoryPolicy] = useState(
@@ -275,7 +276,6 @@ export function Appearance() {
     ),
   );
 
-  // Drive provider from settings instead of mutating DOM directly
   useEffect(() => {
     if (tmpColor && isHexColor(tmpColor)) {
       setCustomHex(tmpColor);
@@ -331,13 +331,10 @@ export function Appearance() {
     }
   }, [tmpColor, tint, colorScheme, inputValue]);
 
-  // Persistence of tint/scheme is handled by ThemeProvider
-
   useEffect(() => {
     ls.set("layout_sidebar_category_policy", sidebarCategoryPolicy);
   }, [sidebarCategoryPolicy]);
 
-  // Keep draft in sync when applied CSS changes from elsewhere (e.g., reset)
   useEffect(() => {
     setDraftCustomCss(customCss || "");
   }, [customCss]);
@@ -359,7 +356,6 @@ export function Appearance() {
   function submitTmpColorChange(event) {
     event.preventDefault();
     if (isHexColor(tmpColor)) {
-      // No-op: tmpColor already set; provider effect runs
       setCustomHex(tmpColor);
     }
   }
@@ -585,6 +581,17 @@ export function Appearance() {
             onCheckedChange={setSidebarRightSide}
           />
           <Label htmlFor="sidebar-right-switch">Sidebar Right</Label>
+        </div>
+
+        <div className="flex gap-2">
+          <Switch
+            id="hide-window-controls-switch"
+            checked={hideWindowControls}
+            onCheckedChange={setHideWindowControls}
+          />
+          <Label htmlFor="hide-window-controls-switch">
+            Hide Window Controls
+          </Label>
         </div>
 
         {/* Sidebar Category */}

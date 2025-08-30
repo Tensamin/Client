@@ -26,6 +26,9 @@ export function ThemeProvider({ children }) {
   let [sidebarRightSide, setSidebarRightSide] = useState(
     ls.get("theme_sidebar") === "right",
   );
+  let [hideWindowControls, setHideWindowControls] = useState(
+    (ls.get("layout_hide_window_controls") || false) === true,
+  );
   let [customCss, setCustomCss] = useState("");
   // Hold computed CSS for the generated tint/palette so we can merge with custom CSS
   let [paletteCss, setPaletteCss] = useState("");
@@ -34,6 +37,14 @@ export function ThemeProvider({ children }) {
   let [themeScheme, setThemeScheme] = useState(
     ls.get("theme_scheme") || "dark",
   );
+
+  useEffect(() => {
+    if (hideWindowControls) {
+      ls.set("layout_hide_window_controls", true);
+    } else {
+      ls.remove("layout_hide_window_controls");
+    }
+  }, [hideWindowControls]);
 
   // Helper: remove inline CSS custom properties to avoid overriding stylesheet rules
   const clearInlineVars = (vars) => {
@@ -198,6 +209,8 @@ export function ThemeProvider({ children }) {
         setThemeTint,
         themeScheme,
         setThemeScheme,
+        hideWindowControls,
+        setHideWindowControls,
       }}
     >
       {children}

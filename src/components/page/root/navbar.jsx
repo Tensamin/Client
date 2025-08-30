@@ -77,7 +77,9 @@ export function Navbar() {
             open ? "w-[var(--sidebar-width)]" : "w-0",
           )}
         />
-      ) : null}
+      ) : (
+        <WindowControls side="left" />
+      )}
       <motion.div
         className="bg-sidebar flex-1 flex items-center gap-3"
         variants={containerVariants}
@@ -218,67 +220,6 @@ export function Navbar() {
               </Button>
             </motion.div>
           )}
-          {isElectron() && (
-            <>
-              <motion.div
-                layout="position"
-                key="window-close-button"
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-              >
-                <Button
-                  className="w-9 h-9"
-                  variant="outline"
-                  style={{ WebkitAppRegion: "no-drag" }}
-                  onClick={() => {
-                    window.windowControls.minimize();
-                  }}
-                >
-                  <Icon.Minus />
-                </Button>
-              </motion.div>
-              <motion.div
-                layout="position"
-                key="window-close-button"
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-              >
-                <Button
-                  className="w-9 h-9"
-                  variant="outline"
-                  style={{ WebkitAppRegion: "no-drag" }}
-                  onClick={() => {
-                    window.windowControls.toggleMaximize();
-                  }}
-                >
-                  <Icon.Square />
-                </Button>
-              </motion.div>
-              <motion.div
-                layout="position"
-                key="window-close-button"
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-              >
-                <Button
-                  className="w-9 h-9"
-                  variant="outline"
-                  style={{ WebkitAppRegion: "no-drag" }}
-                  onClick={() => {
-                    window.windowControls.close();
-                  }}
-                >
-                  <Icon.X />
-                </Button>
-              </motion.div>
-            </>
-          )}
         </AnimatePresence>
       </motion.div>
       {sidebarRightSide ? (
@@ -288,7 +229,98 @@ export function Navbar() {
             open ? "w-[var(--sidebar-width)]" : "w-0",
           )}
         />
-      ) : null}
+      ) : (
+        <WindowControls side="right" />
+      )}
     </div>
+  );
+}
+
+function WindowControls({ side }) {
+  let { hideWindowControls } = useThemeContext();
+
+  return (
+    isElectron() &&
+    !hideWindowControls && (
+      <>
+        <motion.div
+          layout="position"
+          key="window-controls"
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="flex w-auto mx-2 border bg-input/50 rounded-lg"
+        >
+          {side === "left" ? (
+            <>
+              <Button
+                className="w-9 h-9 scale-90 text-accent-foreground"
+                variant="ghost"
+                style={{ WebkitAppRegion: "no-drag" }}
+                onClick={() => {
+                  window.windowControls.close();
+                }}
+              >
+                <Icon.X strokeWidth={2.7} />
+              </Button>
+              <Button
+                className="w-9 h-9 scale-90 text-accent-foreground"
+                variant="ghost"
+                style={{ WebkitAppRegion: "no-drag" }}
+                onClick={() => {
+                  window.windowControls.toggleMaximize();
+                }}
+              >
+                <Icon.Maximize2 strokeWidth={2.7} />
+              </Button>
+              <Button
+                className="w-9 h-9 scale-90 text-accent-foreground"
+                variant="ghost"
+                style={{ WebkitAppRegion: "no-drag" }}
+                onClick={() => {
+                  window.windowControls.minimize();
+                }}
+              >
+                <Icon.ChevronDown strokeWidth={2.7} />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                className="w-9 h-9 scale-90 text-accent-foreground"
+                variant="ghost"
+                style={{ WebkitAppRegion: "no-drag" }}
+                onClick={() => {
+                  window.windowControls.minimize();
+                }}
+              >
+                <Icon.ChevronDown strokeWidth={2.7} />
+              </Button>
+              <Button
+                className="w-9 h-9 scale-90 text-accent-foreground"
+                variant="ghost"
+                style={{ WebkitAppRegion: "no-drag" }}
+                onClick={() => {
+                  window.windowControls.toggleMaximize();
+                }}
+              >
+                <Icon.Maximize2 strokeWidth={2.7} />
+              </Button>
+              <Button
+                className="w-9 h-9 scale-90 text-accent-foreground"
+                variant="ghost"
+                style={{ WebkitAppRegion: "no-drag" }}
+                onClick={() => {
+                  window.windowControls.close();
+                }}
+              >
+                <Icon.X strokeWidth={2.7} />
+              </Button>
+            </>
+          )}
+        </motion.div>
+      </>
+    )
   );
 }

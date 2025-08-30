@@ -24,7 +24,7 @@
     "build": "npx next telemetry disable && next build",
     "lint": "next lint",
     "electron": "npm run build && npm run electron-no-build",
-    "electron-no-build": "electron-forge start",
+    "dev:electron": "NODE_ENV=development electron-forge start",
     "make": "npm run build && electron-forge make",
     "make:archlinux": "./src/mkarchpkg.sh"
   },
@@ -64,7 +64,6 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "color": "^5.0.0",
-    
     "date-fns": "^4.1.0",
     "electron-squirrel-startup": "^1.0.1",
     "embla-carousel-react": "^8.6.0",
@@ -87,7 +86,6 @@
     "recharts": "^2.15.3",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.5",
-    
     "tailwind-merge": "^3.3.1",
     "use-dencrypt-effect": "^2.0.0",
     "uuid": "^11.1.0",
