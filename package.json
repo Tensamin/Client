@@ -20,8 +20,8 @@
   },
   "main": "./src/main.js",
   "scripts": {
-    "dev": "npx next telemetry disable && next dev -p 9161",
-    "build": "npx next telemetry disable && next build",
+    "dev": "pnpx next telemetry disable && next dev -p 9161",
+    "build": "pnpx next telemetry disable && next build",
     "lint": "next lint",
     "electron": "pnpm run build && pnpm run electron-forge start",
     "dev:electron": "NODE_ENV=development electron-forge start",
@@ -30,7 +30,6 @@
     "make:archlinux": "./src/mkarchpkg.sh"
   },
   "dependencies": {
-    "@electron-forge/plugin-fuses": "^7.8.3",
     "@material/material-color-utilities": "^0.3.0",
     "@noble/curves": "^1.9.7",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -95,8 +94,12 @@
   "devDependencies": {
     "@electron-forge/cli": "^7.8.3",
     "@electron-forge/maker-deb": "^7.8.3",
+    "@electron-forge/maker-flatpak": "^7.8.3",
     "@electron-forge/maker-squirrel": "^7.8.3",
     "@electron-forge/maker-zip": "^7.8.3",
+    "@electron-forge/maker-dmg": "^7.8.3",
+    "@electron-forge/maker-wix": "^7.8.3",
+    "@electron-forge/plugin-fuses": "^7.8.3",
     "@electron-forge/plugin-auto-unpack-natives": "^7.8.3",
     "@electron-forge/plugin-webpack": "^7.8.3",
     "@electron/fuses": "^1.8.0",
