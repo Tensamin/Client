@@ -23,7 +23,7 @@ jobs:
           node-version: "24"
 
       - name: Install pnpm
-        run: npm i -g pnpm
+        run: npm i -g pnpm && pnpm config set node-linker hoisted
 
       - name: Install dependencies
         run: pnpm install
@@ -51,7 +51,7 @@ jobs:
           node-version: "24"
 
       - name: Install pnpm
-        run: npm i -g pnpm
+        run: npm i -g pnpm && pnpm config set node-linker hoisted
 
       - name: Install dependencies
         run: pnpm install
@@ -79,7 +79,7 @@ jobs:
           node-version: "24"
 
       - name: Install pnpm
-        run: npm i -g pnpm
+        run: npm i -g pnpm && pnpm config set node-linker hoisted
 
       - name: Install dependencies
         run: pnpm install
