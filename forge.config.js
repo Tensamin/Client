@@ -38,20 +38,6 @@ module.exports = {
           icon: 'public/icon/icon.png',
         },
       },
-    },
-    {
-      name: '@electron-forge/maker-flatpak',
-      config: {
-        options: {
-          productName: "Tensamin",
-          description: "Super secure messaging app",
-          id: "net.methanium.tensamin",
-          categories: ['Audio', 'Video', 'Network', 'Office', 'Utility'],
-          sdk: 'org.freedesktop.Sdk',
-          command: 'tensamin',
-          icon: 'public/icon/icon.png',
-        }
-      }
     }
   ],
   hooks: {
