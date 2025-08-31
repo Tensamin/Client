@@ -1,13 +1,13 @@
-const { app, protocol, BrowserWindow, ipcMain, net } = require("electron");
-const path = require("path");
-const keytar = require("keytar");
-const { pathToFileURL } = require("url");
+let { app, protocol, BrowserWindow, ipcMain, net } = require("electron");
+let path = require("path");
+let keytar = require("keytar");
+let { pathToFileURL } = require("url");
 
 if (require("electron-squirrel-startup")) {
   app.quit();
 }
 
-const ROOT = path.resolve(__dirname, "..", "dist");
+let ROOT = path.resolve(__dirname, "..", "dist");
 
 let mainWindow = null;
 
@@ -97,14 +97,14 @@ ipcMain.handle("window-is-maximized", () => {
 
 app.whenReady().then(() => {
   protocol.handle("app", (request) => {
-    const url = new URL(request.url);
+    let url = new URL(request.url);
     if (url.hostname && url.hostname !== "dist") {
       return new Response("Not found", { status: 404 });
     }
 
-    const rel = decodeURIComponent(url.pathname);
-    const cleaned = rel.replace(/^\/+/, "");
-    const fsPath = path.resolve(ROOT, cleaned);
+    let rel = decodeURIComponent(url.pathname);
+    let cleaned = rel.replace(/^\/+/, "");
+    let fsPath = path.resolve(ROOT, cleaned);
 
     if (!fsPath.startsWith(ROOT + path.sep) && fsPath !== ROOT) {
       return new Response("Forbidden", { status: 403 });
