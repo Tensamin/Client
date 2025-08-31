@@ -11,7 +11,7 @@ on:
 jobs:
   build-linux:
     name: Build for Linux
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - name: Checkout repository
@@ -36,7 +36,7 @@ jobs:
 
   build-windows:
     name: Build for Windows
-    runs-on: self-hosted
+    runs-on: [self-hosted, windows, x64]
 
     steps:
       - name: Checkout repository
@@ -87,7 +87,7 @@ jobs:
   release:
     name: "Create Release"
     needs: [build-linux, build-windows, build-macos]
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, x64]
     permissions:
       contents: write
     steps:
@@ -111,7 +111,7 @@ jobs:
   aur-package:
     name: Create AUR Package
     needs: release
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - name: Create Arch Linux Package
