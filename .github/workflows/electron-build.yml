@@ -39,7 +39,7 @@ jobs:
 
   build-windows:
     name: Build for Windows
-    runs-on: [self-hosted, windows, x64]
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
@@ -117,15 +117,15 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.3.2
         with:
-          name: Desktop Apps ${{ env.PACKAGE_VERSION }}
+          name: ${{ env.PACKAGE_VERSION }} | Desktop Apps
           body: Automated release of desktop apps for version ${{ env.PACKAGE_VERSION }}
-          tag_name: desktop-apps-${{ env.PACKAGE_VERSION }}
+          tag_name: v${{ env.PACKAGE_VERSION }}-desktop-apps
           draft: false
           prerelease: false
           files: |
-            ./artifacts/tensamin-linux/out/make/deb/x64/tensamin_${{ env.PACKAGE_VERSION }}_amd64.deb:tensamin-linux-x64-${{ env.PACKAGE_VERSION }}.deb
-            ./artifacts/tensamin-windows/out/make/squirrel.windows/squirrel/Tensamin Setup ${{ env.PACKAGE_VERSION }}.exe:tensamin-windows-x64-${{ env.PACKAGE_VERSION }}.exe
-            ./artifacts/tensamin-macos/out/make/zip/darwin/arm64/Tensamin-darwin-arm64-${{ env.PACKAGE_VERSION }}.zip:tensamin-macos-arm64-${{ env.PACKAGE_VERSION }}.zip
+            ./artifacts/tensamin-linux/deb/x64/tensamin_${{ env.PACKAGE_VERSION }}_amd64.deb:tensamin-linux-x64-${{ env.PACKAGE_VERSION }}.deb
+            ./artifacts/tensamin-windows/squirrel.windows/squirrel/Tensamin Setup ${{ env.PACKAGE_VERSION }}.exe:tensamin-windows-x64-${{ env.PACKAGE_VERSION }}.exe
+            ./artifacts/tensamin-macos/zip/darwin/arm64/Tensamin-darwin-arm64-${{ env.PACKAGE_VERSION }}.zip:tensamin-macos-arm64-${{ env.PACKAGE_VERSION }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
