@@ -84,6 +84,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install && pnpm install macos-alias ds-store appdmg electron-installer-dmg
 
+      - name: Rebuild
+        run: npm rebuild
+
       - name: Build Electron app for MacOS
         run: pnpm run make
 
