@@ -91,6 +91,15 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Get version from repository
+        uses: actions/checkout@v4
+
+      - name: Set version from repository in environment
+        id: get_version
+        run: |
+          PACKAGE_VERSION=$(jq -r '.version' package.json)
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
+
       - name: Download all build artifacts
         uses: actions/download-artifact@v5
         with:
@@ -99,12 +108,15 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.3.2
         with:
-          name: Desktop Apps
-          body: Automated Release of Desktop Apps
-          tag_name: apps-${{ github.ref_name }}
+          name: Desktop Apps v${{ env.PACKAGE_VERSION }}
+          body: Automated release of desktop apps for version ${{ env.PACKAGE_VERSION }}
+          tag_name: desktop-apps-v${{ env.PACKAGE_VERSION }}
           draft: false
           prerelease: false
-          files: ./artifacts/**
+          files: |
+            ./artifacts/tensamin-linux/out/make/deb/x64/tensamin_${{ env.PACKAGE_VERSION }}_amd64.deb:tensamin-linux-x64-${{ env.PACKAGE_VERSION }}.deb
+            ./artifacts/tensamin-windows/out/make/squirrel.windows/squirrel/Tensamin Setup ${{ env.PACKAGE_VERSION }}.exe:tensamin-windows-x64-${{ env.PACKAGE_VERSION }}.exe
+            ./artifacts/tensamin-macos/out/make/zip/darwin/arm64/Tensamin-darwin-arm64-${{ env.PACKAGE_VERSION }}.zip:tensamin-macos-arm64-${{ env.PACKAGE_VERSION }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
