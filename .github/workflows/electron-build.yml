@@ -26,7 +26,7 @@ jobs:
         run: npm i -g pnpm && pnpm config set node-linker hoisted
 
       - name: Install dependencies
-        run: rm -rf node_modules pnpm-lock.yaml && pnpm install --shamefully-hoist
+        run: pnpm install
 
       - name: Build Electron app for Linux
         run: pnpm run make
@@ -54,7 +54,7 @@ jobs:
         run: npm i -g pnpm; pnpm config set node-linker hoisted
 
       - name: Install dependencies
-        run: Remove-Item -Recurse -Force node_modules, pnpm-lock.yaml; pnpm install --shamefully-hoist
+        run: pnpm install
 
       - name: Build Electron app for Windows
         run: pnpm run make:windows
@@ -82,7 +82,7 @@ jobs:
         run: npm i -g pnpm && pnpm config set node-linker hoisted
 
       - name: Install dependencies
-        run: rm -rf node_modules pnpm-lock.yaml && pnpm install --shamefully-hoist
+        run: pnpm install
 
       - name: Build Electron app for MacOS
         run: pnpm run make
