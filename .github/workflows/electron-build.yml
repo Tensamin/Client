@@ -66,8 +66,9 @@ jobs:
           path: out/make/
 
   build-macos:
-    name: Build for macOS
+    name: Build for MacOS
     runs-on: macos-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -80,21 +81,11 @@ jobs:
       - name: Install pnpm
         run: npm i -g pnpm && pnpm config set node-linker hoisted
 
-      - name: Install dependencies (build native from source)
-        env:
-          npm_config_build_from_source: true
+      - name: Install dependencies
         run: pnpm install
 
-      - name: Rebuild native modules for Electron
-        run: |
-          ELECTRON_VER=$(node -p "require('./package.json').devDependencies?.electron || require('./package.json').dependencies?.electron")
-          HOST_ARCH=$(node -p "process.arch === 'arm64' ? 'arm64' : 'x64'")
-          echo "ELECTRON_VERSION=$ELECTRON_VER" >> $GITHUB_ENV
-          echo "BUILD_ARCH=$HOST_ARCH" >> $GITHUB_ENV
-          pnpm exec electron-rebuild --force --arch=$HOST_ARCH --version=$ELECTRON_VER
-
       - name: Build Electron app for MacOS
-        run: pnpm exec electron-forge make --platform=darwin --arch=${{ env.BUILD_ARCH }}
+        run: pnpm run make
 
       - name: Upload MacOS artifacts
         uses: actions/upload-artifact@v4
