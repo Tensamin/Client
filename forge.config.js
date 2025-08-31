@@ -21,7 +21,7 @@ module.exports = {
       config: {
         language: 1033,
         manufacturer: 'Methanium',
-        icon: 'public/icon/icon.png'
+        icon: 'public/icon/icon.ico'
       }
     },
     {
@@ -43,8 +43,13 @@ module.exports = {
       name: '@electron-forge/maker-flatpak',
       config: {
         options: {
+          productName: "Tensamin",
+          description: "Super secure messaging app",
+          id: "net.methanium.tensamin",
           categories: ['Audio', 'Video', 'Network', 'Office', 'Utility'],
-          mimeType: ['video/h264']
+          sdk: 'org.freedesktop.Sdk',
+          command: 'tensamin',
+          icon: 'public/icon/icon.png',
         }
       }
     }
