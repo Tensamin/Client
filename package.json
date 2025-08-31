@@ -18,7 +18,6 @@
     "email": "admin@methanium.net",
     "url": "https://tensamin.methanium.net"
   },
-  "type": "commonjs",
   "main": "./src/main.js",
   "scripts": {
     "dev": "pnpx next telemetry disable && next dev -p 9161",
