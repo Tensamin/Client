@@ -82,7 +82,7 @@ jobs:
         run: npm i -g pnpm && pnpm config set node-linker hoisted
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install && pnpm install macos-alias ds-store appdmg electron-installer-dmg
 
       - name: Build Electron app for MacOS
         run: pnpm run make
