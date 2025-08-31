@@ -125,10 +125,7 @@ jobs:
           tag_name: v${{ env.PACKAGE_VERSION }}-desktop-apps
           draft: false
           prerelease: false
-          files: |
-            ./artifacts/tensamin-linux/deb/x64/tensamin_${{ env.PACKAGE_VERSION }}_amd64.deb:tensamin-linux-x64-${{ env.PACKAGE_VERSION }}.deb
-            ./artifacts/tensamin-windows/squirrel.windows/squirrel/Tensamin Setup ${{ env.PACKAGE_VERSION }}.exe:tensamin-windows-x64-${{ env.PACKAGE_VERSION }}.exe
-            ./artifacts/tensamin-macos/zip/darwin/arm64/Tensamin-darwin-arm64-${{ env.PACKAGE_VERSION }}.zip:tensamin-macos-arm64-${{ env.PACKAGE_VERSION }}.zip
+          files: ./artifacts/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

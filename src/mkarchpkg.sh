@@ -79,7 +79,7 @@ main() {
   mkdir -p "${AUR_DIR}"
 
   local release_filename="tensamin-linux-x64-${PKGVER}.deb"
-  local release_url="https://github.com/Tensamin/Frontend/releases/download/desktop-apps-${PKGVER}/${release_filename}"
+  local release_url="https://github.com/Tensamin/Frontend/releases/download/v${PKGVER}-desktop-apps/${release_filename}"
   local dest_file="${AUR_DIR}/${release_filename}"
 
   echo "Downloading ${release_url} -> ${dest_file}"
