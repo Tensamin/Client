@@ -32,11 +32,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tensamin-linux
-          path: out/
+          path: out/make/
 
   build-windows:
     name: Build for Windows
-    runs-on: windows-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
@@ -57,7 +57,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tensamin-windows
-          path: out/
+          path: out/make/
 
   build-macos:
     name: Build for macOS
@@ -82,7 +82,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tensamin-macos
-          path: out/
+          path: out/make/
 
   release:
     name: "Create Release"
