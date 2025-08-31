@@ -132,7 +132,7 @@ jobs:
   aur-package:
     name: Create AUR Package
     needs: release
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Create Arch Linux Package
