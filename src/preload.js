@@ -13,7 +13,6 @@ contextBridge.exposeInMainWorld("windowControls", {
   minimize: () => ipcRenderer.send("window-minimize"),
   close: () => ipcRenderer.send("window-close"),
   toggleMaximize: () => ipcRenderer.send("window-toggle-maximize"),
-  // listen to maximize state changes; returns an unsubscribe function
   onMaximize: (cb) => {
     const listener = (e, isMaximized) => cb(isMaximized);
     ipcRenderer.on("window-maximized-changed", listener);
