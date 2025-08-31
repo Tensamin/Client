@@ -157,6 +157,9 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Install packages
+        run: sudo apt update && sudo apt install bsdtar
+
       - name: Install pnpm
         run: npm i -g pnpm && pnpm config set node-linker hoisted
 
