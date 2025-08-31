@@ -104,7 +104,7 @@ optdepends=(${optdepends_str})
 provides=(${provides_str})
 conflicts=(${conflicts_str})
 
-source_${ARCH_PACMAN}=("${deb_file}")
+source_${ARCH_PACMAN}=("https://github.com/Tensamin/Frontend/releases/download/desktop-apps-${PKGVER}/tensamin-linux-x64-${PKGVER}.deb")
 sha256sums_${ARCH_PACMAN}=("${sha256}")
 
 package() {

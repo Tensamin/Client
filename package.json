@@ -23,10 +23,10 @@
     "dev": "npx next telemetry disable && next dev -p 9161",
     "build": "npx next telemetry disable && next build",
     "lint": "next lint",
-    "electron": "npm run build && npm run electron-forge start",
+    "electron": "pnpm run build && pnpm run electron-forge start",
     "dev:electron": "NODE_ENV=development electron-forge start",
-    "make": "npm run build && electron-forge make",
-    "make:windows": "npm run build && electron-forge make",
+    "make": "pnpm run build && electron-forge make",
+    "make:windows": "pnpm run build && electron-forge make",
     "make:archlinux": "./src/mkarchpkg.sh"
   },
   "dependencies": {

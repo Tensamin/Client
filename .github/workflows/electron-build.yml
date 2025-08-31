@@ -23,10 +23,10 @@ jobs:
           node-version: "24"
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Build Electron app for Linux
-        run: npm run make
+        run: pnpm run make
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
@@ -48,10 +48,10 @@ jobs:
           node-version: "24"
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Build Electron app for Windows
-        run: npm run make:windows
+        run: pnpm run make:windows
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
@@ -73,10 +73,10 @@ jobs:
           node-version: "24"
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Build Electron app for macOS
-        run: npm run make
+        run: pnpm run make
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -108,9 +108,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.3.2
         with:
-          name: Desktop Apps v${{ env.PACKAGE_VERSION }}
+          name: Desktop Apps ${{ env.PACKAGE_VERSION }}
           body: Automated release of desktop apps for version ${{ env.PACKAGE_VERSION }}
-          tag_name: desktop-apps-v${{ env.PACKAGE_VERSION }}
+          tag_name: desktop-apps-${{ env.PACKAGE_VERSION }}
           draft: false
           prerelease: false
           files: |
@@ -127,7 +127,7 @@ jobs:
 
     steps:
       - name: Create Arch Linux Package
-        run: npm run make:archlinux
+        run: pnpm run make:archlinux
 
       - name: Publish Arch Linux Package
         uses: ulises-jeremias/github-actions-aur-publish@v1

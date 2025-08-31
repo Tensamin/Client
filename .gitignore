@@ -4,6 +4,6 @@
 /release/
 /work/
 /dist/
-package-lock.json
+pnpm-lock.yaml
 tensamin.pkg.tar.zst
 tensamin-aur
