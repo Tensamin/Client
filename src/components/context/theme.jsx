@@ -44,30 +44,30 @@ export function ThemeProvider({ children }) {
       } else {
         ls.remove("layout_hide_window_controls");
       }
-    } catch {}
+    } catch { }
   }, [hideWindowControls]);
 
-  const clearInlineVars = (vars) => {
+  let clearInlineVars = (vars) => {
     try {
-      const roots = [document.documentElement, document.body].filter(Boolean);
+      let roots = [document.documentElement, document.body].filter(Boolean);
       if (Array.isArray(vars) && vars.length > 0) {
-        for (const el of roots) {
-          for (const name of vars) {
+        for (let el of roots) {
+          for (let name of vars) {
             el.style.removeProperty(name);
           }
         }
       } else {
-        for (const el of roots) {
-          const style = el.style;
-          const names = [];
+        for (let el of roots) {
+          let style = el.style;
+          let names = [];
           for (let i = 0; i < style.length; i++) {
-            const prop = style.item(i);
+            let prop = style.item(i);
             if (prop && prop.startsWith("--")) names.push(prop);
           }
-          for (const name of names) el.style.removeProperty(name);
+          for (let name of names) el.style.removeProperty(name);
         }
       }
-    } catch {}
+    } catch { }
   };
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export function ThemeProvider({ children }) {
         document.head.appendChild(styleEl);
       }
 
-      const merged = [paletteCss, customCss].filter(Boolean).join("\n\n");
+      let merged = [paletteCss, customCss].filter(Boolean).join("\n\n");
       styleEl.textContent = merged;
 
       if (
@@ -95,7 +95,7 @@ export function ThemeProvider({ children }) {
       } else {
         ls.remove("custom_css");
       }
-    } catch {}
+    } catch { }
   }, [customCss, paletteCss, mounted]);
 
   // Sidebar
@@ -106,7 +106,7 @@ export function ThemeProvider({ children }) {
       } else {
         ls.set("theme_sidebar", "left");
       }
-    } catch {}
+    } catch { }
   }, [sidebarRightSide]);
 
   // Initial load
@@ -114,12 +114,12 @@ export function ThemeProvider({ children }) {
     setMounted(true);
 
     try {
-      const storedHex = ls.get("theme_hex");
+      let storedHex = ls.get("theme_hex");
       if (storedHex) setCustomHex(storedHex);
 
-      const storedCss = ls.get("custom_css");
+      let storedCss = ls.get("custom_css");
       if (typeof storedCss === "string") setCustomCss(storedCss);
-    } catch {}
+    } catch { }
   }, []);
 
   // Tint
@@ -127,18 +127,18 @@ export function ThemeProvider({ children }) {
     if (!mounted) return;
     try {
       ls.set("theme_tint", themeTint);
-    } catch {}
+    } catch { }
   }, [themeTint, mounted]);
 
   useEffect(() => {
     if (!mounted) return;
     try {
       ls.set("theme_scheme", themeScheme);
-      const current = themeScheme === "dark" ? "dark" : "light";
-      const other = themeScheme === "dark" ? "light" : "dark";
+      let current = themeScheme === "dark" ? "dark" : "light";
+      let other = themeScheme === "dark" ? "light" : "dark";
       document.body.classList.add(current);
       document.body.classList.remove(other);
-    } catch {}
+    } catch { }
   }, [themeScheme, mounted]);
 
   useEffect(() => {
@@ -146,7 +146,7 @@ export function ThemeProvider({ children }) {
 
     try {
       document.body.classList.add(themeScheme || "dark");
-    } catch {}
+    } catch { }
 
     if (customHex) {
       try {
@@ -164,7 +164,7 @@ export function ThemeProvider({ children }) {
             let control = null;
             try {
               control = JSON.parse(ls.get("theme_control"));
-            } catch {}
+            } catch { }
             palette = generateTintPalette(customHex, control, themeScheme);
             break;
           }
@@ -174,17 +174,17 @@ export function ThemeProvider({ children }) {
             break;
         }
 
-        const paletteVarNames = Object.keys(palette || {});
+        let paletteVarNames = Object.keys(palette || {});
         clearInlineVars(paletteVarNames);
 
-        const varLines = Object.entries(palette)
+        let varLines = Object.entries(palette)
           .map(([cssVar, value]) => `${cssVar}: ${value};`)
           .join("\n");
 
-        const current = themeScheme === "dark" ? "dark" : "light";
-        const other = current === "dark" ? "light" : "dark";
+        let current = themeScheme === "dark" ? "dark" : "light";
+        let other = current === "dark" ? "light" : "dark";
 
-        const css = [
+        let css = [
           `:root, html, body {\n${varLines}\n}`,
           `html.${current}, body.${current} {\n${varLines}\n}`,
           `html.${other}, body.${other} {\n${varLines}\n}`,
@@ -197,7 +197,7 @@ export function ThemeProvider({ children }) {
     } else {
       try {
         ls.remove("theme_hex");
-      } catch {}
+      } catch { }
       clearInlineVars();
       setPaletteCss("");
     }

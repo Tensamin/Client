@@ -92,7 +92,7 @@ export function MessageProvider({ children }) {
     }
   }, []);
 
-  const playMessageSound = useCallback(() => {
+  let playMessageSound = useCallback(() => {
     try {
       let audio = notificationSoundRef.current;
       if (!audio) {
@@ -101,7 +101,7 @@ export function MessageProvider({ children }) {
         notificationSoundRef.current = audio;
       }
       audio.currentTime = 0;
-      audio.play()?.catch(() => {});
+      audio.play()?.catch(() => { });
     } catch (_) {
       // no-op
     }
@@ -199,7 +199,7 @@ export function MessageProvider({ children }) {
       if (
         stringErr === "OperationError" ||
         stringErr ===
-          "OperationError: The operation failed for an operation-specific reason"
+        "OperationError: The operation failed for an operation-specific reason"
       ) {
         setFailedMessages((prev) => prev + 1);
       } else {
@@ -216,7 +216,7 @@ export function MessageProvider({ children }) {
         if (
           lastGroup.sender === newMessageData.sender &&
           removeSecondsFromUnixTimestamp(lastGroup.id) ===
-            removeSecondsFromUnixTimestamp(newMessageData.id)
+          removeSecondsFromUnixTimestamp(newMessageData.id)
         ) {
           let newLastGroup = new Message({
             id: lastGroup.id,
@@ -240,7 +240,7 @@ export function MessageProvider({ children }) {
       if (
         lastGroup.sender === newMessageData.sender &&
         removeSecondsFromUnixTimestamp(lastGroup.id) ===
-          removeSecondsFromUnixTimestamp(newMessageData.id)
+        removeSecondsFromUnixTimestamp(newMessageData.id)
       ) {
         let newLastGroup = new Message({
           id: lastGroup.id,
@@ -307,7 +307,7 @@ export function MessageProvider({ children }) {
                 if (
                   stringErr === "OperationError" ||
                   stringErr ===
-                    "OperationError: The operation failed for an operation-specific reason"
+                  "OperationError: The operation failed for an operation-specific reason"
                 ) {
                   setFailedMessages((prev) => prev + 1);
                 } else {
@@ -394,7 +394,7 @@ export function MessageProvider({ children }) {
                 if (
                   stringErr === "OperationError" ||
                   stringErr ===
-                    "OperationError: The operation failed for an operation-specific reason"
+                  "OperationError: The operation failed for an operation-specific reason"
                 ) {
                   setFailedMessages((prev) => prev + 1);
                 } else {

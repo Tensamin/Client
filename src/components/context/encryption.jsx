@@ -10,20 +10,19 @@ import {
   useCallback,
 } from "react";
 import { v7 as uuidv7 } from "uuid";
-import { x448 } from "@noble/curves/ed448";
 
 // Lib Imports
 import { log } from "@/lib/utils";
 
 // Components
-import { Loading } from "@/components/loading/content";
+import { Loading } from "@/components/loading";
 
 // Main
-const EncryptionContext = createContext();
+let EncryptionContext = createContext();
 
 // Use Context Function
 export function useEncryptionContext() {
-  const context = useContext(EncryptionContext);
+  let context = useContext(EncryptionContext);
   if (context === undefined) {
     throw new Error(
       "useEncryptionContext must be used within a EncryptionProvider",
@@ -34,19 +33,19 @@ export function useEncryptionContext() {
 
 // Provider
 export function EncryptionProvider({ children }) {
-  const [worker, setWorker] = useState(null);
-  const [unsupported, setUnsupported] = useState(false);
-  const requestResolvers = useRef(new Map());
+  let [worker, setWorker] = useState(null);
+  let [unsupported, setUnsupported] = useState(false);
+  let requestResolvers = useRef(new Map());
 
   useEffect(() => {
     if (window.Worker) {
-      const encryptionWorker = new Worker("/encryption.js");
+      let encryptionWorker = new Worker("/encryption.js");
 
       encryptionWorker.onmessage = (event) => {
-        const { result, error, id } = event.data;
+        let { result, error, id } = event.data;
 
         if (requestResolvers.current.has(id)) {
-          const { resolve, reject } = requestResolvers.current.get(id);
+          let { resolve, reject } = requestResolvers.current.get(id);
 
           if (error) {
             reject(new Error(error));
@@ -77,16 +76,16 @@ export function EncryptionProvider({ children }) {
     }
   }, []);
 
-  const sendToWorker = useCallback(
+  let sendToWorker = useCallback(
     (data) => {
       if (!worker) {
         return Promise.reject(new Error("Worker is not initialized."));
       }
 
       return new Promise((resolve, reject) => {
-        const id = uuidv7();
+        let id = uuidv7();
 
-        const timeoutId = setTimeout(() => {
+        let timeoutId = setTimeout(() => {
           if (requestResolvers.current.has(id)) {
             reject(new Error("Request to encryption worker timed out."));
             requestResolvers.current.delete(id);
@@ -113,7 +112,7 @@ export function EncryptionProvider({ children }) {
     [worker],
   );
 
-  const encrypt_base64_using_aes = useCallback(
+  let encrypt_base64_using_aes = useCallback(
     async (data, key) => {
       return await sendToWorker({
         type: "encrypt_base64_using_aes",
@@ -124,7 +123,7 @@ export function EncryptionProvider({ children }) {
     [sendToWorker],
   );
 
-  const decrypt_base64_using_aes = useCallback(
+  let decrypt_base64_using_aes = useCallback(
     async (data, key) => {
       return await sendToWorker({
         type: "decrypt_base64_using_aes",
@@ -151,8 +150,8 @@ export function EncryptionProvider({ children }) {
 
     function b64ToBytes(s) {
       if (haveAtobBtoa()) {
-        const bin = atob(s);
-        const out = new Uint8Array(bin.length);
+        let bin = atob(s);
+        let out = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
         return out;
       }
@@ -161,7 +160,7 @@ export function EncryptionProvider({ children }) {
     }
 
     function b64uToBytes(s) {
-      const b64 =
+      let b64 =
         s.replace(/-/g, "+").replace(/_/g, "/") +
         "===".slice((s.length + 3) % 4);
       return b64ToBytes(b64);
@@ -187,27 +186,27 @@ export function EncryptionProvider({ children }) {
 
     // --- tiny DER helpers (only what's needed for X448 SPKI/PKCS#8) ---
     function readTLV(view, off) {
-      const tag = view[off++];
+      let tag = view[off++];
       if (off >= view.length) throw new Error("DER: truncated");
       let len = view[off++];
       if (len & 0x80) {
-        const n = len & 0x7f;
+        let n = len & 0x7f;
         if (n === 0) throw new Error("DER: indefinite length not supported");
         if (off + n > view.length) throw new Error("DER: truncated length");
         len = 0;
         for (let i = 0; i < n; i++) len = (len << 8) | view[off++];
       }
-      const start = off;
-      const end = off + len;
+      let start = off;
+      let end = off + len;
       if (end > view.length) throw new Error("DER: content truncated");
       return { tag, len, start, end };
     }
 
     function ensureOidX448(view, start) {
       // AlgorithmIdentifier ::= SEQUENCE { algorithm OBJECT IDENTIFIER, ... }
-      const oid = readTLV(view, start);
+      let oid = readTLV(view, start);
       if (oid.tag !== 0x06) return false;
-      const len = oid.end - oid.start;
+      let len = oid.end - oid.start;
       if (len !== 3) return false;
       // 1.3.101.111 => 06 03 2B 65 6F
       return (
@@ -218,48 +217,48 @@ export function EncryptionProvider({ children }) {
     }
 
     function extractRawX448FromSPKI(spkiBytes) {
-      const view = spkiBytes;
-      const outer = readTLV(view, 0);
+      let view = spkiBytes;
+      let outer = readTLV(view, 0);
       if (outer.tag !== 0x30) throw new Error("SPKI: expected SEQUENCE");
-      const alg = readTLV(view, outer.start);
+      let alg = readTLV(view, outer.start);
       if (alg.tag !== 0x30)
         throw new Error("SPKI: expected AlgorithmIdentifier");
       if (!ensureOidX448(view, alg.start)) throw new Error("SPKI: not X448");
-      const bitstr = readTLV(view, alg.end);
+      let bitstr = readTLV(view, alg.end);
       if (bitstr.tag !== 0x03) throw new Error("SPKI: expected BIT STRING");
-      const unusedBits = view[bitstr.start];
+      let unusedBits = view[bitstr.start];
       if (unusedBits !== 0x00) throw new Error("SPKI: unexpected unused bits");
-      const raw = view.subarray(bitstr.start + 1, bitstr.end);
+      let raw = view.subarray(bitstr.start + 1, bitstr.end);
       if (raw.length !== 56)
         throw new Error("SPKI: X448 public key must be 56 bytes");
       return raw;
     }
 
     function extractRawX448FromPKCS8(pkcs8Bytes) {
-      const view = pkcs8Bytes;
-      const outer = readTLV(view, 0);
+      let view = pkcs8Bytes;
+      let outer = readTLV(view, 0);
       if (outer.tag !== 0x30) throw new Error("PKCS8: expected SEQUENCE");
       let off = outer.start;
 
-      const version = readTLV(view, off);
+      let version = readTLV(view, off);
       if (version.tag !== 0x02)
         throw new Error("PKCS8: expected version INTEGER");
       off = version.end;
 
-      const alg = readTLV(view, off);
+      let alg = readTLV(view, off);
       if (alg.tag !== 0x30)
         throw new Error("PKCS8: expected AlgorithmIdentifier");
       if (!ensureOidX448(view, alg.start)) throw new Error("PKCS8: not X448");
       off = alg.end;
 
-      const priv = readTLV(view, off);
+      let priv = readTLV(view, off);
       if (priv.tag !== 0x04)
         throw new Error("PKCS8: expected privateKey OCTET STRING");
       let raw = view.subarray(priv.start, priv.end);
 
       // Some encoders nest another OCTET STRING inside
       if (raw[0] === 0x04) {
-        const inner = readTLV(raw, 0);
+        let inner = readTLV(raw, 0);
         if (inner.tag === 0x04) {
           raw = raw.subarray(inner.start, inner.end);
         }
@@ -273,10 +272,10 @@ export function EncryptionProvider({ children }) {
       if (!jwk || jwk.kty !== "OKP" || jwk.crv !== "X448") {
         throw new Error(`${label}: expected OKP JWK with crv "X448"`);
       }
-      const out = { ...jwk };
+      let out = { ...jwk };
 
       if (out.x) {
-        const xBytes = decodeBase64Auto(out.x);
+        let xBytes = decodeBase64Auto(out.x);
         let rawX;
         try {
           rawX = extractRawX448FromSPKI(xBytes);
@@ -292,7 +291,7 @@ export function EncryptionProvider({ children }) {
       }
 
       if (out.d) {
-        const dBytes = decodeBase64Auto(out.d);
+        let dBytes = decodeBase64Auto(out.d);
         let rawD;
         try {
           rawD = extractRawX448FromPKCS8(dBytes);
@@ -317,24 +316,24 @@ export function EncryptionProvider({ children }) {
       try {
         // Node.js fallback
         // eslint-disable-next-line no-undef
-        const nodeCrypto = require("crypto");
+        let nodeCrypto = require("crypto");
         if (nodeCrypto?.webcrypto?.subtle) return nodeCrypto.webcrypto.subtle;
-      } catch {}
+      } catch { }
       return undefined;
     }
 
     async function hkdfAesGcmFromShared(sharedSecret, infoStr) {
-      const subtle = getSubtle();
+      let subtle = getSubtle();
       if (!subtle) throw new Error("WebCrypto subtle not available");
-      const info = new TextEncoder().encode(infoStr);
-      const baseKey = await subtle.importKey(
+      let info = new TextEncoder().encode(infoStr);
+      let baseKey = await subtle.importKey(
         "raw",
         sharedSecret,
         "HKDF",
         false,
         ["deriveKey"],
       );
-      const aeadKey = await subtle.deriveKey(
+      let aeadKey = await subtle.deriveKey(
         {
           name: "HKDF",
           hash: "SHA-256",
@@ -350,8 +349,8 @@ export function EncryptionProvider({ children }) {
     }
 
     // --- normalize inputs ---
-    const myJwk = normalizeOkpX448Jwk(own_jwk, "own_jwk");
-    const peerJwk = normalizeOkpX448Jwk(other_jwk, "other_jwk");
+    let myJwk = normalizeOkpX448Jwk(own_jwk, "own_jwk");
+    let peerJwk = normalizeOkpX448Jwk(other_jwk, "other_jwk");
 
     if (!myJwk.d || !myJwk.x) {
       throw new Error(
@@ -362,34 +361,34 @@ export function EncryptionProvider({ children }) {
       throw new Error('other_jwk must contain "x" (public)');
     }
 
-    const subtle = getSubtle();
-    const infoStr = `ECDH-X448-AES-GCM-v1|my=${myJwk.x}|peer=${peerJwk.x}`;
+    let subtle = getSubtle();
+    let infoStr = `ECDH-X448-AES-GCM-v1|my=${myJwk.x}|peer=${peerJwk.x}`;
 
     // --- try native WebCrypto first (best-case) ---
     if (subtle) {
       // Try ECDH with namedCurve first (spec way)
       try {
-        const myPriv = await subtle.importKey(
+        let myPriv = await subtle.importKey(
           "jwk",
           myJwk,
           { name: "ECDH", namedCurve: "X448" },
           false,
           ["deriveBits"],
         );
-        const peerPub = await subtle.importKey(
+        let peerPub = await subtle.importKey(
           "jwk",
           peerJwk,
           { name: "ECDH", namedCurve: "X448" },
           false,
           [],
         );
-        const sharedBits = await subtle.deriveBits(
+        let sharedBits = await subtle.deriveBits(
           { name: "ECDH", public: peerPub },
           myPriv,
           448,
         );
-        const sharedSecret = new Uint8Array(sharedBits);
-        const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
+        let sharedSecret = new Uint8Array(sharedBits);
+        let aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
         return {
           aeadKey,
           sharedSecret,
@@ -402,27 +401,27 @@ export function EncryptionProvider({ children }) {
 
       // Some engines might expose "X448" as the algorithm name directly
       try {
-        const myPriv = await subtle.importKey(
+        let myPriv = await subtle.importKey(
           "jwk",
           myJwk,
           { name: "X448" },
           false,
           ["deriveBits"],
         );
-        const peerPub = await subtle.importKey(
+        let peerPub = await subtle.importKey(
           "jwk",
           peerJwk,
           { name: "X448" },
           false,
           [],
         );
-        const sharedBits = await subtle.deriveBits(
+        let sharedBits = await subtle.deriveBits(
           { name: "X448", public: peerPub },
           myPriv,
           448,
         );
-        const sharedSecret = new Uint8Array(sharedBits);
-        const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
+        let sharedSecret = new Uint8Array(sharedBits);
+        let aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
         return {
           aeadKey,
           sharedSecret,
@@ -435,20 +434,20 @@ export function EncryptionProvider({ children }) {
     }
 
     // --- fallback: pure JS x448 via @noble/curves ---
-    const { x: xMyB64u, d: dMyB64u } = myJwk;
-    const { x: xPeerB64u } = peerJwk;
+    let { x: xMyB64u, d: dMyB64u } = myJwk;
+    let { x: xPeerB64u } = peerJwk;
 
-    const dRaw = b64uToBytes(dMyB64u);
-    const xRawPeer = b64uToBytes(xPeerB64u);
+    let dRaw = b64uToBytes(dMyB64u);
+    let xRawPeer = b64uToBytes(xPeerB64u);
     if (dRaw.length !== 56 || xRawPeer.length !== 56) {
       throw new Error("Invalid X448 key lengths after normalization");
     }
 
-    const { x448 } = await import("@noble/curves/ed448");
-    const sharedSecret = x448.getSharedSecret(dRaw, xRawPeer);
+    let { x448 } = await import("@noble/curves/ed448");
+    let sharedSecret = x448.getSharedSecret(dRaw, xRawPeer);
 
     // We still use WebCrypto HKDF + AES-GCM to produce a usable AEAD key.
-    const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
+    let aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
 
     return {
       aeadKey,

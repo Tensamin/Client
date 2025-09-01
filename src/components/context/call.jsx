@@ -23,7 +23,7 @@ import { useWebSocketContext } from "@/components/context/websocket";
 import { useMessageContext } from "@/components/context/message";
 
 // Config
-const webrtc_servers = {
+let webrtc_servers = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:3478" },
@@ -164,7 +164,7 @@ export let CallProvider = ({ children }) => {
   useEffect(() => {
     if (sinkObserverRef.current) return;
     try {
-      const processAudio = (el) => {
+      let processAudio = (el) => {
         try {
           if (!el || el.dataset?.sinkApplied === currentSinkIdRef.current)
             return;
@@ -181,7 +181,7 @@ export let CallProvider = ({ children }) => {
 
       let rafId = null;
       let pending = [];
-      const schedule = () => {
+      let schedule = () => {
         if (rafId) return;
         rafId = requestAnimationFrame(() => {
           let batch = pending;
@@ -215,10 +215,10 @@ export let CallProvider = ({ children }) => {
       return () => {
         try {
           cancelAnimationFrame(rafId);
-        } catch {}
+        } catch { }
         try {
           sinkObserverRef.current?.disconnect();
-        } catch {}
+        } catch { }
         sinkObserverRef.current = null;
       };
     } catch {
@@ -272,7 +272,7 @@ export let CallProvider = ({ children }) => {
         let rawStream = await navigator.mediaDevices.getUserMedia(constraints);
         try {
           micRawStreamRef.current?.getTracks().forEach((tr) => tr.stop());
-        } catch {}
+        } catch { }
         micRawStreamRef.current = rawStream;
 
         rawStream.getAudioTracks().forEach((t) => {
@@ -320,18 +320,18 @@ export let CallProvider = ({ children }) => {
   function reset() {
     try {
       micStreamRef.current?.getTracks().forEach((track) => track.stop());
-    } catch {}
+    } catch { }
     try {
       micRawStreamRef.current?.getTracks().forEach((track) => track.stop());
-    } catch {}
+    } catch { }
     micRawStreamRef.current = null;
     try {
       clearInterval(micMeterTimerRef.current);
-    } catch {}
+    } catch { }
     micMeterTimerRef.current = null;
     try {
       micCtxRef.current?.close();
-    } catch {}
+    } catch { }
     micCtxRef.current = null;
     screenStreamRef.current?.getTracks().forEach((track) => track.stop());
     micRefs.current.clear();
@@ -658,7 +658,7 @@ export let CallProvider = ({ children }) => {
         logFunction("Call disconnected", "info");
         try {
           micStreamRef.current?.getTracks().forEach((t) => t.stop());
-        } catch {}
+        } catch { }
         micStreamRef.current = null;
         pendingRequests.current.forEach(({ reject, timeoutId }) => {
           clearTimeout(timeoutId);
@@ -952,7 +952,7 @@ export let CallProvider = ({ children }) => {
   }, [ownUuid, send]);
 
   // Derived settings for screen stream constraints (width/height/fps).
-  const parsedStreamSettings = useMemo(() => {
+  let parsedStreamSettings = useMemo(() => {
     let [wStr, hStr] = String(streamResolution).split("x");
     return {
       widthNum: parseInt(wStr, 10) || undefined,
@@ -1376,7 +1376,7 @@ export let CallProvider = ({ children }) => {
     return () => {
       try {
         cancel?.();
-      } catch {}
+      } catch { }
     };
   }, [updateStream]);
 
@@ -1385,7 +1385,7 @@ export let CallProvider = ({ children }) => {
     return () => {
       try {
         sinkObserverRef.current?.disconnect();
-      } catch {}
+      } catch { }
       sinkObserverRef.current = null;
       pendingRequests.current.forEach(({ reject, timeoutId }) => {
         clearTimeout(timeoutId);
@@ -1472,46 +1472,46 @@ export let CallProvider = ({ children }) => {
                   typeof el.setSinkId === "function" &&
                   currentSinkIdRef.current
                 ) {
-                  el.setSinkId(currentSinkIdRef.current).catch(() => {});
+                  el.setSinkId(currentSinkIdRef.current).catch(() => { });
                 }
               }
-            } catch {}
+            } catch { }
           }}
           autoPlay
           muted={deaf}
         />
         {connected
           ? connectedUsers.map((id) => (
-              <audio
-                key={id}
-                ref={(el) => {
-                  if (el) {
-                    audioRefs.current.set(id, el);
-                    let stream = audioStreamsRefs.current.get(id);
-                    if (stream && stream instanceof MediaStream) {
-                      el.srcObject = stream;
-                    } else if (stream) {
-                      logFunction(
-                        `Invalid stream type for user ${id}: ${typeof stream}`,
-                        "warning",
-                      );
-                    }
-                    try {
-                      if (
-                        typeof el.setSinkId === "function" &&
-                        currentSinkIdRef.current
-                      ) {
-                        el.setSinkId(currentSinkIdRef.current).catch(() => {});
-                      }
-                    } catch {}
-                  } else {
-                    audioRefs.current.delete(id);
+            <audio
+              key={id}
+              ref={(el) => {
+                if (el) {
+                  audioRefs.current.set(id, el);
+                  let stream = audioStreamsRefs.current.get(id);
+                  if (stream && stream instanceof MediaStream) {
+                    el.srcObject = stream;
+                  } else if (stream) {
+                    logFunction(
+                      `Invalid stream type for user ${id}: ${typeof stream}`,
+                      "warning",
+                    );
                   }
-                }}
-                autoPlay
-                muted={deaf}
-              />
-            ))
+                  try {
+                    if (
+                      typeof el.setSinkId === "function" &&
+                      currentSinkIdRef.current
+                    ) {
+                      el.setSinkId(currentSinkIdRef.current).catch(() => { });
+                    }
+                  } catch { }
+                } else {
+                  audioRefs.current.delete(id);
+                }
+              }}
+              autoPlay
+              muted={deaf}
+            />
+          ))
           : null}
       </div>
       {children}

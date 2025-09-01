@@ -31,9 +31,9 @@ export function GettingCalled() {
   let [callerId, setCallerId] = useState("");
   let [tempCallId, setTempCallId] = useState("");
   let [tempCallSecret, setTempCallSecret] = useState("");
-  const ringtoneRef = useRef(null);
-  const unlockHandlerRef = useRef(null);
-  const invitedToCallRef = useRef(invitedToCall);
+  let ringtoneRef = useRef(null);
+  let unlockHandlerRef = useRef(null);
+  let invitedToCallRef = useRef(invitedToCall);
 
   useEffect(() => {
     invitedToCallRef.current = invitedToCall;
@@ -47,12 +47,12 @@ export function GettingCalled() {
 
   useEffect(() => {
     if (!ringtoneRef.current) {
-      const audio = new Audio();
+      let audio = new Audio();
       audio.loop = true;
       audio.preload = "auto";
       try {
         audio.load?.();
-      } catch (_) {}
+      } catch (_) { }
       ringtoneRef.current = audio;
 
       try {
@@ -63,24 +63,24 @@ export function GettingCalled() {
               : Promise.reject(new Error("Failed to fetch ringtone")),
           )
           .then((blob) => {
-            const objectUrl = URL.createObjectURL(blob);
+            let objectUrl = URL.createObjectURL(blob);
             audio.src = objectUrl;
             audio.dataset.objectUrl = objectUrl;
             try {
               audio.load?.();
-            } catch (_) {}
+            } catch (_) { }
           })
           .catch(() => {
             audio.src = endpoint.sound_call;
             try {
               audio.load?.();
-            } catch (_) {}
+            } catch (_) { }
           });
       } catch (_) {
         audio.src = endpoint.sound_call;
         try {
           audio.load?.();
-        } catch (_) {}
+        } catch (_) { }
       }
 
       unlockHandlerRef.current = async () => {
@@ -88,12 +88,12 @@ export function GettingCalled() {
           await audio.play();
           audio.pause();
           audio.currentTime = 0;
-        } catch (_) {}
+        } catch (_) { }
         try {
           if (invitedToCallRef.current) {
             await audio.play();
           }
-        } catch (_) {}
+        } catch (_) { }
         document.removeEventListener("pointerdown", unlockHandlerRef.current);
         document.removeEventListener("keydown", unlockHandlerRef.current);
         document.removeEventListener("touchstart", unlockHandlerRef.current);
@@ -115,12 +115,12 @@ export function GettingCalled() {
         try {
           ringtoneRef.current.pause();
           ringtoneRef.current.currentTime = 0;
-        } catch (_) {}
-        const url = ringtoneRef.current?.dataset?.objectUrl;
+        } catch (_) { }
+        let url = ringtoneRef.current?.dataset?.objectUrl;
         if (url) {
           try {
             URL.revokeObjectURL(url);
-          } catch (_) {}
+          } catch (_) { }
         }
       }
       if (unlockHandlerRef.current) {
@@ -132,7 +132,7 @@ export function GettingCalled() {
   }, []);
 
   useEffect(() => {
-    const audio = ringtoneRef.current;
+    let audio = ringtoneRef.current;
     if (!audio) return;
     let retryHandler;
     if (invitedToCall) {
@@ -155,7 +155,7 @@ export function GettingCalled() {
       try {
         audio.pause();
         audio.currentTime = 0;
-      } catch (_) {}
+      } catch (_) { }
       if (retryHandler) {
         document.removeEventListener("pointerdown", retryHandler);
         document.removeEventListener("keydown", retryHandler);

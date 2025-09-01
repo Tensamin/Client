@@ -82,7 +82,7 @@ export function VoiceControls() {
           <VideoStream
             local={true}
             className="rounded-lg border-1"
-            onPlay={() => {}}
+            onPlay={() => { }}
           />
         </div>
       )}

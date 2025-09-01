@@ -67,7 +67,7 @@ export function Navbar() {
 
   return (
     <div
-      className={`flex-1 flex items-center pt-2 mx-2.5`}
+      className={`flex-1 flex items-center pt-2 ${open ? sidebarRightSide ? "ml-2" : "mr-2" : "mx-2"}`}
       style={{ WebkitAppRegion: "drag" }}
     >
       {!sidebarRightSide ? (

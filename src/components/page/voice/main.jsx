@@ -199,13 +199,13 @@ export function VoiceRearrangement() {
       try {
         e.preventDefault();
         e.stopPropagation();
-      } catch {}
+      } catch { }
 
       let el = nodeRefs.current.get(id) || e.currentTarget;
       if (!el) return;
       try {
         el.setPointerCapture?.(e.pointerId);
-      } catch {}
+      } catch { }
 
       let previousUserSelect = document.body.style.userSelect;
       document.body.style.userSelect = "none";
@@ -244,7 +244,7 @@ export function VoiceRearrangement() {
         window.removeEventListener("pointercancel", finalize);
         try {
           el.releasePointerCapture?.(e.pointerId);
-        } catch {}
+        } catch { }
         if (dragState.rafId) cancelAnimationFrame(dragState.rafId);
         setPositions((prev) => ({
           ...prev,
@@ -252,7 +252,7 @@ export function VoiceRearrangement() {
         }));
         try {
           endUserDrag(id);
-        } catch {}
+        } catch { }
         el.style.willChange = "";
         document.body.style.userSelect = previousUserSelect;
         draggingIdsRef.current.delete(id);
@@ -265,7 +265,7 @@ export function VoiceRearrangement() {
               activeDragsRef.current.delete(rec);
             }
           });
-        } catch {}
+        } catch { }
       };
 
       window.addEventListener("pointermove", handleMove, { passive: true });
@@ -290,23 +290,23 @@ export function VoiceRearrangement() {
         activeDragsRef.current.forEach((rec) => {
           try {
             window.removeEventListener("pointermove", rec.handleMove);
-          } catch {}
+          } catch { }
           try {
             window.removeEventListener("pointerup", rec.finalize);
-          } catch {}
+          } catch { }
           try {
             window.removeEventListener("pointercancel", rec.finalize);
-          } catch {}
+          } catch { }
           try {
             if (rec.state?.rafId) cancelAnimationFrame(rec.state.rafId);
-          } catch {}
+          } catch { }
         });
         activeDragsRef.current.clear();
         // Best-effort restore of user-select
         try {
           document.body.style.userSelect = "";
-        } catch {}
-      } catch {}
+        } catch { }
+      } catch { }
     };
   }, []);
 
@@ -345,8 +345,8 @@ export function VoiceRearrangement() {
                     ...(isDragging
                       ? {}
                       : {
-                          transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
-                        }),
+                        transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
+                      }),
                     width: `${AVATAR_TILE_WIDTH}px`,
                     touchAction: "none",
                   }}
@@ -462,13 +462,13 @@ export function Main() {
       try {
         e.preventDefault();
         e.stopPropagation();
-      } catch {}
+      } catch { }
 
       let el = nodeRefs.current.get(id) || e.currentTarget;
       if (!el) return;
       try {
         el.setPointerCapture?.(e.pointerId);
-      } catch {}
+      } catch { }
 
       // Disable text selection during drag
       let previousUserSelect = document.body.style.userSelect;
@@ -510,7 +510,7 @@ export function Main() {
         window.removeEventListener("pointercancel", finalize);
         try {
           el.releasePointerCapture?.(e.pointerId);
-        } catch {}
+        } catch { }
         if (dragState.rafId) cancelAnimationFrame(dragState.rafId);
         // Commit final position once to context, then notify end of drag
         setPositions((prev) => ({
@@ -519,7 +519,7 @@ export function Main() {
         }));
         try {
           endUserDrag(id);
-        } catch {}
+        } catch { }
         // Restore styles
         el.style.willChange = "";
         // Keep transform; React will reconcile to same final transform via props
@@ -535,7 +535,7 @@ export function Main() {
               activeDragsRef.current.delete(rec);
             }
           });
-        } catch {}
+        } catch { }
       };
 
       window.addEventListener("pointermove", handleMove, { passive: true });
@@ -560,22 +560,22 @@ export function Main() {
         activeDragsRef.current.forEach((rec) => {
           try {
             window.removeEventListener("pointermove", rec.handleMove);
-          } catch {}
+          } catch { }
           try {
             window.removeEventListener("pointerup", rec.finalize);
-          } catch {}
+          } catch { }
           try {
             window.removeEventListener("pointercancel", rec.finalize);
-          } catch {}
+          } catch { }
           try {
             if (rec.state?.rafId) cancelAnimationFrame(rec.state.rafId);
-          } catch {}
+          } catch { }
         });
         activeDragsRef.current.clear();
         try {
           document.body.style.userSelect = "";
-        } catch {}
-      } catch {}
+        } catch { }
+      } catch { }
     };
   }, []);
 
@@ -615,8 +615,8 @@ export function Main() {
                       ...(isDragging
                         ? {}
                         : {
-                            transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
-                          }),
+                          transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
+                        }),
                       width: `${AVATAR_TILE_WIDTH}px`,
                       touchAction: "none",
                     }}

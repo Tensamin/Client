@@ -148,7 +148,7 @@ export function Profile() {
             {
               user_state: ownState,
             },
-          ).catch((_) => {});
+          ).catch((_) => { });
         } else {
           log(data.log.message, "showError");
         }
@@ -753,7 +753,7 @@ export function Voice() {
       return "unsupported";
     }
     try {
-      const status = await navigator.permissions.query({
+      let status = await navigator.permissions.query({
         name: "microphone",
       });
       // granted, denied, prompt
@@ -776,7 +776,7 @@ export function Voice() {
           if (mounted) {
             setOutputs(outputs);
           }
-        } catch {}
+        } catch { }
 
         try {
           let devices = await navigator.mediaDevices.enumerateDevices();
@@ -784,7 +784,7 @@ export function Voice() {
           if (mounted) {
             setInputs(inputs);
           }
-        } catch {}
+        } catch { }
       }
     }
 
@@ -806,7 +806,7 @@ export function Voice() {
                 .then(() => {
                   window.location.reload();
                 });
-            } catch {}
+            } catch { }
           }}
         >
           Request microphone permission
@@ -828,8 +828,8 @@ export function Voice() {
                   ? "None"
                   : outputDeviceId
                     ? outputs.find(
-                        (output) => output.deviceId === outputDeviceId,
-                      )?.label
+                      (output) => output.deviceId === outputDeviceId,
+                    )?.label
                     : "Select device..."}
               </p>
               <Icon.ChevronsUpDown className="opacity-50" />
@@ -886,7 +886,7 @@ export function Voice() {
                   ? "None"
                   : inputDeviceId
                     ? inputs.find((input) => input.deviceId === inputDeviceId)
-                        ?.label
+                      ?.label
                     : "Select device..."}
               </p>
               <Icon.ChevronsUpDown className="opacity-50" />

@@ -22,7 +22,7 @@ import { useCryptoContext } from "@/components/context/crypto";
 import { useUsersContext } from "@/components/context/users";
 
 // Components
-import { Loading } from "@/components/loading/content";
+import { Loading } from "@/components/loading";
 
 // Main
 let WebSocketContext = createContext(null);

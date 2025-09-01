@@ -15,7 +15,7 @@ import { useEncryptionContext } from "@/components/context/encryption";
 import { useUsersContext } from "@/components/context/users";
 
 // Components
-import { Loading } from "@/components/loading/content";
+import { Loading } from "@/components/loading";
 
 // Main
 let CryptoContext = createContext();
@@ -109,13 +109,13 @@ export function CryptoProvider({ children }) {
           lambda = verifyData.data.lambda;
         }
 
-        const rawDecryptedKey = await decrypt_base64_using_aes(
+        let rawDecryptedKey = await decrypt_base64_using_aes(
           encrypted_private_key,
           lambda,
         );
-        const decryptedKey = JSON.parse(atob(rawDecryptedKey));
+        let decryptedKey = JSON.parse(atob(rawDecryptedKey));
 
-        const newPrivateKeyHash = await sha256(decryptedKey.d);
+        let newPrivateKeyHash = await sha256(decryptedKey.d);
 
         if (isMounted) {
           setPrivateKeyHash(newPrivateKeyHash);

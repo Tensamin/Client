@@ -16,12 +16,11 @@ import { Button } from "@/components/ui/button";
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+    let reader = new FileReader();
     reader.onerror = () => reject(new Error("Failed to read file"));
     reader.onload = () => {
-      // reader.result is a string like "data:<mime>;base64,AAAA..."
-      const dataUrl = reader.result;
-      const base64 = dataUrl.split(",")[1]; // raw base64
+      let dataUrl = reader.result;
+      let base64 = dataUrl.split(",")[1];
       resolve(base64);
     };
     reader.readAsDataURL(file);
@@ -43,7 +42,7 @@ export function MessageSend() {
       return;
     }
 
-    const activeElement = document.activeElement;
+    let activeElement = document.activeElement;
     if (
       activeElement &&
       (activeElement.tagName === "INPUT" ||
@@ -55,7 +54,7 @@ export function MessageSend() {
       }
     }
 
-    const isNavigationOrControlKey = [
+    let isNavigationOrControlKey = [
       "ArrowUp",
       "ArrowDown",
       "ArrowLeft",
@@ -68,7 +67,7 @@ export function MessageSend() {
       "Escape",
     ].includes(event.key);
 
-    const isTypingKey =
+    let isTypingKey =
       !isNavigationOrControlKey &&
       (event.key.length === 1 ||
         event.key === "Backspace" ||

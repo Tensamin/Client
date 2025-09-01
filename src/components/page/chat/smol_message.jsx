@@ -19,14 +19,14 @@ import {
 } from "@/components/ui/context-menu";
 import { MarkdownToReactComponents } from "@/components/page/chat/markdown";
 
-const BASE64_IMG_RE = /^data:image\/(png|jpe?g|gif|webp|avif);base64,/i;
+let BASE64_IMG_RE = /^data:image\/(png|jpe?g|gif|webp|avif);base64,/i;
 
-const urlTransform = (url) =>
+let urlTransform = (url) =>
   url && url.startsWith("data:") ? url : defaultUrlTransform(url);
 
-const allowElement = (element) => {
+let allowElement = (element) => {
   if (element.tagName === "img") {
-    const src = element.properties?.src;
+    let src = element.properties?.src;
     if (typeof src !== "string") return false;
     return BASE64_IMG_RE.test(src);
   }
@@ -59,7 +59,7 @@ export function SmolMessage({ message = {}, sendToServer, failed = false }) {
     }
   }, [sendToServer]);
 
-  const mergedComponents = {
+  let mergedComponents = {
     ...MarkdownToReactComponents,
     img: ImgBase64Only,
   };
@@ -68,9 +68,8 @@ export function SmolMessage({ message = {}, sendToServer, failed = false }) {
     <ContextMenu>
       <ContextMenuTrigger>
         <div
-          className={`flex gap-2 text-foreground hover:bg-input/15 rounded-sm pl-1 ${
-            sendToServer ? "opacity-50" : null
-          }`}
+          className={`flex gap-2 text-foreground hover:bg-input/15 rounded-sm pl-1 ${sendToServer ? "opacity-50" : null
+            }`}
         >
           <div className="whitespace-pre-wrap w-full">
             <ReactMarkdown
@@ -85,9 +84,8 @@ export function SmolMessage({ message = {}, sendToServer, failed = false }) {
           <div className="pt-0.5">
             {sendToServer ? (
               <div
-                className={`h-full transition-opacity duration-500 ease-in-out ${
-                  sendToServer && showLoading ? "opacity-100" : "opacity-0"
-                }`}
+                className={`h-full transition-opacity duration-500 ease-in-out ${sendToServer && showLoading ? "opacity-100" : "opacity-0"
+                  }`}
               >
                 <Hourglass size={14} speed={2} color="var(--foreground)" />
               </div>
