@@ -35,7 +35,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tensamin-linux
-          # only upload files (or folders) whose name starts with "tensamin"
           path: out/make/**/tensamin*
 
   build-windows:
@@ -146,7 +145,7 @@ jobs:
   aur-package:
     name: Create AUR Package
     needs: release
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - name: Checkout repository
@@ -156,9 +155,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24"
-
-      - name: Install packages
-        run: sudo apt update && sudo apt install bsdtar
 
       - name: Install pnpm
         run: npm i -g pnpm && pnpm config set node-linker hoisted
