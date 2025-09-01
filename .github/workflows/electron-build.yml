@@ -9,6 +9,18 @@ on:
       - main
 
 jobs:
+  deploy:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - name: Deploy website
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: cd /home/${{ secrets.SSH_USER }}/Tensamin/Release && ./update.sh
+
   build-linux:
     name: Build for Linux
     runs-on: [self-hosted, linux, x64]
