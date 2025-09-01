@@ -34,7 +34,13 @@ export function UsersProvider({ children }) {
   let [usingElectron, setUsingElectron] = useState(false);
 
   useEffect(() => {
-    setUsingElectron(isElectron());
+    let tmpIsElectron = isElectron();
+    if (tmpIsElectron) {
+      setUsingElectron(true);
+      document.body.classList.add("rounded-xl")
+    } else {
+      setUsingElectron(false);
+    }
   }, []);
 
   function sleep(ms) {
