@@ -1,6 +1,9 @@
 // Package Imports
 import { JetBrains_Mono } from "next/font/google";
 
+// Lib Imports
+import { isElectron } from "@/lib/utils";
+
 // Components
 import "./globals.css";
 import { endpoint } from "@/lib/endpoints";
@@ -23,7 +26,7 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="preload" as="audio" href={endpoint.sound_call} />
       </head>
-      <body className={`${jetbrainsMono.variable} antialiased`}>
+      <body className={`${jetbrainsMono.variable} antialiased ${isElectron() && "rounded-xl"}`}>
         <audio
           src={endpoint.sound_call}
           preload="auto"
