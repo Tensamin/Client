@@ -136,7 +136,7 @@ export function LoginForm() {
   return (
     <div
       style={{ WebkitAppRegion: "drag" }}
-      className="z-20 w-full h-full"
+      className="z-20 w-full h-full bg-background"
       onDrop={drop}
       onDragEnter={enter}
       onDragOver={over}

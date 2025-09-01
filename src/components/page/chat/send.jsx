@@ -146,7 +146,7 @@ export function MessageSend() {
       <form className="flex gap-3 w-full items-center" onSubmit={handleSubmit}>
         <Button
           variant="outline"
-          className="w-10.5 h-10.5 rounded-xl"
+          className="w-10.5 h-10.5 rounded-xl dark:bg-card dark:hover:bg-card/30"
           onClick={() => {
             uploadFileRef.current.click();
           }}

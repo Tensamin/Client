@@ -73,7 +73,7 @@ export function UserModal({ id, state }) {
           <Tooltip>
             <TooltipTrigger
               asChild
-              className="absolute bottom-0 right-0 w-[15px] h-[15px]"
+              className="absolute bottom-0 -right-1 w-[15px] h-[15px]"
             >
               <div
                 onClick={() => toast("Huhu")}

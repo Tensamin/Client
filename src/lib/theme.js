@@ -224,8 +224,7 @@ export function generateTintPalette(baseHex, controls, colorScheme) {
       "--sidebar-border": createColor(refs.sidebar_border),
       "--sidebar-ring": createColor(refs.sidebar_ring, "accent"),
     };
-  } catch (error) {
-    console.error("Invalid hex color for palette generation:", baseHex, error);
+  } catch {
     return {};
   }
 }
@@ -242,10 +241,7 @@ function adjustTone(argb, amount) {
 
 export function generateMaterialYouPalette(baseHex, colorScheme = "light") {
   let theme = themeFromSourceColor(argbFromHex(baseHex));
-  console.log(theme);
-  console.log(colorScheme);
   let selectedScheme = new Scheme(theme.schemes[colorScheme]);
-  console.log(selectedScheme);
 
   let isLight = colorScheme === "light";
   let baseSurface = selectedScheme.surface;
