@@ -19,7 +19,7 @@ export let metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${jetbrainsMono.variable} antialiased`}>
+      <body className={`${jetbrainsMono.variable} antialiased bg-transparent`}>
         {children}
       </body>
     </html>

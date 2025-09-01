@@ -23,7 +23,7 @@ jobs:
           node-version: "24"
 
       - name: Install pnpm
-        run: npm i -g pnpm && pnpm config set node-linker hoisted
+        run: npm i -g pnpm
 
       - name: Install dependencies
         run: pnpm install
@@ -79,7 +79,7 @@ jobs:
           node-version: "24"
 
       - name: Install pnpm
-        run: npm i -g pnpm && pnpm config set node-linker hoisted
+        run: npm i -g pnpm
 
       - name: Install dependencies
         run: pnpm install && pnpm install macos-alias ds-store appdmg electron-installer-dmg
@@ -157,7 +157,7 @@ jobs:
           node-version: "24"
 
       - name: Install pnpm
-        run: npm i -g pnpm && pnpm config set node-linker hoisted
+        run: npm i -g pnpm
 
       - name: Create Arch Linux Package
         run: pnpm run make:archlinux
