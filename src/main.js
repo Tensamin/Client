@@ -39,7 +39,7 @@ function createWindow() {
 
   let url =
     process.env.NODE_ENV === "development"
-      ? "https://ma-at-home.hackrland.dev"
+      ? "http://localhost:9161"
       : "app://dist/index.html";
   mainWindow.loadURL(url);
 
