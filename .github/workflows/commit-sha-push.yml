@@ -8,4 +8,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: commit SHA of the head of the branch
-        run: echo "The commit SHA is ${{ github.sha }}"
+        run: echo "The commit SHA is ${{ github.sha_short }}"
