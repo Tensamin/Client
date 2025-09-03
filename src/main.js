@@ -1,3 +1,11 @@
+let { updateElectronApp, UpdateSourceType } = require('update-electron-app')
+updateElectronApp({
+  updateSource: {
+    type: UpdateSourceType.ElectronPublicUpdateService,
+    repo: 'Tensamin/Frontend'
+  }
+})
+
 let { app, protocol, BrowserWindow, ipcMain, net } = require("electron");
 let path = require("path");
 let keytar = require("keytar");

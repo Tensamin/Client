@@ -88,6 +88,7 @@
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
+    "update-electron-app": "^3.1.1",
     "use-dencrypt-effect": "^2.0.0",
     "uuid": "^11.1.0",
     "vaul": "^1.1.2"
