@@ -1,19 +1,8 @@
-let { updateElectronApp, UpdateSourceType } = require('update-electron-app')
-updateElectronApp({
-  updateSource: {
-    type: UpdateSourceType.ElectronPublicUpdateService,
-    repo: 'Tensamin/Frontend'
-  }
-})
-
 let { app, protocol, BrowserWindow, ipcMain, net } = require("electron");
 let path = require("path");
 let keytar = require("keytar");
 let { pathToFileURL } = require("url");
-
-if (require("electron-squirrel-startup")) {
-  app.quit();
-}
+let { readFileSync } = require("fs");
 
 let ROOT = path.resolve(__dirname, "..", "dist");
 
@@ -30,11 +19,11 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-function createWindow() {
+function createWindow(url, width, height) {
   mainWindow = new BrowserWindow({
     icon: "app://dist/icon/icon.png",
-    width: 1280,
-    height: 720,
+    width: width,
+    height: height,
     frame: false,
     autoHideMenuBar: true,
     transparent: true,
@@ -45,10 +34,6 @@ function createWindow() {
     },
   });
 
-  let url =
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:9161"
-      : "app://dist/index.html";
   mainWindow.loadURL(url);
 
   mainWindow.on("maximize", () => {
@@ -104,7 +89,7 @@ ipcMain.handle("window-is-maximized", () => {
   );
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   protocol.handle("app", (request) => {
     let url = new URL(request.url);
     if (url.hostname && url.hostname !== "dist") {
@@ -122,11 +107,23 @@ app.whenReady().then(() => {
     return net.fetch(pathToFileURL(fsPath).toString());
   });
 
-  createWindow();
+  createWindow('app://dist/starting.html', 515, 190)
 
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+  let remote_packageJson = await fetch("https://raw.githubusercontent.com/Tensamin/Frontend/refs/heads/main/package.json").then(response => response.json());
+  let local_packageJson = JSON.parse(readFileSync('./package.json'));
+
+  mainWindow.close();
+
+  if (local_packageJson.version === remote_packageJson.version) {
+    let url = process.env.NODE_ENV === "development" ? "http://localhost:9161" : "app://dist/index.html";
+    createWindow(url, 1280, 720);
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow(url, 1280, 720);
+      }
+    });
+  } else {
+    createWindow("app://dist/update.html", 515, 190)
+    console.log("New Version available!")
+  }
 });
