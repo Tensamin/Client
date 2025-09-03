@@ -203,7 +203,7 @@ export function Main() {
           </div>
         </CardHeader>
         <CardContent className="h-full w-full">
-          <p>Homepage (Temp)</p>
+          <p>Homepage (Temp) Update!</p>
         </CardContent>
       </Card>
       <Card className="w-70"></Card>

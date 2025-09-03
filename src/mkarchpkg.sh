@@ -3,7 +3,7 @@ set -euo pipefail
 
 PKGNAME="tensamin-bin"
 _PKGNAME="tensamin"
-PKGVER="0.1.1"
+PKGVER="0.1.2"
 PKGREL="1"
 PKGDESC="Super secure messaging app"
 URL="https://tensamin.methanium.net"
