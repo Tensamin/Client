@@ -6,7 +6,8 @@ let { readFileSync } = require("fs");
 
 let ROOT = path.resolve(__dirname, "..", "dist");
 
-let mainWindow = null;
+let mainWindow;
+let preWindow;
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -19,12 +20,13 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-function createWindow(url, width, height) {
-  mainWindow = new BrowserWindow({
+function createWindow(url, width, height, resizable, window) {
+  window = new BrowserWindow({
     icon: "app://dist/icon/icon.png",
     width: width,
     height: height,
     frame: false,
+    resizable,
     autoHideMenuBar: true,
     transparent: true,
     webPreferences: {
@@ -34,18 +36,18 @@ function createWindow(url, width, height) {
     },
   });
 
-  mainWindow.loadURL(url);
+  window.loadURL(url);
 
-  mainWindow.on("maximize", () => {
-    mainWindow?.webContents.send("window-maximized-changed", true);
+  window.on("maximize", () => {
+    window?.webContents.send("window-maximized-changed", true);
   });
-  mainWindow.on("unmaximize", () => {
-    mainWindow?.webContents.send("window-maximized-changed", false);
+  window.on("unmaximize", () => {
+    window?.webContents.send("window-maximized-changed", false);
   });
-  mainWindow.on("closed", () => {
-    mainWindow = null;
+  window.on("closed", () => {
+    window = null;
   });
-}
+};
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
@@ -94,7 +96,7 @@ app.whenReady().then(async () => {
     let url = new URL(request.url);
     if (url.hostname && url.hostname !== "dist") {
       return new Response("Not found", { status: 404 });
-    }
+    };
 
     let rel = decodeURIComponent(url.pathname);
     let cleaned = rel.replace(/^\/+/, "");
@@ -102,12 +104,12 @@ app.whenReady().then(async () => {
 
     if (!fsPath.startsWith(ROOT + path.sep) && fsPath !== ROOT) {
       return new Response("Forbidden", { status: 403 });
-    }
+    };
 
     return net.fetch(pathToFileURL(fsPath).toString());
   });
 
-  createWindow('app://dist/starting.html', 515, 190)
+  createWindow('app://dist/starting.html', 515, 190, false, preWindow);
 
   let remote_packageJson = await fetch("https://raw.githubusercontent.com/Tensamin/Frontend/refs/heads/main/package.json").then(response => response.json());
   let local_packageJson = JSON.parse(readFileSync('./package.json'));
@@ -116,14 +118,14 @@ app.whenReady().then(async () => {
 
   if (local_packageJson.version === remote_packageJson.version) {
     let url = process.env.NODE_ENV === "development" ? "http://localhost:9161" : "app://dist/index.html";
-    createWindow(url, 1280, 720);
+    createWindow(url, 1280, 720, true, mainWindow);
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow(url, 1280, 720);
+        createWindow(url, 1280, 720, true, mainWindow);
       }
     });
   } else {
-    createWindow("app://dist/update.html", 515, 190)
+    createWindow("app://dist/update.html", 515, 190, false, preWindow)
     console.log("New Version available!")
-  }
+  };
 });

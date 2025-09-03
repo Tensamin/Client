@@ -147,9 +147,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.3.2
         with:
-          name: ${{ env.PACKAGE_VERSION }}-${{ github.sha }} | Desktop Apps
-          body: Automated release of desktop apps for version ${{ env.PACKAGE_VERSION }}-${{ github.sha }}
-          tag_name: v${{ env.PACKAGE_VERSION }}-${{ github.sha }}-desktop-apps
+          name: ${{ env.PACKAGE_VERSION }} | Desktop Apps
+          body: Automated release of desktop apps for version ${{ env.PACKAGE_VERSION }}
+          tag_name: v${{ env.PACKAGE_VERSION }}-desktop-apps
           draft: false
           prerelease: false
           files: ./artifacts/**/tensamin*
@@ -174,7 +174,7 @@ jobs:
         run: npm i -g pnpm
 
       - name: Create Arch Linux Package
-        run: GITHUB_SHA=${{ github.sha }} pnpm run make:archlinux
+        run: pnpm run make:archlinux
 
       - name: Publish Arch Linux Package
         uses: ulises-jeremias/github-actions-aur-publish@v1
@@ -186,4 +186,4 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: Automated Update
           ssh_keyscan_types: ed25519
-          update_pkgver: false
+          update_pkgver: true

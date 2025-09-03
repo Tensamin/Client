@@ -76,7 +76,7 @@ main() {
   mkdir -p "${AUR_DIR}"
 
   local release_filename="tensamin-linux-x64-${npm_package_version}.deb"
-  local release_url="https://github.com/Tensamin/Frontend/releases/download/v${npm_package_version}-${GITHUB_SHA}-desktop-apps/${release_filename}"
+  local release_url="https://github.com/Tensamin/Frontend/releases/download/v${npm_package_version}-desktop-apps/${release_filename}"
   local dest_file="${AUR_DIR}/${release_filename}"
 
   echo "Downloading ${release_url} -> ${dest_file}"
@@ -113,7 +113,7 @@ main() {
   cat >"${AUR_DIR}/PKGBUILD" <<EOF
 # Maintainer: Methanium
 pkgname=${PKGNAME}
-pkgver=${npm_package_version}-${GITHUB_SHA}
+pkgver=${npm_package_version}
 pkgrel=1
 pkgdesc="${pkgdesc_escaped}"
 arch=('${ARCH_PACMAN}')
