@@ -174,7 +174,7 @@ jobs:
         run: npm i -g pnpm
 
       - name: Create Arch Linux Package
-        run: pnpm run make:archlinux
+        run: GITHUB_SHA=${{ github.sha_short }} pnpm run make:archlinux
 
       - name: Publish Arch Linux Package
         uses: ulises-jeremias/github-actions-aur-publish@v1
