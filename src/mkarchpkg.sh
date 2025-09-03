@@ -113,8 +113,8 @@ main() {
   cat >"${AUR_DIR}/PKGBUILD" <<EOF
 # Maintainer: Methanium
 pkgname=${PKGNAME}
-pkgver=${npm_package_version}
-pkgrel=${GITHUB_SHA}
+pkgver=${npm_package_version}-${GITHUB_SHA}
+pkgrel=1
 pkgdesc="${pkgdesc_escaped}"
 arch=('${ARCH_PACMAN}')
 url="${URL}"
