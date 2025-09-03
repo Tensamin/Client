@@ -3,14 +3,12 @@ set -euo pipefail
 
 PKGNAME="tensamin-bin"
 _PKGNAME="tensamin"
-PKGVER="0.1.2"
-PKGREL="1"
 PKGDESC="Super secure messaging app"
 URL="https://tensamin.methanium.net"
 LICENSE_ID="custom"
 ARCH_PACMAN="x86_64"
 DEB_ARCH="amd64"
-LOCAL_DEB_PATH="./out/make/deb/x64/${_PKGNAME}_${PKGVER}_${DEB_ARCH}.deb"
+LOCAL_DEB_PATH="./out/make/deb/x64/${_PKGNAME}_${$npm_package_version}_${DEB_ARCH}.deb"
 DEPENDS=(
   "gtk3"
   "alsa-lib"
@@ -43,7 +41,6 @@ join_array() {
   for item in "$@"; do
     out+="'${item//'/'\/}' "
   done
-  # trim trailing space
   printf "%s" "${out% }"
 }
 
@@ -78,8 +75,8 @@ main() {
   rm -rf "${AUR_DIR}"
   mkdir -p "${AUR_DIR}"
 
-  local release_filename="tensamin-linux-x64-${PKGVER}.deb"
-  local release_url="https://github.com/Tensamin/Frontend/releases/download/v${PKGVER}-desktop-apps/${release_filename}"
+  local release_filename="tensamin-linux-x64-${$npm_package_version}.deb"
+  local release_url="https://github.com/Tensamin/Frontend/releases/download/v${$npm_package_version}-desktop-apps/${release_filename}"
   local dest_file="${AUR_DIR}/${release_filename}"
 
   echo "Downloading ${release_url} -> ${dest_file}"
@@ -116,8 +113,8 @@ main() {
   cat >"${AUR_DIR}/PKGBUILD" <<EOF
 # Maintainer: Methanium
 pkgname=${PKGNAME}
-pkgver=${PKGVER}
-pkgrel=${PKGREL}
+pkgver=${$npm_package_version}
+pkgrel=${$GITHUB_SHA}
 pkgdesc="${pkgdesc_escaped}"
 arch=('${ARCH_PACMAN}')
 url="${URL}"
