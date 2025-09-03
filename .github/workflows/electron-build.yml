@@ -147,9 +147,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.3.2
         with:
-          name: ${{ env.PACKAGE_VERSION }} | Desktop Apps
-          body: Automated release of desktop apps for version ${{ env.PACKAGE_VERSION }}
-          tag_name: v${{ env.PACKAGE_VERSION }}-desktop-apps
+          name: ${{ env.PACKAGE_VERSION }}-${{ env.GITHUB_SHA }} | Desktop Apps
+          body: Automated release of desktop apps for version ${{ env.PACKAGE_VERSION }}-${{ env.GITHUB_SHA }}
+          tag_name: v${{ env.PACKAGE_VERSION }}-${{ env.GITHUB_SHA }}-desktop-apps
           draft: false
           prerelease: false
           files: ./artifacts/**/tensamin*
