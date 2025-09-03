@@ -11,7 +11,7 @@ on:
 jobs:
   deploy:
     name: Deploy
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
     
     steps:
       - name: Update on methanium
@@ -25,7 +25,7 @@ jobs:
 
   build-linux:
     name: Build for Linux
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -113,7 +113,7 @@ jobs:
   release:
     name: "Create Release"
     needs: [build-linux, build-windows, build-macos]
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
@@ -159,7 +159,7 @@ jobs:
   aur-package:
     name: Create AUR Package
     needs: release
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
