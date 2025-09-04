@@ -154,34 +154,40 @@ export function Message({ message }) {
   ) : null;
 }
 
-export function MessageLoading({ message }) {
+export function MessageLoading({ amount }) {
   return (
-    <div className="w-full flex mb-3 mt-3">
-      <div className="border-1 rounded-xl p-2 min-w-60 bg-input/20">
+    <div
+      className="w-full flex mb-3 mt-3"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading message"
+    >
+      <div className="border-1 rounded-xl p-2 min-w-60 bg-input/20 hover:bg-input/23">
         <div className="flex items-center gap-3">
           <div className="w-[35px] h-[35px]">
-            <Skeleton className="rounded-full size-8" />
+            <Skeleton className="h-[35px] w-[35px] rounded-full" />
           </div>
+
           <div className="text-[15px] w-full font-bold">
-            <Skeleton className={`mr-${Math.floor(Math.random() * 16) + 10}`}>
-              <p className="invisible">🥴</p>
-            </Skeleton>
-            <div className="text-[11.5px] text-foreground/67 pt-0.5">
-              <Skeleton className="mr-25">
-                <p className="invisible">🥴</p>
-              </Skeleton>
-            </div>
+            <Skeleton className="h-4 w-40" />
+            <p className="text-[11.5px] text-foreground/67 pt-0.5">
+              <Skeleton className="h-3 w-24" />
+            </p>
           </div>
         </div>
-        <div className="text-sm break-all">
-          {message.subMessages.map((_, index) => (
-            <div key={index}>
+
+        <div className="text-sm break-all mt-2">
+          {Array.from({ length: amount }).map((_, index) => (
+            <div key={index} >
               <div className="p-1">
-                <Separator className="bg-border/40" />
+                <div className="h-px bg-border/40" />
               </div>
-              <Skeleton className={`mr-${Math.floor(Math.random() * 16) + 10}`}>
-                <p className="invisible">🥴</p>
-              </Skeleton>
+
+              <div className="flex flex-col gap-2 py-1">
+                <Skeleton className="h-4 w-[87%]" />
+                <Skeleton className="h-4 w-[60%]" />
+                <Skeleton className="h-4 w-[75%]" />
+              </div>
             </div>
           ))}
         </div>

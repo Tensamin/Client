@@ -82,9 +82,10 @@ export function Main({ data }) {
 
         {navbarLoading ? (
           <>
-            {messages.map((message) => (
-              <MessageLoading key={message.id} message={message} />
-            ))}
+            <MessageLoading amount={3} />
+            <MessageLoading amount={5} />
+            <MessageLoading amount={2} />
+            <MessageLoading amount={1} />
           </>
         ) : (
           <>
