@@ -73,13 +73,6 @@ export function Main({ data }) {
         className="flex flex-grow flex-col items-center gap-0 overflow-y-auto px-2.5 py-0 font-normal"
         ref={containerRef}
       >
-        {loadedAllMessages && !noMessageWithUser ? (
-          <p className="p-2 text-sm">Loaded all messages.</p>
-        ) : null}
-        {noMessageWithUser ? (
-          <p className="p-2 text-sm">You have no messages with this user.</p>
-        ) : null}
-
         {navbarLoading ? (
           <>
             <MessageLoading amount={3} />
@@ -89,6 +82,12 @@ export function Main({ data }) {
           </>
         ) : (
           <>
+            {loadedAllMessages && !noMessageWithUser ? (
+              <p className="p-2 text-sm">Loaded all messages.</p>
+            ) : null}
+            {noMessageWithUser ? (
+              <p className="p-2 text-sm">You have no messages with this user.</p>
+            ) : null}
             {messages.map((message) => (
               <Message key={message.id} message={message} />
             ))}

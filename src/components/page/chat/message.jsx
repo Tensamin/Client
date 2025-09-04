@@ -170,9 +170,9 @@ export function MessageLoading({ amount }) {
 
           <div className="text-[15px] w-full font-bold">
             <Skeleton className="h-4 w-40" />
-            <p className="text-[11.5px] text-foreground/67 pt-0.5">
+            <div className="text-[11.5px] text-foreground/67 pt-0.5">
               <Skeleton className="h-3 w-24" />
-            </p>
+            </div>
           </div>
         </div>
 

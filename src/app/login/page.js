@@ -13,8 +13,9 @@ import "ldrs/react/Ring.css";
 
 // Lib Imports
 import { endpoint } from "@/lib/endpoints";
-import { sha256, isElectron, getDeviceFingerprint } from "@/lib/utils";
-import ls, { set } from "@/lib/localStorageManager";
+import { getDeviceFingerprint } from "@/lib/fingerprint";
+import { sha256, isElectron } from "@/lib/utils";
+import ls from "@/lib/localStorageManager";
 
 // Context Imports
 import { useEncryptionContext } from "@/components/context/encryption";

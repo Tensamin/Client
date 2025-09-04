@@ -20,8 +20,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { UserModal } from "@/components/page/root/user-modal/main";
-import { Chats } from "@/components/page/root/chats";
-import { Communities } from "@/components/page/root/communities";
+import { Conversations } from "@/components/page/root/conversations"
 import { VoiceControls } from "@/components/page/voice/controls";
 
 // Main
@@ -167,7 +166,7 @@ export function AppSidebar(props) {
         <SidebarMenu>
           <div className="relative">
             <div aria-busy={isPending ? "true" : "false"}>
-              {sidebarCategory === "chats" ? <Chats /> : <Communities />}
+              {sidebarCategory === "chats" ? <Conversations variant="chats" /> : <Conversations variant="communities" />}
             </div>
           </div>
         </SidebarMenu>

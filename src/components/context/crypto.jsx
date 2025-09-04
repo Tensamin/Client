@@ -7,7 +7,8 @@ import { startAuthentication } from "@simplewebauthn/browser";
 
 // Lib Imports
 import { endpoint } from "@/lib/endpoints";
-import { getDeviceFingerprint, isElectron, sha256, RETRIES } from "@/lib/utils";
+import { getDeviceFingerprint } from "@/lib/fingerprint";
+import { isElectron, sha256, RETRIES } from "@/lib/utils";
 import ls from "@/lib/localStorageManager";
 
 // Context Imports
