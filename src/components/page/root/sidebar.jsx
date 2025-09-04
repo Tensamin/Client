@@ -1,5 +1,5 @@
 // Package Imports
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import { motion, useAnimationControls } from "framer-motion";
 
 // Context Imports
@@ -30,6 +30,7 @@ export function AppSidebar(props) {
   let { sidebarRightSide } = useThemeContext();
   let { connected } = useCallContext();
   let { sidebarCategory, setSidebarCategory } = usePageContext();
+  let [isPending, startTransition] = useTransition();
 
   return (
     <Sidebar
@@ -77,7 +78,7 @@ export function AppSidebar(props) {
                 controls
                   .start({
                     left: "0%",
-                    right: "0%",
+                    right: "0",
                     transition: {
                       duration: 0.22,
                       ease: [0.2, 0.8, 0.2, 1],
@@ -112,9 +113,12 @@ export function AppSidebar(props) {
                 <div className="relative w-full rounded-full border bg-card p-1">
                   <div className="relative">
                     <motion.div
-                      className="pointer-events-none absolute top-0 bottom-0 z-0 
-                       rounded-full bg-input/50 border"
-                      style={{ left: "0%", right: "50%", willChange: "left, right" }}
+                      className="pointer-events-none absolute top-0 bottom-0 z-0 rounded-full bg-input/50 border"
+                      style={{
+                        left: "0%",
+                        right: "50%",
+                        willChange: "left, right",
+                      }}
                       initial={false}
                       animate={controls}
                     />
@@ -126,7 +130,9 @@ export function AppSidebar(props) {
                         disabled={forceLoad}
                         onClick={() => {
                           if (sidebarCategory !== "communities") {
-                            setSidebarCategory("communities");
+                            startTransition(() =>
+                              setSidebarCategory("communities")
+                            );
                           }
                         }}
                         aria-pressed={sidebarCategory === "communities"}
@@ -140,7 +146,9 @@ export function AppSidebar(props) {
                         disabled={forceLoad}
                         onClick={() => {
                           if (sidebarCategory !== "chats") {
-                            setSidebarCategory("chats");
+                            startTransition(() =>
+                              setSidebarCategory("chats")
+                            );
                           }
                         }}
                         aria-pressed={sidebarCategory === "chats"}
@@ -157,7 +165,11 @@ export function AppSidebar(props) {
       </SidebarHeader>
       <SidebarContent className="pt-2">
         <SidebarMenu>
-          {sidebarCategory === "chats" ? <Chats /> : <Communities />}
+          <div className="relative">
+            <div aria-busy={isPending ? "true" : "false"}>
+              {sidebarCategory === "chats" ? <Chats /> : <Communities />}
+            </div>
+          </div>
         </SidebarMenu>
       </SidebarContent>
     </Sidebar>
