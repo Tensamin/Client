@@ -2,7 +2,6 @@ let { app, protocol, BrowserWindow, ipcMain, net } = require("electron");
 let path = require("path");
 let keytar = require("keytar");
 let { pathToFileURL } = require("url");
-let { readFileSync } = require("fs");
 
 let ROOT = path.resolve(__dirname, "..", "dist");
 
@@ -20,12 +19,13 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-function createWindow(url, width, height, resizable, window) {
-  window = new BrowserWindow({
+function createWindow(url, width, height, resizable) {
+  let window = new BrowserWindow({
     icon: "app://dist/icon/icon.png",
     width: width,
     height: height,
     frame: false,
+    show: false,
     resizable,
     autoHideMenuBar: true,
     transparent: true,
@@ -38,6 +38,10 @@ function createWindow(url, width, height, resizable, window) {
 
   window.loadURL(url);
 
+  window.on('ready-to-show', () => {
+    window.show();
+  });
+
   window.on("maximize", () => {
     window?.webContents.send("window-maximized-changed", true);
   });
@@ -47,6 +51,8 @@ function createWindow(url, width, height, resizable, window) {
   window.on("closed", () => {
     window = null;
   });
+
+  return window;
 };
 
 app.on("window-all-closed", () => {
@@ -109,23 +115,19 @@ app.whenReady().then(async () => {
     return net.fetch(pathToFileURL(fsPath).toString());
   });
 
-  createWindow('app://dist/starting.html', 515, 190, false, preWindow);
+  preWindow = createWindow('app://dist/starting.html', 500, 200, false);
+  preWindow.close();
 
-  let remote_packageJson = await fetch("https://raw.githubusercontent.com/Tensamin/Frontend/refs/heads/main/package.json").then(response => response.json());
-  let local_packageJson = JSON.parse(readFileSync('./package.json'));
-
-  mainWindow.close();
-
-  if (local_packageJson.version === remote_packageJson.version) {
+  if (true) {
     let url = process.env.NODE_ENV === "development" ? "http://localhost:9161" : "app://dist/index.html";
-    createWindow(url, 1280, 720, true, mainWindow);
+    mainWindow = createWindow(url, 1280, 720, true);
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow(url, 1280, 720, true, mainWindow);
+        mainWindow = createWindow(url, 1280, 720, true);
       }
     });
   } else {
-    createWindow("app://dist/update.html", 515, 190, false, preWindow)
+    createWindow("app://dist/update.html", 500, 200, false, preWindow)
     console.log("New Version available!")
   };
 });
