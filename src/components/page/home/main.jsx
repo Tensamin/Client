@@ -63,7 +63,7 @@ export function Main() {
           },
           {
             user_id: newChatUUID,
-          },
+          }
         ).then((data) => {
           if (data.type !== "error") {
             log(`Added ${newChatUsername}`, "success");
@@ -97,7 +97,7 @@ export function Main() {
           community_address: JSON.stringify([newDomain, newPort]),
           community_title: newCommunityTitle || "Community",
           position: "",
-        },
+        }
       ).then(async (data) => {
         if (data.type !== "error") {
           doCommunityRefresh();

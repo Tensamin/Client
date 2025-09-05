@@ -2,7 +2,13 @@
 
 // Package Imports
 import { useState, useEffect } from "react";
-import { LazyMotion, domAnimation, AnimatePresence, m, MotionConfig } from "framer-motion";
+import {
+  LazyMotion,
+  domAnimation,
+  AnimatePresence,
+  m,
+  MotionConfig,
+} from "framer-motion";
 
 // Context Imports
 import { usePageContext } from "@/components/context/page";
@@ -16,17 +22,19 @@ import { AppSidebar } from "@/components/page/root/sidebar";
 import { Main as ChatMain } from "@/components/page/chat/main";
 import { Main as HomeMain } from "@/components/page/home/main";
 import { Main as SettingsMain } from "@/components/page/settings/main";
-import { VoiceExpanded, VoiceRearrangement } from "@/components/page/voice/main";
+import {
+  VoiceExpanded,
+  VoiceRearrangement,
+} from "@/components/page/voice/main";
 import { Main as CommunityMain } from "@/components/page/community/main";
 import { GettingCalled } from "@/components/page/voice/parts";
 
 let variants = {
-  initial: { opacity: 0, y: 16, scale: 0.99, filter: "blur(2px)" },
+  initial: { opacity: 0, y: 16, scale: 0.99 },
   enter: {
     opacity: 1,
     y: 0,
     scale: 1,
-    filter: "blur(0px)",
     transition: {
       type: "spring",
       stiffness: 260,
@@ -38,7 +46,6 @@ let variants = {
     opacity: 0,
     y: -10,
     scale: 0.992,
-    filter: "blur(1px)",
     transition: { duration: 0.1, ease: [0.4, 0, 0.2, 1] },
   },
 };
@@ -75,18 +82,31 @@ export function Page() {
         <div className="flex h-11">
           <Navbar />
         </div>
-        <div className={`flex flex-1 overflow-hidden ${sidebarRightSide && "p-2 pr-0"}`}>
+        <div
+          className={`flex flex-1 overflow-hidden ${sidebarRightSide && "p-2 pr-0"}`}
+        >
           {!sidebarRightSide && <AppSidebar />}
-          <SidebarInset className={`flex flex-col flex-1 overflow-hidden ${sidebarRightSide && !open && "mr-2"}`}>
+          <SidebarInset
+            className={`flex flex-col flex-1 overflow-hidden ${sidebarRightSide && !open && "mr-2"}`}
+          >
             <div className="relative h-full flex flex-col flex-1 bg-sidebar overflow-hidden">
               <GettingCalled />
-              <PagePresence id={page.name+page.data} className="absolute inset-0 overflow-auto flex flex-col items-center min-h-full">
+              <PagePresence
+                id={page.name + page.data}
+                className="absolute inset-0 overflow-auto flex flex-col items-center min-h-full"
+              >
                 {page.name === "chat" && <ChatMain data={page.data} />}
                 {page.name === "home" && <HomeMain data={page.data} />}
                 {page.name === "settings" && <SettingsMain data={page.data} />}
-                {page.name === "voice-expanded" && <VoiceExpanded data={page.data} />}
-                {page.name === "voice-rearrangement" && <VoiceRearrangement data={page.data} />}
-                {page.name === "community" && <CommunityMain data={page.data} />}
+                {page.name === "voice-expanded" && (
+                  <VoiceExpanded data={page.data} />
+                )}
+                {page.name === "voice-rearrangement" && (
+                  <VoiceRearrangement data={page.data} />
+                )}
+                {page.name === "community" && (
+                  <CommunityMain data={page.data} />
+                )}
               </PagePresence>
             </div>
           </SidebarInset>

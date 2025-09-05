@@ -51,24 +51,19 @@ export function Conversations({ variant = "chats" }) {
     let active = true;
 
     if (isChats) {
-      send(
-        "get_chats",
-        { log_level: 0, message: "Getting all chats" },
-        {},
-      )
+      send("get_chats", { log_level: 0, message: "Getting all chats" }, {})
         .then((res) => {
           if (!active) return;
           let sorted =
             (res?.data?.user_ids || []).sort(
-              (a, b) =>
-                (b?.last_message_at || 0) - (a?.last_message_at || 0),
+              (a, b) => (b?.last_message_at || 0) - (a?.last_message_at || 0)
             ) || [];
           startDataTransition(() => {
             if (!active) return;
             setArray(sorted);
           });
         })
-        .catch(() => { })
+        .catch(() => {})
         .finally(() => {
           if (active) setShouldFetch(false);
         });
@@ -76,20 +71,20 @@ export function Conversations({ variant = "chats" }) {
       send(
         "get_communities",
         { log_level: 0, message: "Getting all communities" },
-        {},
+        {}
       )
         .then((res) => {
           if (!active) return;
           let sorted =
             (res?.data?.communities || []).sort(
-              (a, b) => (a?.position || 0) - (b?.position || 0),
+              (a, b) => (a?.position || 0) - (b?.position || 0)
             ) || [];
           startDataTransition(() => {
             if (!active) return;
             setArray(sorted);
           });
         })
-        .catch(() => { })
+        .catch(() => {})
         .finally(() => {
           if (active) setShouldFetch(false);
         });
@@ -125,7 +120,7 @@ export function Conversations({ variant = "chats" }) {
                   variant="outline"
                   onClick={() =>
                     startNavTransition(() =>
-                      setPage({ name: "chat", data: item.user_id }),
+                      setPage({ name: "chat", data: item.user_id })
                     )
                   }
                   disabled={forceLoad || isNavPending}
@@ -158,9 +153,7 @@ export function Conversations({ variant = "chats" }) {
           }
 
           // Communities
-          let [ip, port] = safeParseCommunityAddress(
-            item.community_address,
-          );
+          let [ip, port] = safeParseCommunityAddress(item.community_address);
 
           return (
             <SidebarMenuItem key={item.community_address}>
@@ -172,7 +165,7 @@ export function Conversations({ variant = "chats" }) {
                     setPage({
                       name: "community",
                       data: item.community_address,
-                    }),
+                    })
                   )
                 }
                 disabled={forceLoad || isNavPending}
@@ -202,4 +195,4 @@ export function Conversations({ variant = "chats" }) {
       )}
     </div>
   );
-};
+}

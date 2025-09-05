@@ -86,7 +86,9 @@ export function Main({ data }) {
               <p className="p-2 text-sm">Loaded all messages.</p>
             ) : null}
             {noMessageWithUser ? (
-              <p className="p-2 text-sm">You have no messages with this user.</p>
+              <p className="p-2 text-sm">
+                You have no messages with this user.
+              </p>
             ) : null}
             {messages.map((message) => (
               <Message key={message.id} message={message} />

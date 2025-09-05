@@ -101,7 +101,7 @@ export function MessageSend() {
   async function handleSubmit(
     event,
     useCustomMessage = false,
-    customMessage = false,
+    customMessage = false
   ) {
     event.preventDefault();
 
@@ -130,7 +130,7 @@ export function MessageSend() {
     let finalFile = `data:${event.target.files[0].type};base64,${data}`;
     let finalMessage = `![${event.target.files[0].name}](${finalFile})`.replace(
       "\n",
-      "",
+      ""
     );
     handleSubmit(event, true, finalMessage);
   }

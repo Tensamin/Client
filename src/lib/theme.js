@@ -133,7 +133,7 @@ export function generateTintPalette(baseHex, controls, colorScheme) {
 
     let baseColor = chroma(baseHex).set(
       "oklch.c",
-      `*${currentPrimarySaturationFactor}`,
+      `*${currentPrimarySaturationFactor}`
     );
     let [baseL, baseC, baseH] = baseColor.oklch();
     let resolvedBaseH = Number.isNaN(baseH) ? 0 : baseH;
@@ -193,7 +193,7 @@ export function generateTintPalette(baseHex, controls, colorScheme) {
       "--secondary": createColor(refs.secondary, "accent"),
       "--secondary-foreground": createColor(
         refs.secondary_foreground,
-        "accent",
+        "accent"
       ),
       "--muted": createColor(refs.muted, "accent"),
       "--muted-foreground": createColor(refs.muted_foreground, "accent"),
@@ -214,12 +214,12 @@ export function generateTintPalette(baseHex, controls, colorScheme) {
       "--sidebar-primary_foreground": createColor(
         refs.sidebar_primary_foreground,
         "base",
-        true,
+        true
       ),
       "--sidebar-accent": createColor(refs.sidebar_accent, "accent"),
       "--sidebar-accent_foreground": createColor(
         refs.sidebar_accent_foreground,
-        "accent",
+        "accent"
       ),
       "--sidebar-border": createColor(refs.sidebar_border),
       "--sidebar-ring": createColor(refs.sidebar_ring, "accent"),

@@ -20,7 +20,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { UserModal } from "@/components/page/root/user-modal/main";
-import { Conversations } from "@/components/page/root/conversations"
+import { Conversations } from "@/components/page/root/conversations";
 import { VoiceControls } from "@/components/page/voice/controls";
 
 // Main
@@ -87,21 +87,21 @@ export function AppSidebar(props) {
                     controls.start(
                       sidebarCategory === "communities"
                         ? {
-                          left: "0%",
-                          right: "50%",
-                          transition: {
-                            duration: 0.28,
-                            ease: [0.16, 1, 0.3, 1],
-                          },
-                        }
+                            left: "0%",
+                            right: "50%",
+                            transition: {
+                              duration: 0.28,
+                              ease: [0.16, 1, 0.3, 1],
+                            },
+                          }
                         : {
-                          left: "50%",
-                          right: "0%",
-                          transition: {
-                            duration: 0.28,
-                            ease: [0.16, 1, 0.3, 1],
-                          },
-                        }
+                            left: "50%",
+                            right: "0%",
+                            transition: {
+                              duration: 0.28,
+                              ease: [0.16, 1, 0.3, 1],
+                            },
+                          }
                     )
                   );
 
@@ -145,9 +145,7 @@ export function AppSidebar(props) {
                         disabled={forceLoad}
                         onClick={() => {
                           if (sidebarCategory !== "chats") {
-                            startTransition(() =>
-                              setSidebarCategory("chats")
-                            );
+                            startTransition(() => setSidebarCategory("chats"));
                           }
                         }}
                         aria-pressed={sidebarCategory === "chats"}
@@ -166,7 +164,11 @@ export function AppSidebar(props) {
         <SidebarMenu>
           <div className="relative">
             <div aria-busy={isPending ? "true" : "false"}>
-              {sidebarCategory === "chats" ? <Conversations variant="chats" /> : <Conversations variant="communities" />}
+              {sidebarCategory === "chats" ? (
+                <Conversations variant="chats" />
+              ) : (
+                <Conversations variant="communities" />
+              )}
             </div>
           </div>
         </SidebarMenu>

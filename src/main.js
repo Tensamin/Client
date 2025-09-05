@@ -38,7 +38,7 @@ function createWindow(url, width, height, resizable) {
 
   window.loadURL(url);
 
-  window.on('ready-to-show', () => {
+  window.on("ready-to-show", () => {
     window.show();
   });
 
@@ -53,7 +53,7 @@ function createWindow(url, width, height, resizable) {
   });
 
   return window;
-};
+}
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
@@ -93,7 +93,7 @@ ipcMain.on("window-toggle-maximize", () => {
 
 ipcMain.handle("window-is-maximized", () => {
   return Boolean(
-    mainWindow && !mainWindow.isDestroyed() && mainWindow.isMaximized(),
+    mainWindow && !mainWindow.isDestroyed() && mainWindow.isMaximized()
   );
 });
 
@@ -102,7 +102,7 @@ app.whenReady().then(async () => {
     let url = new URL(request.url);
     if (url.hostname && url.hostname !== "dist") {
       return new Response("Not found", { status: 404 });
-    };
+    }
 
     let rel = decodeURIComponent(url.pathname);
     let cleaned = rel.replace(/^\/+/, "");
@@ -110,16 +110,19 @@ app.whenReady().then(async () => {
 
     if (!fsPath.startsWith(ROOT + path.sep) && fsPath !== ROOT) {
       return new Response("Forbidden", { status: 403 });
-    };
+    }
 
     return net.fetch(pathToFileURL(fsPath).toString());
   });
 
-  preWindow = createWindow('app://dist/starting.html', 500, 200, false);
+  preWindow = createWindow("app://dist/starting.html", 500, 200, false);
   preWindow.close();
 
   if (true) {
-    let url = process.env.NODE_ENV === "development" ? "http://localhost:9161" : "app://dist/index.html";
+    let url =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:9161"
+        : "app://dist/index.html";
     mainWindow = createWindow(url, 1280, 720, true);
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -127,7 +130,7 @@ app.whenReady().then(async () => {
       }
     });
   } else {
-    createWindow("app://dist/update.html", 500, 200, false, preWindow)
-    console.log("New Version available!")
-  };
+    createWindow("app://dist/update.html", 500, 200, false, preWindow);
+    console.log("New Version available!");
+  }
 });

@@ -67,14 +67,14 @@ export function Navbar() {
 
   return (
     <div
-      className={`flex-1 flex items-center pt-2 ${open ? sidebarRightSide ? "ml-2" : "mr-2" : "mx-2"}`}
+      className={`flex-1 flex items-center pt-2 ${open ? (sidebarRightSide ? "ml-2" : "mr-2") : "mx-2"}`}
       style={{ WebkitAppRegion: "drag" }}
     >
       {!sidebarRightSide ? (
         <div
           className={cn(
             "bg-sidebar hidden md:block transition-all duration-300",
-            open ? "w-[var(--sidebar-width)]" : "w-0",
+            open ? "w-[var(--sidebar-width)]" : "w-0"
           )}
         />
       ) : (
@@ -226,7 +226,7 @@ export function Navbar() {
         <div
           className={cn(
             "bg-sidebar hidden md:block transition-all duration-300",
-            open ? "w-[var(--sidebar-width)]" : "w-0",
+            open ? "w-[var(--sidebar-width)]" : "w-0"
           )}
         />
       ) : (

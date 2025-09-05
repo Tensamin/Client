@@ -65,7 +65,7 @@ export function Message({ message }) {
   };
 
   let timestamp = new Intl.DateTimeFormat(undefined, options).format(
-    dateObject,
+    dateObject
   );
 
   return message.subMessages ? (
@@ -178,7 +178,7 @@ export function MessageLoading({ amount }) {
 
         <div className="text-sm break-all mt-2">
           {Array.from({ length: amount }).map((_, index) => (
-            <div key={index} >
+            <div key={index}>
               <div className="p-1">
                 <div className="h-px bg-border/40" />
               </div>

@@ -91,7 +91,7 @@ export function EditableTextarea({
     <Textarea
       className={cn(
         "placeholder break-words whitespace-pre-wrap outline-none cursor-text resize-none h-35",
-        className,
+        className
       )}
       onBlur={handleBlur}
       placeholder={placeholder}

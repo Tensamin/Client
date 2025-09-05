@@ -79,7 +79,7 @@ export function UserModal({ id, state }) {
                 onClick={() => toast("Huhu")}
                 className={cn(
                   "cursor-pointer rounded-full border-3 border-card",
-                  statusColors[state] || "bg-white",
+                  statusColors[state] || "bg-white"
                 )}
               />
             </TooltipTrigger>
@@ -143,9 +143,9 @@ export function SmallUserModal({
             encCallSecret,
             await get_shared_secret(
               privateKey,
-              await get(id).then((data) => data.public_key),
-            ),
-          ),
+              await get(id).then((data) => data.public_key)
+            )
+          )
         );
         setCallSecret(enc);
       }
@@ -203,7 +203,7 @@ export function SmallUserModal({
                   <div
                     className={cn(
                       "cursor-pointer rounded-full border-3 border-card",
-                      statusColors[state] || "bg-white",
+                      statusColors[state] || "bg-white"
                     )}
                   />
                 )}

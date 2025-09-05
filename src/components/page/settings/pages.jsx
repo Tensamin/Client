@@ -136,7 +136,7 @@ export function Profile() {
       .then((data) => {
         if (data.type !== "error") {
           toast.success(
-            `Updated your ${field === "display" ? "Display Name" : capitalizeFirstLetter(field)}!`,
+            `Updated your ${field === "display" ? "Display Name" : capitalizeFirstLetter(field)}!`
           );
           clearFromCache(ownUuid);
           send(
@@ -147,8 +147,8 @@ export function Profile() {
             },
             {
               user_state: ownState,
-            },
-          ).catch((_) => { });
+            }
+          ).catch((_) => {});
         } else {
           log(data.log.message, "showError");
         }
@@ -262,7 +262,7 @@ export function Appearance() {
   let [draftCustomCss, setDraftCustomCss] = useState(customCss || "");
 
   let [sidebarCategoryPolicy, setSidebarCategoryPolicy] = useState(
-    ls.get("layout_sidebar_category_policy") || "last",
+    ls.get("layout_sidebar_category_policy") || "last"
   );
   let [tmpColor, setTmpColor] = useState(customHex || "");
   let [tint, setTint] = useState(themeTint || "soft");
@@ -274,8 +274,8 @@ export function Appearance() {
     JSON.stringify(
       JSON.parse(ls.get("theme_control")) || THEME_CONTROLS,
       null,
-      2,
-    ),
+      2
+    )
   );
 
   useEffect(() => {
@@ -398,7 +398,7 @@ export function Appearance() {
                         <Icon.Check
                           className={cn(
                             "ml-auto",
-                            tint === "soft" ? "opacity-100" : "opacity-0",
+                            tint === "soft" ? "opacity-100" : "opacity-0"
                           )}
                         />
                       </CommandItem>
@@ -413,7 +413,7 @@ export function Appearance() {
                         <Icon.Check
                           className={cn(
                             "ml-auto",
-                            tint === "hard" ? "opacity-100" : "opacity-0",
+                            tint === "hard" ? "opacity-100" : "opacity-0"
                           )}
                         />
                       </CommandItem>
@@ -428,7 +428,7 @@ export function Appearance() {
                         <Icon.Check
                           className={cn(
                             "ml-auto",
-                            tint === "hard_a" ? "opacity-100" : "opacity-0",
+                            tint === "hard_a" ? "opacity-100" : "opacity-0"
                           )}
                         />
                       </CommandItem>
@@ -465,9 +465,7 @@ export function Appearance() {
                         <Icon.Check
                           className={cn(
                             "ml-auto",
-                            colorScheme === "dark"
-                              ? "opacity-100"
-                              : "opacity-0",
+                            colorScheme === "dark" ? "opacity-100" : "opacity-0"
                           )}
                         />
                       </CommandItem>
@@ -484,7 +482,7 @@ export function Appearance() {
                             "ml-auto",
                             colorScheme === "light"
                               ? "opacity-100"
-                              : "opacity-0",
+                              : "opacity-0"
                           )}
                         />
                       </CommandItem>
@@ -635,7 +633,7 @@ export function Appearance() {
                         "ml-auto",
                         sidebarCategoryPolicy === "last"
                           ? "opacity-100"
-                          : "opacity-0",
+                          : "opacity-0"
                       )}
                     />
                   </CommandItem>
@@ -653,7 +651,7 @@ export function Appearance() {
                         "ml-auto",
                         sidebarCategoryPolicy === "chats"
                           ? "opacity-100"
-                          : "opacity-0",
+                          : "opacity-0"
                       )}
                     />
                   </CommandItem>
@@ -671,7 +669,7 @@ export function Appearance() {
                         "ml-auto",
                         sidebarCategoryPolicy === "communities"
                           ? "opacity-100"
-                          : "opacity-0",
+                          : "opacity-0"
                       )}
                     />
                   </CommandItem>
@@ -687,12 +685,12 @@ export function Appearance() {
 
 export function Notifications() {
   let [loading, setLoading] = useState(
-    ls.get("notifications") === "enabled" ? true : false,
+    ls.get("notifications") === "enabled" ? true : false
   );
   let [message, setMessage] = useState(
     ls.get("notifications") === "enabled"
       ? "Notifications enabled."
-      : "Enable Notifications",
+      : "Enable Notifications"
   );
   let { requestNotificationPermission } = useMessageContext();
 
@@ -776,7 +774,7 @@ export function Voice() {
           if (mounted) {
             setOutputs(outputs);
           }
-        } catch { }
+        } catch {}
 
         try {
           let devices = await navigator.mediaDevices.enumerateDevices();
@@ -784,7 +782,7 @@ export function Voice() {
           if (mounted) {
             setInputs(inputs);
           }
-        } catch { }
+        } catch {}
       }
     }
 
@@ -806,7 +804,7 @@ export function Voice() {
                 .then(() => {
                   window.location.reload();
                 });
-            } catch { }
+            } catch {}
           }}
         >
           Request microphone permission
@@ -828,8 +826,8 @@ export function Voice() {
                   ? "None"
                   : outputDeviceId
                     ? outputs.find(
-                      (output) => output.deviceId === outputDeviceId,
-                    )?.label
+                        (output) => output.deviceId === outputDeviceId
+                      )?.label
                     : "Select device..."}
               </p>
               <Icon.ChevronsUpDown className="opacity-50" />
@@ -848,7 +846,7 @@ export function Voice() {
                         setOutput(
                           currentValue === outputDeviceId
                             ? "default"
-                            : currentValue,
+                            : currentValue
                         );
                         setOpenOutputs(false);
                       }}
@@ -859,7 +857,7 @@ export function Voice() {
                           "ml-auto",
                           outputDeviceId === device.deviceId
                             ? "opacity-100"
-                            : "opacity-0",
+                            : "opacity-0"
                         )}
                       />
                     </CommandItem>
@@ -886,7 +884,7 @@ export function Voice() {
                   ? "None"
                   : inputDeviceId
                     ? inputs.find((input) => input.deviceId === inputDeviceId)
-                      ?.label
+                        ?.label
                     : "Select device..."}
               </p>
               <Icon.ChevronsUpDown className="opacity-50" />
@@ -905,7 +903,7 @@ export function Voice() {
                         setInput(
                           currentValue === inputDeviceId
                             ? "default"
-                            : currentValue,
+                            : currentValue
                         );
                         setOpenInputs(false);
                       }}
@@ -916,7 +914,7 @@ export function Voice() {
                           "ml-auto",
                           inputDeviceId === device.deviceId
                             ? "opacity-100"
-                            : "opacity-0",
+                            : "opacity-0"
                         )}
                       />
                     </CommandItem>
@@ -1188,7 +1186,9 @@ export function Extensions() {
         </Button>
       </div>
 
-      {extensions && extensions !== "" && Object.keys(extensions).length >= 1 ? (
+      {extensions &&
+      extensions !== "" &&
+      Object.keys(extensions).length >= 1 ? (
         <div>
           {Object.keys(extensions).map((key) => (
             <ExtensionCard

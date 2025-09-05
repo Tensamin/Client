@@ -124,10 +124,10 @@ export function LoginForm() {
 
       passwordFieldRef.current.value = btoa(rawJwk);
       passwordFieldRef.current.dispatchEvent(
-        new Event("change", { bubbles: true }),
+        new Event("change", { bubbles: true })
       );
       passwordFieldRef.current.dispatchEvent(
-        new Event("input", { bubbles: true }),
+        new Event("input", { bubbles: true })
       );
       passwordFieldRef.current.focus();
       setPrivateKey(jwk);
@@ -174,7 +174,7 @@ export function LoginForm() {
 
                   // Turn Username into UUID
                   await fetch(
-                    endpoint.username_to_uuid + username.toLowerCase(),
+                    endpoint.username_to_uuid + username.toLowerCase()
                   )
                     .then((response) => response.json())
                     .then((data) => {
@@ -191,11 +191,11 @@ export function LoginForm() {
                     window.keyring.set(
                       "net.methanium.tensamin",
                       username.toLowerCase(),
-                      secret,
+                      secret
                     );
                     let encrypted_private_key = await encrypt_base64_using_aes(
                       btoa(JSON.stringify(privateKey)),
-                      secret,
+                      secret
                     );
                     ls.set("auth_private_key", encrypted_private_key);
                     ls.set("auth_uuid", uuid);
@@ -251,7 +251,7 @@ export function LoginForm() {
                       let encrypted_private_key =
                         await encrypt_base64_using_aes(
                           btoa(JSON.stringify(privateKey)),
-                          lambda,
+                          lambda
                         );
                       ls.set("auth_private_key", encrypted_private_key);
                       ls.set("auth_uuid", uuid);
@@ -261,7 +261,7 @@ export function LoginForm() {
                         let fingerprint = await getDeviceFingerprint();
                         let encryptedLambda = await encrypt_base64_using_aes(
                           lambda,
-                          fingerprint,
+                          fingerprint
                         );
                         ls.set("auth_lambda", encryptedLambda);
                       } else ls.remove("auth_lambda");
@@ -306,7 +306,7 @@ export function LoginForm() {
                       onChange={() => {
                         try {
                           setPrivateKey(
-                            JSON.parse(atob(passwordFieldRef.current.value)),
+                            JSON.parse(atob(passwordFieldRef.current.value))
                           );
                         } catch {
                           setPrivateKey("");
