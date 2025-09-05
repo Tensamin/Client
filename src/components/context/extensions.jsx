@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import React, { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 // Context Imports
 import { useCallContext } from "@/components/context/call";
@@ -15,20 +15,22 @@ import { useWebSocketContext } from "@/components/context/websocket";
 import ls from "@/lib/localStorageManager";
 
 // Main
-let ModsContext = createContext();
+let ExtensionsContext = createContext();
 
 // Use Context Function
-export function useModsContext() {
-  let context = useContext(ModsContext);
+export function useExtensionsContext() {
+  let context = useContext(ExtensionsContext);
   if (context === undefined) {
-    throw new Error("useModsContext must be used within a ModsProvider");
+    throw new Error(
+      "useExtensionsContext must be used within an ExtensionsProvider",
+    );
   }
   return context;
 }
 
 // Provider
-export function ModsProvider({ children }) {
-  let [mods, setMods] = useState({});
+export function ExtensionsProvider({ children }) {
+  let [extensions, setExtensions] = useState({});
   let [failed, setFailed] = useState([]);
 
   let callContext = useCallContext();
@@ -41,19 +43,19 @@ export function ModsProvider({ children }) {
   let webSocketContext = useWebSocketContext();
 
   useEffect(() => {
-    if (!ls.get("mods") || ls.get("mods") === "") return;
-    let mods = JSON.parse(ls.get("mods"));
-    setMods(mods);
+    if (!ls.get("extensions") || ls.get("extensions") === "") return;
+    let exts = JSON.parse(ls.get("extensions"));
+    setExtensions(exts);
   }, []);
 
   useEffect(() => {
-    if (!mods || mods === "") return;
-    ls.set("mods", JSON.stringify(mods));
-    Object.keys(mods).forEach((key) => {
-      let mod = mods[key];
-      if (mod.enabled) {
+    if (!extensions || extensions === "") return;
+    ls.set("extensions", JSON.stringify(extensions));
+    Object.keys(extensions).forEach((key) => {
+      let extension = extensions[key];
+      if (extension.enabled) {
         try {
-          let data = atob(mod.src);
+          let data = atob(extension.src);
 
           let contexts = {
             useCallContext: callContext,
@@ -72,45 +74,51 @@ export function ModsProvider({ children }) {
             functions[intent] = contexts[intent];
           });
 
-          let modCode = new Function(
+          let extensionCode = new Function(
             "intents",
             data.replace(data.split("\n")[0], ""),
           );
 
           try {
-            modCode(functions);
+            extensionCode(functions);
           } catch (err) {
             setFailed((prev) => [
               ...prev, // move down to reverse order
-              { name: mod.name, error: err.message },
+              { name: extension.name, error: err.message },
             ]);
             console.log(
-              `Failed to load [${mod.name}] [Execution]: ${err.message}`,
+              "Failed to load [" +
+                extension.name +
+                "] [Execution]: " +
+                err.message,
             );
           }
         } catch (err) {
           setFailed((prev) => [
             ...prev,
-            { name: mod.name, error: err.message },
+            { name: extension.name, error: err.message },
           ]);
           console.log(
-            `Failed to load [${mod.name}] [Invalid Structure]: ${err.message}`,
+            "Failed to load [" +
+              extension.name +
+              "] [Invalid Structure]: " +
+              err.message,
           );
         }
       } else {
-        console.log("Did not load: " + mod.name);
+        console.log("Did not load: " + extension.name);
       }
     });
-  }, [mods]);
+  }, [extensions]);
 
   return (
-    <ModsContext.Provider
+    <ExtensionsContext.Provider
       value={{
-        mods,
-        setMods,
+        extensions,
+        setExtensions,
       }}
     >
       {children}
-    </ModsContext.Provider>
+    </ExtensionsContext.Provider>
   );
 }

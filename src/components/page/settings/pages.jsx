@@ -26,7 +26,7 @@ import { useCryptoContext } from "@/components/context/crypto";
 import { useUsersContext } from "@/components/context/users";
 import { useMessageContext } from "@/components/context/message";
 import { useThemeContext } from "@/components/context/theme";
-import { useModsContext } from "@/components/context/mods";
+import { useExtensionsContext } from "@/components/context/extensions";
 import { useCallContext } from "@/components/context/call";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { usePageContext } from "@/components/context/page";
@@ -997,66 +997,66 @@ export function ExtraBenefits() {
   );
 }
 
-export function Mods() {
-  let { mods, setMods } = useModsContext();
-  let [newMod, setNewMod] = useState("");
-  let [newMods, setNewMods] = useState("");
-  let addModButtonRef = useRef(null);
-  let importButtonRef = useRef(null);
+export function Extensions() {
+  let { extensions, setExtensions } = useExtensionsContext();
+  let [newExtension, setNewExtension] = useState("");
+  let [newExtensions, setNewExtensions] = useState("");
+  let addExtensionButtonRef = useRef(null);
+  let importExtensionsButtonRef = useRef(null);
 
   useEffect(() => {
-    if (!newMod || newMod === "") return;
+    if (!newExtension || newExtension === "") return;
 
     try {
-      let jsonMod = JSON.parse(newMod);
+      let jsonExtension = JSON.parse(newExtension);
       if (
-        jsonMod.name &&
-        jsonMod.description &&
-        jsonMod.version &&
-        jsonMod.src
+        jsonExtension.name &&
+        jsonExtension.description &&
+        jsonExtension.version &&
+        jsonExtension.src
       ) {
-        let modName = jsonMod.name;
+        let extensionName = jsonExtension.name;
 
-        fetch(jsonMod.src)
+        fetch(jsonExtension.src)
           .then((response) => response.text())
           .then((data) => {
-            setMods((prev) => ({
+            setExtensions((prev) => ({
               ...prev,
-              [modName]: {
-                name: jsonMod.name,
-                description: jsonMod.description,
-                version: jsonMod.version,
+              [extensionName]: {
+                name: jsonExtension.name,
+                description: jsonExtension.description,
+                version: jsonExtension.version,
                 src: btoa(data),
                 enabled: true,
               },
             }));
-            toast.success("Added Mod");
+            toast.success("Added Extension");
           });
       } else {
-        toast("Invalid Mod");
+        toast("Invalid Extension");
       }
     } catch (err) {
-      toast("Invalid Mod");
+      toast("Invalid Extension");
     }
-  }, [newMod, setMods]);
+  }, [newExtension, setExtensions]);
 
   useEffect(() => {
-    if (!newMods || newMods === "") return;
+    if (!newExtensions || newExtensions === "") return;
     try {
-      let jsonMods = JSON.parse(newMods);
-      if (Object.keys(jsonMods).length >= 1) {
-        setMods(jsonMods);
-        toast.success("Added Mods");
+      let jsonExtensions = JSON.parse(newExtensions);
+      if (Object.keys(jsonExtensions).length >= 1) {
+        setExtensions(jsonExtensions);
+        toast.success("Added Extensions");
       } else {
-        toast("Invalid Mods");
+        toast("Invalid Extensions");
       }
     } catch (err) {
-      toast("Invalid Mods");
+      toast("Invalid Extensions");
     }
-  }, [newMods, setMods]);
+  }, [newExtensions, setExtensions]);
 
   let handleToggle = (key, nextEnabled) => {
-    setMods((prev) => {
+    setExtensions((prev) => {
       if (!prev || !prev[key]) return prev;
       if (prev[key].enabled === nextEnabled) return prev;
       return {
@@ -1069,22 +1069,25 @@ export function Mods() {
     });
   };
 
-  function ModCard({ modKey, mod, onToggle }) {
-    let [enabled, setEnabled] = useState(Boolean(mod.enabled));
+  function ExtensionCard({ extensionKey, extension, onToggle }) {
+    let [enabled, setEnabled] = useState(Boolean(extension.enabled));
 
     useEffect(() => {
-      setEnabled(Boolean(mod.enabled));
-    }, [mod.enabled]);
+      setEnabled(Boolean(extension.enabled));
+    }, [extension.enabled]);
 
     let handleChange = (next) => {
       setEnabled(next);
-      if (onToggle) onToggle(modKey, next);
+      if (onToggle) onToggle(extensionKey, next);
     };
 
     return (
-      <Card key={modKey} className="bg-input/30 border-input hover:bg-input/50">
+      <Card
+        key={extensionKey}
+        className="bg-input/30 border-input hover:bg-input/50"
+      >
         <CardHeader>
-          <CardTitle>{mod.name}</CardTitle>
+          <CardTitle>{extension.name}</CardTitle>
           <CardAction className="flex items-center gap-3">
             <Switch checked={enabled} onCheckedChange={handleChange} />
             <AlertDialog>
@@ -1105,10 +1108,10 @@ export function Mods() {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => {
-                      setMods((prev) => {
-                        let newMods = { ...prev };
-                        delete newMods[mod.name];
-                        return newMods;
+                      setExtensions((prev) => {
+                        let newExts = { ...prev };
+                        delete newExts[extensionKey];
+                        return newExts;
                       });
                     }}
                   >
@@ -1118,7 +1121,9 @@ export function Mods() {
               </AlertDialogContent>
             </AlertDialog>
           </CardAction>
-          <p className="text-sm text-muted-foreground">{mod.description}</p>
+          <p className="text-sm text-muted-foreground">
+            {extension.description}
+          </p>
         </CardHeader>
       </Card>
     );
@@ -1128,68 +1133,68 @@ export function Mods() {
     <div className="flex flex-col gap-6 h-full">
       <div>
         <p className="text-destructive text-xs md:text-md">
-          Mods are not reviewed and can steal your JWK / private key!
+          Extensions are not reviewed and can steal your JWK / private key!
         </p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-2">
         <input
-          ref={addModButtonRef}
+          ref={addExtensionButtonRef}
           onChange={async (e) => {
             let files = Array.from(e.target.files || []);
             if (files[0]) {
-              setNewMod(await readFileAsText(files[0]));
+              setNewExtension(await readFileAsText(files[0]));
             }
           }}
           className="hidden"
-          id="new-mod-file"
+          id="new-extension-file"
           type="file"
         />
         <input
-          ref={importButtonRef}
+          ref={importExtensionsButtonRef}
           onChange={async (e) => {
             let files = Array.from(e.target.files || []);
             if (files[0]) {
-              setNewMods(await readFileAsText(files[0]));
+              setNewExtensions(await readFileAsText(files[0]));
             }
           }}
           className="hidden"
-          id="new-mods-file"
+          id="new-extensions-file"
           type="file"
         />
         <Button
           onClick={() => {
-            addModButtonRef.current.click();
+            addExtensionButtonRef.current.click();
           }}
         >
-          Add Mod
+          Add Extension
         </Button>
         <div className="w-full hidden md:block" />
         <Button
           variant="outline"
           onClick={() => {
-            downloadString("mods.json", JSON.stringify(mods));
+            downloadString("extensions.json", JSON.stringify(extensions));
           }}
         >
-          Export Mods
+          Export Extensions
         </Button>
         <Button
           variant="outline"
           onClick={() => {
-            importButtonRef.current.click();
+            importExtensionsButtonRef.current.click();
           }}
         >
-          Import Mods
+          Import Extensions
         </Button>
       </div>
 
-      {mods && mods !== "" && Object.keys(mods).length >= 1 ? (
+      {extensions && extensions !== "" && Object.keys(extensions).length >= 1 ? (
         <div>
-          {Object.keys(mods).map((key) => (
-            <ModCard
+          {Object.keys(extensions).map((key) => (
+            <ExtensionCard
               key={key}
-              modKey={key}
-              mod={mods[key]}
+              extensionKey={key}
+              extension={extensions[key]}
               onToggle={handleToggle}
             />
           ))}
@@ -1204,7 +1209,7 @@ export function Mods() {
             alt="Meme"
             loading="eager"
           />
-          <p className="text-2xl">No Mods?</p>
+          <p className="text-2xl">No Extensions?</p>
         </div>
       )}
     </div>

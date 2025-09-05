@@ -17,7 +17,7 @@ import { CryptoProvider } from "@/components/context/crypto";
 import { EncryptionProvider } from "@/components/context/encryption";
 import { ThemeProvider } from "@/components/context/theme";
 import { CallProvider } from "@/components/context/call";
-import { ModsProvider } from "@/components/context/mods";
+import { ExtensionsProvider } from "@/components/context/extensions";
 import { CommunityProvider } from "@/components/context/communtiy";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
@@ -99,8 +99,7 @@ export default function LoadingWrapper() {
       let availW = screen.availWidth || screen.width;
       let availH = screen.availHeight || screen.height;
       let isMax =
-        near(window.outerWidth, availW) &&
-        near(window.outerHeight, availH);
+        near(window.outerWidth, availW) && near(window.outerHeight, availH);
 
       setIsFullscreen(Boolean(browserFS) || coverDisplay);
       setIsMaximized(Boolean(isMax));
@@ -157,11 +156,11 @@ export default function LoadingWrapper() {
                 <PageProvider>
                   <CommunityProvider>
                     <ThemeProvider>
-                      <ModsProvider>
+                      <ExtensionsProvider>
                         <SidebarProvider className="bg-sidebar">
                           <Page />
                         </SidebarProvider>
-                      </ModsProvider>
+                      </ExtensionsProvider>
                     </ThemeProvider>
                   </CommunityProvider>
                 </PageProvider>
@@ -175,8 +174,9 @@ export default function LoadingWrapper() {
 
   return (
     <div
-      className={`min-h-screen ${roundedShell ? "overflow-hidden rounded-2xl" : ""
-        }`}
+      className={`min-h-screen ${
+        roundedShell ? "overflow-hidden rounded-2xl" : ""
+      }`}
     >
       {content}
     </div>
