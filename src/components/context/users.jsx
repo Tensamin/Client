@@ -4,9 +4,18 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 // Lib Imports
-import { log, getDisplayFromUsername, RETRIES, isElectron } from "@/lib/utils";
+import {
+  log,
+  getDisplayFromUsername,
+  RETRIES,
+  isElectron,
+  safeAtob,
+} from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
 import ls from "@/lib/local_storage";
+
+// Context Imports
+import { useCryptoContext } from "@/components/context/crypto.jsx";
 
 // Main
 let UsersContext = createContext();
@@ -22,67 +31,68 @@ export function useUsersContext() {
 
 // Provider
 export function UsersProvider({ children }) {
-  let [fetchedUsers, setFetchedUsers] = useState({});
-  let [userStates, setUserStates] = useState({});
+  let [users, setUsers] = useState({});
   let [chatsArray, setChatsArray] = useState([]);
   let [communitiesArray, setCommunitiesArray] = useState([]);
   let [forceLoad, setForceLoad] = useState(false);
   let [ownState, setOwnState] = useState("ONLINE");
-  let [refetchUser, setRefetchUser] = useState(false);
   let [fetchChats, setFetchChats] = useState(true);
   let [fetchCommunities, setFetchCommunities] = useState(true);
-  let [usingElectron, setUsingElectron] = useState(false);
 
+  let { get_shared_secret, privateKey } = useCryptoContext();
+
+  // Check for Electron
+  let [usingElectron, setUsingElectron] = useState(false);
   useEffect(() => {
     let tmpIsElectron = isElectron();
     if (tmpIsElectron) {
       setUsingElectron(true);
-      document.body.classList.add("rounded-xl")
+      document.body.classList.add("rounded-xl");
     } else {
       setUsingElectron(false);
     }
   }, []);
 
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  function safeAtob(value) {
-    try {
-      if (typeof value !== "string" || value.length === 0) return "";
-      return atob(value);
-    } catch (_e) {
-      return typeof value === "string" ? value : "";
+  async function get(uuid, refetch = false, state) {
+    if (users[uuid] && !refetch) {
+      return users[uuid];
     }
-  }
 
-  async function clearFromCache(uuid) {
-    await get(uuid, true);
-    setRefetchUser((prev) => !prev);
-  }
+    let newUser;
 
-  function doChatRefresh() {
-    setFetchChats(true);
-  }
-
-  function doCommunityRefresh() {
-    setFetchCommunities(true);
-  }
-
-  function getUserState(uuid) {
-    if (userStates[uuid]) {
-      return userStates[uuid];
-    } else {
-      return "none";
+    for (let attempt = 0; attempt <= RETRIES; attempt++) {
+      try {
+        await fetch(`${endpoint.user}${uuid}`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.type !== "error") {
+              newUser = data.data;
+            }
+          });
+        break;
+      } catch (err) {}
     }
-  }
 
-  function setUserState(uuid, state) {
-    setUserStates((prevUsers) => ({
+    newUser.display = getDisplayFromUsername(newUser.username, newUser.display);
+    newUser.shared_secret = await get_shared_secret(
+      privateKey,
+      newUser.public_key
+    );
+    if (typeof state !== "undefined") {
+      newUser.state = state;
+    }
+
+    setUsers((prevUsers) => ({
       ...prevUsers,
-      [uuid]: state,
+      [uuid]: newUser,
     }));
+
+    return newUser;
   }
+
+  // clearFromCache
+  // doChatRefresh
+  // doCommunityRefresh
 
   function makeChatTop(uuid) {
     let newArray = [...chatsArray];
@@ -94,107 +104,30 @@ export function UsersProvider({ children }) {
     }
   }
 
-  async function get(uuid, refresh = false) {
-    if (typeof uuid !== "undefined") {
-      if (fetchedUsers[uuid] && !refresh) {
-        log("User already fetched: " + uuid, "debug");
-        return fetchedUsers[uuid];
-      } else {
-        let fetchedUser = null;
-        for (let attempt = 0; attempt <= RETRIES; attempt++) {
-          try {
-            let res = await fetch(`${endpoint.user}${uuid}`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            let data = await res.json();
-            if (data && data.type !== "error" && data.data) {
-              fetchedUser = data.data;
-              break;
-            }
-            throw new Error("API responded with error type");
-          } catch (err) {
-            if (attempt < RETRIES) {
-              let delay = 200 * Math.pow(2, attempt);
-              log(
-                `Retry ${attempt + 1}/${RETRIES} fetching user ${uuid} after error: ${err?.message ?? err}`,
-                "debug",
-              );
-              await sleep(delay);
-            }
-          }
-        }
-
-        if (!fetchedUser || fetchedUser === null) {
-          fetchedUser = {
-            uuid: uuid,
-            created_at: 0,
-            username: "Failed to load",
-            display: "Failed to load",
-            avatar: "...",
-            about: "Failed to load",
-            status: "",
-            public_key:
-              "MIICLjANBgkqhkiG9w0BAQEFAAOCAhsAMIICFgKCAg0NmcU0Xqog/GN/Fvg8EXPirko4RIHjDxq4gbQ8eqEj0ui4GpL5DVt50u/6Lx81/thYrCfg/jq75n6ARYxMgadC4BRKrpaWiKFVilprZ/8fjCpD1k3RPaxMjaKtjncxNzoCUTwQkq4Yoy++Kh8FWAim7454lNd1r1YtyeiPn/WsDX+h/PrIVqR0PStx4QHxO3SkPRwNQR+1paJBKPK4SiKGJyHNDXlcxuz6A0FD1tZ8IBidSSqloayg+kCMZpgSRceOMZONvWJKlsRkaJZcwPJ/up5aDGT55DSoHtwZpI/L3XHKNukc3+X9moj1dSTbH1yAJNQqJdyEnYD8P37+uxBS44A42aFhqrbsimcadIev+Fqp3CWiZz9oAxx3bQBeTKCj/IzMGQFdN4Lq5oGSWJE/Banb6VdaPdfdIAAP1CSXLL1KpENlJvxkD+2UKptHjoz5cVo2lv6sHZacztuLa4nzAq3AXs53D+givWHzeyXIOYEnt6tq6eLn5lfWLBCbwIaQCcEuKmoJm8qhzO9nrB3ISg42RRkLd+ccSt7ZTo+4UmkFnUsfg3F0l2/NrasWH57Sw/+EhBEDWscKKt15HdJFkeWKYPpkjSySofwq7U00bgIFvWohgGca3o04CDmSq1u2RLDayIUKAt6hNXBxcTVQeK+l/uQKFhtvz2t2Ow2d+jXDAXg4g2gJg5YBrU0CAwEAAQ==",
-            sub_level: 0,
-            sub_end: 0,
-          };
-        }
-
-        let userToStore = {
-          uuid: uuid,
-          created_at: fetchedUser.created_at,
-          username: fetchedUser.username,
-          display: getDisplayFromUsername(
-            fetchedUser.username,
-            fetchedUser.display,
-          ),
-          avatar: fetchedUser.avatar,
-          about: safeAtob(fetchedUser.about),
-          status: fetchedUser.status,
-          public_key: fetchedUser.public_key,
-          sub_level: fetchedUser.sub_level,
-          sub_end: fetchedUser.sub_end,
-        };
-
-        setFetchedUsers((prevUsers) => ({
-          ...prevUsers,
-          [uuid]: userToStore,
-        }));
-
-        return userToStore;
-      }
-    } else {
-      return {};
-    }
-  }
-
   return (
     <UsersContext.Provider
       value={{
         get,
-        fetchedUsers,
-        userStates,
-        getUserState,
-        setUserState,
-        setUserStates,
-        chatsArray,
-        setChatsArray,
-        communitiesArray,
-        setCommunitiesArray,
-        makeChatTop,
-        forceLoad,
-        setForceLoad,
+        users,
+        usingElectron,
+
         ownUuid: ls.get("auth_uuid"),
         ownState,
         setOwnState,
-        clearFromCache,
-        refetchUser,
+
+        forceLoad,
+        setForceLoad,
+
+        chatsArray,
+        setChatsArray,
         fetchChats,
-        fetchCommunities,
         setFetchChats,
+        makeChatTop,
+
+        communitiesArray,
+        setCommunitiesArray,
+        fetchCommunities,
         setFetchCommunities,
-        doChatRefresh,
-        doCommunityRefresh,
-        usingElectron,
       }}
     >
       {children}

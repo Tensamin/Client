@@ -42,7 +42,7 @@ export function AppSidebar(props) {
         <SidebarMenu>
           <SidebarMenuItem className="border-1 bg-card rounded-xl">
             <SidebarMenuButton size="lg" asChild>
-              <UserModal id={ownUuid} state="ONLINE" />
+              <UserModal uuid={ownUuid} />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

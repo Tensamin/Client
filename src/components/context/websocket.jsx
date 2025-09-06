@@ -44,12 +44,10 @@ export let WebSocketProvider = ({ children }) => {
   let responseTimeout = 10000;
   let { privateKeyHash } = useCryptoContext();
   let {
-    setUserState,
-    setUserStates,
+    get,
     forceLoad,
     setForceLoad,
-    clearFromCache,
-    doChatRefresh,
+    setFetchChats,
   } = useUsersContext();
   let [iotaPing, setIotaPing] = useState("?");
   let [clientPing, setClientPing] = useState("?");
@@ -72,16 +70,17 @@ export let WebSocketProvider = ({ children }) => {
 
       switch (message.type) {
         case "get_states":
-          setUserStates(message.data.user_states);
+          Object.keys(message.data.user_states).forEach((userId) => {
+            get(userId, true, message.data.user_states[userId]);
+          });
           break;
 
         case "client_changed":
-          setUserState(message.data.user_id, message.data.user_state);
-          clearFromCache(message.data.user_id);
+          get(message.data.user_id, true, message.data.user_state);
           break;
 
         case "shared_secret_return":
-          doChatRefresh();
+          setFetchChats(true);
           break;
 
         default:

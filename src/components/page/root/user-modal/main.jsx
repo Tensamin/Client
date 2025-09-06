@@ -28,46 +28,39 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 // User Modal for user
-export function UserModal({ id, state }) {
-  let [avatar, setAvatar] = useState("...");
-  let [username, setUsername] = useState("...");
-  let [display, setDisplay] = useState("...");
-  let { get, refetchUser } = useUsersContext();
+export function UserModal({ uuid }) {
+  let { get } = useUsersContext();
+
+  let [user, setUser] = useState({ loading: true });
 
   useEffect(() => {
-    if (id !== "")
-      get(id).then((data) => {
-        setAvatar(data.avatar);
-        setUsername(data.username);
-        setDisplay(data.display);
-      });
-  }, [id, refetchUser]);
+    get(uuid).then((data) => {
+      setUser({ loading: false, ...data });
+    });
+  }, [uuid]);
 
   return (
     <div className="rounded-xl flex flex-col items-center p-3 gap-3 justify-center">
       <div className="flex w-full gap-3 items-center">
         <div className="relative w-[35px] h-[35px]">
-          {avatar !== "..." ? (
+          {user.loading ? (
+            <Skeleton className="rounded-full size-8" />
+          ) : (
             <Avatar className="bg-accent/50">
-              {avatar !== "" ? (
+              {user.avatar !== "" ? (
                 <Image
                   className="w-auto h-auto object-fill"
                   data-slot="avatar-image"
                   width={36}
                   height={36}
-                  src={avatar}
+                  src={user.avatar}
                   alt=""
-                  onError={() => {
-                    setAvatar("");
-                  }}
                 />
               ) : null}
               <AvatarFallback>
-                {convertDisplayNameToInitials(username)}
+                {convertDisplayNameToInitials(user.username)}
               </AvatarFallback>
             </Avatar>
-          ) : (
-            <Skeleton className="rounded-full size-8" />
           )}
           <Tooltip>
             <TooltipTrigger
@@ -78,32 +71,28 @@ export function UserModal({ id, state }) {
                 onClick={() => toast("Huhu")}
                 className={cn(
                   "cursor-pointer rounded-full border-3 border-card",
-                  statusColors[state] || "bg-white"
+                  statusColors[user.state] || "bg-white"
                 )}
               />
             </TooltipTrigger>
             <TooltipContent className="border-1">
-              <p>{formatUserStatus(state)}</p>
+              <p>{formatUserStatus(user.state)}</p>
             </TooltipContent>
           </Tooltip>
         </div>
         <div className="w-full">
           <div className="text-[14px] font-bold">
-            {display !== "..." ? (
-              <p>{display}</p>
+            {user.loading ? (
+              <Skeleton className="h-5 w-32" />
             ) : (
-              <Skeleton className="mr-20">
-                <p className="invisible">🥴</p>
-              </Skeleton>
+              <p>{user.display}</p>
             )}
           </div>
           <div className="text-[12px] font-bold text-foreground/67">
-            {username !== "..." ? (
-              <p>{username}</p>
+            {user.loading ? (
+              <Skeleton className="h-3 w-28 mt-1" />
             ) : (
-              <Skeleton className="mr-8 mt-1">
-                <p className="invisible">🥴</p>
-              </Skeleton>
+              <p>{user.username}</p>
             )}
           </div>
         </div>
@@ -130,7 +119,8 @@ export function SmallUserModal({
   let [callActiveHover, setCallActiveHover] = useState(false);
   let [showCallActive, setShowCallActive] = useState(callActive);
   let { get, refetchUser } = useUsersContext();
-  let { privateKey, get_shared_secret, decrypt_base64_using_aes } = useCryptoContext();
+  let { privateKey, get_shared_secret, decrypt_base64_using_aes } =
+    useCryptoContext();
   let { startCall } = useCallContext();
 
   useEffect(() => {
