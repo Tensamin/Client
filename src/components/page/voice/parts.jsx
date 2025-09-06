@@ -10,7 +10,6 @@ import { endpoint } from "@/lib/endpoints";
 // Context Imports
 import { useUsersContext } from "@/components/context/users";
 import { useCallContext } from "@/components/context/call";
-import { useEncryptionContext } from "@/components/context/encryption";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useCryptoContext } from "@/components/context/crypto";
 
@@ -311,8 +310,7 @@ export function User({ id, className, avatarSize }) {
 }
 
 export function InviteItem({ id, onShouldClose }) {
-  let { get } = useUsersContext();
-  let { get_shared_secret, encrypt_base64_using_aes } = useEncryptionContext();
+  let { get, get_shared_secret, encrypt_base64_using_aes } = useUsersContext();
   let { privateKey } = useCryptoContext();
   let { send } = useWebSocketContext();
   let { callId, callSecret } = useCallContext();

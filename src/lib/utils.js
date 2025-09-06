@@ -247,3 +247,12 @@ export function safeParseCommunityAddress(addr) {
   } catch (_) {}
   return ["", 0];
 }
+
+export function safeAtob(value) {
+  try {
+    if (typeof value !== "string" || value.length === 0) return "";
+    return atob(value);
+  } catch (_e) {
+    return typeof value === "string" ? value : "";
+  }
+}

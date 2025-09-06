@@ -15,7 +15,7 @@ import { v7 } from "uuid";
 // Lib Imports
 import { log as logFunction, RETRIES } from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 
 // Context Imports
 import { useCryptoContext } from "@/components/context/crypto";

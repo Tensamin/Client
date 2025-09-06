@@ -25,7 +25,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useCryptoContext } from "@/components/context/crypto";
-import { useEncryptionContext } from "@/components/context/encryption";
 import { useCallContext } from "@/components/context/call";
 
 // User Modal for Sidebar Chats

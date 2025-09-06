@@ -11,7 +11,7 @@ import Image from "next/image";
 
 // Lib Imports
 import { convertDisplayNameToInitials } from "@/lib/utils";
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 
 // Context Imports
 import { useUsersContext } from "@/components/context/users";

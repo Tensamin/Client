@@ -15,14 +15,13 @@ import "ldrs/react/Ring.css";
 import { endpoint } from "@/lib/endpoints";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
 import { sha256, isElectron } from "@/lib/utils";
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 
 // Context Imports
-import { useEncryptionContext } from "@/components/context/encryption";
+import { useCryptoContext, CryptoProvider } from "@/components/context/crypto";
 
 // Components
 import { Card, CardContent } from "@/components/ui/card";
-import { EncryptionProvider } from "@/components/context/encryption";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -51,9 +50,9 @@ function readFileAsText(file) {
 // Wrapper
 export default function EncryptionWrapper() {
   return (
-    <EncryptionProvider>
+    <CryptoProvider>
       <LoginForm />
-    </EncryptionProvider>
+    </CryptoProvider>
   );
 }
 
@@ -66,7 +65,7 @@ export function LoginForm() {
   let [failed, setFailed] = useState(false);
   let [error, setError] = useState("");
   let [staySignedIn, setStaySignedIn] = useState(false);
-  let { encrypt_base64_using_aes } = useEncryptionContext();
+  let { encrypt_base64_using_aes } = useCryptoContext();
   let privateKeyFileRef = useRef(null);
   let passwordFieldRef = useRef(null);
   let counter = useRef(0);
@@ -190,7 +189,7 @@ export function LoginForm() {
                     let secret = v7();
                     window.keyring.set(
                       "net.methanium.tensamin",
-                      username.toLowerCase(),
+                      uuid,
                       secret
                     );
                     let encrypted_private_key = await encrypt_base64_using_aes(

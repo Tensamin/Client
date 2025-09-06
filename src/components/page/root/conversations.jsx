@@ -33,7 +33,6 @@ export function Conversations({ variant = "chats" }) {
     setChatsArray,
     fetchChats,
     setFetchChats,
-    getUserState,
     communitiesArray,
     setCommunitiesArray,
     fetchCommunities,
@@ -139,7 +138,6 @@ export function Conversations({ variant = "chats" }) {
                     ) : (
                       <SmallUserModal
                         id={item.user_id}
-                        state={getUserState(item.user_id)}
                         showIotaStatus={true}
                         callActive={item.call_active}
                         callId={item.call_id || ""}

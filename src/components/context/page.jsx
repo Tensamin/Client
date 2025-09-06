@@ -5,7 +5,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 // Context Imports
 import { useMessageContext } from "@/components/context/message";
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 
 // Main
 let PageContext = createContext();

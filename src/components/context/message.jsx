@@ -13,13 +13,12 @@ import { toast } from "sonner";
 
 // Lib Imports
 import { log } from "@/lib/utils";
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 
 // Context Imports
 import { useCryptoContext } from "@/components/context/crypto";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useUsersContext } from "@/components/context/users";
-import { useEncryptionContext } from "@/components/context/encryption";
 import { endpoint } from "@/lib/endpoints";
 
 // Main
@@ -37,14 +36,14 @@ export function useMessageContext() {
 
 // Provider
 export function MessageProvider({ children }) {
-  let { privateKey } = useCryptoContext();
   let { get, makeChatTop, ownUuid } = useUsersContext();
   let { send, connected, message } = useWebSocketContext();
   let {
     encrypt_base64_using_aes,
     decrypt_base64_using_aes,
     get_shared_secret,
-  } = useEncryptionContext();
+    privateKey,
+  } = useCryptoContext();
 
   let [receiver, setReceiver] = useState("");
   let [receiverPublicKey, setReceiverPublicKey] = useState("");

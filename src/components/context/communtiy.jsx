@@ -13,14 +13,11 @@ import useWebSocket, { ReadyState } from "react-use-websocket";
 import { v7 } from "uuid";
 
 // Lib Imports
-import { log, log as logFunction, sha256 } from "@/lib/utils";
-import { endpoint } from "@/lib/endpoints";
-import ls from "@/lib/localStorageManager";
+import { log, log as logFunction } from "@/lib/utils";
 
 // Context Imports
 import { useCryptoContext } from "@/components/context/crypto";
 import { useUsersContext } from "@/components/context/users";
-import { useEncryptionContext } from "@/components/context/encryption";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useMessageContext } from "@/components/context/message";
 
@@ -49,8 +46,8 @@ export let CommunityProvider = ({ children }) => {
     encrypt_base64_using_aes,
     decrypt_base64_using_aes,
     get_shared_secret,
-  } = useEncryptionContext();
-  let { privateKeyHash, privateKey } = useCryptoContext();
+    privateKey,
+  } = useCryptoContext();
   let { ownUuid, get } = useUsersContext();
   let { receiver } = useMessageContext();
   let { message, wsSend } = useWebSocketContext();

@@ -5,7 +5,7 @@ import { useState, useEffect, createContext, useContext } from "react";
 
 // Lib Imports
 import { generateTintPalette, generateMaterialYouPalette } from "@/lib/theme";
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 
 // Main
 let ThemeContext = createContext(null);

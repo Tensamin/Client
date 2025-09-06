@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 
 // Lib Imports
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 import { isElectron } from "@/lib/utils";
 
 // Context Imports
@@ -14,7 +14,6 @@ import { MessageProvider } from "@/components/context/message";
 import { UsersProvider } from "@/components/context/users";
 import { PageProvider } from "@/components/context/page";
 import { CryptoProvider } from "@/components/context/crypto";
-import { EncryptionProvider } from "@/components/context/encryption";
 import { ThemeProvider } from "@/components/context/theme";
 import { CallProvider } from "@/components/context/call";
 import { ExtensionsProvider } from "@/components/context/extensions";
@@ -147,29 +146,27 @@ export default function LoadingWrapper() {
   ) : pathname === "/login" ? (
     <Page />
   ) : isAuthenticated ? (
-    <EncryptionProvider>
+    <CryptoProvider>
       <UsersProvider>
-        <CryptoProvider>
-          <WebSocketProvider>
-            <MessageProvider>
-              <CallProvider>
-                <PageProvider>
-                  <CommunityProvider>
-                    <ThemeProvider>
-                      <ExtensionsProvider>
-                        <SidebarProvider className="bg-sidebar">
-                          <Page />
-                        </SidebarProvider>
-                      </ExtensionsProvider>
-                    </ThemeProvider>
-                  </CommunityProvider>
-                </PageProvider>
-              </CallProvider>
-            </MessageProvider>
-          </WebSocketProvider>
-        </CryptoProvider>
+        <WebSocketProvider>
+          <MessageProvider>
+            <CallProvider>
+              <PageProvider>
+                <CommunityProvider>
+                  <ThemeProvider>
+                    <ExtensionsProvider>
+                      <SidebarProvider className="bg-sidebar">
+                        <Page />
+                      </SidebarProvider>
+                    </ExtensionsProvider>
+                  </ThemeProvider>
+                </CommunityProvider>
+              </PageProvider>
+            </CallProvider>
+          </MessageProvider>
+        </WebSocketProvider>
       </UsersProvider>
-    </EncryptionProvider>
+    </CryptoProvider>
   ) : null;
 
   return (

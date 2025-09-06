@@ -4,7 +4,7 @@ import { useState } from "react";
 import * as Icon from "lucide-react";
 
 // Lib Imports
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 
 // Context Imports
 import { useWebSocketContext } from "@/components/context/websocket";

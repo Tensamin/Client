@@ -14,6 +14,8 @@ import {
 
 // Context Imports
 import { useUsersContext } from "@/components/context/users";
+import { useCryptoContext } from "@/components/context/crypto";
+import { useCallContext } from "@/components/context/call";
 
 // Components
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -24,9 +26,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { useCryptoContext } from "@/components/context/crypto";
-import { useEncryptionContext } from "@/components/context/encryption";
-import { useCallContext } from "@/components/context/call";
 
 // User Modal for user
 export function UserModal({ id, state }) {
@@ -131,8 +130,7 @@ export function SmallUserModal({
   let [callActiveHover, setCallActiveHover] = useState(false);
   let [showCallActive, setShowCallActive] = useState(callActive);
   let { get, refetchUser } = useUsersContext();
-  let { privateKey } = useCryptoContext();
-  let { get_shared_secret, decrypt_base64_using_aes } = useEncryptionContext();
+  let { privateKey, get_shared_secret, decrypt_base64_using_aes } = useCryptoContext();
   let { startCall } = useCallContext();
 
   useEffect(() => {

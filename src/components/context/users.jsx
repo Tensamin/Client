@@ -6,7 +6,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 // Lib Imports
 import { log, getDisplayFromUsername, RETRIES, isElectron } from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 
 // Main
 let UsersContext = createContext();

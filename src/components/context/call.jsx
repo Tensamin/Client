@@ -14,11 +14,10 @@ import { v7 } from "uuid";
 
 import { log, log as logFunction, sha256, RETRIES } from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 
 import { useCryptoContext } from "@/components/context/crypto";
 import { useUsersContext } from "@/components/context/users";
-import { useEncryptionContext } from "@/components/context/encryption";
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useMessageContext } from "@/components/context/message";
 
@@ -54,8 +53,9 @@ export let CallProvider = ({ children }) => {
     encrypt_base64_using_aes,
     decrypt_base64_using_aes,
     get_shared_secret,
-  } = useEncryptionContext();
-  let { privateKeyHash, privateKey } = useCryptoContext();
+    privateKey,
+    privateKeyHash
+  } = useCryptoContext();
   let { ownUuid, get } = useUsersContext();
   let { receiver } = useMessageContext();
   let { message, wsSend } = useWebSocketContext();

@@ -3,9 +3,6 @@ import * as Icon from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
-// Lib Imports
-import ls from "@/lib/localStorageManager";
-
 // Context Imports
 import { useWebSocketContext } from "@/components/context/websocket";
 import { useMessageContext } from "@/components/context/message";

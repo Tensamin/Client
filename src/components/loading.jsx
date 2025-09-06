@@ -6,7 +6,7 @@ import { useDencrypt } from "use-dencrypt-effect";
 import * as Icon from "lucide-react";
 
 // Lib Imports
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 
 // Components
 import { Button } from "@/components/ui/button";

@@ -6,13 +6,12 @@ import { createContext, useContext, useEffect, useState } from "react";
 // Context Imports
 import { useCallContext } from "@/components/context/call";
 import { useCryptoContext } from "@/components/context/crypto";
-import { useEncryptionContext } from "@/components/context/encryption";
 import { useMessageContext } from "@/components/context/message";
 import { usePageContext } from "@/components/context/page";
 import { useThemeContext } from "@/components/context/theme";
 import { useUsersContext } from "@/components/context/users";
 import { useWebSocketContext } from "@/components/context/websocket";
-import ls from "@/lib/localStorageManager";
+import ls from "@/lib/local_storage";
 
 // Main
 let ExtensionsContext = createContext();
@@ -35,7 +34,6 @@ export function ExtensionsProvider({ children }) {
 
   let callContext = useCallContext();
   let cryptoContext = useCryptoContext();
-  let encryptionContext = useEncryptionContext();
   let messageContext = useMessageContext();
   let pageContext = usePageContext();
   let themeContext = useThemeContext();
@@ -60,7 +58,6 @@ export function ExtensionsProvider({ children }) {
           let contexts = {
             useCallContext: callContext,
             useCryptoContext: cryptoContext,
-            useEncryptionContext: encryptionContext,
             useMessageContext: messageContext,
             usePageContext: pageContext,
             useThemeContext: themeContext,
