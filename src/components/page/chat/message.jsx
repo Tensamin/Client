@@ -23,7 +23,15 @@ import {
 import { SmolMessage } from "@/components/page/chat/smol_message";
 
 // Main
-export function Message({ message }) {
+export function Message({ index }) {
+  let message = useMessageContext().messages[index];
+  if (!message) {
+    return <div>
+      <div className="w-full h-[50px] bg-red-500"/>
+      <div className="w-full h-[30px] bg-red-700"/>
+    </div>
+  }
+
   let dateObject = new Date(message.id);
   let is24HourClock = true;
 

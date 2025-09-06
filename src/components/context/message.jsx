@@ -55,9 +55,9 @@ export function MessageProvider({ children }) {
   let [navbarLoading, setNavbarLoading] = useState(false);
   let [navbarLoadingMessage, setNavbarLoadingMessage] = useState(false);
   let [loadMoreMessages, setLoadMoreMessages] = useState(false);
-  let [moreMessagesLoadedOnce, setMoreMessagesLoadedOnce] = useState(false);
   let [loadedAllMessages, setLoadedAllMessages] = useState(false);
   let [noMessageWithUser, setNoMessageWithUser] = useState(false);
+  let [loadedMessagesAmount, setLoadedMessagesAmount] = useState(0);
   let navbarLoadingTimeoutRef = useRef(null);
   let notificationSoundRef = useRef(null);
 
@@ -101,7 +101,7 @@ export function MessageProvider({ children }) {
         notificationSoundRef.current = audio;
       }
       audio.currentTime = 0;
-      audio.play()?.catch(() => { });
+      audio.play()?.catch(() => {});
     } catch (_) {
       // no-op
     }
@@ -112,7 +112,7 @@ export function MessageProvider({ children }) {
 
     if (!("Notification" in window)) {
       toast.info(
-        `${sender} sent you a message, enable notifications in the settings!`,
+        `${sender} sent you a message, enable notifications in the settings!`
       );
       return;
     }
@@ -125,7 +125,7 @@ export function MessageProvider({ children }) {
       });
     } else {
       toast.info(
-        `${sender} sent you a message, enable notifications in the settings!`,
+        `${sender} sent you a message, enable notifications in the settings!`
       );
     }
   }
@@ -173,9 +173,8 @@ export function MessageProvider({ children }) {
     setSharedSecret("");
     setReceiverPublicKey("");
     setFailedMessages(0);
-    setLoadMoreMessages(false);
+    setLoadedMessagesAmount(0);
     setMessagesAmount(initialMessages);
-    setMoreMessagesLoadedOnce(false);
     setLoadedAllMessages(false);
     setNoMessageWithUser(false);
   }
@@ -199,7 +198,7 @@ export function MessageProvider({ children }) {
       if (
         stringErr === "OperationError" ||
         stringErr ===
-        "OperationError: The operation failed for an operation-specific reason"
+          "OperationError: The operation failed for an operation-specific reason"
       ) {
         setFailedMessages((prev) => prev + 1);
       } else {
@@ -216,7 +215,7 @@ export function MessageProvider({ children }) {
         if (
           lastGroup.sender === newMessageData.sender &&
           removeSecondsFromUnixTimestamp(lastGroup.id) ===
-          removeSecondsFromUnixTimestamp(newMessageData.id)
+            removeSecondsFromUnixTimestamp(newMessageData.id)
         ) {
           let newLastGroup = new Message({
             id: lastGroup.id,
@@ -225,7 +224,7 @@ export function MessageProvider({ children }) {
           });
           newLastGroup.addSubMessage(
             newMessageData.content,
-            newMessageData.sendToServer || false,
+            newMessageData.sendToServer || false
           );
           return [...prevMessages.slice(0, -1), newLastGroup];
         }
@@ -240,7 +239,7 @@ export function MessageProvider({ children }) {
       if (
         lastGroup.sender === newMessageData.sender &&
         removeSecondsFromUnixTimestamp(lastGroup.id) ===
-        removeSecondsFromUnixTimestamp(newMessageData.id)
+          removeSecondsFromUnixTimestamp(newMessageData.id)
       ) {
         let newLastGroup = new Message({
           id: lastGroup.id,
@@ -250,7 +249,7 @@ export function MessageProvider({ children }) {
 
         newLastGroup.addSubMessage(
           newMessageData.content,
-          newMessageData.sendToServer || false,
+          newMessageData.sendToServer || false
         );
         return [...chunk.slice(0, -1), newLastGroup];
       }
@@ -273,10 +272,8 @@ export function MessageProvider({ children }) {
           chat_partner_id: receiver,
           loaded_messages: messagesAmount,
           message_amount: initialMessages,
-        },
+        }
       ).then(async (data) => {
-        setMoreMessagesLoadedOnce(true);
-
         if (typeof data.data.message_chunk === "undefined") {
           setNavbarLoadingMessage("");
           updateNavbarLoading(false);
@@ -284,7 +281,7 @@ export function MessageProvider({ children }) {
           setLoadedAllMessages(true);
         } else {
           let sortedChunk = [...data.data.message_chunk].sort(
-            (a, b) => a.message_time - b.message_time,
+            (a, b) => a.message_time - b.message_time
           );
 
           let decryptedChunks = await Promise.all(
@@ -293,8 +290,8 @@ export function MessageProvider({ children }) {
                 let decryptedContent = atob(
                   await decrypt_base64_using_aes(
                     chunk.message_content,
-                    sharedSecret,
-                  ),
+                    sharedSecret
+                  )
                 );
                 return {
                   id: chunk.message_time,
@@ -307,7 +304,7 @@ export function MessageProvider({ children }) {
                 if (
                   stringErr === "OperationError" ||
                   stringErr ===
-                  "OperationError: The operation failed for an operation-specific reason"
+                    "OperationError: The operation failed for an operation-specific reason"
                 ) {
                   setFailedMessages((prev) => prev + 1);
                 } else {
@@ -315,7 +312,7 @@ export function MessageProvider({ children }) {
                 }
                 return null;
               }
-            }),
+            })
           );
 
           let chunkMessages = [];
@@ -334,6 +331,23 @@ export function MessageProvider({ children }) {
       });
     }
   }, [loadMoreMessages, loadedAllMessages]);
+
+  async function getMoreMessages(amount) {
+    let messages = await send(
+      "message_get",
+      {
+        message: "Getting messages",
+        log_level: 0,
+      },
+      {
+        chat_partner_id: receiver,
+        loaded_messages: loadedMessagesAmount,
+        message_amount: amount,
+      }
+    );
+    setLoadedMessagesAmount((prev) => prev + amount);
+    return messages;
+  }
 
   // Initial Loading of Messages
   useEffect(() => {
@@ -366,13 +380,13 @@ export function MessageProvider({ children }) {
             chat_partner_id: receiver,
             loaded_messages: 0,
             message_amount: initialMessages,
-          },
+          }
         );
         if (cancelled) return;
 
         if (typeof data.data.message_chunk !== "undefined") {
           let sortedChunk = [...data.data.message_chunk].sort(
-            (a, b) => a.message_time - b.message_time,
+            (a, b) => a.message_time - b.message_time
           );
           let decryptedMessages = await Promise.all(
             sortedChunk.map(async (chunk) => {
@@ -380,8 +394,8 @@ export function MessageProvider({ children }) {
                 let decryptedContent = atob(
                   await decrypt_base64_using_aes(
                     chunk.message_content,
-                    secret.sharedSecretHex,
-                  ),
+                    secret.sharedSecretHex
+                  )
                 );
                 return {
                   id: chunk.message_time,
@@ -394,7 +408,7 @@ export function MessageProvider({ children }) {
                 if (
                   stringErr === "OperationError" ||
                   stringErr ===
-                  "OperationError: The operation failed for an operation-specific reason"
+                    "OperationError: The operation failed for an operation-specific reason"
                 ) {
                   setFailedMessages((prev) => prev + 1);
                 } else {
@@ -402,7 +416,7 @@ export function MessageProvider({ children }) {
                 }
                 return null;
               }
-            }),
+            })
           );
           let processedMessages = [];
           decryptedMessages.forEach((msgData) => {
@@ -439,7 +453,7 @@ export function MessageProvider({ children }) {
         await processAndAddMessage(
           message.data.send_time,
           messageSender,
-          messageContent,
+          messageContent
         );
         return;
       }
@@ -452,7 +466,7 @@ export function MessageProvider({ children }) {
         makeChatTop(messageSender);
 
         let body = atob(
-          await decrypt_base64_using_aes(messageContent, tmpSharedSecret),
+          await decrypt_base64_using_aes(messageContent, tmpSharedSecret)
         );
 
         sendNotification(data.display, body, data.avatar);
@@ -471,7 +485,7 @@ export function MessageProvider({ children }) {
     if (receiver !== "" && sharedSecret !== "") {
       messages.forEach(async (msgGroup, groupIdx) => {
         let subMessageToSendIndex = msgGroup.subMessages.findIndex(
-          (subMsg) => subMsg.sendToServer,
+          (subMsg) => subMsg.sendToServer
         );
 
         if (subMessageToSendIndex !== -1) {
@@ -479,7 +493,7 @@ export function MessageProvider({ children }) {
           try {
             let encrypted_message = await encrypt_base64_using_aes(
               btoa(subMessage.content),
-              sharedSecret,
+              sharedSecret
             );
 
             await send(
@@ -491,7 +505,7 @@ export function MessageProvider({ children }) {
               {
                 receiver_id: receiver,
                 message_content: encrypted_message,
-              },
+              }
             );
 
             setMessages((prevMessages) => {
@@ -547,13 +561,13 @@ export function MessageProvider({ children }) {
         navbarLoadingMessage,
         loadMoreMessages,
         setLoadMoreMessages,
-        moreMessagesLoadedOnce,
-        setMoreMessagesLoadedOnce,
         loadedAllMessages,
         setLoadedAllMessages,
         sendNotification,
         requestNotificationPermission,
         noMessageWithUser,
+        getMoreMessages,
+        loadedMessagesAmount,
       }}
     >
       {children}
