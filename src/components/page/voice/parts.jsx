@@ -310,7 +310,7 @@ export function User({ id, className, avatarSize }) {
 }
 
 export function InviteItem({ id, onShouldClose }) {
-  let { get, get_shared_secret, encrypt_base64_using_aes } = useUsersContext();
+  let { get, encrypt_base64_using_aes } = useUsersContext();
   let { privateKey } = useCryptoContext();
   let { send } = useWebSocketContext();
   let { callId, callSecret } = useCallContext();
@@ -328,10 +328,7 @@ export function InviteItem({ id, onShouldClose }) {
           call_id: callId,
           call_secret: await encrypt_base64_using_aes(
             btoa(callSecret),
-            await get_shared_secret(
-              privateKey,
-              await get(id).then((data) => data.public_key)
-            )
+            await get(id).then(data => data.shared_secret),
           ),
           call_secret_sha: await sha256(callSecret),
         }

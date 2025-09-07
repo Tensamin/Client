@@ -130,14 +130,13 @@ export function Conversations({ variant = "chats" }) {
                   >
                     {forceLoad ? (
                       <SmallUserModal
-                        id=""
-                        state="none"
+                        uuid="..."
                         showIotaStatus={false}
                         forceLoad={true}
                       />
                     ) : (
                       <SmallUserModal
-                        id={item.user_id}
+                        uuid={item.user_id}
                         showIotaStatus={true}
                         callActive={item.call_active}
                         callId={item.call_id || ""}

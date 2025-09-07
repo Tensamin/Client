@@ -29,15 +29,14 @@ import { Badge } from "@/components/ui/badge";
 
 // User Modal for user
 export function UserModal({ uuid }) {
-  let { get } = useUsersContext();
-
+  // Loading of user data
+  let { get, users } = useUsersContext();
   let [user, setUser] = useState({ loading: true });
-
   useEffect(() => {
     get(uuid).then((data) => {
       setUser({ loading: false, ...data });
     });
-  }, [uuid]);
+  }, [uuid, users[uuid]]);
 
   return (
     <div className="rounded-xl flex flex-col items-center p-3 gap-3 justify-center">
@@ -103,24 +102,17 @@ export function UserModal({ uuid }) {
 
 // User Modal for Sidebar Chats
 export function SmallUserModal({
-  id,
-  state,
+  uuid,
   showIotaStatus = false,
   forceLoad = false,
   callActive = false,
   callId = "",
   encCallSecret = "",
 }) {
-  let [avatar, setAvatar] = useState("...");
-  let [username, setUsername] = useState("...");
-  let [display, setDisplay] = useState("...");
-  let [status, setStatus] = useState("");
   let [callSecret, setCallSecret] = useState("");
   let [callActiveHover, setCallActiveHover] = useState(false);
   let [showCallActive, setShowCallActive] = useState(callActive);
-  let { get, refetchUser } = useUsersContext();
-  let { privateKey, get_shared_secret, decrypt_base64_using_aes } =
-    useCryptoContext();
+  let { decrypt_base64_using_aes } = useCryptoContext();
   let { startCall } = useCallContext();
 
   useEffect(() => {
@@ -129,10 +121,7 @@ export function SmallUserModal({
         let enc = atob(
           await decrypt_base64_using_aes(
             encCallSecret,
-            await get_shared_secret(
-              privateKey,
-              await get(id).then((data) => data.public_key)
-            )
+            await get(id).then((data) => data.shared_secret)
           )
         );
         setCallSecret(enc);
@@ -141,49 +130,45 @@ export function SmallUserModal({
     }
   }, [encCallSecret]);
 
+  // Loading of user data
+  let { get, users } = useUsersContext();
+  let [user, setUser] = useState({ loading: true });
   useEffect(() => {
-    if (id !== "")
-      get(id).then((data) => {
-        setAvatar(data.avatar);
-        setUsername(data.username);
-        setDisplay(data.display);
-        setStatus(data.status);
-      });
-  }, [id, refetchUser]);
+    get(uuid).then((data) => {
+      setUser({ loading: false, ...data });
+    });
+  }, [uuid, users[uuid]]);
 
   return (
     <div className="rounded-xl flex items-center h-12 pl-3 gap-3">
       {!forceLoad && (
         <div className="flex-shrink-0">
           <div className="relative w-[27px] h-[27px] mb-2">
-            {avatar !== "..." ? (
+            {user.loading ? (
+              <Skeleton className="rounded-full size-8" />
+            ) : (
               <Avatar className="bg-accent/50">
-                {avatar !== "" && (
+                {user.avatar !== "" && (
                   <Image
                     className="w-auto h-auto object-fill"
                     data-slot="avatar-image"
                     width={36}
                     height={36}
-                    src={avatar}
+                    src={user.avatar}
                     alt=""
-                    onError={() => {
-                      setAvatar("");
-                    }}
                   />
                 )}
                 <AvatarFallback>
-                  {convertDisplayNameToInitials(username)}
+                  {convertDisplayNameToInitials(user.username)}
                 </AvatarFallback>
               </Avatar>
-            ) : (
-              <Skeleton className="rounded-full size-8" />
             )}
             <Tooltip>
               <TooltipTrigger
                 asChild
                 className="absolute -bottom-2 -right-2 w-[15px] h-[15px]"
               >
-                {state === "none" ? (
+                {user.state === "none" ? (
                   <div className="cursor-pointer rounded-full border-3 border-card bg-card">
                     <Skeleton className="bg-white w-full h-full" />
                   </div>
@@ -191,13 +176,13 @@ export function SmallUserModal({
                   <div
                     className={cn(
                       "cursor-pointer rounded-full border-3 border-card",
-                      statusColors[state] || "bg-white"
+                      statusColors[user.state] || "bg-white"
                     )}
                   />
                 )}
               </TooltipTrigger>
               <TooltipContent className="border-1">
-                <p>{formatUserStatus(state)}</p>
+                <p>{formatUserStatus(user.state)}</p>
               </TooltipContent>
             </Tooltip>
           </div>
@@ -206,28 +191,26 @@ export function SmallUserModal({
 
       <div className="min-w-0 flex-grow w-full">
         <div
-          className={`${showIotaStatus && state !== "IOTA_OFFLINE" ? "flex" : ""} gap-2 text-[15px] overflow-hidden whitespace-nowrap text-overflow-ellipsis`}
+          className={`${showIotaStatus && user.state !== "IOTA_OFFLINE" ? "flex" : ""} gap-2 text-[15px] overflow-hidden whitespace-nowrap text-overflow-ellipsis`}
         >
           <div className="flex flex-col">
             <div className="flex gap-2">
-              {display !== "..." || forceLoad ? (
-                <p>{forceLoad ? "Debug Mode" : display}</p>
+              {!user.loading || forceLoad ? (
+                <p>{forceLoad ? "Debug Mode" : user.display}</p>
               ) : (
-                <Skeleton>
-                  <p className="invisible">Tensamin :3</p>
-                </Skeleton>
+                <Skeleton className="h-5 w-20" />
               )}
             </div>
             <div className="flex gap-1">
               <p className="text-xs text-foreground/75">
-                {forceLoad ? "Chats wont load!" : status}
+                {forceLoad ? "Chats wont load!" : user.status}
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {showIotaStatus && state === "IOTA_OFFLINE" && (
+      {showIotaStatus && user.state === "IOTA_OFFLINE" && (
         <div className="flex justify-center items-center">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -268,104 +251,86 @@ export function SmallUserModal({
   );
 }
 
-export function MiniUserModal({ id }) {
-  let [avatar, setAvatar] = useState("...");
-  let [username, setUsername] = useState("...");
-  let [display, setDisplay] = useState("...");
-  let { get, refetchUser } = useUsersContext();
-
+export function MiniUserModal({ uuid }) {
+  // Loading of user data
+  let { get, users } = useUsersContext();
+  let [user, setUser] = useState({ loading: true });
   useEffect(() => {
-    if (id !== "")
-      get(id).then((data) => {
-        setAvatar(data.avatar);
-        setUsername(data.username);
-        setDisplay(data.display);
-      });
-  }, [id, refetchUser]);
+    get(uuid).then((data) => {
+      setUser({ loading: false, ...data });
+    });
+  }, [uuid, users[uuid]]);
 
   return (
     <div className="rounded-xl flex items-center h-7 gap-3">
       <>
-        {avatar !== "..." ? (
+        {user.loading ? (
+          <Skeleton className="rounded-full size-8" />
+        ) : (
           <Avatar className="bg-accent/50">
-            {avatar !== "" ? (
+            {user.avatar !== "" ? (
               <Image
                 className="w-auto h-auto object-fill"
                 data-slot="avatar-image"
                 width={36}
                 height={36}
-                src={avatar}
+                src={user.avatar}
                 alt=""
-                onError={() => {
-                  setAvatar("");
-                }}
               />
             ) : null}
             <AvatarFallback>
-              {convertDisplayNameToInitials(username)}
+              {convertDisplayNameToInitials(user.username)}
             </AvatarFallback>
           </Avatar>
-        ) : (
-          <Skeleton className="rounded-full size-8" />
         )}
-        {display !== "..." ? (
-          <p className="text-[15px] overflow-hidden whitespace-nowrap text-overflow-ellipsis">
-            {display}
-          </p>
+        {user.loading ? (
+          <Skeleton className="h-5 w-20" />
         ) : (
-          <Skeleton className="mr-20">
-            <p className="invisible">🥴</p>
-          </Skeleton>
+          <p className="text-[15px] overflow-hidden whitespace-nowrap text-overflow-ellipsis">
+            {user.display}
+          </p>
         )}
       </>
     </div>
   );
 }
 
-// Just logo and hover thing
-export function MiniMiniUserModal({ id }) {
-  let [avatar, setAvatar] = useState("...");
-  let [username, setUsername] = useState("...");
-  let [display, setDisplay] = useState("...");
-  let { get, refetchUser } = useUsersContext();
-
+// Just logo and hover thing | Deprecated
+function MiniMiniUserModal({ uuid }) {
+  // Loading of user data
+  let { get, users } = useUsersContext();
+  let [user, setUser] = useState({ loading: true });
   useEffect(() => {
-    if (id !== "")
-      get(id).then((data) => {
-        setAvatar(data.avatar);
-        setUsername(data.username);
-        setDisplay(data.display);
-      });
-  }, [id, refetchUser]);
+    get(uuid).then((data) => {
+      setUser({ loading: false, ...data });
+    });
+  }, [uuid, users[uuid]]);
 
   return (
     <div className="rounded-xl flex items-center h-5.5 w-5.5 m-1">
       <Tooltip>
         <TooltipTrigger>
-          {avatar !== "notAllowed" ? (
+          {user.avatar !== "notAllowed" ? (
             <Avatar className="bg-accent/50 w-[30px] h-[30px] border-1">
-              {avatar !== "" ? (
+              {user.avatar !== "" ? (
                 <Image
                   className="w-auto h-auto object-fill"
                   data-slot="avatar-image"
                   width={30}
                   height={30}
-                  src={avatar}
+                  src={user.avatar}
                   alt=""
-                  onError={() => {
-                    setAvatar("");
-                  }}
                 />
               ) : null}
               <AvatarFallback>
-                {convertDisplayNameToInitials(username)}
+                {convertDisplayNameToInitials(user.username)}
               </AvatarFallback>
             </Avatar>
           ) : null}
         </TooltipTrigger>
         <TooltipContent>
-          {display !== "..." ? (
-            <p>{display}</p>
+          {user.loading ? (
+            <p>{user.display}</p>
           ) : (
             <Skeleton className="mr-20">
               <p className="invisible">🥴</p>
@@ -378,65 +343,53 @@ export function MiniMiniUserModal({ id }) {
 }
 
 // User Modal for call widget
-export function CallModal({ id }) {
-  let [avatar, setAvatar] = useState("...");
-  let [username, setUsername] = useState("...");
-  let [display, setDisplay] = useState("...");
-  let { get, refetchUser } = useUsersContext();
-
+export function CallModal({ uuid }) {
+  // Loading of user data
+  let { get, users } = useUsersContext();
+  let [user, setUser] = useState({ loading: true });
   useEffect(() => {
-    if (id !== "")
-      get(id).then((data) => {
-        setAvatar(data.avatar);
-        setUsername(data.username);
-        setDisplay(data.display);
-      });
-  }, [id, refetchUser]);
+    get(uuid).then((data) => {
+      setUser({ loading: false, ...data });
+    });
+  }, [uuid, users[uuid]]);
 
   return (
     <div className="rounded-xl flex flex-col items-center p-3 gap-3 justify-center">
       <div className="flex flex-col text-center w-full gap-3 items-center">
         <div className="relative">
-          {avatar !== "..." ? (
+          {user.loading ? (
+            <Skeleton className="rounded-full size-8" />
+          ) : (
             <Avatar className="size-40 bg-accent/50 border-1">
-              {avatar !== "" ? (
+              {user.avatar !== "" ? (
                 <Image
                   className="w-auto h-auto object-fill"
                   data-slot="avatar-image"
                   width={150}
                   height={150}
-                  src={avatar}
+                  src={user.avatar}
                   alt=""
-                  onError={() => {
-                    setAvatar("");
-                  }}
                 />
               ) : null}
               <AvatarFallback>
-                {convertDisplayNameToInitials(username)}
+                {convertDisplayNameToInitials(user.username)}
               </AvatarFallback>
             </Avatar>
-          ) : (
-            <Skeleton className="rounded-full size-8" />
           )}
         </div>
         <div className="w-full">
           <div className="text-4xl font-bold">
-            {display !== "..." ? (
-              <p>{display}</p>
+            {user.loading ? (
+              <Skeleton className="h-5 w-20" />
             ) : (
-              <Skeleton className="mr-20">
-                <p className="invisible">🥴</p>
-              </Skeleton>
+              <p>{user.display}</p>
             )}
           </div>
           <div className="text-lg font-bold text-foreground/67">
-            {username !== "..." ? (
-              <p>{username}</p>
+            {user.loading ? (
+              <Skeleton className="h-3 w-28 mt-1" />
             ) : (
-              <Skeleton className="mr-8 mt-1">
-                <p className="invisible">🥴</p>
-              </Skeleton>
+              <p>{user.username}</p>
             )}
           </div>
         </div>

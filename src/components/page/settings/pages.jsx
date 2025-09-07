@@ -93,7 +93,7 @@ function readFileAsText(file) {
 
 // Main
 export function Profile() {
-  let { get, ownUuid, ownState, clearFromCache } = useUsersContext();
+  let { get, ownUuid, ownState } = useUsersContext();
   let { send } = useWebSocketContext();
   let { privateKeyHash } = useCryptoContext();
 
@@ -138,7 +138,7 @@ export function Profile() {
           toast.success(
             `Updated your ${field === "display" ? "Display Name" : capitalizeFirstLetter(field)}!`
           );
-          clearFromCache(ownUuid);
+          get(ownUuid, true);
           send(
             "client_changed",
             {

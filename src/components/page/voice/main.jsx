@@ -1010,8 +1010,7 @@ function useFitBox(containerRef, aspectW = 16, aspectH = 9) {
 }
 
 function Topbar() {
-  let { connected, directionalAudio, setDirectionalAudio, callId, callSecret } =
-    useCallContext();
+  let { connected, directionalAudio, setDirectionalAudio } = useCallContext();
   let { chatsArray } = useUsersContext();
   let [inviteOpen, setInviteOpen] = useState(false);
 

@@ -32,7 +32,7 @@ export let useWebSocketContext = () => {
   let context = useContext(WebSocketContext);
   if (!context) {
     throw new Error(
-      "useWebSocketContext must be used within a WebSocketProvider",
+      "useWebSocketContext must be used within a WebSocketProvider"
     );
   }
   return context;
@@ -43,12 +43,7 @@ export let WebSocketProvider = ({ children }) => {
   let pendingRequests = useRef(new Map());
   let responseTimeout = 10000;
   let { privateKeyHash } = useCryptoContext();
-  let {
-    get,
-    forceLoad,
-    setForceLoad,
-    setFetchChats,
-  } = useUsersContext();
+  let { updateState, forceLoad, setForceLoad, setFetchChats, get } = useUsersContext();
   let [iotaPing, setIotaPing] = useState("?");
   let [clientPing, setClientPing] = useState("?");
   let [identified, setIdentified] = useState(false);
@@ -70,13 +65,15 @@ export let WebSocketProvider = ({ children }) => {
 
       switch (message.type) {
         case "get_states":
-          Object.keys(message.data.user_states).forEach((userId) => {
-            get(userId, true, message.data.user_states[userId]);
-          });
+          Object.keys(message.data.user_states).forEach((uuid) =>
+            updateState(uuid, message.data.user_states[uuid])
+          );
           break;
 
         case "client_changed":
-          get(message.data.user_id, true, message.data.user_state);
+          console.log("STATE")
+          updateState(message.data.user_id, message.data.user_state);
+          await get(message.data.user_id, true);
           break;
 
         case "shared_secret_return":
@@ -91,7 +88,7 @@ export let WebSocketProvider = ({ children }) => {
 
       if (message.id && pendingRequests.current.has(message.id)) {
         let { resolve, reject, timeoutId } = pendingRequests.current.get(
-          message.id,
+          message.id
         );
         clearTimeout(timeoutId);
         pendingRequests.current.delete(message.id);
@@ -101,8 +98,8 @@ export let WebSocketProvider = ({ children }) => {
         } else {
           reject(
             new Error(
-              `Received unknown response type '${message.type}' for request ID '${message.id}'.`,
-            ),
+              `Received unknown response type '${message.type}' for request ID '${message.id}'.`
+            )
           );
         }
       } else logFunction(message.log.message, "info");
@@ -118,9 +115,7 @@ export let WebSocketProvider = ({ children }) => {
       pendingRequests.current.forEach(({ reject, timeoutId }) => {
         clearTimeout(timeoutId);
         reject(
-          new Error(
-            "WebSocket connection closed before response was received.",
-          ),
+          new Error("WebSocket connection closed before response was received.")
         );
       });
       pendingRequests.current.clear();
@@ -177,7 +172,7 @@ export let WebSocketProvider = ({ children }) => {
           let timeoutId = setTimeout(() => {
             pendingRequests.current.delete(id);
             let timeoutError = new Error(
-              `WebSocket request timed out for ID: ${id} (Type: ${requestType}) after ${responseTimeout}ms.`,
+              `WebSocket request timed out for ID: ${id} (Type: ${requestType}) after ${responseTimeout}ms.`
             );
             reject(timeoutError);
           }, responseTimeout);
@@ -190,7 +185,7 @@ export let WebSocketProvider = ({ children }) => {
             clearTimeout(timeoutId);
             pendingRequests.current.delete(id);
             let sendError = new Error(
-              `Failed to send WebSocket message: ${e.message}`,
+              `Failed to send WebSocket message: ${e.message}`
             );
             logFunction(sendError, "error");
             reject(sendError);
@@ -198,7 +193,7 @@ export let WebSocketProvider = ({ children }) => {
         });
       }
     },
-    [sendMessage, readyState, forceLoad],
+    [sendMessage, readyState, forceLoad]
   );
 
   // Pings
@@ -215,7 +210,7 @@ export let WebSocketProvider = ({ children }) => {
           },
           {
             last_ping: time,
-          },
+          }
         )
           .then((data) => {
             let newTime = Date.now();
@@ -285,7 +280,7 @@ export let WebSocketProvider = ({ children }) => {
         {
           user_id: ls.get("auth_uuid"),
           private_key_hash: privateKeyHash,
-        },
+        }
       ).then((data) => {
         if (data.type === "identification_response") {
           setIdentified(true);
@@ -306,7 +301,7 @@ export let WebSocketProvider = ({ children }) => {
       pendingRequests.current.forEach(({ reject, timeoutId }) => {
         clearTimeout(timeoutId);
         let unmountError = new Error(
-          "WebSocket provider unmounted before response was received.",
+          "WebSocket provider unmounted before response was received."
         );
         logFunction(unmountError.toString(), "error");
         reject(unmountError);

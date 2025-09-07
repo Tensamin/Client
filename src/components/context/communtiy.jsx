@@ -48,10 +48,8 @@ export let CommunityProvider = ({ children }) => {
     get_shared_secret,
     privateKey,
   } = useCryptoContext();
-  let { ownUuid, get } = useUsersContext();
-  let { receiver } = useMessageContext();
-  let { message, wsSend } = useWebSocketContext();
-
+  let { ownUuid } = useUsersContext();
+  
   // Community
   let [domain, setDomain] = useState(null);
   let [port, setPort] = useState(null);

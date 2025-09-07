@@ -360,13 +360,7 @@ export let CallProvider = ({ children }) => {
           callSecret: atob(
             await decrypt_base64_using_aes(
               message.data.call_secret,
-              // Compute shared secret string before decrypting
-              (
-                await get_shared_secret(
-                  privateKey,
-                  (await get(message.data.sender_id)).public_key,
-                )
-              ).sharedSecretHex,
+              await get(message.data.sender_id).then(data => data.shared_secret),
             ),
           ),
         });

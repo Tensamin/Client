@@ -1,15 +1,19 @@
 "use client";
 
 // Package Imports
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 // Lib Imports
 import {
-  log,
   getDisplayFromUsername,
   RETRIES,
   isElectron,
-  safeAtob,
 } from "@/lib/utils";
 import { endpoint } from "@/lib/endpoints";
 import ls from "@/lib/local_storage";
@@ -35,7 +39,6 @@ export function UsersProvider({ children }) {
   let [chatsArray, setChatsArray] = useState([]);
   let [communitiesArray, setCommunitiesArray] = useState([]);
   let [forceLoad, setForceLoad] = useState(false);
-  let [ownState, setOwnState] = useState("ONLINE");
   let [fetchChats, setFetchChats] = useState(true);
   let [fetchCommunities, setFetchCommunities] = useState(true);
 
@@ -53,9 +56,16 @@ export function UsersProvider({ children }) {
     }
   }, []);
 
-  async function get(uuid, refetch = false, state) {
+  let get = useCallback(async (uuid, refetch = false) => {
+    let mounted = true;
+    if (!mounted) return { loading: true };
+    if (uuid === "...") return { loading: true };
     if (users[uuid] && !refetch) {
-      return users[uuid];
+      if (Object.keys(users[uuid]).length === 1) {
+        return { loading: true };
+      } else {
+        return users[uuid];
+      }
     }
 
     let newUser;
@@ -70,29 +80,30 @@ export function UsersProvider({ children }) {
             }
           });
         break;
-      } catch (err) {}
+      } catch {}
     }
 
     newUser.display = getDisplayFromUsername(newUser.username, newUser.display);
-    newUser.shared_secret = await get_shared_secret(
-      privateKey,
-      newUser.public_key
-    );
-    if (typeof state !== "undefined") {
-      newUser.state = state;
-    }
+    let sharedSecret = await get_shared_secret(privateKey, newUser.public_key);
+    newUser.shared_secret = sharedSecret.sharedSecretHex;
 
     setUsers((prevUsers) => ({
       ...prevUsers,
-      [uuid]: newUser,
+      [uuid]: { ...prevUsers[uuid], ...newUser },
     }));
 
     return newUser;
-  }
+  });
 
-  // clearFromCache
-  // doChatRefresh
-  // doCommunityRefresh
+  async function updateState(uuid, value) {
+    if (!users[uuid]) await get(uuid, true);
+
+    let updatedUser = { ...users[uuid], state: value };
+    setUsers((prevUsers) => ({
+      ...prevUsers,
+      [uuid]: updatedUser,
+    }));
+  }
 
   function makeChatTop(uuid) {
     let newArray = [...chatsArray];
@@ -108,12 +119,11 @@ export function UsersProvider({ children }) {
     <UsersContext.Provider
       value={{
         get,
+        updateState,
         users,
         usingElectron,
 
         ownUuid: ls.get("auth_uuid"),
-        ownState,
-        setOwnState,
 
         forceLoad,
         setForceLoad,
