@@ -16,7 +16,6 @@ import { PageProvider } from "@/components/context/page";
 import { CryptoProvider } from "@/components/context/crypto";
 import { ThemeProvider } from "@/components/context/theme";
 import { CallProvider } from "@/components/context/call";
-import { ExtensionsProvider } from "@/components/context/extensions";
 import { CommunityProvider } from "@/components/context/communtiy";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
@@ -154,11 +153,9 @@ export default function LoadingWrapper() {
               <PageProvider>
                 <CommunityProvider>
                   <ThemeProvider>
-                    <ExtensionsProvider>
-                      <SidebarProvider className="bg-sidebar">
-                        <Page />
-                      </SidebarProvider>
-                    </ExtensionsProvider>
+                    <SidebarProvider className="bg-sidebar">
+                      <Page />
+                    </SidebarProvider>
                   </ThemeProvider>
                 </CommunityProvider>
               </PageProvider>

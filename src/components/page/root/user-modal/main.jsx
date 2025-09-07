@@ -295,53 +295,6 @@ export function MiniUserModal({ uuid }) {
   );
 }
 
-// Just logo and hover thing | Deprecated
-function MiniMiniUserModal({ uuid }) {
-  // Loading of user data
-  let { get, users } = useUsersContext();
-  let [user, setUser] = useState({ loading: true });
-  useEffect(() => {
-    get(uuid).then((data) => {
-      setUser({ loading: false, ...data });
-    });
-  }, [uuid, users[uuid]]);
-
-  return (
-    <div className="rounded-xl flex items-center h-5.5 w-5.5 m-1">
-      <Tooltip>
-        <TooltipTrigger>
-          {user.avatar !== "notAllowed" ? (
-            <Avatar className="bg-accent/50 w-[30px] h-[30px] border-1">
-              {user.avatar !== "" ? (
-                <Image
-                  className="w-auto h-auto object-fill"
-                  data-slot="avatar-image"
-                  width={30}
-                  height={30}
-                  src={user.avatar}
-                  alt=""
-                />
-              ) : null}
-              <AvatarFallback>
-                {convertDisplayNameToInitials(user.username)}
-              </AvatarFallback>
-            </Avatar>
-          ) : null}
-        </TooltipTrigger>
-        <TooltipContent>
-          {user.loading ? (
-            <p>{user.display}</p>
-          ) : (
-            <Skeleton className="mr-20">
-              <p className="invisible">🥴</p>
-            </Skeleton>
-          )}
-        </TooltipContent>
-      </Tooltip>
-    </div>
-  );
-}
-
 // User Modal for call widget
 export function CallModal({ uuid }) {
   // Loading of user data

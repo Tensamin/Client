@@ -36,7 +36,7 @@ export function Main() {
   let [newCommunityDomain, setNewCommunityDomain] = useState("");
   let [newCommunityTitle, setNewCommunityTitle] = useState("");
   let { send } = useWebSocketContext();
-  let { doChatRefresh, doCommunityRefresh } = useUsersContext();
+  let { setFetchChats, doCommunityRefresh } = useUsersContext();
 
   async function handleSubmit() {
     try {
@@ -67,7 +67,7 @@ export function Main() {
         ).then((data) => {
           if (data.type !== "error") {
             log(`Added ${newChatUsername}`, "success");
-            doChatRefresh();
+            setFetchChats(true);
           }
         });
       } else {
