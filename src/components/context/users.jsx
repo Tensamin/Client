@@ -1,13 +1,14 @@
 "use client";
 
 // Package Imports
-import React, {
+import {
   createContext,
   useCallback,
   useContext,
   useEffect,
-  useRef,
   useState,
+  useRef,
+  useMemo,
 } from "react";
 
 // Lib Imports
@@ -40,111 +41,116 @@ export function UsersProvider({ children }) {
   let [fetchChats, setFetchChats] = useState(true);
   let [fetchCommunities, setFetchCommunities] = useState(true);
   let fetchCacheRef = useRef(new Map());
-  let usersRef = useRef(users);
-
-  useEffect(() => {
-    usersRef.current = users;
-  }, [users]);
 
   let get = useCallback(
-    async (uuid, refetch = false) => {
+    async (uuid, refetch = false, state = undefined) => {
       if (uuid === "..." || !uuid) return { loading: true };
 
-      let currentUsers = usersRef.current;
+      return new Promise((resolve) => {
+        setUsers((currentUsers) => {
+          // Check existing
+          if (
+            currentUsers[uuid] &&
+            !refetch &&
+            Object.keys(currentUsers[uuid]).length > 1
+          ) {
+            // If state is provided, update the existing user with the state
+            if (state !== undefined) {
+              const updatedUser = { ...currentUsers[uuid], state };
+              resolve(updatedUser);
+              return {
+                ...currentUsers,
+                [uuid]: updatedUser,
+              };
+            }
+            resolve(currentUsers[uuid]);
+            return currentUsers;
+          }
 
-      if (currentUsers[uuid] && !refetch) {
-        if (Object.keys(currentUsers[uuid]).length === 1) {
-        } else {
-          return currentUsers[uuid];
-        }
-      }
+          // Check cache
+          if (fetchCacheRef.current.has(uuid) && !refetch) {
+            resolve(fetchCacheRef.current.get(uuid));
+            return currentUsers;
+          }
 
-      if (fetchCacheRef.current.has(uuid) && !refetch) {
-        return fetchCacheRef.current.get(uuid);
-      }
-
-      let fetchPromise = (async () => {
-        try {
-          let newUser = null;
-
-          for (let attempt = 0; attempt <= RETRIES; attempt++) {
+          // Fetch user
+          let fetchPromise = (async () => {
             try {
-              let controller = new AbortController();
-              let timeoutId = setTimeout(() => controller.abort(), 5000);
+              let newUser = null;
 
-              let response = await fetch(`${endpoint.user}${uuid}`, {
-                signal: controller.signal,
-              });
-              clearTimeout(timeoutId);
+              for (let attempt = 0; attempt <= RETRIES; attempt++) {
+                try {
+                  let controller = new AbortController();
+                  let timeoutId = setTimeout(() => controller.abort(), 5000);
 
-              let data = await response.json();
-              if (data.type !== "error") {
-                newUser = data.data;
-                break;
+                  let response = await fetch(`${endpoint.user}${uuid}`, {
+                    signal: controller.signal,
+                  });
+                  clearTimeout(timeoutId);
+
+                  let data = await response.json();
+                  if (data.type !== "error") {
+                    newUser = data.data;
+                    break;
+                  }
+                } catch (error) {
+                  console.warn(
+                    `Failed to fetch user ${uuid} (attempt ${attempt + 1}/${RETRIES + 1}):`,
+                    error
+                  );
+
+                  if (attempt === RETRIES) {
+                    return { loading: true };
+                  }
+
+                  if (attempt < RETRIES) {
+                    await new Promise((resolve) =>
+                      setTimeout(resolve, Math.pow(2, attempt) * 1000)
+                    );
+                  }
+                }
               }
-            } catch (error) {
-              console.warn(
-                `Failed to fetch user ${uuid} (attempt ${attempt + 1}/${RETRIES + 1}):`,
-                error
-              );
 
-              if (attempt === RETRIES) {
+              if (!newUser) {
                 return { loading: true };
               }
 
-              if (attempt < RETRIES) {
-                await new Promise((resolve) =>
-                  setTimeout(resolve, Math.pow(2, attempt) * 1000)
-                );
+              newUser.display = getDisplayFromUsername(
+                newUser.username,
+                newUser.display
+              );
+
+              let sharedSecret = await get_shared_secret(
+                privateKey,
+                newUser.public_key
+              );
+              newUser.shared_secret = sharedSecret.sharedSecretHex;
+
+              // Set the state if provided
+              if (state !== undefined) {
+                newUser.state = state;
               }
+
+              setUsers((prevUsers) => ({
+                ...prevUsers,
+                [uuid]: newUser,
+              }));
+
+              return newUser;
+            } finally {
+              fetchCacheRef.current.delete(uuid);
             }
-          }
+          })();
 
-          if (!newUser) {
-            return { loading: true };
-          }
+          // Add to cache
+          fetchCacheRef.current.set(uuid, fetchPromise);
+          resolve(fetchPromise);
 
-          newUser.display = getDisplayFromUsername(
-            newUser.username,
-            newUser.display
-          );
-
-          let sharedSecret = await get_shared_secret(
-            privateKey,
-            newUser.public_key
-          );
-          newUser.shared_secret = sharedSecret.sharedSecretHex;
-
-          setUsers((prevUsers) => ({
-            ...prevUsers,
-            [uuid]: newUser,
-          }));
-
-          return newUser;
-        } finally {
-          fetchCacheRef.current.delete(uuid);
-        }
-      })();
-
-      fetchCacheRef.current.set(uuid, fetchPromise);
-
-      return fetchPromise;
+          return currentUsers;
+        });
+      });
     },
     [privateKey, get_shared_secret]
-  );
-
-  let updateState = useCallback(
-    async (uuid, value) => {
-      let user = await get(uuid, false);
-
-      if (user && !user.loading) {
-        setUsers((prevUsers) => ({
-          ...prevUsers,
-          [uuid]: { ...prevUsers[uuid], state: value },
-        }));
-      }
-    },
-    [get]
   );
 
   let makeChatTop = useCallback((uuid) => {
@@ -159,7 +165,7 @@ export function UsersProvider({ children }) {
     });
   }, []);
 
-  // Cleanup
+  // Clear cache on umount
   useEffect(() => {
     return () => {
       fetchCacheRef.current.clear();
@@ -178,10 +184,9 @@ export function UsersProvider({ children }) {
     }
   }, []);
 
-  let contextValue = React.useMemo(
+  let contextValue = useMemo(
     () => ({
       get,
-      updateState,
       users,
       usingElectron,
       ownUuid: ls.get("auth_uuid"),
@@ -199,7 +204,6 @@ export function UsersProvider({ children }) {
     }),
     [
       get,
-      updateState,
       users,
       usingElectron,
       forceLoad,

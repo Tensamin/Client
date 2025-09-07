@@ -43,7 +43,7 @@ export let WebSocketProvider = ({ children }) => {
   let pendingRequests = useRef(new Map());
   let responseTimeout = 10000;
   let { privateKeyHash } = useCryptoContext();
-  let { updateState, forceLoad, setForceLoad, setFetchChats, get } = useUsersContext();
+  let { forceLoad, setForceLoad, setFetchChats, get } = useUsersContext();
   let [iotaPing, setIotaPing] = useState("?");
   let [clientPing, setClientPing] = useState("?");
   let [identified, setIdentified] = useState(false);
@@ -66,14 +66,12 @@ export let WebSocketProvider = ({ children }) => {
       switch (message.type) {
         case "get_states":
           Object.keys(message.data.user_states).forEach((uuid) =>
-            updateState(uuid, message.data.user_states[uuid])
+            get(uuid, false, message.data.user_states[uuid])
           );
           break;
 
         case "client_changed":
-          console.log("STATE")
-          updateState(message.data.user_id, message.data.user_state);
-          await get(message.data.user_id, true);
+          get(message.data.user_id, true, message.data.user_state);
           break;
 
         case "shared_secret_return":
