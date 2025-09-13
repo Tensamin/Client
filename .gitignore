@@ -1,9 +1,14 @@
+# Dependencies
 /node_modules
+.pnpm-debug.log*
+pnpm-lock.yaml
+
+# Build
+/dist/
 /.next/
 /out/
-/release/
-/work/
-/dist/
-pnpm-lock.yaml
-tensamin.pkg.tar.zst
-tensamin-aur
+
+# Environment
+.env*
+*.tsbuildinfo
+next-env.d.ts
