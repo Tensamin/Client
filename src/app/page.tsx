@@ -4,13 +4,24 @@
 import { createContext, useContext, useState } from "react";
 
 // Context Imports
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { CryptoProvider } from "@/context/crypto";
 import { SocketProvider } from "@/context/socket";
+import { UserProvider } from "@/context/user";
 
 // Components
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { Navbar } from "@/components/navbar";
 import { Loading } from "@/components/loading";
+import { UserModal } from "@/components/modals/user";
 import LoginPage from "@/page/login";
 import HomePage from "@/page/home";
+import SettingsPage from "@/page/settings";
 
 type PageContextType = {
   page: string;
@@ -37,16 +48,49 @@ export default function PageProvider() {
   }
 
   if (page === "error") return <Loading message={pageData || "ERROR"} />;
+  if (page === "login")
+    return (
+      <CryptoProvider>
+        <LoginPage />
+      </CryptoProvider>
+    );
+
+  function Common({ children }: { children: React.ReactNode }) {
+    const { open } = useSidebar();
+
+    return (
+      <>
+        <Sidebar className="group-data-[side=left]:border-0">
+          <SidebarHeader>
+            <UserModal uuid={localStorage.getItem("auth_uuid") || ""} />
+          </SidebarHeader>
+          <SidebarContent></SidebarContent>
+        </Sidebar>
+        <div className="w-full h-screen flex flex-col bg-sidebar overflow-hidden">
+          <Navbar />
+          <div
+            className={`${open && "rounded-tl-xl border-l "}w-full h-full border-t bg-background p-2`}
+          >
+            {children}
+          </div>
+        </div>
+      </>
+    );
+  }
 
   function PageSwitch() {
     switch (page) {
-      case "login":
-        return <LoginPage />;
       case "home":
         return (
-          <SocketProvider>
+          <Common>
             <HomePage />
-          </SocketProvider>
+          </Common>
+        );
+      case "settings":
+        return (
+          <Common>
+            <SettingsPage />
+          </Common>
         );
       default:
         return <div>Unkown Page</div>;
@@ -56,7 +100,13 @@ export default function PageProvider() {
   return (
     <PageContext.Provider value={{ page, pageData, setPage }}>
       <CryptoProvider>
-        <PageSwitch />
+        <UserProvider>
+          <SocketProvider>
+            <SidebarProvider>
+              <PageSwitch />
+            </SidebarProvider>
+          </SocketProvider>
+        </UserProvider>
       </CryptoProvider>
     </PageContext.Provider>
   );

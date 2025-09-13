@@ -22,6 +22,20 @@ export interface LogBody {
   message: string;
 }
 
+export interface User {
+  uuid: string;
+  username: string;
+  display: string;
+  avatar: string | null;
+  about: string | null;
+  status: string | null;
+  sub_level: number;
+  sub_end: number;
+  public_key: string;
+  created_at: string;
+  loading: boolean;
+}
+
 declare global {
   interface Window {
     keyring?: {

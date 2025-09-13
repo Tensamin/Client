@@ -22,6 +22,8 @@ const responseTimeout = 5000;
 type SocketContextType = {
   readyState: ReadyState;
   lastMessage: AdvancedSuccessMessage | null;
+  ownPing: number;
+  iotaPing: number;
   send: (
     requestType: string,
     logData: LogBody,
@@ -51,6 +53,9 @@ export function SocketProvider({
   const [lastMessage, setLastMessage] = useState<AdvancedSuccessMessage | null>(
     null
   );
+
+  const [ownPing, setOwnPing] = useState<number>(0);
+  const [iotaPing, setIotaPing] = useState<number>(0);
 
   const { setPage } = usePageContext();
   const { privateKeyHash } = useCryptoContext();
@@ -233,6 +238,35 @@ export function SocketProvider({
     }
   }, [connected]);
 
+  useEffect(() => {
+    if (!connected) return;
+
+    let interval: any;
+    interval = setInterval(() => {
+      const now1 = Date.now();
+      send(
+        "ping",
+        {
+          log_level: -1,
+          message: "SOCKET_CONTEXT_PING",
+        },
+        {
+          last_ping: now1,
+        }
+      ).then((data: any) => {
+        if (data.type !== "error") {
+          const now2 = Date.now();
+          const now = now2 - now1;
+          setOwnPing(now);
+          setIotaPing(data.data.ping_iota);
+        }
+      });
+    }, 5000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [connected, send]);
+
   switch (readyState) {
     case ReadyState.OPEN:
       if (!identified)
@@ -244,6 +278,8 @@ export function SocketProvider({
             send,
             isReady,
             lastMessage,
+            ownPing,
+            iotaPing,
           }}
         >
           {children}

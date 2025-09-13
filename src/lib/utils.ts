@@ -1,11 +1,13 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import * as React from "react";
+
+const MOBILE_BREAKPOINT = 768;
+export const RetryCount = 10;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-export const RetryCount = 10;
 
 export function log(
   level: "info" | "warn" | "error" | "debug" = "info",
@@ -55,4 +57,37 @@ export function isElectron() {
   } catch (e) {}
 
   return false;
+}
+
+export function useIsMobile() {
+  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
+    undefined
+  );
+
+  React.useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const onChange = () => {
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    };
+    mql.addEventListener("change", onChange);
+    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  return !!isMobile;
+}
+
+export function getDisplayFromUsername(username: string, display_name: string) {
+  if (display_name === "") {
+    return capitalizeFirstLetter(username);
+  } else {
+    return display_name;
+  }
+}
+
+export function capitalizeFirstLetter(content: string) {
+  if (typeof content !== "string" || content.length === 0) {
+    return "";
+  }
+  return content.charAt(0).toUpperCase() + content.slice(1);
 }

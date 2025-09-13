@@ -1,17 +1,7 @@
 "use client";
-import {
-  createContext,
-  use,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import * as Comlink from "comlink";
-import {
-  PublicKeyCredentialRequestOptionsJSON,
-  startAuthentication,
-} from "@simplewebauthn/browser";
+import { startAuthentication } from "@simplewebauthn/browser";
 
 import { BasicSuccessMessage } from "@/lib/types";
 import { sha256, log, isElectron, RetryCount } from "@/lib/utils";
