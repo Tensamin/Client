@@ -25,7 +25,7 @@ export function UserModal({ uuid }: { uuid: string }) {
   return (
     <Modal.BigModal
       title={user.display}
-      description={user.status}
+      description={user.username}
       icon={user.avatar}
       loading={user.loading}
     />

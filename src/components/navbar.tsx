@@ -3,6 +3,7 @@ import * as Icon from "lucide-react";
 
 // Context Imports
 import { usePageContext } from "@/app/page";
+import { useSidebar } from "@/components/ui/sidebar";
 
 // Components
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -10,9 +11,10 @@ import { Button } from "@/components/ui/button";
 
 export function Navbar() {
   const { setPage } = usePageContext();
+  const { open } = useSidebar();
 
   return (
-    <div className="w-full px-1 my-1 h-8 flex gap-2 items-center bg-sidebar">
+    <div className={`${open ? "pr-1" : "px-1"} w-full my-1 h-8 flex gap-1 items-center bg-sidebar`}>
       <Button asChild className="h-8 w-8" variant="outline">
         <SidebarTrigger />
       </Button>
