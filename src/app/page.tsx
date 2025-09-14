@@ -1,15 +1,7 @@
 "use client";
 
 // Package Imports
-import {
-  createContext,
-  useContext,
-  useState,
-  useRef,
-  useEffect,
-  useTransition,
-} from "react";
-import { MagicTabSelect } from "react-magic-motion";
+import { createContext, useContext, useState } from "react";
 
 // Context Imports
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -51,7 +43,7 @@ export function usePageContext() {
 export default function PageProvider() {
   const [page, setPageRaw] = useState("home");
   const [pageData, setPageData] = useState("");
-  const [hoveredIndex, setHoveredIndex] = useState(0);
+  const [category, setCategory] = useState<"chats" | "communities">("chats");
 
   function setPage(page: string, data: string = "") {
     setPageRaw(page);
@@ -72,40 +64,16 @@ export default function PageProvider() {
     return (
       <>
         <Sidebar className="group-data-[side=left]:border-0">
-          <SidebarHeader className="p-1">
+          <SidebarHeader className="p-1 flex flex-col gap-1">
             <UserModal uuid={localStorage.getItem("auth_uuid") || ""} />
-            <div className="rounded-full bg-input/30 border border-input flex p-2">
-              {["Chats", "Communities"].map((option, index) => {
-                return (
-                  <button
-                    key={index}
-                    onClick={() => setHoveredIndex(index)}
-                    className="relative w-1/2"
-                  >
-                    {hoveredIndex === index && (
-                      <MagicTabSelect
-                        id="switch"
-                        transition={{ layout: { duration: 0.32, ease: "easeInOut" } }}
-                      >
-                        <span
-                          style={{
-                            borderRadius: "999px",
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            zIndex: 10,
-                            backgroundColor: "white",
-                            mixBlendMode: "difference",
-                          }}
-                        />
-                      </MagicTabSelect>
-                    )}
-                    {option}
-                  </button>
-                );
-              })}
+            <div className="rounded-full bg-input/30 border border-input flex flex-nowrap items-center">
+              <Button variant="link" className="w-1/2 text-xs">
+                Conversations
+              </Button>
+              <div className="h-2/3 border-l"/>
+              <Button variant="link" className="w-1/2 text-xs">
+                Communities
+              </Button>
             </div>
           </SidebarHeader>
           <SidebarContent></SidebarContent>
