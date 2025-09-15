@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 // Context Imports
 import { useUserContext } from "@/context/user";
+import { usePageContext } from "@/app/page";
 
 // Components
 import * as RawModal from "@/components/modals/raw";
@@ -16,6 +17,7 @@ export function UserModal({
   size: "big" | "medium";
 }) {
   const { get } = useUserContext();
+  const { setPage } = usePageContext();
   const [user, setUser] = useState<any>({
     uuid: "",
     display: "",
@@ -39,7 +41,15 @@ export function UserModal({
     case "big":
       return <RawModal.BigModal {...props} />;
     case "medium":
-      return <RawModal.MediumModal {...props} description={user.status} />;
+      return (
+        <RawModal.MediumModal
+          {...props}
+          description={user.status}
+          onClick={() => {
+            setPage("chat", user.uuid);
+          }}
+        />
+      );
     default:
       return null;
   }

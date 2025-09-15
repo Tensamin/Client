@@ -26,10 +26,14 @@ import { Navbar } from "@/components/navbar";
 import { Loading } from "@/components/loading";
 import { UserModal } from "@/components/modals/user";
 import { Communities, Conversations } from "@/components/modals/category";
+
+// Pages
 import LoginPage from "@/page/login";
 import HomePage from "@/page/home";
 import SettingsPage from "@/page/settings";
+import ChatPage from "@/page/chat";
 
+// Main
 type PageContextType = {
   page: string;
   pageData?: string;
@@ -81,14 +85,17 @@ export default function PageProvider() {
       case "settings":
         jsxPage = <SettingsPage />;
         break;
+      case "chat":
+        jsxPage = <ChatPage uuid={pageData} />;
+        break;
       default:
-        jsxPage = <div>Unkown Page</div>;
+        jsxPage = <div>Unkown Page | {pageData}</div>;
         break;
     }
 
     return (
       <div
-        className={`${open && "rounded-tl-xl border-l"} w-full h-full border-t bg-background p-2`}
+        className={`${open && "rounded-tl-xl border-l"} w-full h-full border-t border-input bg-background p-2`}
       >
         {jsxPage}
       </div>
