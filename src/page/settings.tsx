@@ -45,8 +45,8 @@ export default function Page() {
 
   return (
     <div className="h-full w-full flex gap-2">
-      <div className="flex flex-col p-2 bg-card/46 border rounded-lg h-full">
-        <ScrollArea className="w-37 h-full">
+      <ScrollArea className="flex flex-col p-2 bg-card/46 border rounded-lg h-full">
+        <div className="w-37 h-full">
           <div className="text-sm text-muted-foreground">Account</div>
           <SettingsButton
             page="iota"
@@ -144,12 +144,12 @@ export default function Page() {
             selected={selected}
             setSelected={setSelected}
           />
-        </ScrollArea>
+        </div>
         <div className="text-xs text-muted-foreground">
           <p>Client Ping: {ownPing}ms</p>
           <p>Iota Ping: {iotaPing}ms</p>
         </div>
-      </div>
+      </ScrollArea>
       <div className="w-full flex flex-col p-2 bg-card/46 border rounded-lg">
         <MainPage selected={selected} />
       </div>

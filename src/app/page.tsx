@@ -2,6 +2,7 @@
 
 // Package Imports
 import { createContext, useContext, useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 // Lib Imports
 import { Padding } from "@/lib/utils";
@@ -20,6 +21,15 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Loading } from "@/components/loading";
@@ -89,14 +99,56 @@ export default function PageProvider() {
             className={`p-${Padding} flex flex-col gap-${Padding}`}
           >
             <UserModal key={uuid} uuid={uuid} />
-            <div className="rounded-full bg-input/30 border border-input flex flex-nowrap items-center">
-              <Button variant="link" className="w-1/2 text-xs">
-                Conversations
-              </Button>
-              <div className="h-2/3 border-l" />
-              <Button variant="link" className="w-1/2 text-xs">
-                Communities
-              </Button>
+            <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden p-1">
+              <div className="relative grid grid-cols-2 w-full">
+                <button
+                  type="button"
+                  className="relative isolate rounded-full py-1.5 text-xs transition-colors"
+                  onClick={() => setCategory("chats")}
+                  aria-pressed={category === "chats"}
+                  aria-label="Conversations"
+                >
+                  {category === "chats" && (
+                    <motion.span
+                      aria-hidden="true"
+                      layoutId="category-pill"
+                      className="absolute inset-0 rounded-full bg-foreground shadow-sm mix-blend-difference z-10 pointer-events-none"
+                      transition={{
+                        type: "spring",
+                        stiffness: 350,
+                        damping: 28,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-0 hover:font-medium">
+                    Conversations
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className="relative isolate rounded-full py-1.5 text-xs transition-colors"
+                  onClick={() => setCategory("communities")}
+                  aria-pressed={category === "communities"}
+                  aria-label="Communities"
+                >
+                  {category === "communities" && (
+                    <motion.span
+                      aria-hidden="true"
+                      layoutId="category-pill"
+                      className="absolute inset-0 rounded-full bg-foreground shadow-sm mix-blend-difference z-10 pointer-events-none"
+                      transition={{
+                        type: "spring",
+                        stiffness: 350,
+                        damping: 28,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-0 hover:font-medium">
+                    Communities
+                  </span>
+                </button>
+              </div>
             </div>
           </SidebarHeader>
           <SidebarContent></SidebarContent>
