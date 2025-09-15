@@ -18,13 +18,13 @@ export function Navbar() {
 
   return (
     <div
-      className={`${open ? `pr-${Padding}` : `px-${Padding}`} w-full my-${Padding} h-8 flex gap-${Padding} items-center bg-sidebar`}
+      className={`${open ? `pr-${Padding}` : `px-${Padding}`} w-full my-${Padding} h-9 flex gap-${Padding} items-center bg-sidebar`}
     >
-      <Button asChild className="h-8 w-8" variant="outline">
+      <Button asChild className="h-9 w-9" variant="outline">
         <SidebarTrigger />
       </Button>
       <Button
-        className="h-8 w-8"
+        className="h-9 w-9"
         variant="outline"
         onClick={() => {
           setPage("home");
@@ -33,7 +33,7 @@ export function Navbar() {
         <Icon.Home />
       </Button>
       <Button
-        className="h-8 w-8"
+        className="h-9 w-9"
         variant="outline"
         onClick={() => {
           setPage("settings");
@@ -44,18 +44,18 @@ export function Navbar() {
 
       {/* Only when user is selected */}
       <div className="w-full">Username</div>
-      <Button className="h-8 w-8" variant="outline">
+      <Button className="h-9 w-9" variant="outline">
         <Icon.Phone />
       </Button>
 
       {/* Electron Window Controls */}
-      <Button className="h-8 w-8" variant="outline">
+      <Button className="h-9 w-9" variant="outline">
         <Icon.Minus />
       </Button>
-      <Button className="h-8 w-8" variant="outline">
+      <Button className="h-9 w-9" variant="outline">
         <Icon.Maximize2 />
       </Button>
-      <Button className="h-8 w-8" variant="outline">
+      <Button className="h-9 w-9" variant="outline">
         <Icon.X />
       </Button>
     </div>

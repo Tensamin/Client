@@ -1,13 +1,22 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef } from "react";
+// Package Imports
+import { createContext, useContext, useState, useRef, useEffect } from "react";
 
+// Lib Imports
 import { user } from "@/lib/endpoints";
 import { User } from "@/lib/types";
 import { log, getDisplayFromUsername } from "@/lib/utils";
 
+// Context Imports
+import { useSocketContext } from "@/context/socket";
+
 type UserContextType = {
   get: (uuid: string, refetch: boolean) => Promise<User>;
+  conversations: any[];
+  communities: any[];
+  setConversations: (conversations: any[]) => void;
+  setCommunities: (communities: any[]) => void;
 };
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -25,6 +34,10 @@ export function UserProvider({
   children: React.ReactNode;
 }>) {
   const fetchedUsersRef = useRef(new Map());
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [communities, setCommunities] = useState<any[]>([]);
+
+  const { send, isReady } = useSocketContext();
 
   async function get(uuid: string, refetch: boolean = false): Promise<User> {
     try {
@@ -76,10 +89,57 @@ export function UserProvider({
     }
   }
 
+  useEffect(() => {
+    if (isReady) {
+      send(
+        "get_chats",
+        {
+          log_level: 0,
+          message: "USER_CONTEXT_GET_CONVERSATIONS",
+        },
+        {} as JSON
+      ).then((data) => {
+        if (data.type !== "error") {
+          setConversations(data.data.user_ids);
+        } else {
+          log(
+            "error",
+            "USER_CONTEXT",
+            "ERROR_USER_CONTEXT_GET_CONVERSATIONS",
+            data.message
+          );
+        }
+      });
+      send(
+        "get_communities",
+        {
+          log_level: 0,
+          message: "USER_CONTEXT_GET_COMMUNITIES",
+        },
+        {} as JSON
+      ).then((data) => {
+        if (data.type !== "error") {
+          setCommunities(data.data.communities);
+        } else {
+          log(
+            "error",
+            "USER_CONTEXT",
+            "ERROR_USER_CONTEXT_GET_COMMUNITIES",
+            data.message
+          );
+        }
+      });
+    }
+  }, [isReady]);
+
   return (
     <UserContext.Provider
       value={{
         get,
+        conversations,
+        communities,
+        setConversations,
+        setCommunities,
       }}
     >
       {children}

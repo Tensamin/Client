@@ -21,19 +21,11 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Loading } from "@/components/loading";
 import { UserModal } from "@/components/modals/user";
+import { Communities, Conversations } from "@/components/modals/category";
 import LoginPage from "@/page/login";
 import HomePage from "@/page/home";
 import SettingsPage from "@/page/settings";
@@ -57,7 +49,9 @@ export default function PageProvider() {
   const [uuid, setUuid] = useState("");
   const [page, setPageRaw] = useState("home");
   const [pageData, setPageData] = useState("");
-  const [category, setCategory] = useState<"chats" | "communities">("chats");
+  const [category, setCategory] = useState<"Conversations" | "Communities">(
+    "Conversations"
+  );
 
   function setPage(page: string, data: string = "") {
     setPageRaw(page);
@@ -93,92 +87,82 @@ export default function PageProvider() {
     }
 
     return (
-      <>
-        <Sidebar className="group-data-[side=left]:border-0">
-          <SidebarHeader
-            className={`p-${Padding} flex flex-col gap-${Padding}`}
-          >
-            <UserModal key={uuid} uuid={uuid} />
-            <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden p-1">
-              <div className="relative grid grid-cols-2 w-full">
-                <button
-                  type="button"
-                  className="relative isolate rounded-full py-1.5 text-xs transition-colors"
-                  onClick={() => setCategory("chats")}
-                  aria-pressed={category === "chats"}
-                  aria-label="Conversations"
-                >
-                  {category === "chats" && (
-                    <motion.span
-                      aria-hidden="true"
-                      layoutId="category-pill"
-                      className="absolute inset-0 rounded-full bg-foreground shadow-sm mix-blend-difference z-10 pointer-events-none"
-                      transition={{
-                        type: "spring",
-                        stiffness: 350,
-                        damping: 28,
-                      }}
-                    />
-                  )}
-                  <span className="relative z-0 hover:font-medium">
-                    Conversations
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  className="relative isolate rounded-full py-1.5 text-xs transition-colors"
-                  onClick={() => setCategory("communities")}
-                  aria-pressed={category === "communities"}
-                  aria-label="Communities"
-                >
-                  {category === "communities" && (
-                    <motion.span
-                      aria-hidden="true"
-                      layoutId="category-pill"
-                      className="absolute inset-0 rounded-full bg-foreground shadow-sm mix-blend-difference z-10 pointer-events-none"
-                      transition={{
-                        type: "spring",
-                        stiffness: 350,
-                        damping: 28,
-                      }}
-                    />
-                  )}
-                  <span className="relative z-0 hover:font-medium">
-                    Communities
-                  </span>
-                </button>
-              </div>
-            </div>
-          </SidebarHeader>
-          <SidebarContent></SidebarContent>
-        </Sidebar>
-        <div className="w-full h-screen flex flex-col bg-sidebar overflow-hidden">
-          <Navbar />
-          <div
-            className={`${open && "rounded-tl-xl border-l"} w-full h-full border-t bg-background p-2`}
-          >
-            {jsxPage}
-          </div>
-        </div>
-        <div
-          className="p-1 p-2 px-1 px-2 pr-1 pr-2 my-1 my-2 gap-1 gap-2"
-          hidden
-        />
-      </>
+      <div
+        className={`${open && "rounded-tl-xl border-l"} w-full h-full border-t bg-background p-2`}
+      >
+        {jsxPage}
+      </div>
     );
   }
 
   return (
     <PageContext.Provider value={{ page, pageData, setPage }}>
       <CryptoProvider>
-        <UserProvider>
-          <SocketProvider>
+        <SocketProvider>
+          <UserProvider>
             <SidebarProvider>
-              <PageSwitch />
+              <Sidebar className="group-data-[side=left]:border-0">
+                <SidebarHeader
+                  className={`p-${Padding} flex flex-col gap-${Padding * 3}`}
+                >
+                  <UserModal key={uuid} uuid={uuid} size="big" />
+                  <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden p-1">
+                    <div className="relative grid grid-cols-2 w-full">
+                      {["Conversations", "Communities"].map((cat) => (
+                        <Button
+                          key={cat}
+                          variant="ghost"
+                          type="button"
+                          className="relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-transparent hover:bg-transparent"
+                          onClick={() =>
+                            setCategory(cat as "Conversations" | "Communities")
+                          }
+                          aria-pressed={category === cat}
+                          aria-label="Conversations"
+                        >
+                          {category === cat && (
+                            <motion.span
+                              aria-hidden="true"
+                              layoutId="category-pill"
+                              className="absolute inset-0 rounded-full bg-input/50 pointer-events-none border"
+                              transition={{
+                                type: "spring",
+                                stiffness: 350,
+                                damping: 28,
+                              }}
+                            />
+                          )}
+                          <span className="relative z-10 hover:underline underline-offset-2 text-sm">
+                            Conversations
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    {["Conversations", "Communities"].map((cat) => {
+                      if (cat !== category) return null;
+                      return category === "Communities" ? (
+                        <Communities key={category} />
+                      ) : (
+                        <Conversations key={category} />
+                      );
+                    })}
+                  </div>
+                </SidebarHeader>
+                <SidebarContent></SidebarContent>
+              </Sidebar>
+              <div className="w-full h-screen flex flex-col bg-sidebar overflow-hidden">
+                <Navbar />
+                <PageSwitch />
+              </div>
+              <div
+                className="p-1 p-2 px-1 px-2 pr-1 pr-2 my-1 my-2 gap-1 gap-2 size-8 size-9"
+                hidden
+              />
             </SidebarProvider>
-          </SocketProvider>
-        </UserProvider>
+          </UserProvider>
+        </SocketProvider>
       </CryptoProvider>
     </PageContext.Provider>
   );

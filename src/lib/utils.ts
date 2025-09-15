@@ -5,6 +5,7 @@ import * as React from "react";
 const MOBILE_BREAKPOINT = 768;
 export const RetryCount = 10;
 export const Padding = 2;
+export const ThemeSize = 9;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -91,4 +92,22 @@ export function capitalizeFirstLetter(content: string) {
     return "";
   }
   return content.charAt(0).toUpperCase() + content.slice(1);
+}
+
+export function convertStringToInitials(content: string) {
+  if (!content || typeof content !== "string") {
+    return "NA";
+  }
+
+  let words = content.split(" ").filter(Boolean);
+
+  if (words.length === 0) {
+    return "NA";
+  }
+
+  if (words.length === 1) {
+    return words[0].substring(0, 2).toUpperCase();
+  } else {
+    return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+  }
 }

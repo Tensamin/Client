@@ -5,10 +5,16 @@ import { useEffect, useState } from "react";
 import { useUserContext } from "@/context/user";
 
 // Components
-import * as Modal from "@/components/modals/raw";
+import * as RawModal from "@/components/modals/raw";
 
 // Main
-export function UserModal({ uuid }: { uuid: string }) {
+export function UserModal({
+  uuid,
+  size,
+}: {
+  uuid: string;
+  size: "big" | "medium";
+}) {
   const { get } = useUserContext();
   const [user, setUser] = useState<any>({
     uuid: "",
@@ -22,12 +28,19 @@ export function UserModal({ uuid }: { uuid: string }) {
     get(uuid, false).then(setUser);
   }, [uuid]);
 
-  return (
-    <Modal.BigModal
-      title={user.display}
-      description={user.username}
-      icon={user.avatar}
-      loading={user.loading}
-    />
-  );
+  const props = {
+    title: user.display,
+    description: user.username,
+    icon: user.avatar,
+    loading: user.loading,
+  };
+
+  switch (size) {
+    case "big":
+      return <RawModal.BigModal {...props} />;
+    case "medium":
+      return <RawModal.MediumModal {...props} description={user.status} />;
+    default:
+      return null;
+  }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+// Package Imports
 import {
   createContext,
   useCallback,
@@ -8,15 +9,22 @@ import {
   useRef,
   useState,
 } from "react";
-import { AdvancedSuccessMessage, LogBody } from "@/lib/types";
-import { Loading } from "@/components/loading";
+import { v7 } from "uuid";
 import useWebSocket, { ReadyState } from "react-use-websocket";
+
+// Lib Imports
+import { AdvancedSuccessMessage, LogBody } from "@/lib/types";
 import { log, RetryCount } from "@/lib/utils";
 import { client_wss } from "@/lib/endpoints";
-import { v7 } from "uuid";
+
+// Context Imports
 import { useCryptoContext } from "@/context/crypto";
 import { usePageContext } from "@/app/page";
 
+// Components
+import { Loading } from "@/components/loading";
+
+// Main
 const responseTimeout = 5000;
 
 type SocketContextType = {
