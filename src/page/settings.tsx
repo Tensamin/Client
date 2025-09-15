@@ -85,6 +85,12 @@ export default function Page() {
             selected={selected}
             setSelected={setSelected}
           />
+          <SettingsButton
+            page="layout"
+            name="Layout"
+            selected={selected}
+            setSelected={setSelected}
+          />
           <div className="text-sm text-muted-foreground pt-3">
             Communication
           </div>{" "}

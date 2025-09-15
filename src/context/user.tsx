@@ -28,6 +28,7 @@ export function UserProvider({
 
   async function get(uuid: string, refetch: boolean = false): Promise<User> {
     try {
+      if (!uuid || uuid === "0") throw new Error("Invalid UUID");
       if (fetchedUsersRef.current.has(uuid) && !refetch) {
         log("debug", "USER_CONTEXT", "USER_CONTEXT_USER_ALREADY_FETCHED");
         return fetchedUsersRef.current.get(uuid);

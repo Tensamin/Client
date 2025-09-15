@@ -1,10 +1,12 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+
+// Lib Imports
+import { Padding } from "@/lib/utils";
 
 // Context Imports
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { CryptoProvider } from "@/context/crypto";
 import { SocketProvider } from "@/context/socket";
 import { UserProvider } from "@/context/user";
@@ -15,6 +17,7 @@ import {
   SidebarContent,
   SidebarHeader,
   SidebarMenuItem,
+  SidebarProvider,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -41,6 +44,7 @@ export function usePageContext() {
 }
 
 export default function PageProvider() {
+  const [uuid, setUuid] = useState("");
   const [page, setPageRaw] = useState("home");
   const [pageData, setPageData] = useState("");
   const [category, setCategory] = useState<"chats" | "communities">("chats");
@@ -50,6 +54,10 @@ export default function PageProvider() {
     setPageData(data);
   }
 
+  useEffect(() => {
+    setUuid(localStorage.getItem("auth_uuid") || "");
+  }, []);
+
   if (page === "error") return <Loading message={pageData || "ERROR"} />;
   if (page === "login")
     return (
@@ -58,19 +66,34 @@ export default function PageProvider() {
       </CryptoProvider>
     );
 
-  function Common({ children }: { children: React.ReactNode }) {
+  function PageSwitch() {
     const { open } = useSidebar();
+
+    let jsxPage;
+    switch (page) {
+      case "home":
+        jsxPage = <HomePage />;
+        break;
+      case "settings":
+        jsxPage = <SettingsPage />;
+        break;
+      default:
+        jsxPage = <div>Unkown Page</div>;
+        break;
+    }
 
     return (
       <>
         <Sidebar className="group-data-[side=left]:border-0">
-          <SidebarHeader className="p-1 flex flex-col gap-1">
-            <UserModal uuid={localStorage.getItem("auth_uuid") || ""} />
+          <SidebarHeader
+            className={`p-${Padding} flex flex-col gap-${Padding}`}
+          >
+            <UserModal key={uuid} uuid={uuid} />
             <div className="rounded-full bg-input/30 border border-input flex flex-nowrap items-center">
               <Button variant="link" className="w-1/2 text-xs">
                 Conversations
               </Button>
-              <div className="h-2/3 border-l"/>
+              <div className="h-2/3 border-l" />
               <Button variant="link" className="w-1/2 text-xs">
                 Communities
               </Button>
@@ -83,22 +106,15 @@ export default function PageProvider() {
           <div
             className={`${open && "rounded-tl-xl border-l"} w-full h-full border-t bg-background p-2`}
           >
-            {children}
+            {jsxPage}
           </div>
         </div>
+        <div
+          className="p-1 p-2 px-1 px-2 pr-1 pr-2 my-1 my-2 gap-1 gap-2"
+          hidden
+        />
       </>
     );
-  }
-
-  function PageSwitch() {
-    switch (page) {
-      case "home":
-        return <HomePage />;
-      case "settings":
-        return <SettingsPage />;
-      default:
-        return <div>Unkown Page</div>;
-    }
   }
 
   return (
@@ -107,9 +123,7 @@ export default function PageProvider() {
         <UserProvider>
           <SocketProvider>
             <SidebarProvider>
-              <Common>
-                <PageSwitch />
-              </Common>
+              <PageSwitch />
             </SidebarProvider>
           </SocketProvider>
         </UserProvider>

@@ -1,6 +1,9 @@
 // Package Imports
 import * as Icon from "lucide-react";
 
+// Lib Imports
+import { Padding } from "@/lib/utils";
+
 // Context Imports
 import { usePageContext } from "@/app/page";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -14,7 +17,9 @@ export function Navbar() {
   const { open } = useSidebar();
 
   return (
-    <div className={`${open ? "pr-1" : "px-1"} w-full my-1 h-8 flex gap-1 items-center bg-sidebar`}>
+    <div
+      className={`${open ? `pr-${Padding}` : `px-${Padding}`} w-full my-${Padding} h-8 flex gap-${Padding} items-center bg-sidebar`}
+    >
       <Button asChild className="h-8 w-8" variant="outline">
         <SidebarTrigger />
       </Button>
