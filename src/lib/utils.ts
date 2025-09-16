@@ -7,6 +7,7 @@ export const RetryCount = 10;
 export const Padding = 2;
 export const ThemeSize = 9;
 export const MaxSendBoxSize = 200; //px
+export const InitialMessages = 30;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

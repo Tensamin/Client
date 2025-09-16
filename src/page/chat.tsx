@@ -1,6 +1,7 @@
 // Package Imports
 import React, { useEffect, useRef, useState } from "react";
 import * as Icon from "lucide-react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Lib Imports
 import { MaxSendBoxSize } from "@/lib/utils";
@@ -8,7 +9,7 @@ import { MaxSendBoxSize } from "@/lib/utils";
 // Components
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import MessageBox from "@/components/messagetemp";
+import { Box } from "@/components/chat/box";
 
 // Main
 export default function Page({
@@ -16,6 +17,7 @@ export default function Page({
 }: Readonly<{
   uuid: string;
 }>) {
+  const [client] = React.useState(() => new QueryClient());
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -35,7 +37,9 @@ export default function Page({
   return (
     <div className="h-full w-full flex flex-col gap-2">
       <div className="flex-1 flex flex-col p-2 bg-card/46 border rounded-lg overflow-y-auto">
-        <MessageBox />
+        <QueryClientProvider client={client}>
+          <Box />
+        </QueryClientProvider>
       </div>
       <div className="flex gap-2 items-end">
         <Button
