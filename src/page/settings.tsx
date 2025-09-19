@@ -1,11 +1,27 @@
+// Package Imports
 import React, { useState } from "react";
 
+// Context Imports
+import { usePageContext } from "@/app/page";
 import { useSocketContext } from "@/context/socket";
+
+// Components
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
 import IotaPage from "@/page/settings/iota";
 
+// Main
 function MainPage({ selected }: { selected: string }): React.JSX.Element {
   switch (selected) {
     case "iota":
@@ -20,17 +36,51 @@ function SettingsButton({
   name,
   selected,
   setSelected,
+  logoutButton,
 }: {
-  page: string;
-  name: string;
-  selected: string;
-  setSelected: (page: string) => void;
+  page?: string;
+  name?: string;
+  selected?: string;
+  setSelected?: (page: string) => void;
+  logoutButton?: boolean;
 }): React.JSX.Element {
-  return (
+  const { setPage } = usePageContext();
+  return logoutButton ? (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button className="w-full my-1" variant="outline">
+          Logout
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will log you out of your account and return you to the login
+            screen.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              localStorage.removeItem("auth_private_key");
+              localStorage.removeItem("auth_cred_id");
+              localStorage.removeItem("auth_uuid");
+              setPage("login");
+            }}
+          >
+            Logout
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  ) : (
     <Button
       className="w-full my-1"
       variant={selected === page ? "outlineSelected" : "outline"}
       onClick={() => {
+        if (!setSelected || !page) return;
         setSelected(page);
       }}
     >
@@ -72,6 +122,7 @@ export default function Page() {
             selected={selected}
             setSelected={setSelected}
           />
+          <SettingsButton logoutButton />
           <div className="text-sm text-muted-foreground pt-3">Appearance</div>
           <SettingsButton
             page="tint"
@@ -144,10 +195,13 @@ export default function Page() {
             selected={selected}
             setSelected={setSelected}
           />
-        </div>
-        <div className="text-xs text-muted-foreground">
-          <p>Client Ping: {ownPing}ms</p>
-          <p>Iota Ping: {iotaPing}ms</p>
+          <div className="text-sm text-muted-foreground pt-5">Information</div>
+          <div className="text-xs text-muted-foreground pt-1">
+            <p>Version: {iotaPing}</p>
+            <p>Client Ping: {ownPing}ms</p>
+            <p>Iota Ping: {iotaPing}ms</p>
+          </div>
+          <div className="pb-15" />
         </div>
       </ScrollArea>
       <div className="w-full flex flex-col p-2 bg-card/46 border rounded-lg">

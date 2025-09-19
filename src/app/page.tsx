@@ -67,12 +67,20 @@ export default function PageProvider() {
     setUuid(localStorage.getItem("auth_uuid") || "");
   }, []);
 
+  const contextValue = {
+    page,
+    pageData,
+    setPage,
+  };
+
   if (page === "error") return <Loading message={pageData || "ERROR"} />;
   if (page === "login")
     return (
-      <CryptoProvider>
-        <LoginPage />
-      </CryptoProvider>
+      <PageContext.Provider value={contextValue}>
+        <CryptoProvider>
+          <LoginPage />
+        </CryptoProvider>
+      </PageContext.Provider>
     );
 
   function PageSwitch() {
@@ -104,7 +112,7 @@ export default function PageProvider() {
   }
 
   return (
-    <PageContext.Provider value={{ page, pageData, setPage }}>
+    <PageContext.Provider value={contextValue}>
       <CryptoProvider>
         <SocketProvider>
           <UserProvider>

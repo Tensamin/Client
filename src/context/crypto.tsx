@@ -89,20 +89,34 @@ export function CryptoProvider({
         const uuid = localStorage.getItem("auth_uuid") || "";
         const cred_id = localStorage.getItem("auth_cred_id") || "";
         if (encryptedPrivateKey === "" || uuid === "") setPage("login");
+        const lambda = localStorage.getItem("auth_lambda");
 
         // get Lambda
         async function getLambda(retryCount = 0) {
           try {
             if (isElectron()) {
               return await window?.keyring?.get("net.methanium.tensamin", uuid);
-            } else if (localStorage.getItem("auth_lambda")) {
-              return await decrypt(
-                localStorage.getItem("auth_lambda") || "",
+            } else if (lambda) {
+              const decryptedLambda = await decrypt(
+                lambda,
                 await getDeviceFingerprint()
               );
+              if (!decryptedLambda.success) {
+                setPage("login", "ERROR_CRYPTO_CONTEXT_INVALID_LAMBDA");
+                return;
+              }
+              const decryptedPrivateKey = await decrypt(
+                encryptedPrivateKey,
+                decryptedLambda.message
+              );
+              if (!decryptedPrivateKey.success) {
+                setPage("login", "ERROR_CRYPTO_CONTEXT_INVALID_PRIVATE_KEY");
+                return;
+              }
+              return decryptedLambda.message;
             } else {
               if (cred_id === "") {
-                setPage("login", "ERROR_AUTH_NO_CRED_ID");
+                setPage("login", "ERROR_CRYPTO_CONTEXT_NO_CRED_ID");
                 return;
               }
 
@@ -178,20 +192,21 @@ export function CryptoProvider({
           }
         }
         if (page !== "login") {
-          getLambda().then(async (lambda) => {
-            if (!lambda || lambda === "") {
-              setPage("login", "ERROR_AUTH_NO_LAMBDA");
-              return;
-            }
-            const tmpPrivateKey = await decrypt(
-              encryptedPrivateKey || "",
-              lambda
-            );
-            if (!tmpPrivateKey.success) return;
-            setPrivateKey(tmpPrivateKey.message);
-            sha256(tmpPrivateKey.message).then(setPrivateKeyHash);
-            setIsReady(true);
-          });
+          getLambda()
+            .then(async (lambda) => {
+              if (!lambda || lambda === "") {
+                setPage("login", "ERROR_AUTH_NO_LAMBDA");
+                return;
+              }
+              const tmpPrivateKey = await decrypt(
+                encryptedPrivateKey || "",
+                lambda
+              );
+              if (!tmpPrivateKey.success) return;
+              setPrivateKey(tmpPrivateKey.message);
+              sha256(tmpPrivateKey.message).then(setPrivateKeyHash);
+            })
+            .then(() => setIsReady(true));
         } else {
           setIsReady(true);
         }

@@ -36,15 +36,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Page() {
   const [hover, setHover] = useState(false);
   const [base64Jwk, setBase64Jwk] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [stayLoggedIn, setStayLoggedIn] = useState(false);
 
   const { encrypt } = useCryptoContext();
-  const { setPage } = usePageContext();
 
   async function handleDrop(e: React.DragEvent) {
     e.preventDefault();
@@ -69,111 +70,117 @@ export default function Page() {
 
   async function handleSubmit(e: any) {
     e.preventDefault();
+    setLoading(true);
     try {
-      const cred = await (navigator.credentials as any).create({
-        password: e.target,
-      });
-      if (cred) {
-        await (navigator.credentials as any).store(cred);
-      }
-    } catch {}
-    const username = e.target.username.value;
-
-    let uuid: string = "";
-    let options: any;
-    let attestation: any;
-    let verified: boolean = false;
-    let lambda: string = "";
-    let cred_id: string = "";
-    let staySignedIn: boolean = false;
-
-    await fetch(username_to_uuid + username)
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.type === "success") {
-          uuid = data.data.user_id;
-        } else {
-          log("error", "LOGIN", data.log.message);
+      try {
+        const cred = await (navigator.credentials as any).create({
+          password: e.target,
+        });
+        if (cred) {
+          await (navigator.credentials as any).store(cred);
         }
-      })
-      .catch((err) => {
-        log("error", "LOGIN", "ERROR_LOGIN_GET_UUID_UNKOWN", err.message);
-      });
+      } catch {}
+      const username = e.target.username.value;
 
-    if (isElectron()) {
-      // use Keyring
-      let secret = v7();
-      (window as any).keyring.set("net.methanium.tensamin", uuid, secret);
-      const encryptedJwk = await encrypt(base64Jwk, secret);
-      if (!encryptedJwk.success) log("error", "LOGIN", encryptedJwk.message);
-      localStorage.setItem("auth_private_key", encryptedJwk.message);
-      localStorage.setItem("auth_uuid", uuid);
-      window.location.href =
-        process.env.NODE_ENV === "development"
-          ? "https://ma-at-home.hackrland.dev"
-          : "app://dist/index.html";
-    } else {
-      // use Passkey
-      await fetch(webauthn_register_options + uuid, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          private_key_hash: await sha256(base64Jwk),
-        }),
-      })
+      let uuid: string = "";
+      let options: any;
+      let attestation: any;
+      let verified: boolean = false;
+      let lambda: string = "";
+      let cred_id: string = "";
+
+      await fetch(username_to_uuid + username)
         .then((response) => response.json())
         .then((data) => {
-          if (data.type === "error") {
-            throw new Error(data.log.message);
+          if (data.type === "success") {
+            uuid = data.data.user_id;
           } else {
-            options = JSON.parse(atob(data.data.options));
+            log("error", "LOGIN", data.log.message);
           }
+        })
+        .catch((err) => {
+          log("error", "LOGIN", "ERROR_LOGIN_GET_UUID_UNKOWN", err.message);
         });
 
-      attestation = await startRegistration(options);
-
-      await fetch(webauthn_register_verify + uuid, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          private_key_hash: await sha256(base64Jwk),
-          attestation,
-        }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.type === "error") {
-            verified = false;
-            throw new Error(data.log.message);
-          } else {
-            lambda = data.data.lambda;
-            cred_id = attestation.id;
-            verified = true;
-          }
-        });
-      if (verified) {
-        const encryptedJwk = await encrypt(base64Jwk, lambda);
+      if (isElectron()) {
+        // use Keyring
+        let secret = v7();
+        (window as any).keyring.set("net.methanium.tensamin", uuid, secret);
+        const encryptedJwk = await encrypt(base64Jwk, secret);
         if (!encryptedJwk.success) log("error", "LOGIN", encryptedJwk.message);
         localStorage.setItem("auth_private_key", encryptedJwk.message);
         localStorage.setItem("auth_uuid", uuid);
-        localStorage.setItem("auth_cred_id", cred_id);
-
-        if (staySignedIn) {
-          const fingerprint = await getDeviceFingerprint();
-          const encryptedLambda = await encrypt(lambda, fingerprint);
-          if (!encryptedLambda.success)
-            log("error", "LOGIN", encryptedLambda.message);
-          localStorage.setItem("auth_lambda", encryptedLambda.message);
-        } else localStorage.removeItem("auth_lambda");
-        setLoading(true);
-        setPage("home");
+        window.location.href =
+          process.env.NODE_ENV === "development"
+            ? "https://ma-at-home.hackrland.dev"
+            : "app://dist/index.html";
       } else {
-        setLoading(false);
+        // use Passkey
+        await fetch(webauthn_register_options + uuid, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            private_key_hash: await sha256(base64Jwk),
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.type === "error") {
+              throw new Error(data.log.message);
+            } else {
+              options = JSON.parse(atob(data.data.options));
+            }
+          });
+
+        attestation = await startRegistration(options);
+
+        await fetch(webauthn_register_verify + uuid, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            private_key_hash: await sha256(base64Jwk),
+            attestation,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.type === "error") {
+              verified = false;
+              throw new Error(data.log.message);
+            } else {
+              lambda = data.data.lambda;
+              cred_id = attestation.id;
+              verified = true;
+            }
+          });
+        if (verified) {
+          const encryptedJwk = await encrypt(base64Jwk, lambda);
+          if (!encryptedJwk.success)
+            log("error", "LOGIN", encryptedJwk.message);
+          localStorage.setItem("auth_private_key", encryptedJwk.message);
+          localStorage.setItem("auth_uuid", uuid);
+          localStorage.setItem("auth_cred_id", cred_id);
+
+          if (stayLoggedIn) {
+            const fingerprint = await getDeviceFingerprint();
+            const encryptedLambda = await encrypt(lambda, fingerprint);
+            if (!encryptedLambda.success)
+              log("error", "LOGIN", encryptedLambda.message);
+            localStorage.setItem("auth_lambda", encryptedLambda.message);
+          } else localStorage.removeItem("auth_lambda");
+          window.location.reload();
+        } else {
+          setLoading(false);
+        }
       }
+    } catch (err: any) {
+      log("error", "LOGIN", "ERROR_LOGIN_UNKNOWN", err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -230,6 +237,15 @@ export default function Page() {
                   onChange={(e: any) => setBase64Jwk(e.target.value)}
                 />
               </div>
+              <div className="flex gap-2">
+                <Checkbox
+                  id="stayLoggedIn"
+                  disabled={hover}
+                  checked={stayLoggedIn}
+                  onCheckedChange={(value) => setStayLoggedIn(value as boolean)}
+                />
+                <Label htmlFor="stayLoggedIn">Stay logged in?</Label>
+              </div>
               <Button type="submit" disabled={hover}>
                 {loading ? (
                   <Ring
@@ -237,7 +253,7 @@ export default function Page() {
                     stroke="2"
                     bgOpacity="0"
                     speed="2"
-                    color="var(--foreground)"
+                    color="var(--background)"
                   />
                 ) : (
                   "Login"

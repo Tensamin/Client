@@ -232,6 +232,8 @@ export function SocketProvider({
               "SOCKET_CONTEXT",
               "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS"
             );
+          } else {
+            setPage("error", data.log.message);
           }
         })
         .catch((err) => {
