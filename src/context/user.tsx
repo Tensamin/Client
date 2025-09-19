@@ -104,7 +104,7 @@ export function UserProvider({
       setCurrentReceiverUuid(pageData);
       setFailedMessagesAmount(0);
     }
-  }, [page, pageData]);
+  }, [currentReceiverUuid, page, pageData]);
 
   useEffect(() => {
     if (isReady) {
@@ -147,7 +147,7 @@ export function UserProvider({
         }
       });
     }
-  }, [isReady]);
+  }, [send, isReady]);
 
   return (
     <UserContext.Provider

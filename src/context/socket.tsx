@@ -246,7 +246,7 @@ export function SocketProvider({
           setPage("error", "ERROR_SOCKET_CONTEXT_IDENTIFICATION_FAILED");
         });
     }
-  }, [connected]);
+  }, [connected, send, setPage, privateKeyHash]);
 
   useEffect(() => {
     if (!connected) return;

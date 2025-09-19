@@ -1,6 +1,6 @@
 export function Loading({ message }: { message?: string }) {
-  let splitMessage = message?.split("_") ?? [];
-  let isError = splitMessage[0] === "ERROR";
+  const splitMessage = message?.split("_") ?? [];
+  const isError = splitMessage[0] === "ERROR";
 
   return (
     <div className="bg-red-500">
