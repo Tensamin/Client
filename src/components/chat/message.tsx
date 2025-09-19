@@ -4,9 +4,17 @@ import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ContextMenu,
+  ContextMenuCheckboxItem,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
   ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import * as Icon from "lucide-react";
@@ -35,8 +43,12 @@ export function MessageGroup({ data }: { data: Message }) {
 
 function FinalMessage({ data }: { data: string }) {
   const { decrypt, get_shared_secret, privateKey } = useCryptoContext();
-  const { get, ownUuid, currentReceiverUuid, setFailedMessagesAmount } =
-    useUserContext();
+  const {
+    get,
+    ownUuid,
+    currentReceiverUuid,
+    setFailedMessagesAmount,
+  } = useUserContext();
   const [content, setContent] = useState<string>("");
 
   useEffect(() => {
@@ -66,16 +78,7 @@ function FinalMessage({ data }: { data: string }) {
         }
       }
     })();
-  }, [
-    data,
-    currentReceiverUuid,
-    decrypt,
-    get,
-    get_shared_secret,
-    ownUuid,
-    privateKey,
-    setFailedMessagesAmount,
-  ]);
+  }, [data]);
 
   return (
     <ContextMenu>

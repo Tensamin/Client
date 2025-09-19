@@ -43,7 +43,7 @@ type PageContextType = {
 
 const PageContext = createContext<PageContextType | null>(null);
 
-export function usePageContext(): PageContextType {
+export function usePageContext() {
   const context = useContext(PageContext);
   if (!context)
     throw new Error("useContext function used outside of its provider");
@@ -95,7 +95,7 @@ export default function PageProvider() {
         jsxPage = <SettingsPage />;
         break;
       case "chat":
-        jsxPage = <ChatPage />;
+        jsxPage = <ChatPage uuid={pageData} />;
         break;
       default:
         jsxPage = <div>Unkown Page | {pageData}</div>;

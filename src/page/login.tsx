@@ -1,7 +1,11 @@
 // Package Imports
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { toast } from "sonner";
-import { startRegistration } from "@simplewebauthn/browser";
+import {
+  startAuthentication,
+  startRegistration,
+} from "@simplewebauthn/browser";
+import * as Icon from "lucide-react";
 import { v7 } from "uuid";
 import { Ring } from "ldrs/react";
 import "ldrs/react/Ring.css";
@@ -19,9 +23,16 @@ import { getDeviceFingerprint } from "@/lib/fingerprint";
 
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
+import { usePageContext } from "@/app/page";
 
 // Components
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -93,7 +104,7 @@ export default function Page() {
 
       if (isElectron()) {
         // use Keyring
-        const secret = v7();
+        let secret = v7();
         (window as any).keyring.set("net.methanium.tensamin", uuid, secret);
         const encryptedJwk = await encrypt(base64Jwk, secret);
         if (!encryptedJwk.success) log("error", "LOGIN", encryptedJwk.message);

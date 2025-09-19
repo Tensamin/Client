@@ -1,7 +1,18 @@
 // Package Imports
-import React, { memo, useRef, useEffect, useCallback, useMemo } from "react";
+import React, {
+  memo,
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import Image from "next/image";
-import { useInfiniteQuery, InfiniteData } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQueryClient,
+  InfiniteData,
+} from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Ring } from "ldrs/react";
 import "ldrs/react/Ring.css";
@@ -23,13 +34,17 @@ function flattenPages(
   return data.pages.flatMap((p) => p.messages);
 }
 
+const TOTAL_MESSAGES = 500;
 const QUERY_KEY = ["messages", "top-infinite"] as const;
 const SCROLL_THRESHOLD = 48;
+const BOTTOM_DISTANCE_THRESHOLD = 8;
 
 export const Box = memo(() => {
   const parentRef = useRef<HTMLDivElement | null>(null);
+  const queryClient = useQueryClient();
   const loadingLockRef = useRef(false);
   const didInitialScrollRef = useRef(false);
+  const nextIdRef = useRef(TOTAL_MESSAGES);
 
   const { getMessages } = useMessageContext();
 
@@ -80,6 +95,16 @@ export const Box = memo(() => {
     getItemKey,
   });
 
+  const isPinnedToBottom = useCallback(() => {
+    const el = parentRef.current;
+    if (!el) return true;
+
+    const { scrollHeight, scrollTop, clientHeight } = el;
+    const distance = scrollHeight - scrollTop - clientHeight;
+
+    return distance <= BOTTOM_DISTANCE_THRESHOLD + 2;
+  }, []);
+
   const maybeLoadOlder = useCallback(async () => {
     if (loadingLockRef.current || !hasPreviousPage || isFetchingPreviousPage) {
       return;
@@ -129,9 +154,7 @@ export const Box = memo(() => {
     }
   }, [data, messages.length, rowVirtualizer]);
 
-  {
-    /*
-  const addMessage = useCallback(
+  const addRealtimeMessage = useCallback(
     (text: string) => {
       const wasPinned = isPinnedToBottom();
       nextIdRef.current += 1;
@@ -186,8 +209,6 @@ export const Box = memo(() => {
     },
     [isPinnedToBottom, queryClient, rowVirtualizer, messages.length]
   );
-  */
-  }
 
   if (isLoading) {
     return (

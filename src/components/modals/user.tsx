@@ -28,7 +28,7 @@ export function UserModal({
 
   useEffect(() => {
     get(uuid, false).then(setUser);
-  }, [uuid, get]);
+  }, [uuid]);
 
   const props = {
     title: user.display,

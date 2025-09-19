@@ -12,7 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Box } from "@/components/chat/box";
 
 // Main
-export default function Page() {
+export default function Page({
+  uuid,
+}: Readonly<{
+  uuid: string;
+}>) {
   const [client] = React.useState(() => new QueryClient());
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);

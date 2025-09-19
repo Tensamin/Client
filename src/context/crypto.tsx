@@ -221,7 +221,7 @@ export function CryptoProvider({
         return;
       }
     }
-  }, [isWorkerReady, page, setPage]);
+  }, [isWorkerReady]);
 
   useEffect(() => {
     const worker = new Worker(

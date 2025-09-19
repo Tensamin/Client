@@ -260,8 +260,6 @@ export async function get_shared_secret(
 
     const getSubtle = () => globalThis.crypto?.subtle;
 
-    {
-      /*
     const hkdfAesGcmFromShared = async (
       sharedSecret: BufferSource,
       infoStr: string
@@ -289,14 +287,12 @@ export async function get_shared_secret(
         ["encrypt", "decrypt"]
       );
     };
-    */
-    }
 
     const myJwk: JWK = normalizeOkpX448Jwk(own_jwk, "own_jwk");
     const peerJwk: JWK = normalizeOkpX448Jwk(other_jwk, "other_jwk");
 
     const subtle = getSubtle();
-    //const infoStr = `ECDH-X448-AES-GCM-v1|my=${myJwk.x}|peer=${peerJwk.x}`;
+    const infoStr = `ECDH-X448-AES-GCM-v1|my=${myJwk.x}|peer=${peerJwk.x}`;
 
     if (subtle) {
       const algorithms = [
@@ -318,15 +314,14 @@ export async function get_shared_secret(
           );
 
           const sharedSecret = new Uint8Array(sharedBits);
-          //const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
+          const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
 
           return { success: true, message: bytesToHex(sharedSecret) };
         } catch {}
       }
     }
 
-    const { d: dMyB64u } = myJwk;
-    //const { x: xMyB64u, d: dMyB64u } = myJwk;
+    const { x: xMyB64u, d: dMyB64u } = myJwk;
     const { x: xPeerB64u } = peerJwk;
 
     if (!dMyB64u || !xPeerB64u) {
@@ -347,7 +342,7 @@ export async function get_shared_secret(
 
     const { x448 } = await import("@noble/curves/ed448");
     const sharedSecret = new Uint8Array(x448.getSharedSecret(dRaw, xRawPeer));
-    //const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
+    const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
 
     return { success: true, message: bytesToHex(sharedSecret) };
   } catch {

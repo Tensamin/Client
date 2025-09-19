@@ -19,7 +19,7 @@ export function log(
   type: string,
   extraInfo?: any
 ) {
-  console.log(sender, type, extraInfo, level);
+  console.log(sender, type, extraInfo);
 }
 
 export async function sha256(content: string | BufferSource) {
@@ -58,7 +58,7 @@ export function isElectron() {
       let electron = window.require("electron");
       if (electron) return true;
     }
-  } catch {}
+  } catch (e) {}
 
   return false;
 }
