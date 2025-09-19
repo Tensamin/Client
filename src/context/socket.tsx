@@ -35,7 +35,7 @@ type SocketContextType = {
   send: (
     requestType: string,
     logData: LogBody,
-    data: JSON,
+    data: any,
     noResponse?: boolean
   ) => Promise<any>;
   isReady: boolean;
@@ -120,7 +120,7 @@ export function SocketProvider({
 
   const connected = readyState === ReadyState.OPEN;
 
-  let send = useCallback(
+  const send = useCallback(
     async (
       requestType: string,
       logData: LogBody,

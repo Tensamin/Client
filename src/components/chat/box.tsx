@@ -7,12 +7,15 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import Image from "next/image";
 import {
   useInfiniteQuery,
   useQueryClient,
   InfiniteData,
 } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Ring } from "ldrs/react";
+import "ldrs/react/Ring.css";
 
 // Lib Imports
 import { InitialMessages } from "@/lib/utils";
@@ -64,12 +67,10 @@ export const Box = memo(() => {
     queryFn: async ({ pageParam }) =>
       await getMessages(pageParam, InitialMessages),
     getNextPageParam: (data: Messages) => {
-      return data.total;
+      if (data.messages.length === 0) return undefined;
+      return data.previous;
     },
-    getPreviousPageParam: (_, allPages: Messages[]) => {
-      const loaded = allPages.reduce((acc, p) => acc + p.messages.length, 0);
-      return Math.max(0, loaded - InitialMessages);
-    },
+    getPreviousPageParam: (data: Messages) => data.next,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
@@ -81,7 +82,7 @@ export const Box = memo(() => {
   const getItemKey = useCallback(
     (index: number) => {
       const msg = messages[index];
-      return msg?.id ?? `fallback-${index}`;
+      return msg?.message_time ?? `fallback-${index}`;
     },
     [messages]
   );
@@ -158,15 +159,17 @@ export const Box = memo(() => {
       const wasPinned = isPinnedToBottom();
       nextIdRef.current += 1;
       const newMsg: Message = {
-        id: String(nextIdRef.current),
-        text,
+        message_time: Number(nextIdRef.current),
+        message_content: text,
+        message_state: "sent",
+        sender_is_me: false,
       };
 
       let newTotalLength = messages.length + 1;
 
       queryClient.setQueryData<InfiniteData<Messages, number>>(
         QUERY_KEY,
-        (old) => {
+        (old: any) => {
           if (!old) {
             newTotalLength = 1;
             return {
@@ -185,7 +188,8 @@ export const Box = memo(() => {
           });
 
           newTotalLength =
-            old.pages.reduce((acc, p) => acc + p.messages.length, 0) + 1;
+            old.pages.reduce((acc: any, p: any) => acc + p.messages.length, 0) +
+            1;
 
           return { ...old, pages: newPages };
         }
@@ -209,21 +213,37 @@ export const Box = memo(() => {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center text-sm">
-        Loading…
+        <Ring
+          size="30"
+          stroke="4"
+          bgOpacity="0"
+          speed="2"
+          color="var(--foreground)"
+        />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="flex h-full items-center justify-center text-sm">
-        Failed to load
+      <div className="flex flex-col h-full items-center justify-center text-sm">
+        <Image
+          src="/assets/images/megamind.png"
+          alt="Error"
+          width={200}
+          height={200}
+        />
+        <p className="text-xl">No successfully decrypted messages?</p>
       </div>
     );
   }
 
   return (
-    <div ref={parentRef} className="h-auto overflow-y-auto" onScroll={onScroll}>
+    <div
+      ref={parentRef}
+      className="h-full overflow-y-auto scrollbar-hide"
+      onScroll={onScroll}
+    >
       <div
         className="w-full relative"
         style={{
@@ -236,7 +256,7 @@ export const Box = memo(() => {
 
           return (
             <div
-              key={`${virtualRow.key}-${msg.id}`}
+              key={`${virtualRow.key}-${msg.message_time}`}
               data-index={virtualRow.index}
               className="absolute left-0 right-0 px-3 py-2"
               style={{

@@ -37,7 +37,7 @@ import ChatPage from "@/page/chat";
 // Main
 type PageContextType = {
   page: string;
-  pageData?: string;
+  pageData: string;
   setPage: (page: string, data?: string) => void;
 };
 
@@ -84,7 +84,7 @@ export default function PageProvider() {
     );
 
   function PageSwitch() {
-    const { open } = useSidebar();
+    const { open, isMobile } = useSidebar();
 
     let jsxPage;
     switch (page) {
@@ -104,7 +104,7 @@ export default function PageProvider() {
 
     return (
       <div
-        className={`${open && "rounded-tl-xl border-l"} w-full h-full border-t border-input bg-background p-2`}
+        className={`${open && !isMobile ? "rounded-tl-xl border-l" : ""} w-full h-full border-t border-input bg-background p-2`}
       >
         {jsxPage}
       </div>
@@ -125,7 +125,7 @@ export default function PageProvider() {
                     <UserModal key={uuid} uuid={uuid} size="big" />
                     <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden p-1">
                       <div className="relative grid grid-cols-2 w-full">
-                        {["Conversations", "Communities"].map((cat) => (
+                        {["Communities", "Conversations"].map((cat: string) => (
                           <Button
                             key={cat}
                             variant="ghost"
@@ -133,11 +133,11 @@ export default function PageProvider() {
                             className="relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-transparent hover:bg-transparent"
                             onClick={() =>
                               setCategory(
-                                cat as "Conversations" | "Communities"
+                                cat as "Communities" | "Conversations"
                               )
                             }
                             aria-pressed={category === cat}
-                            aria-label="Conversations"
+                            aria-label={cat}
                           >
                             {category === cat && (
                               <motion.span
@@ -152,14 +152,14 @@ export default function PageProvider() {
                               />
                             )}
                             <span className="relative z-10 hover:underline underline-offset-2 text-sm">
-                              Conversations
+                              {cat}
                             </span>
                           </Button>
                         ))}
                       </div>
                     </div>
                     <div>
-                      {["Conversations", "Communities"].map((cat) => {
+                      {["Communities", "Conversations"].map((cat) => {
                         if (cat !== category) return null;
                         return category === "Communities" ? (
                           <Communities key={category} />

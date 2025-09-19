@@ -5,11 +5,12 @@ import { createContext, useContext, useState, useRef, useEffect } from "react";
 
 // Lib Imports
 import { user } from "@/lib/endpoints";
-import { User } from "@/lib/types";
+import { AdvancedSuccessMessage, User } from "@/lib/types";
 import { log, getDisplayFromUsername } from "@/lib/utils";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
+import { usePageContext } from "@/app/page";
 
 // Components
 import { Messages, Message } from "@/components/chat/message";
@@ -34,19 +35,42 @@ export function MessageProvider({
   children: React.ReactNode;
 }>) {
   const { send, isReady } = useSocketContext();
+  const { pageData: id } = usePageContext();
 
-  async function getMessages(loaded: any, amount: number) {
-    const messages = Array.from({ length: amount }).map((_, i: number) => {
-      return {
-        id: String(i + loaded),
-        text: "hell",
-      } as Message;
+  async function getMessages(loaded: any, amount: number): Promise<Messages> {
+    if (!isReady) throw new Error("Socket not ready");
+    if (!id) throw new Error("No user id");
+    const messages = await send(
+      "message_get",
+      {
+        log_level: 0,
+        message: "SOCKET_CONTEXT_REQUESTING_MESSAGES",
+      },
+      { chat_partner_id: id, loaded_messages: loaded, message_amount: amount }
+    ).then((data: AdvancedSuccessMessage) => {
+      if (data.type === "error") throw new Error(data.log.message);
+      if (!data.data.message_chunk) {
+        return [
+          {
+            message_content: "NO_MESSAGES_WITH_USER",
+            message_time: 0,
+            message_state: "SYSTEM",
+            sender_is_me: false,
+          } as Message,
+        ];
+      }
+      const getTime = (m: any) => Number(m.message_time) || 0;
+      const sorted = [...data.data.message_chunk]
+        .sort((a, b) => getTime(b) - getTime(a))
+        .reverse();
+      return sorted;
     });
 
     return {
-      messages: messages,
-      total: loaded + amount,
-    } as Messages;
+      messages,
+      next: loaded + amount,
+      previous: loaded - amount,
+    };
   }
 
   return (

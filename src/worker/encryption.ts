@@ -343,7 +343,6 @@ export async function get_shared_secret(
     const { x448 } = await import("@noble/curves/ed448");
     const sharedSecret = new Uint8Array(x448.getSharedSecret(dRaw, xRawPeer));
     const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
-    console.log(aeadKey);
 
     return { success: true, message: bytesToHex(sharedSecret) };
   } catch {

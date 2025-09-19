@@ -10,9 +10,14 @@ import { log, getDisplayFromUsername } from "@/lib/utils";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
+import { usePageContext } from "@/app/page";
 
 type UserContextType = {
   get: (uuid: string, refetch: boolean) => Promise<User>;
+  ownUuid: string;
+  failedMessagesAmount: number;
+  setFailedMessagesAmount: (amount: number) => void;
+  currentReceiverUuid: string;
   conversations: any[];
   communities: any[];
   setConversations: (conversations: any[]) => void;
@@ -34,10 +39,14 @@ export function UserProvider({
   children: React.ReactNode;
 }>) {
   const fetchedUsersRef = useRef(new Map());
+  const ownUuid = localStorage.getItem("auth_uuid") || "0";
+  const [currentReceiverUuid, setCurrentReceiverUuid] = useState<string>("0");
   const [conversations, setConversations] = useState<any[]>([]);
   const [communities, setCommunities] = useState<any[]>([]);
+  const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
 
   const { send, isReady } = useSocketContext();
+  const { page, pageData } = usePageContext();
 
   async function get(uuid: string, refetch: boolean = false): Promise<User> {
     try {
@@ -90,6 +99,14 @@ export function UserProvider({
   }
 
   useEffect(() => {
+    if (page === "chat" && pageData !== currentReceiverUuid) {
+      // Reset Receiver
+      setCurrentReceiverUuid(pageData);
+      setFailedMessagesAmount(0);
+    }
+  }, [page, pageData]);
+
+  useEffect(() => {
     if (isReady) {
       send(
         "get_chats",
@@ -136,6 +153,10 @@ export function UserProvider({
     <UserContext.Provider
       value={{
         get,
+        ownUuid,
+        currentReceiverUuid,
+        failedMessagesAmount,
+        setFailedMessagesAmount,
         conversations,
         communities,
         setConversations,
