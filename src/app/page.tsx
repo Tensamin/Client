@@ -95,7 +95,7 @@ export default function PageProvider() {
         jsxPage = <SettingsPage />;
         break;
       case "chat":
-        jsxPage = <ChatPage uuid={pageData} />;
+        jsxPage = <ChatPage />;
         break;
       default:
         jsxPage = <div>Unkown Page | {pageData}</div>;

@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useRef, useEffect } from "react";
 
 // Lib Imports
 import { user } from "@/lib/endpoints";
-import { User } from "@/lib/types";
+import { ErrorType, User } from "@/lib/types";
 import { log, getDisplayFromUsername } from "@/lib/utils";
 
 // Context Imports
@@ -82,13 +82,13 @@ export function UserProvider({
           });
         return newUser as User;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         uuid: "0",
         username: "failed",
         display: "Failed to load",
         avatar: null,
-        about: err.message,
+        about: (err as ErrorType).message,
         status: "",
         sub_level: 0,
         sub_end: 0,

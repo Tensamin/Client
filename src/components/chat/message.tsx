@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/context-menu";
 import * as Icon from "lucide-react";
 import { toast } from "sonner";
+import { ErrorType } from "@/lib/types";
 
 export type Message = {
   message_content: string;
@@ -60,9 +61,9 @@ function FinalMessage({ data }: { data: string }) {
           const decrypted = await decrypt(data, sharedSecret.message);
           if (!decrypted.success) throw new Error(decrypted.message);
           setContent(decrypted.message);
-        } catch (err: any) {
+        } catch (err: unknown) {
           setFailedMessagesAmount((prev: number) => prev + 1);
-          setContent(err.message);
+          setContent((err as ErrorType).message);
         }
       }
     })();

@@ -36,7 +36,8 @@ export type User = {
   loading: boolean;
 };
 
-export type Error = {
+export type ErrorType = {
+  name: string;
   message: string;
 };
 

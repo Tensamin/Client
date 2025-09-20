@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import * as Comlink from "comlink";
 import { startAuthentication } from "@simplewebauthn/browser";
 
-import { BasicSuccessMessage } from "@/lib/types";
+import { BasicSuccessMessage, ErrorType } from "@/lib/types";
 import { sha256, log, isElectron, RetryCount } from "@/lib/utils";
 import { webauthn_login_verify, webauthn_login_options } from "@/lib/endpoints";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
@@ -177,7 +177,7 @@ export function CryptoProvider({
 
               return lambda;
             }
-          } catch (err: any) {
+          } catch (err: unknown) {
             if (retryCount < RetryCount) {
               return await getLambda(retryCount + 1);
             } else {
@@ -185,7 +185,7 @@ export function CryptoProvider({
                 "error",
                 "CRYPTO_CONTEXT",
                 "ERROR_CRYPTO_CONTEXT_GET_LAMBDA_UNKOWN",
-                err.message
+                (err as ErrorType).message
               );
               setPage("error", "ERROR_CRYPTO_CONTEXT_GET_LAMBDA_UNKOWN");
             }
@@ -210,12 +210,12 @@ export function CryptoProvider({
         } else {
           setIsReady(true);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         log(
           "error",
           "CRYPTO_CONTEXT",
           "ERROR_CRYPTO_CONTEXT_UNKOWN",
-          err.message
+          (err as ErrorType).message
         );
         setPage("error", "ERROR_CRYPTO_CONTEXT_UNKOWN");
         return;

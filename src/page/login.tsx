@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ErrorType } from "@/lib/types";
 
 export default function Page() {
   const [hover, setHover] = useState(false);
@@ -87,8 +88,13 @@ export default function Page() {
             log("error", "LOGIN", data.log.message);
           }
         })
-        .catch((err: any) => {
-          log("error", "LOGIN", "ERROR_LOGIN_GET_UUID_UNKOWN", err.message);
+        .catch((err: unknown) => {
+          log(
+            "error",
+            "LOGIN",
+            "ERROR_LOGIN_GET_UUID_UNKOWN",
+            (err as ErrorType).message
+          );
         });
 
       if (isElectron()) {
@@ -166,8 +172,8 @@ export default function Page() {
           setLoading(false);
         }
       }
-    } catch (err: any) {
-      log("error", "LOGIN", "ERROR_LOGIN_UNKNOWN", err.message);
+    } catch (err: unknown) {
+      log("error", "LOGIN", "ERROR_LOGIN_UNKNOWN", (err as ErrorType).message);
     } finally {
       setLoading(false);
     }

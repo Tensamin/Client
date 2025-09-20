@@ -13,7 +13,7 @@ import { v7 } from "uuid";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
 // Lib Imports
-import { AdvancedSuccessMessage, LogBody } from "@/lib/types";
+import { AdvancedSuccessMessage, ErrorType, LogBody } from "@/lib/types";
 import { log, RetryCount } from "@/lib/utils";
 import { client_wss } from "@/lib/endpoints";
 
@@ -88,12 +88,12 @@ export function SocketProvider({
         pendingRequests.current.delete(parsedMessage.id);
         currentRequest.resolve(parsedMessage);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       log(
         "error",
         "SOCKET_CONTEXT",
         "ERROR_SOCKET_CONTEXT_UNKNOWN",
-        err.message
+        (err as ErrorType).message
       );
     }
   }
@@ -149,12 +149,12 @@ export function SocketProvider({
               );
             }
             sendRaw(JSON.stringify(messageToSend));
-          } catch (err: any) {
+          } catch (err: unknown) {
             log(
               "error",
               "SOCKET_CONTEXT",
               "ERROR_SOCKET_CONTEXT_UNKNOWN",
-              err.message
+              (err as ErrorType).message
             );
           }
           return;
@@ -193,14 +193,14 @@ export function SocketProvider({
               );
             }
             sendRaw(JSON.stringify(messageToSend));
-          } catch (err: any) {
+          } catch (err: unknown) {
             clearTimeout(timeoutId);
             pendingRequests.current.delete(id);
             log(
               "error",
               "SOCKET_CONTEXT",
               "ERROR_SOCKET_CONTEXT_UNKNOWN",
-              err.message
+              (err as ErrorType).message
             );
             reject(err);
           }

@@ -1,4 +1,5 @@
 import { sha256 } from "@/lib/utils";
+import { ErrorType } from "@/lib/types";
 
 interface DeviceFingerprintComponents {
   version: string;
@@ -309,7 +310,8 @@ async function canvasToBytes(
       }
       return new TextEncoder().encode(dataUrl);
     }
-  } catch (e: any) {
+  } catch (err: unknown) {
+    const e = err as ErrorType;
     if (
       e &&
       (e.name === "SecurityError" || /insecure|blocked/i.test(String(e)))
@@ -370,7 +372,8 @@ async function collectCanvas2DHash(): Promise<any> {
     } else {
       out.hash = "error";
     }
-  } catch (e: any) {
+  } catch (err: unknown) {
+    const e = err as ErrorType;
     if (
       e &&
       (e.name === "SecurityError" || /insecure|blocked/i.test(String(e)))

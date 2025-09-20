@@ -52,8 +52,8 @@ export function StorageProvider({
         const stringRawData = atob(storedRawData);
         const parsedRawData = JSON.parse(stringRawData);
         setData(parsedRawData);
-      } catch (error) {
-        console.error("Failed to parse stored raw data:", error);
+      } catch (err: unknown) {
+        console.error("Failed to parse stored raw data:", err);
       }
     }
     return () => {
