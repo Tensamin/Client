@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 // Context Imports
 import { useUserContext } from "@/context/user";
-import { usePageContext } from "@/app/page";
+import { usePageContext } from "@/context/page";
 
 // Components
 import * as RawModal from "@/components/modals/raw";

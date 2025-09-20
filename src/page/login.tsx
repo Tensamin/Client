@@ -24,17 +24,6 @@ import { getDeviceFingerprint } from "@/lib/fingerprint";
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
 
-// Types
-declare global {
-  interface Window {
-    keyring?: {
-      set: (ns: string, key: string, value: string) => void;
-      get?: (ns: string, key: string) => string | undefined;
-      delete?: (ns: string, key: string) => void;
-    };
-  }
-}
-
 // Components
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

@@ -15,10 +15,15 @@ export type BasicSuccessMessage = {
 export type AdvancedSuccessMessageData = {
   message_chunk?: Message[] | null;
   user_id?: string | null;
+  user_ids?: Conversation[] | null;
   private_key_hash?: string | null;
   last_ping?: number | null;
   ping_iota?: number | null;
-}
+  chat_partner_id?: string | null;
+  loaded_messages?: number | null;
+  message_amount?: number | null;
+  communities?: Community[] | null;
+};
 
 export type AdvancedSuccessMessage = {
   type: string;

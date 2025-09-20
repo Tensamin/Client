@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 
 // Context Imports
-import { usePageContext } from "@/app/page";
+import { usePageContext } from "@/context/page";
 import { useSocketContext } from "@/context/socket";
 
 // Components

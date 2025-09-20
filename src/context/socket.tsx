@@ -24,7 +24,7 @@ import { client_wss } from "@/lib/endpoints";
 
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
-import { usePageContext } from "@/app/page";
+import { usePageContext } from "@/context/page";
 
 // Components
 import { Loading } from "@/components/loading";
@@ -42,7 +42,7 @@ type SocketContextType = {
     logData: LogBody,
     data: AdvancedSuccessMessageData,
     noResponse?: boolean
-  ) => Promise<AdvancedSuccessMessage | unknown> | null;
+  ) => Promise<AdvancedSuccessMessage | unknown>;
   isReady: boolean;
 };
 

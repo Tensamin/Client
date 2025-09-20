@@ -5,12 +5,18 @@ import { createContext, useContext, useState, useRef, useEffect } from "react";
 
 // Lib Imports
 import { user } from "@/lib/endpoints";
-import { Community, Conversation, ErrorType, User } from "@/lib/types";
+import {
+  AdvancedSuccessMessage,
+  Community,
+  Conversation,
+  ErrorType,
+  User,
+} from "@/lib/types";
 import { log, getDisplayFromUsername } from "@/lib/utils";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
-import { usePageContext } from "@/app/page";
+import { usePageContext } from "@/context/page";
 
 type UserContextType = {
   get: (uuid: string, refetch: boolean) => Promise<User>;
@@ -114,16 +120,18 @@ export function UserProvider({
           log_level: 0,
           message: "USER_CONTEXT_GET_CONVERSATIONS",
         },
-        {} as JSON
-      ).then((data) => {
-        if (data.type !== "error") {
-          setConversations(data.data.user_ids);
+        {}
+      ).then((data: AdvancedSuccessMessage | unknown) => {
+        if (!data) return;
+        const dataTyped = data as AdvancedSuccessMessage;
+        if (dataTyped.type !== "error") {
+          setConversations(dataTyped.data.user_ids || []);
         } else {
           log(
             "error",
             "USER_CONTEXT",
             "ERROR_USER_CONTEXT_GET_CONVERSATIONS",
-            data.message
+            dataTyped.log.message
           );
         }
       });
@@ -133,16 +141,18 @@ export function UserProvider({
           log_level: 0,
           message: "USER_CONTEXT_GET_COMMUNITIES",
         },
-        {} as JSON
-      ).then((data) => {
-        if (data.type !== "error") {
-          setCommunities(data.data.communities);
+        {}
+      ).then((data: AdvancedSuccessMessage | unknown) => {
+        if (!data) return;
+        const dataTyped = data as AdvancedSuccessMessage;
+        if (dataTyped.type !== "error") {
+          setCommunities(dataTyped.data.communities || []);
         } else {
           log(
             "error",
             "USER_CONTEXT",
             "ERROR_USER_CONTEXT_GET_COMMUNITIES",
-            data.message
+            dataTyped.log.message
           );
         }
       });

@@ -9,7 +9,7 @@ import { webauthn_login_verify, webauthn_login_options } from "@/lib/endpoints";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
 
 import { Loading } from "@/components/loading";
-import { usePageContext } from "@/app/page";
+import { usePageContext } from "@/context/page";
 
 type CryptoContextType = {
   encrypt: (message: string, password: string) => Promise<BasicSuccessMessage>;
@@ -108,7 +108,6 @@ export function CryptoProvider({
         async function getLambda(retryCount = 0) {
           try {
             if (isElectron()) {
-              // @ts-expect-error Keyring is only available in Electron
               return await window?.keyring?.get("net.methanium.tensamin", uuid);
             } else if (lambda) {
               const decryptedLambda = await decrypt(

@@ -5,7 +5,7 @@ import * as Icon from "lucide-react";
 import { Padding } from "@/lib/utils";
 
 // Context Imports
-import { usePageContext } from "@/app/page";
+import { usePageContext } from "@/context/page";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useUserContext } from "@/context/user";
 

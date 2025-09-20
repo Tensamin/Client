@@ -8,7 +8,7 @@ import { AdvancedSuccessMessage } from "@/lib/types";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
-import { usePageContext } from "@/app/page";
+import { usePageContext } from "@/context/page";
 
 // Components
 import { Messages, Message } from "@/components/chat/message";
@@ -48,9 +48,11 @@ export function MessageProvider({
         message: "SOCKET_CONTEXT_REQUESTING_MESSAGES",
       },
       { chat_partner_id: id, loaded_messages: loaded, message_amount: amount }
-    ).then((data: AdvancedSuccessMessage) => {
-      if (data.type === "error") throw new Error(data.log.message);
-      if (!data.data.message_chunk) {
+    ).then((data: AdvancedSuccessMessage | unknown) => {
+      if (!data) return;
+      const dataTyped = data as AdvancedSuccessMessage;
+      if (dataTyped.type === "error") throw new Error(dataTyped.log.message);
+      if (!dataTyped.data.message_chunk) {
         return [
           {
             message_content: "NO_MESSAGES_WITH_USER",
@@ -61,14 +63,14 @@ export function MessageProvider({
         ];
       }
       const getTime = (m: Message) => Number(m.message_time) || 0;
-      const sorted = [...data.data.message_chunk]
+      const sorted = [...dataTyped.data.message_chunk]
         .sort((a, b) => getTime(b) - getTime(a))
         .reverse();
       return sorted;
     });
 
     return {
-      messages,
+      messages: messages || [],
       next: loaded + amount,
       previous: loaded - amount,
     };

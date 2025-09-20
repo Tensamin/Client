@@ -10,7 +10,7 @@ export default function Page() {
       <Switch
         key={rerender.toString()}
         id="debugModeSwitch"
-        checked={data?.debug || false}
+        checked={data?.debug === true}
         onCheckedChange={(value) => set("debug", value)}
       />
       <Label htmlFor="debugModeSwitch">Debug Mode</Label>
