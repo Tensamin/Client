@@ -4,6 +4,9 @@ import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 import "./globals.css";
 
+// Context Imports
+import { StorageProvider } from "@/context/storage";
+
 // Components
 import { Loading } from "@/components/loading";
 import { Toaster } from "@/components/ui/sonner";
@@ -28,10 +31,12 @@ export default function RootLayout({
           enableSystem
           storageKey="theme"
         >
-          <Suspense fallback={<Loading />}>
-            <Toaster position="top-right" richColors expand />
-            {children}
-          </Suspense>
+          <StorageProvider>
+            <Suspense fallback={<Loading />}>
+              <Toaster position="top-right" richColors expand />
+              {children}
+            </Suspense>
+          </StorageProvider>
         </ThemeProvider>
       </body>
     </html>

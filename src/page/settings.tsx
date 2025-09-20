@@ -20,12 +20,54 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import IotaPage from "@/page/settings/iota";
+import ProfilePage from "@/page/settings/profile";
+import PrivacyPage from "@/page/settings/privacy";
+import DevicesPage from "@/page/settings/devices";
+import TintPage from "@/page/settings/tint";
+import CssPage from "@/page/settings/css";
+import LayoutPage from "@/page/settings/layout";
+import AudioPage from "@/page/settings/audio";
+import VideoPage from "@/page/settings/video";
+import SoundboardPage from "@/page/settings/soundboard";
+import NotificationsPage from "@/page/settings/notifications";
+import AccessabilityPage from "@/page/settings/accessability";
+import LanguagePage from "@/page/settings/language";
+import PremiumPage from "@/page/settings/premium";
+import DeveloperPage from "@/page/settings/developer";
 
 // Main
 function MainPage({ selected }: { selected: string }): React.JSX.Element {
   switch (selected) {
     case "iota":
       return <IotaPage />;
+    case "profile":
+      return <ProfilePage />;
+    case "privacy":
+      return <PrivacyPage />;
+    case "devices":
+      return <DevicesPage />;
+    case "tint":
+      return <TintPage />;
+    case "css":
+      return <CssPage />;
+    case "layout":
+      return <LayoutPage />;
+    case "audio":
+      return <AudioPage />;
+    case "video":
+      return <VideoPage />;
+    case "soundboard":
+      return <SoundboardPage />;
+    case "notifications":
+      return <NotificationsPage />;
+    case "accessability":
+      return <AccessabilityPage />;
+    case "language":
+      return <LanguagePage />;
+    case "premium":
+      return <PremiumPage />;
+    case "developer":
+      return <DeveloperPage />;
     default:
       return <div />;
   }

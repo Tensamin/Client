@@ -1,3 +1,3 @@
 export default function Page() {
-  return <div>Iota Page</div>;
+  return <div>Tint Page</div>;
 }

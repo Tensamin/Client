@@ -1,12 +1,25 @@
+"use client";
+
+import Image from "next/image";
+import { useStorageContext } from "@/context/storage";
+
 export function Loading({ message }: { message?: string }) {
-  let splitMessage = message?.split("_") ?? [];
-  let isError = splitMessage[0] === "ERROR";
+  const isError = (message?.split("_")[0] ?? "") === "ERROR";
+  const { data } = useStorageContext();
 
   return (
-    <div className="bg-red-500">
-      {message || "Loading"}
-      <br />
-      {isError ? "Error" : null}
+    <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10">
+      <Image
+        src={isError ? "/assets/images/logo.png" : "/assets/images/loading.gif"}
+        width={400}
+        height={400}
+        alt="Image"
+      />
+      {isError || data?.debug ? (
+        <p className="text-2xl font-semibold text-foreground">
+          {message || "NO_MESSAGE"}
+        </p>
+      ) : null}
     </div>
   );
 }
