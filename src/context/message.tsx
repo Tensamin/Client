@@ -1,12 +1,10 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext, useState, useRef, useEffect } from "react";
+import { createContext, useContext } from "react";
 
 // Lib Imports
-import { user } from "@/lib/endpoints";
-import { AdvancedSuccessMessage, User } from "@/lib/types";
-import { log, getDisplayFromUsername } from "@/lib/utils";
+import { AdvancedSuccessMessage } from "@/lib/types";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";

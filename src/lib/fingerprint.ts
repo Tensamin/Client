@@ -18,12 +18,12 @@ export async function getDeviceFingerprint(): Promise<string> {
     return "hash_error_ssr";
   }
 
-  let fp: Partial<DeviceFingerprintComponents> = {
+  const fp: Partial<DeviceFingerprintComponents> = {
     version: "v3",
     ts: Date.now(),
   };
 
-  let [ua, intl, memCpu, canvas2D, webgl, webgpu, audio, fonts] =
+  const [ua, intl, memCpu, canvas2D, webgl, webgpu, audio, fonts] =
     await Promise.all([
       collectUA(),
       collectIntl(),
@@ -44,7 +44,7 @@ export async function getDeviceFingerprint(): Promise<string> {
   fp.audio = audio;
   fp.fonts = fonts;
 
-  let stableJson = stableStringify({
+  const stableJson = stableStringify({
     version: fp.version,
     ua: fp.ua,
     intl: fp.intl,
@@ -56,13 +56,13 @@ export async function getDeviceFingerprint(): Promise<string> {
     fonts: { hash: fp.fonts.hash },
   });
 
-  let hash = await sha256(stableJson);
+  const hash = await sha256(stableJson);
   return hash;
 }
 
 function stableStringify(value: any): string {
-  let seen = new WeakSet();
-  let stringify = (v: any): string => {
+  const seen = new WeakSet();
+  const stringify = (v: any): string => {
     if (v === null || typeof v !== "object") {
       // normalize undefined to null for stability
       return v === undefined ? "null" : JSON.stringify(v);
@@ -72,8 +72,8 @@ function stableStringify(value: any): string {
     if (Array.isArray(v)) {
       return `[${v.map((x) => stringify(x)).join(",")}]`;
     }
-    let keys = Object.keys(v).sort();
-    let entries = keys.map((k) => `${JSON.stringify(k)}:${stringify(v[k])}`);
+    const keys = Object.keys(v).sort();
+    const entries = keys.map((k) => `${JSON.stringify(k)}:${stringify(v[k])}`);
     return `{${entries.join(",")}}`;
   };
   return stringify(value);
@@ -118,7 +118,7 @@ function normalizeArchBits({
   oscpu,
   ua,
 }: ArchBitsInfo): { architecture: string; bitness: string } {
-  let s = `${architecture || ""} ${bitness || ""} ${oscpu || ""} ${ua || ""}`
+  const s = `${architecture || ""} ${bitness || ""} ${oscpu || ""} ${ua || ""}`
     .toLowerCase()
     .trim();
 
@@ -143,7 +143,7 @@ interface PlatformInfo {
 }
 
 function normalizePlatform({ platform, oscpu, ua }: PlatformInfo): string {
-  let s = `${platform || ""} ${oscpu || ""} ${ua || ""}`.toLowerCase().trim();
+  const s = `${platform || ""} ${oscpu || ""} ${ua || ""}`.toLowerCase().trim();
 
   if (/android/.test(s)) return "Android";
   if (/iphone|ipad|ipod|ios/.test(s)) return "iOS";
@@ -155,18 +155,18 @@ function normalizePlatform({ platform, oscpu, ua }: PlatformInfo): string {
 }
 
 async function collectUA(): Promise<any> {
-  let out: any = {};
+  const out: any = {};
   try {
-    let uaData = (navigator as any).userAgentData;
+    const uaData = (navigator as any).userAgentData;
     if (uaData && uaData.getHighEntropyValues) {
-      let hints = [
+      const hints = [
         "architecture",
         "bitness",
         "model",
         "platform",
         "platformVersion",
       ];
-      let res = await uaData.getHighEntropyValues(hints).catch(() => null);
+      const res = await uaData.getHighEntropyValues(hints).catch(() => null);
       if (res) {
         out.uaCH = {
           architecture: res.architecture || "",
@@ -178,38 +178,35 @@ async function collectUA(): Promise<any> {
         };
       }
     }
-  } catch (e) {
-    // ignore
-  }
+  } catch {}
 
-  // Legacy and Firefox-centric fallbacks
   let oscpu = "";
   let ua = "";
   try {
     oscpu = (navigator as any).oscpu || "";
-  } catch (e) {}
+  } catch {}
   try {
     ua = navigator.userAgent || "";
-  } catch (e) {}
+  } catch {}
 
   try {
     out.platform = navigator.platform || "";
     out.vendor = navigator.vendor || "";
     out.maxTouchPoints = navigator.maxTouchPoints || 0;
-  } catch (e) {
+  } catch {
     out.platform = out.platform || "";
     out.vendor = out.vendor || "";
     out.maxTouchPoints = out.maxTouchPoints || 0;
   }
 
   // Provide coarse normalized fields for non-UA-CH browsers (Firefox/Safari)
-  let coarseArch = normalizeArchBits({
+  const coarseArch = normalizeArchBits({
     architecture: out.uaCH && out.uaCH.architecture,
     bitness: out.uaCH && out.uaCH.bitness,
     oscpu,
     ua,
   });
-  let coarsePlatform = normalizePlatform({
+  const coarsePlatform = normalizePlatform({
     platform: (out.uaCH && out.uaCH.platform) || out.platform,
     oscpu,
     ua,
@@ -230,28 +227,28 @@ async function collectUA(): Promise<any> {
 }
 
 async function collectIntl(): Promise<any> {
-  let out: any = {};
+  const out: any = {};
   try {
-    let dt = Intl.DateTimeFormat().resolvedOptions();
+    const dt = Intl.DateTimeFormat().resolvedOptions();
     out.timeZone = dt.timeZone || "";
     out.calendar = dt.calendar || "";
     out.numberingSystem = dt.numberingSystem || "";
     out.hourCycle = dt.hourCycle || "";
     out.locale = dt.locale || "";
-  } catch (e) {
+  } catch {
     out.error = true;
   }
   return out;
 }
 
 async function collectMemoryCpu(): Promise<any> {
-  let out: any = {};
+  const out: any = {};
   try {
-    let dm = (navigator as any).deviceMemory;
-    let hc = navigator.hardwareConcurrency;
+    const dm = (navigator as any).deviceMemory;
+    const hc = navigator.hardwareConcurrency;
     out.deviceMemoryBucket = bucketDeviceMemory(Number(dm) || -1);
     out.hardwareConcurrencyBucket = bucketCores(Number(hc) || -1);
-  } catch (e) {
+  } catch {
     out.deviceMemoryBucket = -1;
     out.hardwareConcurrencyBucket = -1;
   }
@@ -268,15 +265,15 @@ function get2DCanvas(
 } {
   try {
     if (typeof OffscreenCanvas !== "undefined") {
-      let c = new OffscreenCanvas(width, height);
-      let ctx = c.getContext("2d");
+      const c = new OffscreenCanvas(width, height);
+      const ctx = c.getContext("2d");
       if (ctx) return { canvas: c, ctx, offscreen: true };
     }
   } catch {}
-  let canvas = document.createElement("canvas");
+  const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  let ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d");
   return { canvas, ctx, offscreen: false };
 }
 
@@ -289,24 +286,22 @@ async function canvasToBytes(
       canvas instanceof OffscreenCanvas
     ) {
       if (canvas.convertToBlob) {
-        let blob = await canvas.convertToBlob({
+        const blob = await canvas.convertToBlob({
           type: "image/png",
           quality: 0.92,
         });
-        let buf = await blob.arrayBuffer();
+        const buf = await blob.arrayBuffer();
         return new Uint8Array(buf);
       }
     }
-  } catch (e) {
-    // fall through
-  }
+  } catch {}
   try {
     if ("toDataURL" in canvas) {
-      let dataUrl = canvas.toDataURL("image/png");
+      const dataUrl = canvas.toDataURL("image/png");
       if (dataUrl.startsWith("data:image/png;base64,")) {
-        let b64 = dataUrl.slice("data:image/png;base64,".length);
-        let bin = atob(b64);
-        let bytes = new Uint8Array(bin.length);
+        const b64 = dataUrl.slice("data:image/png;base64,".length);
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) {
           bytes[i] = bin.charCodeAt(i);
         }
@@ -325,23 +320,21 @@ async function canvasToBytes(
   }
   try {
     if ((canvas as any).convertToBlob) {
-      let blob = await (canvas as any).convertToBlob({
+      const blob = await (canvas as any).convertToBlob({
         type: "image/png",
         quality: 0.92,
       });
-      let buf = await blob.arrayBuffer();
+      const buf = await blob.arrayBuffer();
       return new Uint8Array(buf);
     }
-  } catch (e) {
-    // ignore
-  }
+  } catch {}
   return null;
 }
 
 async function collectCanvas2DHash(): Promise<any> {
-  let out: any = {};
+  const out: any = {};
   try {
-    let { canvas, ctx } = get2DCanvas(300, 120);
+    const { canvas, ctx } = get2DCanvas(300, 120);
     if (!ctx) throw new Error("2D context unavailable");
 
     ctx.textBaseline = "alphabetic";
@@ -368,7 +361,7 @@ async function collectCanvas2DHash(): Promise<any> {
     ctx.fillStyle = "rgba(0, 255, 255, 0.5)";
     ctx.fillRect(190, 30, 40, 40);
 
-    let bytes = await canvasToBytes(canvas);
+    const bytes = await canvasToBytes(canvas);
     if (bytes && "blocked" in bytes) {
       out.hash = "blocked_canvas";
       out.blocked = true;
@@ -396,19 +389,19 @@ function getWebGLContext(): {
   canvas: HTMLCanvasElement | OffscreenCanvas | null;
 } {
   try {
-    let opts = { antialias: true, preserveDrawingBuffer: false };
+    const opts = { antialias: true, preserveDrawingBuffer: false };
     if (typeof OffscreenCanvas !== "undefined") {
-      let c = new OffscreenCanvas(1, 1);
-      let gl2 = c.getContext("webgl2", opts);
+      const c = new OffscreenCanvas(1, 1);
+      const gl2 = c.getContext("webgl2", opts);
       if (gl2) return { gl: gl2 as WebGL2RenderingContext, canvas: c };
-      let gl1 =
+      const gl1 =
         c.getContext("webgl", opts) ||
         (c as any).getContext("experimental-webgl", opts);
       if (gl1) return { gl: gl1 as WebGLRenderingContext, canvas: c };
     }
   } catch {}
-  let canvas = document.createElement("canvas");
-  let gl =
+  const canvas = document.createElement("canvas");
+  const gl =
     canvas.getContext("webgl2", { antialias: true }) ||
     canvas.getContext("webgl", { antialias: true }) ||
     canvas.getContext("experimental-webgl");
@@ -418,34 +411,33 @@ function getWebGLContext(): {
 }
 
 async function collectWebGLInfoAndHash(): Promise<any> {
-  let out: any = {};
+  const out: any = {};
   try {
-    let { gl } = getWebGLContext();
+    const { gl } = getWebGLContext();
     if (!gl) throw new Error("WebGL unavailable");
 
     let vendor = "";
     let renderer = "";
     try {
-      let debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+      const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
       if (debugInfo) {
         vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || "";
         renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || "";
       } else {
-        // Fallback when extension is blocked (Firefox, privacy modes)
         vendor = gl.getParameter(gl.VENDOR) || "";
         renderer = gl.getParameter(gl.RENDERER) || "";
       }
-    } catch (_) {
+    } catch {
       try {
         vendor = gl.getParameter(gl.VENDOR) || "";
         renderer = gl.getParameter(gl.RENDERER) || "";
       } catch {}
     }
 
-    let version = safeGLGet(gl, gl.VERSION);
-    let shadingLang = safeGLGet(gl, gl.SHADING_LANGUAGE_VERSION);
+    const version = safeGLGet(gl, gl.VERSION);
+    const shadingLang = safeGLGet(gl, gl.SHADING_LANGUAGE_VERSION);
 
-    let limits = {
+    const limits = {
       MAX_TEXTURE_SIZE: numGLGet(gl, gl.MAX_TEXTURE_SIZE),
       MAX_CUBE_MAP_TEXTURE_SIZE: numGLGet(gl, gl.MAX_CUBE_MAP_TEXTURE_SIZE),
       MAX_RENDERBUFFER_SIZE: numGLGet(gl, gl.MAX_RENDERBUFFER_SIZE),
@@ -466,17 +458,15 @@ async function collectWebGLInfoAndHash(): Promise<any> {
       MAX_VIEWPORT_DIMS: listGLGet(gl, gl.MAX_VIEWPORT_DIMS, "x"),
     };
 
-    let precision = getGLPrecisions(gl);
+    const precision = getGLPrecisions(gl);
 
     let extensions: string[] = [];
     try {
-      let exts = gl.getSupportedExtensions() || [];
+      const exts = gl.getSupportedExtensions() || [];
       extensions = exts.slice().sort();
-    } catch (e) {
-      // ignore
-    }
+    } catch {}
 
-    let renderHash = await webglRenderHash(gl);
+    const renderHash = await webglRenderHash(gl);
 
     out.vendor = vendor || "";
     out.renderer = renderer || "";
@@ -486,7 +476,7 @@ async function collectWebGLInfoAndHash(): Promise<any> {
     out.precision = precision;
     out.extensionsHash = await sha256(extensions.join(";"));
     out.renderHash = renderHash;
-  } catch (e) {
+  } catch {
     out.vendor = "error";
     out.renderer = "error";
   }
@@ -507,7 +497,7 @@ function numGLGet(
   gl: WebGLRenderingContext | WebGL2RenderingContext,
   pname: number
 ): number {
-  let v = safeGLGet(gl, pname);
+  const v = safeGLGet(gl, pname);
   return typeof v === "number" && Number.isFinite(v) ? v : -1;
 }
 function listGLGet(
@@ -516,7 +506,7 @@ function listGLGet(
   joiner = ","
 ): string {
   try {
-    let v = gl.getParameter(pname);
+    const v = gl.getParameter(pname);
     if (v && (Array.isArray(v) || ArrayBuffer.isView(v))) {
       return Array.from(v as any[]).join(joiner);
     }
@@ -529,9 +519,9 @@ function listGLGet(
 function getGLPrecisions(
   gl: WebGLRenderingContext | WebGL2RenderingContext
 ): any {
-  let spf = (shaderType: number, precisionType: number): string => {
+  const spf = (shaderType: number, precisionType: number): string => {
     try {
-      let fmt = gl.getShaderPrecisionFormat(shaderType, precisionType);
+      const fmt = gl.getShaderPrecisionFormat(shaderType, precisionType);
       return fmt ? `${fmt.rangeMin},${fmt.rangeMax},${fmt.precision}` : "n/a";
     } catch {
       return "err";
@@ -557,18 +547,18 @@ async function webglRenderHash(
   gl: WebGLRenderingContext | WebGL2RenderingContext
 ): Promise<string> {
   try {
-    let isWebGL2 =
+    const isWebGL2 =
       typeof WebGL2RenderingContext !== "undefined" &&
       gl instanceof WebGL2RenderingContext;
 
-    let vsSrc = isWebGL2
+    const vsSrc = isWebGL2
       ? `#version 300 es
          in vec2 aPos; out vec2 vUv;
          void main(){ vUv=(aPos+1.0)*0.5; gl_Position=vec4(aPos,0.0,1.0); }`
       : `attribute vec2 aPos; varying vec2 vUv;
          void main(){ vUv=(aPos+1.0)*0.5; gl_Position=vec4(aPos,0.0,1.0); }`;
 
-    let fsSrc = isWebGL2
+    const fsSrc = isWebGL2
       ? `#version 300 es
          precision highp float; in vec2 vUv; out vec4 outColor;
          float hash(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
@@ -587,15 +577,15 @@ async function webglRenderHash(
            gl_FragColor = vec4(fract(v*0.75+n*0.25), p, 1.0);
          }`;
 
-    let prog = createProgram(gl, vsSrc, fsSrc, isWebGL2);
+    const prog = createProgram(gl, vsSrc, fsSrc, isWebGL2);
     if (!prog) throw new Error("Program compile failed");
     gl.useProgram(prog);
 
-    let posLoc = gl.getAttribLocation(prog, "aPos");
-    let buf = gl.createBuffer();
+    const posLoc = gl.getAttribLocation(prog, "aPos");
+    const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     // Big triangle to cover viewport
-    let verts = new Float32Array([-1, -1, 3, -1, -1, 3]);
+    const verts = new Float32Array([-1, -1, 3, -1, -1, 3]);
     gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(posLoc);
     gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
@@ -607,10 +597,10 @@ async function webglRenderHash(
       gl.finish();
     } catch {}
 
-    let pixels = new Uint8Array(64 * 64 * 4);
+    const pixels = new Uint8Array(64 * 64 * 4);
     gl.readPixels(0, 0, 64, 64, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     return await sha256(pixels);
-  } catch (e) {
+  } catch {
     return "render_error";
   }
 }
@@ -621,8 +611,8 @@ function createProgram(
   fsSrc: string,
   isWebGL2: boolean
 ): WebGLProgram | null {
-  let compile = (type: number, src: string): WebGLShader | null => {
-    let sh = gl.createShader(type);
+  const compile = (type: number, src: string): WebGLShader | null => {
+    const sh = gl.createShader(type);
     if (!sh) return null;
     gl.shaderSource(sh, src);
     gl.compileShader(sh);
@@ -631,10 +621,10 @@ function createProgram(
     }
     return sh;
   };
-  let vs = compile(gl.VERTEX_SHADER, vsSrc);
-  let fs = compile(gl.FRAGMENT_SHADER, fsSrc);
+  const vs = compile(gl.VERTEX_SHADER, vsSrc);
+  const fs = compile(gl.FRAGMENT_SHADER, fsSrc);
   if (!vs || !fs) return null;
-  let prog = gl.createProgram();
+  const prog = gl.createProgram();
   if (!prog) return null;
   gl.attachShader(prog, vs);
   gl.attachShader(prog, fs);
@@ -650,12 +640,12 @@ function createProgram(
 }
 
 async function collectWebGPUInfo(): Promise<any> {
-  let out: any = {};
+  const out: any = {};
   try {
-    let navGpu = (navigator as any).gpu;
+    const navGpu = (navigator as any).gpu;
     if (!navGpu) return { unavailable: true, reason: "no_navigator_gpu" };
 
-    let adapter =
+    const adapter =
       (await navGpu
         .requestAdapter({ powerPreference: "high-performance" })
         .catch(() => null)) ||
@@ -666,15 +656,15 @@ async function collectWebGPUInfo(): Promise<any> {
 
     if (!adapter) return { unavailable: true, reason: "no_adapter" };
 
-    let features: string[] = [];
+    const features: string[] = [];
     try {
-      for (let f of adapter.features || []) features.push(f);
+      for (const f of adapter.features || []) features.push(f);
       features.sort();
     } catch {}
-    let limits: { [key: string]: number } = {};
+    const limits: { [key: string]: number } = {};
     try {
       if (adapter.limits) {
-        for (let [k, v] of Object.entries(adapter.limits)) {
+        for (const [k, v] of Object.entries(adapter.limits)) {
           // Only include numeric-ish limits; avoid giant structures
           if (
             typeof v === "number" ||
@@ -694,9 +684,9 @@ async function collectWebGPUInfo(): Promise<any> {
     // browsers may not). Guard it carefully.
     try {
       if (typeof adapter.requestAdapterInfo === "function") {
-        let info = await adapter.requestAdapterInfo().catch(() => null);
+        const info = await adapter.requestAdapterInfo().catch(() => null);
         if (info) {
-          let { vendor, architecture, device, description } = info;
+          const { vendor, architecture, device, description } = info;
           out.adapterInfo = {
             vendor: vendor || "",
             architecture: architecture || "",
@@ -710,9 +700,9 @@ async function collectWebGPUInfo(): Promise<any> {
     }
 
     // Restrict to "limit-like" keys for stability
-    let limitKeys = Object.keys(limits).sort();
-    let limited: { [key: string]: number } = {};
-    for (let k of limitKeys) {
+    const limitKeys = Object.keys(limits).sort();
+    const limited: { [key: string]: number } = {};
+    for (const k of limitKeys) {
       if (
         /^(max.*?|min.*?|limits?|buffer|storage|uniform|textures?)$/i.test(k)
       ) {
@@ -720,86 +710,85 @@ async function collectWebGPUInfo(): Promise<any> {
       }
     }
     out.limits = limited;
-  } catch (e) {
+  } catch {
     out.error = true;
   }
   return out;
 }
 
 async function collectAudioFingerprint(): Promise<any> {
-  let out: any = {};
+  const out: any = {};
   try {
-    let AC = window.AudioContext || (window as any).webkitAudioContext;
+    const AC = window.AudioContext || (window as any).webkitAudioContext;
     if (AC) {
       // Creating an AudioContext in Firefox/Safari is fine, but be ready to
       // fall back if blocked by policies.
-      let ctx = new AC();
+      const ctx = new AC();
       out.deviceSampleRate = Number(ctx.sampleRate) || -1;
       await (ctx.close ? ctx.close() : Promise.resolve()).catch(() => {});
     } else {
       out.deviceSampleRate = -1;
     }
-  } catch (_) {
+  } catch {
     out.deviceSampleRate = -1;
   }
 
   // Offline rendering is typically allowed even with autoplay policies.
   try {
-    let sampleRate = 44100;
-    let frames = 44100;
-    let ctx = new OfflineAudioContext(1, frames, sampleRate);
+    const sampleRate = 44100;
+    const frames = 44100;
+    const ctx = new OfflineAudioContext(1, frames, sampleRate);
 
-    let osc = new OscillatorNode(ctx, {
+    const osc = new OscillatorNode(ctx, {
       type: "triangle",
       frequency: 997,
     });
-    let comp = new DynamicsCompressorNode(ctx, {
+    const comp = new DynamicsCompressorNode(ctx, {
       threshold: -50,
       knee: 15,
       ratio: 12,
       attack: 0.003,
       release: 0.25,
     });
-    let biquad = new BiquadFilterNode(ctx, {
+    const biquad = new BiquadFilterNode(ctx, {
       type: "peaking",
       frequency: 1200,
       Q: 1.2,
       gain: 6,
     });
-    let gain = new GainNode(ctx, { gain: 0.7 });
+    const gain = new GainNode(ctx, { gain: 0.7 });
 
     osc.connect(comp).connect(biquad).connect(gain).connect(ctx.destination);
     osc.start(0);
     osc.stop(frames / sampleRate);
 
-    let buffer = await ctx.startRendering();
-    let ch0 = buffer.getChannelData(0);
+    const buffer = await ctx.startRendering();
+    const ch0 = buffer.getChannelData(0);
 
-    let stride = 256;
-    let sig: (string | number)[] = [];
+    const stride = 256;
+    const sig: (string | number)[] = [];
     for (let i = 0; i < ch0.length; i += stride) {
       let acc = 0;
       let sgn = 0;
-      let end = Math.min(i + stride, ch0.length);
+      const end = Math.min(i + stride, ch0.length);
       for (let j = i; j < end; j++) {
-        let v = ch0[j];
+        const v = ch0[j];
         acc += v * v;
         sgn += v > 0 ? 1 : v < 0 ? -1 : 0;
       }
-      let rms = Math.sqrt(acc / (end - i));
+      const rms = Math.sqrt(acc / (end - i));
       sig.push(rms.toFixed(6), sgn);
     }
 
     out.offlineHash = await sha256(sig.join(","));
-  } catch (e) {
-    // Firefox RFP may perturb/limit audio; just mark as error gracefully.
+  } catch {
     out.offlineHash = "error";
   }
   return out;
 }
 
 async function collectFontsFingerprint(): Promise<any> {
-  let out: any = {};
+  const out: any = {};
   try {
     if (!document || !document.body) {
       return { hash: "no_body", list: [] };
@@ -812,7 +801,7 @@ async function collectFontsFingerprint(): Promise<any> {
       }
     } catch {}
 
-    let fontsToCheck = [
+    const fontsToCheck = [
       "Noto Sans",
       "Noto Serif",
       "Noto Mono",
@@ -855,10 +844,10 @@ async function collectFontsFingerprint(): Promise<any> {
       "Symbola",
     ];
 
-    let detected = detectFonts(fontsToCheck);
+    const detected = detectFonts(fontsToCheck);
     out.list = detected;
     out.hash = await sha256(detected.join(","));
-  } catch (e) {
+  } catch {
     out.hash = "error";
     out.list = [];
   }
@@ -866,12 +855,12 @@ async function collectFontsFingerprint(): Promise<any> {
 }
 
 function detectFonts(fontsToCheck: string[]): string[] {
-  let testStr = "mmmmmmmmmlliWWw@#字漢한";
-  let size = "72px";
-  let bases = ["monospace", "serif", "sans-serif"];
-  let defaultDims: { [key: string]: { w: number; h: number } } = {};
+  const testStr = "mmmmmmmmmlliWWw@#字漢한";
+  const size = "72px";
+  const bases = ["monospace", "serif", "sans-serif"];
+  const defaultDims: { [key: string]: { w: number; h: number } } = {};
 
-  let span = document.createElement("span");
+  const span = document.createElement("span");
   span.style.cssText =
     "position:absolute;left:-9999px;visibility:hidden;line-height:normal;" +
     "white-space:pre;letter-spacing:0;word-spacing:0;-webkit-font-smoothing:auto;" +
@@ -879,19 +868,19 @@ function detectFonts(fontsToCheck: string[]): string[] {
   span.textContent = testStr;
   document.body.appendChild(span);
 
-  for (let base of bases) {
+  for (const base of bases) {
     span.style.fontFamily = base;
     defaultDims[base] = { w: span.offsetWidth, h: span.offsetHeight };
   }
 
-  let available: string[] = [];
-  for (let font of fontsToCheck) {
+  const available: string[] = [];
+  for (const font of fontsToCheck) {
     let detected = false;
-    for (let base of bases) {
+    for (const base of bases) {
       span.style.fontFamily = `'${font}', ${base}`;
-      let w = span.offsetWidth;
-      let h = span.offsetHeight;
-      let d = defaultDims[base];
+      const w = span.offsetWidth;
+      const h = span.offsetHeight;
+      const d = defaultDims[base];
       if (w !== d.w || h !== d.h) {
         detected = true;
         break;

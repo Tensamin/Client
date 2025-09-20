@@ -19,7 +19,7 @@ export function log(
   type: string,
   extraInfo?: any
 ) {
-  console.log(sender, type, extraInfo);
+  console.log(sender, type, extraInfo, level);
 }
 
 export async function sha256(content: string | BufferSource) {
@@ -55,10 +55,10 @@ export function isElectron() {
 
   try {
     if (typeof window !== "undefined" && window.require) {
-      let electron = window.require("electron");
+      const electron = window.require("electron");
       if (electron) return true;
     }
-  } catch (e) {}
+  } catch {}
 
   return false;
 }
@@ -101,7 +101,7 @@ export function convertStringToInitials(content: string) {
     return "NA";
   }
 
-  let words = content.split(" ").filter(Boolean);
+  const words = content.split(" ").filter(Boolean);
 
   if (words.length === 0) {
     return "NA";

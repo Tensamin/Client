@@ -1,12 +1,5 @@
 // Package Imports
-import React, {
-  memo,
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { memo, useRef, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import {
   useInfiniteQuery,
@@ -154,6 +147,8 @@ export const Box = memo(() => {
     }
   }, [data, messages.length, rowVirtualizer]);
 
+  {
+    /*
   const addRealtimeMessage = useCallback(
     (text: string) => {
       const wasPinned = isPinnedToBottom();
@@ -209,6 +204,8 @@ export const Box = memo(() => {
     },
     [isPinnedToBottom, queryClient, rowVirtualizer, messages.length]
   );
+  */
+  }
 
   if (isLoading) {
     return (

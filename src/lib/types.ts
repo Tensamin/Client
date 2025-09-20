@@ -1,28 +1,28 @@
-export interface JWK {
+export type JWK = {
   kty: string;
   crv: string;
   x?: string;
   d?: string;
-}
+};
 
-export interface BasicSuccessMessage {
+export type BasicSuccessMessage = {
   success: boolean;
   message: string;
-}
+};
 
-export interface AdvancedSuccessMessage {
+export type AdvancedSuccessMessage = {
   type: string;
   log: LogBody;
   data: any;
   id: string;
-}
+};
 
-export interface LogBody {
+export type LogBody = {
   log_level: number;
   message: string;
-}
+};
 
-export interface User {
+export type User = {
   uuid: string;
   username: string;
   display: string;
@@ -34,7 +34,11 @@ export interface User {
   public_key: string;
   created_at: string;
   loading: boolean;
-}
+};
+
+export type Error = {
+  message: string;
+};
 
 declare global {
   interface Window {

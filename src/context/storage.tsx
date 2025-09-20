@@ -29,7 +29,7 @@ export function StorageProvider({
   const [ready, setReady] = useState(false);
 
   function set(key: string, value: any) {
-    let newData: any = data;
+    const newData: any = data;
     if (value === false) {
       delete newData[key];
     } else {

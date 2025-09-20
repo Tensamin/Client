@@ -133,7 +133,7 @@ export function SocketProvider({
         readyState !== ReadyState.CLOSING
       ) {
         if (noResponse) {
-          let messageToSend = {
+          const messageToSend = {
             type: requestType,
             log: logData,
             data,
@@ -161,16 +161,16 @@ export function SocketProvider({
         }
 
         return new Promise((resolve, reject) => {
-          let id = v7();
+          const id = v7();
 
-          let messageToSend = {
+          const messageToSend = {
             id,
             type: requestType,
             log: logData,
             data,
           };
 
-          let timeoutId = setTimeout(() => {
+          const timeoutId = setTimeout(() => {
             pendingRequests.current.delete(id);
             log(
               "error",
@@ -251,8 +251,7 @@ export function SocketProvider({
   useEffect(() => {
     if (!connected) return;
 
-    let interval: any;
-    interval = setInterval(() => {
+    const interval = setInterval(() => {
       const now1 = Date.now();
       send(
         "ping",
