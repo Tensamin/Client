@@ -19,6 +19,7 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
       "src/app/page.tsx",
+      "src/lib/fingerprint.ts",
     ],
   },
 ];

@@ -27,6 +27,19 @@ type CryptoContextType = {
   isReady: boolean;
 };
 
+type ApiRef = {
+  encrypt: (message: string, password: string) => Promise<BasicSuccessMessage>;
+  decrypt: (
+    encryptedMessage: string,
+    password: string
+  ) => Promise<BasicSuccessMessage>;
+  get_shared_secret: (
+    own_private_key: string,
+    own_public_key: string,
+    other_public_key: string
+  ) => Promise<BasicSuccessMessage>;
+};
+
 const CryptoContext = createContext<CryptoContextType | null>(null);
 const apiNotInitializedError = new Error(
   "ERROR_CRYPTO_CONTEXT_API_NOT_INITIALIZED"
@@ -44,7 +57,7 @@ export function CryptoProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const apiRef = useRef<any>(null);
+  const apiRef = useRef<ApiRef | null>(null);
   const { setPage, page } = usePageContext();
   const [isWorkerReady, setIsWorkerReady] = useState(false);
   const [isReady, setIsReady] = useState(false);

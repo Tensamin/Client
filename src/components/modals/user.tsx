@@ -7,6 +7,7 @@ import { usePageContext } from "@/app/page";
 
 // Components
 import * as RawModal from "@/components/modals/raw";
+import { User } from "@/lib/types";
 
 // Main
 export function UserModal({
@@ -18,7 +19,13 @@ export function UserModal({
 }) {
   const { get } = useUserContext();
   const { setPage } = usePageContext();
-  const [user, setUser] = useState<any>({
+  const [user, setUser] = useState<User>({
+    username: "",
+    about: "",
+    sub_level: 0,
+    sub_end: 0,
+    created_at: "",
+    public_key: "",
     uuid: "",
     display: "",
     avatar: "",
@@ -28,12 +35,12 @@ export function UserModal({
 
   useEffect(() => {
     get(uuid, false).then(setUser);
-  }, [uuid]);
+  }, [uuid, get]);
 
   const props = {
     title: user.display,
-    description: user.username,
-    icon: user.avatar,
+    description: user.username || "",
+    icon: user.avatar || undefined,
     loading: user.loading,
   };
 
@@ -44,7 +51,7 @@ export function UserModal({
       return (
         <RawModal.MediumModal
           {...props}
-          description={user.status}
+          description={user.status || ""}
           onClick={() => {
             setPage("chat", user.uuid);
           }}

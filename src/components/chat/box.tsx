@@ -3,7 +3,7 @@ import React, { memo, useRef, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import {
   useInfiniteQuery,
-  useQueryClient,
+  //useQueryClient,
   InfiniteData,
 } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -27,17 +27,20 @@ function flattenPages(
   return data.pages.flatMap((p) => p.messages);
 }
 
-const TOTAL_MESSAGES = 500;
+//const TOTAL_MESSAGES = 500;
 const QUERY_KEY = ["messages", "top-infinite"] as const;
 const SCROLL_THRESHOLD = 48;
-const BOTTOM_DISTANCE_THRESHOLD = 8;
+//const BOTTOM_DISTANCE_THRESHOLD = 8;
 
-export const Box = memo(() => {
+export const Box = memo(ActualBox);
+
+function ActualBox() {
   const parentRef = useRef<HTMLDivElement | null>(null);
-  const queryClient = useQueryClient();
+  //const queryClient = useQueryClient();
   const loadingLockRef = useRef(false);
   const didInitialScrollRef = useRef(false);
-  const nextIdRef = useRef(TOTAL_MESSAGES);
+  const timeoutRef = useRef<number | null>(null);
+  //const nextIdRef = useRef(TOTAL_MESSAGES);
 
   const { getMessages } = useMessageContext();
 
@@ -88,6 +91,8 @@ export const Box = memo(() => {
     getItemKey,
   });
 
+  {
+    /*
   const isPinnedToBottom = useCallback(() => {
     const el = parentRef.current;
     if (!el) return true;
@@ -97,6 +102,8 @@ export const Box = memo(() => {
 
     return distance <= BOTTOM_DISTANCE_THRESHOLD + 2;
   }, []);
+    */
+  }
 
   const maybeLoadOlder = useCallback(async () => {
     if (loadingLockRef.current || !hasPreviousPage || isFetchingPreviousPage) {
@@ -123,18 +130,23 @@ export const Box = memo(() => {
     });
   }, [fetchPreviousPage, hasPreviousPage, isFetchingPreviousPage]);
 
-  const onScroll = useCallback(
-    useMemo(() => {
-      let timeoutId: NodeJS.Timeout | null = null;
-      return () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          void maybeLoadOlder();
-        }, 16);
-      };
-    }, [maybeLoadOlder]),
-    [maybeLoadOlder]
-  );
+  const onScroll = useCallback(() => {
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = window.setTimeout(() => {
+      void maybeLoadOlder();
+      timeoutRef.current = null;
+    }, 16);
+  }, [maybeLoadOlder]);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (data && messages.length > 0 && !didInitialScrollRef.current) {
@@ -267,4 +279,4 @@ export const Box = memo(() => {
       </div>
     </div>
   );
-});
+}

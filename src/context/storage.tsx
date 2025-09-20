@@ -5,10 +5,16 @@ import { createContext, useContext, useState, useEffect } from "react";
 
 // Main
 type StorageContextType = {
-  set: (key: string, value: any) => void;
-  data: { [key: string]: any };
+  set: (key: string, value: Value) => void;
+  data: Data;
   rerender: (value: boolean) => void;
 };
+
+type Data = {
+  [key: string]: string | boolean | number | object;
+};
+
+type Value = string | boolean | number | object;
 
 const StorageContext = createContext<StorageContextType | null>(null);
 
@@ -28,8 +34,8 @@ export function StorageProvider({
   const [, rerender] = useState(false);
   const [ready, setReady] = useState(false);
 
-  function set(key: string, value: any) {
-    const newData: any = data;
+  function set(key: string, value: Value) {
+    const newData: Data = data;
     if (value === false) {
       delete newData[key];
     } else {

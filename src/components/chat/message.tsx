@@ -67,7 +67,7 @@ function FinalMessage({ data }: { data: string }) {
         }
       }
     })();
-  }, [data]);
+  }, []);
 
   return (
     <ContextMenu>

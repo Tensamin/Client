@@ -1,3 +1,5 @@
+import { Message } from "@/components/chat/message";
+
 export type JWK = {
   kty: string;
   crv: string;
@@ -10,10 +12,18 @@ export type BasicSuccessMessage = {
   message: string;
 };
 
+export type AdvancedSuccessMessageData = {
+  message_chunk?: Message[] | null;
+  user_id?: string | null;
+  private_key_hash?: string | null;
+  last_ping?: number | null;
+  ping_iota?: number | null;
+}
+
 export type AdvancedSuccessMessage = {
   type: string;
   log: LogBody;
-  data: any;
+  data: AdvancedSuccessMessageData;
   id: string;
 };
 
@@ -39,6 +49,18 @@ export type User = {
 export type ErrorType = {
   name: string;
   message: string;
+};
+
+export type Conversation = {
+  user_id: string;
+  last_message_at: number;
+  call_active: boolean;
+};
+
+export type Community = {
+  community_address: string;
+  community_title: string;
+  position: string;
 };
 
 declare global {

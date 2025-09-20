@@ -13,7 +13,12 @@ import { v7 } from "uuid";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
 // Lib Imports
-import { AdvancedSuccessMessage, ErrorType, LogBody } from "@/lib/types";
+import {
+  AdvancedSuccessMessage,
+  AdvancedSuccessMessageData,
+  ErrorType,
+  LogBody,
+} from "@/lib/types";
 import { log, RetryCount } from "@/lib/utils";
 import { client_wss } from "@/lib/endpoints";
 
@@ -35,9 +40,9 @@ type SocketContextType = {
   send: (
     requestType: string,
     logData: LogBody,
-    data: any,
+    data: AdvancedSuccessMessageData,
     noResponse?: boolean
-  ) => Promise<any>;
+  ) => Promise<AdvancedSuccessMessage | unknown> | null;
   isReady: boolean;
 };
 
@@ -70,8 +75,13 @@ export function SocketProvider({
 
   const forceLoad = false;
 
-  async function handleMessage(message: any) {
-    let parsedMessage: AdvancedSuccessMessage = {} as AdvancedSuccessMessage;
+  async function handleMessage(message: MessageEvent) {
+    let parsedMessage: AdvancedSuccessMessage = {
+      type: "",
+      log: { log_level: 0, message: "" },
+      data: {},
+      id: "",
+    };
     try {
       try {
         parsedMessage = JSON.parse(message.data);
@@ -124,7 +134,7 @@ export function SocketProvider({
     async (
       requestType: string,
       logData: LogBody,
-      data: any,
+      data: AdvancedSuccessMessageData,
       noResponse: boolean = false
     ) => {
       if (
@@ -157,7 +167,7 @@ export function SocketProvider({
               (err as ErrorType).message
             );
           }
-          return;
+          return null;
         }
 
         return new Promise((resolve, reject) => {
@@ -223,8 +233,10 @@ export function SocketProvider({
           private_key_hash: privateKeyHash,
         }
       )
-        .then((data: any) => {
-          if (data.type !== "error") {
+        .then((data: AdvancedSuccessMessage | unknown) => {
+          if (!data) return;
+          const dataTyped = data as AdvancedSuccessMessage;
+          if (dataTyped.type !== "error") {
             setIdentified(true);
             setIsReady(true);
             log(
@@ -233,7 +245,7 @@ export function SocketProvider({
               "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS"
             );
           } else {
-            setPage("error", data.log.message);
+            setPage("error", dataTyped.log.message);
           }
         })
         .catch((err) => {
@@ -262,12 +274,14 @@ export function SocketProvider({
         {
           last_ping: now1,
         }
-      ).then((data: any) => {
-        if (data.type !== "error") {
+      ).then((data: AdvancedSuccessMessage | unknown) => {
+        if (!data) return;
+        const dataTyped = data as AdvancedSuccessMessage;
+        if (dataTyped.type !== "error") {
           const now2 = Date.now();
           const now = now2 - now1;
           setOwnPing(now);
-          setIotaPing(data.data.ping_iota);
+          setIotaPing(dataTyped.data.ping_iota || 0);
         }
       });
     }, 5000);

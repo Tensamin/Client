@@ -15,7 +15,7 @@ import { Messages, Message } from "@/components/chat/message";
 
 // Main
 type MessageContextType = {
-  getMessages: (loaded: any, amount: number) => Promise<Messages>;
+  getMessages: (loaded: number, amount: number) => Promise<Messages>;
 };
 
 const MessageContext = createContext<MessageContextType | null>(null);
@@ -35,7 +35,10 @@ export function MessageProvider({
   const { send, isReady } = useSocketContext();
   const { pageData: id } = usePageContext();
 
-  async function getMessages(loaded: any, amount: number): Promise<Messages> {
+  async function getMessages(
+    loaded: number,
+    amount: number
+  ): Promise<Messages> {
     if (!isReady) throw new Error("Socket not ready");
     if (!id) throw new Error("No user id");
     const messages = await send(
@@ -57,7 +60,7 @@ export function MessageProvider({
           } as Message,
         ];
       }
-      const getTime = (m: any) => Number(m.message_time) || 0;
+      const getTime = (m: Message) => Number(m.message_time) || 0;
       const sorted = [...data.data.message_chunk]
         .sort((a, b) => getTime(b) - getTime(a))
         .reverse();

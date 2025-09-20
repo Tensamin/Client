@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useRef, useEffect } from "react";
 
 // Lib Imports
 import { user } from "@/lib/endpoints";
-import { ErrorType, User } from "@/lib/types";
+import { Community, Conversation, ErrorType, User } from "@/lib/types";
 import { log, getDisplayFromUsername } from "@/lib/utils";
 
 // Context Imports
@@ -18,10 +18,10 @@ type UserContextType = {
   failedMessagesAmount: number;
   setFailedMessagesAmount: (amount: number) => void;
   currentReceiverUuid: string;
-  conversations: any[];
-  communities: any[];
-  setConversations: (conversations: any[]) => void;
-  setCommunities: (communities: any[]) => void;
+  conversations: Conversation[];
+  communities: Community[];
+  setConversations: (conversations: Conversation[]) => void;
+  setCommunities: (communities: Community[]) => void;
 };
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -41,8 +41,8 @@ export function UserProvider({
   const fetchedUsersRef = useRef(new Map());
   const ownUuid = localStorage.getItem("auth_uuid") || "0";
   const [currentReceiverUuid, setCurrentReceiverUuid] = useState<string>("0");
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [communities, setCommunities] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [communities, setCommunities] = useState<Community[]>([]);
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
 
   const { send, isReady } = useSocketContext();
@@ -104,7 +104,7 @@ export function UserProvider({
       setCurrentReceiverUuid(pageData);
       setFailedMessagesAmount(0);
     }
-  }, [page, pageData]);
+  }, [page, pageData, currentReceiverUuid]);
 
   useEffect(() => {
     if (isReady) {
@@ -147,7 +147,7 @@ export function UserProvider({
         }
       });
     }
-  }, [isReady]);
+  }, [isReady, send]);
 
   return (
     <UserContext.Provider

@@ -17,7 +17,7 @@ export function log(
   level: "info" | "warn" | "error" | "debug" = "info",
   sender: string,
   type: string,
-  extraInfo?: any
+  extraInfo?: unknown
 ) {
   console.log(sender, type, extraInfo, level);
 }
