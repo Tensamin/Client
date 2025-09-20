@@ -62,6 +62,7 @@ function FinalMessage({ data }: { data: string }) {
           if (!decrypted.success) throw new Error(decrypted.message);
           setContent(decrypted.message);
         } catch (err: unknown) {
+          // @ts-expect-error Idk TypeScript is dumb
           setFailedMessagesAmount((prev: number) => prev + 1);
           setContent((err as ErrorType).message);
         }

@@ -108,6 +108,7 @@ export function CryptoProvider({
         async function getLambda(retryCount = 0) {
           try {
             if (isElectron()) {
+              // @ts-expect-error Keyring is only available in Electron
               return await window?.keyring?.get("net.methanium.tensamin", uuid);
             } else if (lambda) {
               const decryptedLambda = await decrypt(
