@@ -5,7 +5,7 @@ import { useState } from "react";
 
 // Lib Imports
 import { username_to_uuid } from "@/lib/endpoints";
-import { log } from "@/lib/utils";
+import { handleError, log } from "@/lib/utils";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
@@ -37,38 +37,43 @@ export default function Page() {
 
   async function addConversation() {
     setLoading(true);
-    await fetch(username_to_uuid + newUsername)
-      .then((res) => res.json())
-      .then(async (data: AdvancedSuccessMessage) => {
-        if (data.type === "error") {
-          log(
-            "error",
-            "CONVERSATION",
-            "ADD_CONVERSATION_FAILED",
-            data.log.message
-          );
-        } else {
-          await send(
-            "add_chat",
-            {
-              log_level: 0,
-              message: "ADD_CONVERSATION",
-            },
-            {
-              user_id: data.data.user_id,
-            }
-          ).then(async (data: AdvancedSuccessMessage | unknown) => {
-            if (!data) return;
-            const typedData = data as AdvancedSuccessMessage;
-            if (typedData.type !== "error") {
-              await refetchConversations();
-              setOpen(false);
-              setNewUsername("");
-              setLoading(false);
-            }
-          });
-        }
-      });
+    try {
+      await fetch(username_to_uuid + newUsername)
+        .then((res) => res.json())
+        .then(async (data: AdvancedSuccessMessage) => {
+          if (data.type === "error") {
+            log(
+              "error",
+              "CONVERSATION",
+              "ADD_CONVERSATION_FAILED",
+              data.log.message
+            );
+          } else {
+            await send(
+              "add_chat",
+              {
+                log_level: 0,
+                message: "ADD_CONVERSATION",
+              },
+              {
+                user_id: data.data.user_id,
+              }
+            ).then(async (data: AdvancedSuccessMessage | unknown) => {
+              if (!data) return;
+              const typedData = data as AdvancedSuccessMessage;
+              if (typedData.type !== "error") {
+                await refetchConversations();
+              }
+            });
+          }
+        });
+    } catch (err: unknown) {
+      handleError("HOME_PAGE", "ERROR_ADD_CONVERSATION_UNKNOWN", err);
+    } finally {
+      setOpen(false);
+      setNewUsername("");
+      setLoading(false);
+    }
   }
 
   return (
