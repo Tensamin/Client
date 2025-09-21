@@ -30,6 +30,7 @@ export function UserModal({
     display: "",
     avatar: "",
     status: "",
+    state: "NONE",
     loading: true,
   });
 
@@ -42,6 +43,7 @@ export function UserModal({
     description: user.username || "",
     icon: user.avatar || undefined,
     loading: user.loading,
+    statusIcon: user.state,
   };
 
   switch (size) {

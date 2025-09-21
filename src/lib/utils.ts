@@ -13,6 +13,40 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function getColorFor(state: string) {
+  switch (state) {
+    case "NONE":
+      return "bg-white border-gray-300";
+    case "IDLE":
+      return "bg-yellow-500 border-yellow-700";
+    case "DND":
+      return "bg-red-200 border-red-400";
+    case "USER_OFFLINE":
+      return "bg-gray-400 border-gray-500/50";
+    case "IOTA_OFFLINE":
+      return "bg-destructive border-destructive-foreground/50";
+    case "ONLINE":
+      return "bg-green-500 border-green-700";
+  }
+}
+
+export function formatStatus(state: string) {
+  switch (state) {
+    case "NONE":
+      return "No Status";
+    case "IDLE":
+      return "Idle";
+    case "DND":
+      return "Do Not Disturb";
+    case "USER_OFFLINE":
+      return "User Offline";
+    case "IOTA_OFFLINE":
+      return "Iota Offline";
+    case "ONLINE":
+      return "Online";
+  }
+}
+
 export function log(
   level: "info" | "warn" | "error" | "debug" = "info",
   sender: string,

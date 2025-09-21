@@ -42,6 +42,7 @@ export const Pages = [
   { name: "profile", display: "Profile" },
   { name: "privacy", display: "Privacy" },
   { name: "devices", display: "Devices" },
+  { name: "logout", display: "Logout" },
   { name: "-", display: "Appearance" },
   { name: "tint", display: "Tint" },
   { name: "css", display: "Custom CSS" },
@@ -162,6 +163,8 @@ export default function Page() {
       <ScrollArea className="flex flex-col p-2 bg-card/46 border rounded-lg h-full">
         <div className="w-37 h-full">
           {Pages.map((page) => {
+            if (page.name === "logout")
+              return <SettingsButton key="logout" logoutButton />;
             if (page.name === "-")
               return (
                 <div
@@ -190,11 +193,14 @@ export default function Page() {
           <div className="pb-15" />
         </div>
       </ScrollArea>
-      <div className="w-full flex flex-col p-2 bg-card/46 border rounded-lg">
+      <div className="w-full flex flex-col p-3 bg-card/46 border rounded-lg">
         {Pages.map((page) => {
           if (page.name === selected)
             return (
-              <div key={page.name} className="text-lg font-medium p-1 mb-2">
+              <div
+                key={page.name}
+                className="text-lg font-medium mb-4 leading-5"
+              >
                 {page.display}
               </div>
             );

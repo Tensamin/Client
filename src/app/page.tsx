@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
 // Lib Imports
@@ -74,10 +74,12 @@ export default function Page() {
     }
 
     return (
-      <div
-        className={`${open && !isMobile ? "rounded-tl-xl border-l" : ""} w-full h-full border-t border-input bg-background p-2`}
-      >
-        {jsxPage}
+      <div className={`${open && !isMobile && `pl-${Padding / 2}`} h-full`}>
+        <div
+          className={`${open && !isMobile ? "rounded-tl-xl border-l" : ""} w-full h-full border-t border-input bg-background p-2`}
+        >
+          {jsxPage}
+        </div>
       </div>
     );
   }
@@ -90,8 +92,9 @@ export default function Page() {
             <SidebarProvider>
               <Sidebar className="group-data-[side=left]:border-0">
                 <SidebarHeader
-                  className={`p-${Padding} flex flex-col gap-${Padding * 3}`}
+                  className={`p-0 pl-${Padding} pt-${Padding} pr-${Padding / 2} flex flex-col gap-${Padding * 3}`}
                 >
+                  <div className="pt-2 pt-1 pl-1 pr-1" hidden />
                   <UserModal key={uuid} uuid={uuid} size="big" />
                   <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden p-1">
                     <div className="relative grid grid-cols-2 w-full">
@@ -139,7 +142,7 @@ export default function Page() {
                 </SidebarHeader>
                 <SidebarContent></SidebarContent>
               </Sidebar>
-              <div className="w-full h-screen flex flex-col bg-sidebar overflow-hidden">
+              <div className="w-full h-screen flex flex-col bg-sidebar">
                 <Navbar />
                 <PageSwitch />
               </div>

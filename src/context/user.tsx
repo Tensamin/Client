@@ -7,6 +7,7 @@ import { createContext, useContext, useState, useRef, useEffect } from "react";
 import { user } from "@/lib/endpoints";
 import {
   AdvancedSuccessMessage,
+  AdvancedSuccessMessageData,
   Community,
   Conversation,
   ErrorType,
@@ -44,62 +45,132 @@ export function UserProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const fetchedUsersRef = useRef(new Map());
+  const fetchedUsersRef = useRef<Map<string, User>>(new Map());
+  const statesProcessedRef = useRef(false);
+  const fetchQueueRef = useRef<Set<string>>(new Set());
+  const prevLastMessageRef = useRef<unknown>(null);
   const ownUuid = localStorage.getItem("auth_uuid") || "0";
   const [currentReceiverUuid, setCurrentReceiverUuid] = useState<string>("0");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
 
-  const { send, isReady } = useSocketContext();
+  const { send, isReady, lastMessage } = useSocketContext();
   const { page, pageData } = usePageContext();
+
+  if (lastMessage && lastMessage !== prevLastMessageRef.current) {
+    prevLastMessageRef.current = lastMessage;
+
+    if (lastMessage.type === "client_changed") {
+      const data = lastMessage.data as AdvancedSuccessMessageData;
+      console.log(data);
+    }
+
+    if (lastMessage.type === "get_states") {
+      const data = lastMessage.data as AdvancedSuccessMessageData & {
+        user_states: Record<string, string>;
+      };
+
+      Object.keys(data.user_states).forEach((uuid) => {
+        const existingUser = fetchedUsersRef.current.get(uuid);
+        let user: User;
+        if (existingUser) {
+          user = { ...existingUser, state: data.user_states[uuid] };
+        } else {
+          user = {
+            uuid,
+            username: uuid,
+            display: uuid,
+            avatar: null,
+            about: "",
+            status: "",
+            sub_level: 0,
+            sub_end: 0,
+            public_key: "",
+            created_at: new Date().toISOString(),
+            state: data.user_states[uuid],
+            loading: true,
+          };
+        }
+        fetchedUsersRef.current.set(uuid, user);
+      });
+    }
+  }
 
   async function get(uuid: string, refetch: boolean = false): Promise<User> {
     try {
-      if (!uuid || uuid === "0") throw new Error("Invalid UUID");
-      if (fetchedUsersRef.current.has(uuid) && !refetch) {
-        log("debug", "USER_CONTEXT", "USER_CONTEXT_USER_ALREADY_FETCHED");
-        return fetchedUsersRef.current.get(uuid);
-      } else {
-        log("debug", "USER_CONTEXT", "USER_CONTEXT_USER_NOT_FETCHED");
-        const newUser = await fetch(`${user}${uuid}`)
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.type === "success") {
-              const newUser: User = {
-                uuid,
-                username: data.data.username,
-                display: getDisplayFromUsername(
-                  data.data.username,
-                  data.data.display
-                ),
-                avatar: data.data.avatar,
-                about: atob(data.data.about),
-                status: data.data.status,
-                sub_level: data.data.sub_level,
-                sub_end: data.data.sub_end,
-                public_key: data.data.public_key,
-                created_at: data.data.created_at,
-                loading: false,
-              };
-              fetchedUsersRef.current.set(uuid, newUser);
-              return newUser;
-            }
-          });
-        return newUser as User;
+      if (!uuid || uuid === "0") {
+        throw new Error("Invalid UUID");
       }
+
+      const hasUser = fetchedUsersRef.current.has(uuid);
+      const existingUser = hasUser
+        ? fetchedUsersRef.current.get(uuid)
+        : undefined;
+      const shouldFetch =
+        refetch || !hasUser || !!(existingUser && existingUser.loading);
+
+      if (hasUser && !shouldFetch) {
+        log("debug", "USER_CONTEXT", "USER_CONTEXT_USER_ALREADY_FETCHED");
+        return existingUser!;
+      }
+
+      log("debug", "USER_CONTEXT", "USER_CONTEXT_USER_NOT_FETCHED");
+      const response = await fetch(`${user}${uuid}`);
+      const data = await response.json();
+
+      if (data.type !== "success") {
+        throw new Error(`API error: ${data.message || "Unknown error"}`);
+      }
+
+      const apiUserData: Omit<User, "state" | "loading"> = {
+        uuid,
+        username: data.data.username,
+        display: getDisplayFromUsername(data.data.username, data.data.display),
+        avatar: data.data.avatar,
+        about: atob(data.data.about),
+        status: data.data.status,
+        sub_level: data.data.sub_level,
+        sub_end: data.data.sub_end,
+        public_key: data.data.public_key,
+        created_at: data.data.created_at,
+      };
+
+      let newUser: User = {
+        ...apiUserData,
+        loading: false,
+        ...(existingUser ? { state: existingUser.state } : { state: "NONE" }),
+      };
+
+      fetchedUsersRef.current.set(uuid, newUser);
+      return newUser;
     } catch (err: unknown) {
+      const error = err as ErrorType;
+
+      const currentExisting = fetchedUsersRef.current.get(uuid);
+      if (currentExisting) {
+        const failedUser: User = {
+          ...currentExisting,
+          about: error.message,
+          loading: false,
+        };
+        fetchedUsersRef.current.set(uuid, failedUser);
+        return failedUser;
+      }
+
       return {
         uuid: "0",
         username: "failed",
         display: "Failed to load",
         avatar: null,
-        about: (err as ErrorType).message,
+        about: error.message,
         status: "",
         sub_level: 0,
         sub_end: 0,
         public_key: "",
         created_at: new Date().toISOString(),
+        state: "NONE",
+        loading: false,
       } as User;
     }
   }

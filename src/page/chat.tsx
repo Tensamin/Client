@@ -31,13 +31,13 @@ export default function Page() {
   }, [message]);
 
   return (
-    <div className="h-full w-full flex flex-col gap-2">
-      <div className="flex-1 flex flex-col p-2 bg-card/46 border rounded-lg overflow-y-auto">
+    <div className="h-full w-full flex flex-col gap-2 overflow-hidden">
+      <div className="h-full p-2 bg-card/46 border rounded-lg overflow-y-auto">
         <QueryClientProvider client={client}>
           <Box />
         </QueryClientProvider>
       </div>
-      <div className="flex gap-2 items-end">
+      <div className="flex gap-2">
         <Button
           variant="outline"
           className="aspect-square h-10 w-10 flex p-2 rounded-lg border dark:border-border dark:bg-card/46 bg-card/46"

@@ -1,11 +1,21 @@
 // Lib Imports
-import { convertStringToInitials, ThemeSize } from "@/lib/utils";
+import {
+  convertStringToInitials,
+  ThemeSize,
+  getColorFor,
+  formatStatus,
+} from "@/lib/utils";
 
 // Components
 import { Card, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 // Main
 export function BigModal({
@@ -13,11 +23,13 @@ export function BigModal({
   description,
   icon,
   loading,
+  statusIcon,
 }: Readonly<{
   title: string;
   description: string;
   icon?: string;
   loading: boolean;
+  statusIcon: string;
 }>) {
   return loading ? (
     <Card className="bg-input/30 p-3 rounded-xl border-input">
@@ -53,12 +65,14 @@ export function MediumModal({
   icon,
   loading,
   onClick,
+  statusIcon,
 }: Readonly<{
   title: string;
   description: string;
   icon?: string;
   loading: boolean;
   onClick?: () => void;
+  statusIcon?: string;
 }>) {
   return loading ? (
     <Button
@@ -78,10 +92,26 @@ export function MediumModal({
       className="w-full bg-input/30 p-2 rounded-2xl border-input text-card-foreground flex gap-3 items-center justify-start border py-6 shadow-sm"
       onClick={onClick}
     >
-      <Avatar className="border">
-        {icon && <AvatarImage src={icon} />}
-        <AvatarFallback>{convertStringToInitials(title)}</AvatarFallback>
-      </Avatar>
+      <div className="relative">
+        <Avatar className="relative border border-muted">
+          {icon && <AvatarImage src={icon} />}
+          <AvatarFallback className="z-10">
+            {convertStringToInitials(title)}
+          </AvatarFallback>
+        </Avatar>
+        {statusIcon && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="rounded-full absolute bg-muted bottom-0 right-0 w-3.5 h-3.5 flex justify-center items-center">
+                <div
+                  className={`w-2.5 h-2.5 rounded-full border ${getColorFor(statusIcon)}`}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>{formatStatus(statusIcon)}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium leading-4">{title}</p>
         {description !== "" && (
