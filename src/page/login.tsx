@@ -9,6 +9,7 @@ import { log } from "@/lib/utils";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
+import { usePageContext } from "@/context/page";
 
 // Components
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
@@ -19,10 +20,11 @@ import { Button } from "@/components/ui/button";
 export default function Page() {
   const [hover, setHover] = useState(false);
   const [privateKey, setPrivateKey] = useState("");
-
   const [loading, setLoading] = useState(false);
 
   const { set } = useStorageContext();
+  const { pageData } = usePageContext();
+  log("info", "LOGIN_PAGE", "REASONE_FOR_LOGIN", pageData);
 
   async function handleDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();

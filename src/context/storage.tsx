@@ -79,6 +79,8 @@ export function StorageProvider({
       setData(loadedData);
     } catch (err: unknown) {
       handleError("STORAGE_CONTEXT", "ERROR_STORAGE_CONTEXT_UNKOWN", err);
+    } finally {
+      setReady(true);
     }
   }, [db]);
 
@@ -136,7 +138,6 @@ export function StorageProvider({
         const initializedDb = await dbPromise;
         setDb(initializedDb);
         await loadData();
-        setReady(true);
       } catch (err: unknown) {
         log(
           "error",
@@ -149,11 +150,7 @@ export function StorageProvider({
     })();
   }, [dbPromise, loadData]);
 
-  if (!ready) {
-    return null;
-  }
-
-  return (
+  return ready ? (
     <StorageContext.Provider
       value={{
         set,
@@ -163,5 +160,5 @@ export function StorageProvider({
     >
       {children}
     </StorageContext.Provider>
-  );
+  ) : null;
 }

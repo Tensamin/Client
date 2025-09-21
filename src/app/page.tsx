@@ -36,7 +36,7 @@ import ChatPage from "@/page/chat";
 
 function MainPage() {
   const { ownUuid } = useCryptoContext();
-  const { page, pageData, setPage } = usePageContext();
+  const { page, pageData } = usePageContext();
   const [category, setCategory] = useState<"Conversations" | "Communities">(
     "Conversations"
   );
