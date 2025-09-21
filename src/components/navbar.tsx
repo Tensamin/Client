@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { WindowControls } from "@/components/windowControls";
 
 export function Navbar() {
-  const { setPage } = usePageContext();
+  const { setPage, page } = usePageContext();
   const { open, isMobile } = useSidebar();
   const { failedMessagesAmount } = useUserContext();
 
@@ -51,8 +51,9 @@ export function Navbar() {
       </Button>
 
       {/* Only when user is selected */}
-      <div className="w-full">Username</div>
-      {failedMessagesAmount > 0 && (
+      {page === "chat" && <p>Username</p>}
+      <div className="w-full" />
+      {failedMessagesAmount > 0 && page === "chat" && (
         <HoverCard>
           <HoverCardTrigger asChild>
             <Button className="h-9 w-9" variant="outline">
@@ -67,9 +68,11 @@ export function Navbar() {
           </HoverCardContent>
         </HoverCard>
       )}
-      <Button className="h-9 w-9" variant="outline">
-        <Icon.Phone />
-      </Button>
+      {page === "chat" && (
+        <Button className="h-9 w-9" variant="outline">
+          <Icon.Phone />
+        </Button>
+      )}
 
       {/* Electron Window Controls */}
       <WindowControls />

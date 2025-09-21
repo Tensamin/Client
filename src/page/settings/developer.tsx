@@ -23,12 +23,14 @@ import {
 import { useStorageContext, Value } from "@/context/storage";
 
 function FitJson({
+  sensitive,
   value,
   min = 9, // px
   max = 12, // px
   step = 0.5,
   className = "",
 }: {
+  sensitive: boolean;
   value: Value;
   min?: number;
   max?: number;
@@ -86,7 +88,7 @@ function FitJson({
     <div
       ref={containerRef}
       className={[
-        "relative w-full min-w-0 max-h-48 overflow-hidden",
+        "relative w-full min-w-0 min-h-10 max-h-48 overflow-hidden max-w-[35vw] flex items-center",
         className,
       ].join(" ")}
     >
@@ -95,7 +97,7 @@ function FitJson({
         style={{ fontSize, lineHeight: 1.2 }}
         className="whitespace-pre-wrap break-all font-mono text-foreground"
       >
-        {text}
+        {sensitive ? '"*************************"' : text}
       </pre>
     </div>
   );
@@ -231,7 +233,7 @@ export default function Page() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by key…"
+                placeholder="Search by key..."
                 className="min-w-0 flex-1 h-9 text-sm"
               />
               <Button size="sm" className="shrink-0" onClick={openAddDialog}>
@@ -251,7 +253,7 @@ export default function Page() {
                       <th className="px-2 py-1.5 text-left font-medium align-middle">
                         Value
                       </th>
-                      <th className="px-2 py-1.5 text-left font-medium align-middle">
+                      <th className="px-2 py-1.5 text-right font-medium align-middle w-0">
                         Actions
                       </th>
                     </tr>
@@ -259,7 +261,7 @@ export default function Page() {
                   <tbody className="divide-y divide-border">
                     {filteredEntries.map((entry) => (
                       <tr key={entry.key} className="hover:bg-muted/50">
-                        <td className="whitespace-nowrap px-2 py-1.5 font-medium text-foreground align-middle">
+                        <td className="whitespace-nowrap px-2 py-1.5 font-medium text-foreground align-middle w-25">
                           {entry.key}
                         </td>
                         <td className="px-2 py-1.5 align-middle">
@@ -271,30 +273,34 @@ export default function Page() {
                                   setEditValue(e.target.value);
                                   setEditError(null);
                                 }}
-                                className="h-44 max-h-[50vh] w-full resize-none overflow-auto font-mono text-xs leading-tight"
+                                className="min-h-10 h-auto w-full max-w-[35vw] max-h-[50vh] overflow-x-auto font-mono text-xs leading-tight"
                                 placeholder='Enter JSON value (e.g. {"foo": "bar"})'
                               />
-                              {editError ? (
+                              {editError && (
                                 <span className="text-xs text-destructive">
                                   {editError}
-                                </span>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  Tip: Value must be valid JSON.
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <FitJson value={entry.value} />
+                            <FitJson
+                              value={entry.value}
+                              sensitive={entry.key === "privateKey"}
+                            />
                           )}
                         </td>
                         <td className="whitespace-nowrap px-2 py-1.5 font-medium align-middle">
                           {editingKey === entry.key ? (
-                            <div className="flex gap-2">
-                              <Button size="sm" onClick={handleSaveEdit}>
+                            <div className="flex w-20 justify-end gap-2">
+                              <Button
+                                size="sm"
+                                onClick={handleSaveEdit}
+                                className="w-full"
+                              >
                                 Save
                               </Button>
                               <Button
+                                className="w-full"
                                 size="sm"
                                 variant="outline"
                                 onClick={handleCancelEdit}
@@ -303,8 +309,9 @@ export default function Page() {
                               </Button>
                             </div>
                           ) : (
-                            <div className="flex gap-2">
+                            <div className="flex w-20 justify-end gap-2">
                               <Button
+                                className="w-full"
                                 size="sm"
                                 onClick={() =>
                                   handleEdit(entry.key, entry.value)
@@ -313,6 +320,7 @@ export default function Page() {
                                 Edit
                               </Button>
                               <Button
+                                className="w-full"
                                 size="sm"
                                 variant="destructive"
                                 onClick={() => handleDelete(entry.key)}
@@ -374,12 +382,8 @@ export default function Page() {
                 className="h-44 max-h-[50vh] w-full resize-none overflow-auto font-mono text-xs leading-tight"
                 placeholder='e.g. {"enabled": true} or 42 or "hello"'
               />
-              {addError ? (
+              {addError && (
                 <span className="text-xs text-destructive">{addError}</span>
-              ) : (
-                <span className="text-xs text-muted-foreground">
-                  Tip: Strings must be quoted, e.g. "hello".
-                </span>
               )}
             </div>
           </div>
