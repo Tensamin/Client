@@ -1,14 +1,14 @@
 "use client";
 
 // Package Imports
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 // Lib Imports
 import { Padding } from "@/lib/utils";
 
 // Context Imports
-import { CryptoProvider } from "@/context/crypto";
+import { CryptoProvider, useCryptoContext } from "@/context/crypto";
 import { SocketProvider } from "@/context/socket";
 import { UserProvider } from "@/context/user";
 import { MessageProvider } from "@/context/message";
@@ -19,7 +19,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarMenuItem,
   SidebarProvider,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -35,24 +34,12 @@ import HomePage from "@/page/home";
 import SettingsPage from "@/page/settings";
 import ChatPage from "@/page/chat";
 
-export default function Page() {
-  const [uuid, setUuid] = useState("");
+function MainPage() {
+  const { ownUuid } = useCryptoContext();
   const { page, pageData, setPage } = usePageContext();
   const [category, setCategory] = useState<"Conversations" | "Communities">(
     "Conversations"
   );
-
-  useEffect(() => {
-    setUuid(localStorage.getItem("auth_uuid") || "");
-  }, []);
-
-  if (page === "error") return <Loading message={pageData || "ERROR"} />;
-  if (page === "login")
-    return (
-      <CryptoProvider>
-        <LoginPage />
-      </CryptoProvider>
-    );
 
   function PageSwitch() {
     const { open, isMobile } = useSidebar();
@@ -85,67 +72,85 @@ export default function Page() {
   }
 
   return (
+    <>
+      <Sidebar className="group-data-[side=left]:border-0">
+        <SidebarHeader
+          className={`p-0 pl-${Padding} pt-${Padding} pr-${Padding / 2} flex flex-col gap-${Padding * 3}`}
+        >
+          <div className="pt-2 pt-1 pl-1 pr-1" hidden />
+          <UserModal key={ownUuid} uuid={ownUuid} size="big" />
+          <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden p-1">
+            <div className="relative grid grid-cols-2 w-full">
+              {["Communities", "Conversations"].map((cat: string) => (
+                <Button
+                  key={cat}
+                  variant="ghost"
+                  type="button"
+                  className="relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-transparent hover:bg-transparent"
+                  onClick={() =>
+                    setCategory(cat as "Communities" | "Conversations")
+                  }
+                  aria-pressed={category === cat}
+                  aria-label={cat}
+                >
+                  {category === cat && (
+                    <motion.span
+                      aria-hidden="true"
+                      layoutId="category-pill"
+                      className="absolute inset-0 rounded-full bg-input/50 pointer-events-none border"
+                      transition={{
+                        type: "spring",
+                        stiffness: 350,
+                        damping: 28,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-10 hover:underline underline-offset-2 text-sm">
+                    {cat}
+                  </span>
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div>
+            {["Communities", "Conversations"].map((cat) => {
+              if (cat !== category) return null;
+              return category === "Communities" ? (
+                <Communities key={category} />
+              ) : (
+                <Conversations key={category} />
+              );
+            })}
+          </div>
+        </SidebarHeader>
+        <SidebarContent></SidebarContent>
+      </Sidebar>
+      <div className="w-full h-screen flex flex-col bg-sidebar">
+        <Navbar />
+        <PageSwitch />
+      </div>
+    </>
+  );
+}
+
+export default function Page() {
+  const { page, pageData } = usePageContext();
+
+  if (page === "error") return <Loading message={pageData || "ERROR"} />;
+  if (page === "login")
+    return (
+      <CryptoProvider>
+        <LoginPage />
+      </CryptoProvider>
+    );
+
+  return (
     <CryptoProvider>
       <SocketProvider>
         <UserProvider>
           <MessageProvider>
             <SidebarProvider>
-              <Sidebar className="group-data-[side=left]:border-0">
-                <SidebarHeader
-                  className={`p-0 pl-${Padding} pt-${Padding} pr-${Padding / 2} flex flex-col gap-${Padding * 3}`}
-                >
-                  <div className="pt-2 pt-1 pl-1 pr-1" hidden />
-                  <UserModal key={uuid} uuid={uuid} size="big" />
-                  <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden p-1">
-                    <div className="relative grid grid-cols-2 w-full">
-                      {["Communities", "Conversations"].map((cat: string) => (
-                        <Button
-                          key={cat}
-                          variant="ghost"
-                          type="button"
-                          className="relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-transparent hover:bg-transparent"
-                          onClick={() =>
-                            setCategory(cat as "Communities" | "Conversations")
-                          }
-                          aria-pressed={category === cat}
-                          aria-label={cat}
-                        >
-                          {category === cat && (
-                            <motion.span
-                              aria-hidden="true"
-                              layoutId="category-pill"
-                              className="absolute inset-0 rounded-full bg-input/50 pointer-events-none border"
-                              transition={{
-                                type: "spring",
-                                stiffness: 350,
-                                damping: 28,
-                              }}
-                            />
-                          )}
-                          <span className="relative z-10 hover:underline underline-offset-2 text-sm">
-                            {cat}
-                          </span>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    {["Communities", "Conversations"].map((cat) => {
-                      if (cat !== category) return null;
-                      return category === "Communities" ? (
-                        <Communities key={category} />
-                      ) : (
-                        <Conversations key={category} />
-                      );
-                    })}
-                  </div>
-                </SidebarHeader>
-                <SidebarContent></SidebarContent>
-              </Sidebar>
-              <div className="w-full h-screen flex flex-col bg-sidebar">
-                <Navbar />
-                <PageSwitch />
-              </div>
+              <MainPage />
             </SidebarProvider>
           </MessageProvider>
         </UserProvider>

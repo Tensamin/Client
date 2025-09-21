@@ -1,15 +1,21 @@
 "use client";
+
+// Package Imports
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import * as Comlink from "comlink";
-import { startAuthentication } from "@simplewebauthn/browser";
 
-import { BasicSuccessMessage, ErrorType } from "@/lib/types";
-import { sha256, log, isElectron, RetryCount } from "@/lib/utils";
-import { webauthn_login_verify, webauthn_login_options } from "@/lib/endpoints";
-import { getDeviceFingerprint } from "@/lib/fingerprint";
+// Lib Imports
+import { sha256 } from "@/lib/utils";
 
-import { Loading } from "@/components/loading";
+// Context Imports
 import { usePageContext } from "@/context/page";
+import { useStorageContext } from "@/context/storage";
+
+// Types
+import { BasicSuccessMessage } from "@/lib/types";
+
+// Components
+import { Loading } from "@/components/loading";
 
 type CryptoContextType = {
   encrypt: (message: string, password: string) => Promise<BasicSuccessMessage>;
@@ -24,7 +30,7 @@ type CryptoContextType = {
   ) => Promise<BasicSuccessMessage>;
   privateKey: string;
   privateKeyHash: string;
-  isReady: boolean;
+  ownUuid: string;
 };
 
 type ApiRef = {
@@ -58,11 +64,14 @@ export function CryptoProvider({
   children: React.ReactNode;
 }>) {
   const apiRef = useRef<ApiRef | null>(null);
-  const { setPage, page } = usePageContext();
   const [isWorkerReady, setIsWorkerReady] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [privateKey, setPrivateKey] = useState("");
   const [privateKeyHash, setPrivateKeyHash] = useState("");
+  const [ownUuid, setOwnUuid] = useState("");
+
+  const { setPage, page } = usePageContext();
+  const { data } = useStorageContext();
 
   async function encrypt(
     message: string,
@@ -94,147 +103,25 @@ export function CryptoProvider({
   }
 
   useEffect(() => {
-    if (isWorkerReady) {
-      try {
-        // get Encrypted key
-        const encryptedPrivateKey =
-          localStorage.getItem("auth_private_key") || "";
-        const uuid = localStorage.getItem("auth_uuid") || "";
-        const cred_id = localStorage.getItem("auth_cred_id") || "";
-        if (encryptedPrivateKey === "" || uuid === "") setPage("login");
-        const lambda = localStorage.getItem("auth_lambda");
-
-        // get Lambda
-        async function getLambda(retryCount = 0) {
-          try {
-            if (isElectron()) {
-              return await window?.keyring?.get("net.methanium.tensamin", uuid);
-            } else if (lambda) {
-              const decryptedLambda = await decrypt(
-                lambda,
-                await getDeviceFingerprint()
-              );
-              if (!decryptedLambda.success) {
-                setPage("login", "ERROR_CRYPTO_CONTEXT_INVALID_LAMBDA");
-                return;
-              }
-              const decryptedPrivateKey = await decrypt(
-                encryptedPrivateKey,
-                decryptedLambda.message
-              );
-              if (!decryptedPrivateKey.success) {
-                setPage("login", "ERROR_CRYPTO_CONTEXT_INVALID_PRIVATE_KEY");
-                return;
-              }
-              return decryptedLambda.message;
-            } else {
-              if (cred_id === "") {
-                setPage("login", "ERROR_CRYPTO_CONTEXT_NO_CRED_ID");
-                return;
-              }
-
-              const options = await fetch(
-                `${webauthn_login_options}${uuid}/${cred_id}`
-              )
-                .then((response) => response.json())
-                .then((data) => {
-                  if (data.type === "success") {
-                    return JSON.parse(atob(data.data.options));
-                  } else {
-                    setPage("login", "ERROR_CRYPTO_CONTEXT_NO_PASSKEY_OPTIONS");
-                  }
-                })
-                .catch((err) => {
-                  log(
-                    "error",
-                    "CRYPTO_CONTEXT",
-                    "ERROR_CRYPTO_CONTEXT_PASSKEY_OPTIONS_UNKOWN",
-                    err.message
-                  );
-                  setPage(
-                    "login",
-                    "ERROR_CRYPTO_CONTEXT_PASSKEY_OPTIONS_UNKOWN"
-                  );
-                });
-
-              const attestation = await startAuthentication(options);
-
-              const lambda = await fetch(
-                `${webauthn_login_verify}${uuid}/${cred_id}`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ attestation }),
-                }
-              )
-                .then((response) => response.json())
-                .then((data) => {
-                  if (data.type === "success") {
-                    return data.data.lambda;
-                  }
-                })
-                .catch((err) => {
-                  log(
-                    "error",
-                    "CRYPTO_CONTEXT",
-                    "ERROR_CRYPTO_CONTEXT_PASSKEY_VERIFY_UNKOWN",
-                    err.message
-                  );
-                  setPage(
-                    "login",
-                    "ERROR_CRYPTO_CONTEXT_PASSKEY_VERIFY_UNKOWN"
-                  );
-                });
-
-              return lambda;
-            }
-          } catch (err: unknown) {
-            if (retryCount < RetryCount) {
-              return await getLambda(retryCount + 1);
-            } else {
-              log(
-                "error",
-                "CRYPTO_CONTEXT",
-                "ERROR_CRYPTO_CONTEXT_GET_LAMBDA_UNKOWN",
-                (err as ErrorType).message
-              );
-              setPage("error", "ERROR_CRYPTO_CONTEXT_GET_LAMBDA_UNKOWN");
-            }
-          }
-        }
-        if (page !== "login") {
-          getLambda()
-            .then(async (lambda) => {
-              if (!lambda || lambda === "") {
-                setPage("login", "ERROR_AUTH_NO_LAMBDA");
-                return;
-              }
-              const tmpPrivateKey = await decrypt(
-                encryptedPrivateKey || "",
-                lambda
-              );
-              if (!tmpPrivateKey.success) return;
-              setPrivateKey(tmpPrivateKey.message);
-              sha256(tmpPrivateKey.message).then(setPrivateKeyHash);
-            })
-            .then(() => setIsReady(true));
-        } else {
-          setIsReady(true);
-        }
-      } catch (err: unknown) {
-        log(
-          "error",
-          "CRYPTO_CONTEXT",
-          "ERROR_CRYPTO_CONTEXT_UNKOWN",
-          (err as ErrorType).message
-        );
-        setPage("error", "ERROR_CRYPTO_CONTEXT_UNKOWN");
-        return;
-      }
+    if (page === "login") {
+      setIsReady(true);
+      return;
+    } else if (
+      typeof data.privateKey !== "undefined" &&
+      data.privateKey !== null &&
+      data.privateKey !== ""
+    ) {
+      setPrivateKey(data.privateKey as string);
+      setOwnUuid(data.uuid as string);
+      sha256(data.privateKey as string)
+        .then(setPrivateKeyHash)
+        .then(() => setIsReady(true));
+      return;
+    } else {
+      setPage("login", "ERROR_AUTH_NO_PRIVATE_KEY");
+      return;
     }
-  }, [isWorkerReady]);
+  }, [data.privateKey, page]);
 
   useEffect(() => {
     const worker = new Worker(
@@ -251,7 +138,7 @@ export function CryptoProvider({
     };
   }, []);
 
-  return isReady ? (
+  return isReady && isWorkerReady ? (
     <CryptoContext.Provider
       value={{
         encrypt,
@@ -259,7 +146,7 @@ export function CryptoProvider({
         get_shared_secret,
         privateKey,
         privateKeyHash,
-        isReady,
+        ownUuid,
       }}
     >
       {children}

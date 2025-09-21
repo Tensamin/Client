@@ -1,21 +1,40 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
+import { openDB, IDBPDatabase } from "idb";
 
-// Main
+// Lib Imports
+import { handleError, log } from "@/lib/utils";
+
+// Types
 type StorageContextType = {
   set: (key: string, value: Value) => void;
+  clearAll: () => void;
   data: Data;
-  rerender: (value: boolean) => void;
 };
 
 type Data = {
-  [key: string]: string | boolean | number | object;
+  [key: string]: Value;
 };
 
-type Value = string | boolean | number | object;
+type DBType = IDBPDatabase<{
+  kv: {
+    key: string;
+    value: Value;
+  };
+}>;
 
+export type Value = string | boolean | number | object;
+
+// Main
 const StorageContext = createContext<StorageContextType | null>(null);
 
 export function useStorageContext() {
@@ -25,57 +44,124 @@ export function useStorageContext() {
   return context;
 }
 
+function createDBPromise() {
+  if (typeof window === "undefined") {
+    return Promise.resolve(null as any);
+  }
+  return openDB<DBType>("tensamin", 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains("kv")) {
+        const store = db.createObjectStore("kv", { keyPath: "key" });
+      }
+    },
+  });
+}
+
 export function StorageProvider({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [data, setData] = useState({});
-  const [, rerender] = useState(false);
+  const [data, setData] = useState<Data>({});
   const [ready, setReady] = useState(false);
+  const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
 
-  function set(key: string, value: Value) {
-    const newData: Data = data;
-    if (value === false) {
-      delete newData[key];
-    } else {
-      newData[key] = value;
+  const dbPromise = useMemo(() => createDBPromise(), []);
+
+  const loadData = useCallback(async () => {
+    if (!db) return;
+    try {
+      const allEntries = await db.getAll("kv");
+      const loadedData: Data = {};
+      allEntries.forEach((entry) => {
+        loadedData[entry.key] = entry.value;
+      });
+      setData(loadedData);
+    } catch (err: unknown) {
+      handleError("STORAGE_CONTEXT", "ERROR_STORAGE_CONTEXT_UNKOWN", err);
     }
-    rerender((prev) => !prev);
-    setData(newData);
-    const stringRawData = JSON.stringify(newData);
-    const base64Data = btoa(stringRawData);
-    localStorage.setItem("data", base64Data);
-  }
+  }, [db]);
+
+  const set = useCallback(
+    async (key: string, value: Value) => {
+      if (!db) {
+        log(
+          "warn",
+          "STORAGE_CONTEXT",
+          "STORAGE_CONTEXT_DATABASE_NOT_READY_SKIPPING"
+        );
+        return;
+      }
+      try {
+        if (value === false) {
+          await db.delete("kv", key);
+          setData((prevData) => {
+            const newData = { ...prevData };
+            delete newData[key];
+            return newData;
+          });
+        } else {
+          await db.put("kv", { key, value });
+          setData((prevData) => ({ ...prevData, [key]: value }));
+        }
+      } catch (err: unknown) {
+        handleError("STORAGE_CONTEXT", "ERROR_UPDATING_DATABASE_UNKNOWN", err);
+      }
+    },
+    [db]
+  );
+
+  const clearAll = useCallback(async () => {
+    if (!db) {
+      log(
+        "warn",
+        "STORAGE_CONTEXT",
+        "STORAGE_CONTEXT_DATABASE_NOT_READY_SKIPPING"
+      );
+      return;
+    }
+    try {
+      await db.clear("kv");
+      setData({});
+    } catch (err: unknown) {
+      handleError("STORAGE_CONTEXT", "ERROR_CLEARING_DATABASE_UNKNOWN", err);
+    }
+  }, [db]);
 
   useEffect(() => {
-    let mounted = true;
-    if (!mounted) return;
-    setReady(true);
-    const storedRawData = localStorage.getItem("data");
-    if (storedRawData) {
-      try {
-        const stringRawData = atob(storedRawData);
-        const parsedRawData = JSON.parse(stringRawData);
-        setData(parsedRawData);
-      } catch (err: unknown) {
-        console.error("Failed to parse stored raw data:", err);
-      }
-    }
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    if (typeof window === "undefined") return;
 
-  return ready ? (
+    (async () => {
+      try {
+        const initializedDb = await dbPromise;
+        setDb(initializedDb);
+        await loadData();
+        setReady(true);
+      } catch (err: unknown) {
+        log(
+          "error",
+          "STORAGE_CONTEXT",
+          "ERROR_STORGE_CONTEXT_INIT_FAILED_UNKNOWN",
+          err
+        );
+        setReady(true);
+      }
+    })();
+  }, [dbPromise, loadData]);
+
+  if (!ready) {
+    return null;
+  }
+
+  return (
     <StorageContext.Provider
       value={{
         set,
+        clearAll,
         data,
-        rerender,
       }}
     >
       {children}
     </StorageContext.Provider>
-  ) : null;
+  );
 }

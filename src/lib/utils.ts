@@ -47,6 +47,14 @@ export function formatStatus(state: string) {
   }
 }
 
+export function handleError(sender: string, message: string, error: unknown) {
+  let msg = "UNKNOWN";
+  if (error) {
+    msg = (error as Error).message;
+  }
+  log("error", sender, message, msg);
+}
+
 export function log(
   level: "info" | "warn" | "error" | "debug" = "info",
   sender: string,

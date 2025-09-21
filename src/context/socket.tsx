@@ -71,7 +71,7 @@ export function SocketProvider({
   const [iotaPing, setIotaPing] = useState<number>(0);
 
   const { setPage } = usePageContext();
-  const { privateKeyHash } = useCryptoContext();
+  const { privateKeyHash, ownUuid } = useCryptoContext();
 
   const forceLoad = false;
 
@@ -229,7 +229,7 @@ export function SocketProvider({
           message: "SOCKET_CONTEXT_IDENTIFICATION",
         },
         {
-          user_id: localStorage.getItem("auth_uuid"),
+          user_id: ownUuid,
           private_key_hash: privateKeyHash,
         }
       )
@@ -245,7 +245,7 @@ export function SocketProvider({
               "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS"
             );
           } else {
-            setPage("error", dataTyped.log.message);
+            setPage("error", `ERROR_${dataTyped.log.message}`);
           }
         })
         .catch((err) => {

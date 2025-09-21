@@ -18,7 +18,9 @@ import { log, getDisplayFromUsername } from "@/lib/utils";
 // Context Imports
 import { useSocketContext } from "@/context/socket";
 import { usePageContext } from "@/context/page";
+import { useCryptoContext } from "@/context/crypto";
 
+// Types
 type UserContextType = {
   get: (uuid: string, refetch: boolean) => Promise<User>;
   ownUuid: string;
@@ -31,6 +33,7 @@ type UserContextType = {
   setCommunities: (communities: Community[]) => void;
 };
 
+// Main
 const UserContext = createContext<UserContextType | null>(null);
 
 export function useUserContext() {
@@ -49,12 +52,12 @@ export function UserProvider({
   const statesProcessedRef = useRef(false);
   const fetchQueueRef = useRef<Set<string>>(new Set());
   const prevLastMessageRef = useRef<unknown>(null);
-  const ownUuid = localStorage.getItem("auth_uuid") || "0";
   const [currentReceiverUuid, setCurrentReceiverUuid] = useState<string>("0");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
 
+  const { ownUuid } = useCryptoContext();
   const { send, isReady, lastMessage } = useSocketContext();
   const { page, pageData } = usePageContext();
 

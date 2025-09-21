@@ -1,9 +1,10 @@
 // Package Imports
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 // Context Imports
 import { usePageContext } from "@/context/page";
 import { useSocketContext } from "@/context/socket";
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import {
@@ -110,6 +111,7 @@ function SettingsButton({
   logoutButton?: boolean;
 }): React.JSX.Element {
   const { setPage } = usePageContext();
+  const { clearAll } = useStorageContext();
   return logoutButton ? (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -129,9 +131,7 @@ function SettingsButton({
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
-              localStorage.removeItem("auth_private_key");
-              localStorage.removeItem("auth_cred_id");
-              localStorage.removeItem("auth_uuid");
+              clearAll();
               setPage("login");
             }}
           >
@@ -156,7 +156,12 @@ function SettingsButton({
 
 export default function Page() {
   const { ownPing, iotaPing } = useSocketContext();
-  const [selected, setSelected] = useState("");
+  const { data, set } = useStorageContext();
+
+  const selected = data.lastSettingsMenu as string;
+  const setSelected = (page: string) => {
+    set("lastSettingsMenu", page);
+  };
 
   return (
     <div className="h-full w-full flex gap-2">
@@ -199,7 +204,7 @@ export default function Page() {
             return (
               <div
                 key={page.name}
-                className="text-lg font-medium mb-4 leading-5"
+                className="text-lg font-medium mb-4 leading-6"
               >
                 {page.display}
               </div>
