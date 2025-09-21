@@ -36,6 +36,28 @@ import PremiumPage from "@/page/settings/premium";
 import DeveloperPage from "@/page/settings/developer";
 
 // Main
+export const Pages = [
+  { name: "-", display: "Account" },
+  { name: "iota", display: "Iota" },
+  { name: "profile", display: "Profile" },
+  { name: "privacy", display: "Privacy" },
+  { name: "devices", display: "Devices" },
+  { name: "-", display: "Appearance" },
+  { name: "tint", display: "Tint" },
+  { name: "css", display: "Custom CSS" },
+  { name: "layout", display: "Layout" },
+  { name: "audio", display: "Audio" },
+  { name: "video", display: "Video" },
+  { name: "soundboard", display: "Soundboard" },
+  { name: "-", display: "General" },
+  { name: "notifications", display: "Notifications" },
+  { name: "accessability", display: "Accessability" },
+  { name: "language", display: "Language" },
+  { name: "premium", display: "Premium" },
+  { name: "-", display: "Advanced" },
+  { name: "developer", display: "Developer" },
+];
+
 function MainPage({ selected }: { selected: string }): React.JSX.Element {
   switch (selected) {
     case "iota":
@@ -139,105 +161,27 @@ export default function Page() {
     <div className="h-full w-full flex gap-2">
       <ScrollArea className="flex flex-col p-2 bg-card/46 border rounded-lg h-full">
         <div className="w-37 h-full">
-          <div className="text-sm text-muted-foreground">Account</div>
-          <SettingsButton
-            page="iota"
-            name="Iota"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <SettingsButton
-            page="profile"
-            name="Profile"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <SettingsButton
-            page="privacy"
-            name="Privacy"
-            selected={selected}
-            setSelected={setSelected}
-          />{" "}
-          <SettingsButton
-            page="devices"
-            name="Devices"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <SettingsButton logoutButton />
-          <div className="text-sm text-muted-foreground pt-3">Appearance</div>
-          <SettingsButton
-            page="tint"
-            name="Tint"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <SettingsButton
-            page="css"
-            name="Custom CSS"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <SettingsButton
-            page="layout"
-            name="Layout"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <div className="text-sm text-muted-foreground pt-3">
-            Communication
-          </div>{" "}
-          <SettingsButton
-            page="audio"
-            name="Audio"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <SettingsButton
-            page="video"
-            name="Video"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <SettingsButton
-            page="soundboard"
-            name="Soundboard"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <div className="text-sm text-muted-foreground pt-3">General</div>
-          <SettingsButton
-            page="notifications"
-            name="Notifications"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <SettingsButton
-            page="accessability"
-            name="Accessability"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <SettingsButton
-            page="language"
-            name="Language"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <SettingsButton
-            page="premium"
-            name="Premium"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <div className="text-sm text-muted-foreground pt-3">Advanced</div>
-          <SettingsButton
-            page="developer"
-            name="Developer"
-            selected={selected}
-            setSelected={setSelected}
-          />
-          <div className="text-sm text-muted-foreground pt-5">Information</div>
+          {Pages.map((page) => {
+            if (page.name === "-")
+              return (
+                <div
+                  key={page.display}
+                  className="text-sm text-muted-foreground"
+                >
+                  {page.display}
+                </div>
+              );
+            return (
+              <SettingsButton
+                key={page.name}
+                page={page.name}
+                name={page.display}
+                selected={selected}
+                setSelected={setSelected}
+              />
+            );
+          })}
+          <div className="text-sm text-muted-foreground pt-15">Information</div>
           <div className="text-xs text-muted-foreground pt-1">
             <p>Version: {iotaPing}</p>
             <p>Client Ping: {ownPing}ms</p>
@@ -247,6 +191,15 @@ export default function Page() {
         </div>
       </ScrollArea>
       <div className="w-full flex flex-col p-2 bg-card/46 border rounded-lg">
+        {Pages.map((page) => {
+          if (page.name === selected)
+            return (
+              <div key={page.name} className="text-lg font-medium p-1 mb-2">
+                {page.display}
+              </div>
+            );
+          return null;
+        })}
         <MainPage selected={selected} />
       </div>
     </div>

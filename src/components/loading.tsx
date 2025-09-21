@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useStorageContext } from "@/context/storage";
 
 export function Loading({ message }: { message?: string }) {
@@ -9,11 +8,10 @@ export function Loading({ message }: { message?: string }) {
 
   return (
     <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10">
-      <Image
+      <img
         src={isError ? "/assets/images/logo.png" : "/assets/images/loading.gif"}
-        width={400}
-        height={400}
         alt="Image"
+        className="w-75 h-75"
       />
       {isError || data?.debug ? (
         <p className="text-2xl font-semibold text-foreground">

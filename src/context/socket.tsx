@@ -221,7 +221,7 @@ export function SocketProvider({
   );
 
   useEffect(() => {
-    if (connected) {
+    if (connected && !identified && privateKeyHash) {
       send(
         "identification",
         {
