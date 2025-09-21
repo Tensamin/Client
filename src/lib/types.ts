@@ -24,6 +24,7 @@ export type AdvancedSuccessMessageData = {
   message_amount?: number | null;
   communities?: Community[] | null;
   user_states?: [] | null;
+  user_state?: string | null;
 };
 
 export type AdvancedSuccessMessage = {

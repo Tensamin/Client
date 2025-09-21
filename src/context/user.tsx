@@ -31,6 +31,7 @@ type UserContextType = {
   communities: Community[];
   setConversations: (conversations: Conversation[]) => void;
   setCommunities: (communities: Community[]) => void;
+  refetchConversations: () => Promise<void>;
 };
 
 // Main
@@ -57,6 +58,30 @@ export function UserProvider({
   const [communities, setCommunities] = useState<Community[]>([]);
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
 
+  async function refetchConversations() {
+    await send(
+      "get_chats",
+      {
+        log_level: 0,
+        message: "USER_CONTEXT_GET_CONVERSATIONS",
+      },
+      {}
+    ).then((data: AdvancedSuccessMessage | unknown) => {
+      if (!data) return;
+      const dataTyped = data as AdvancedSuccessMessage;
+      if (dataTyped.type !== "error") {
+        setConversations(dataTyped.data.user_ids || []);
+      } else {
+        log(
+          "error",
+          "USER_CONTEXT",
+          "ERROR_USER_CONTEXT_GET_CONVERSATIONS",
+          dataTyped.log.message
+        );
+      }
+    });
+  }
+
   const { ownUuid } = useCryptoContext();
   const { send, isReady, lastMessage } = useSocketContext();
   const { page, pageData } = usePageContext();
@@ -66,7 +91,13 @@ export function UserProvider({
 
     if (lastMessage.type === "client_changed") {
       const data = lastMessage.data as AdvancedSuccessMessageData;
-      console.log(data);
+      if (!data.user_id || !data.user_state) return;
+      get(data.user_id, true).then((user) => {
+        fetchedUsersRef.current.set(user.uuid, {
+          ...user,
+          state: data.user_state || "NONE",
+        });
+      });
     }
 
     if (lastMessage.type === "get_states") {
@@ -245,6 +276,7 @@ export function UserProvider({
         communities,
         setConversations,
         setCommunities,
+        refetchConversations,
       }}
     >
       {children}

@@ -1,5 +1,10 @@
 "use client";
 
+// Package Imports
+import { useEffect, useState } from "react";
+import { Ring } from "ldrs/react";
+import "ldrs/react/Ring.css";
+
 // Context Imports
 import { useStorageContext } from "@/context/storage";
 
@@ -22,6 +27,16 @@ export function Loading({ message }: { message?: string }) {
   const isError = (message?.split("_")[0] ?? "") === "ERROR";
   const { data, clearAll } = useStorageContext();
 
+  const [showClearButton, setShowClearButton] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowClearButton(true);
+    }, 3000); // 3 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <>
       <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10">
@@ -38,33 +53,47 @@ export function Loading({ message }: { message?: string }) {
           </p>
         ) : null}
       </div>
-      <div className="fixed top-0 left-0 m-3">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive">Clear Storage</Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Clear All Storage</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will clear all data stored in your browser's storage,
-                including your user data. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  clearAll();
-                  window.location.reload();
-                }}
-              >
-                Clear All
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      {showClearButton || isError ? (
+        <div className="fixed top-0 left-0 m-3">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">Clear Storage</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Clear All Storage</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will clear all data stored in your browser's storage,
+                  including your user data. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    clearAll();
+                    window.location.reload();
+                  }}
+                >
+                  Clear All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      ) : null}
     </>
+  );
+}
+
+export function LoadingIcon({ invert }: { invert?: boolean }) {
+  return (
+    <Ring
+      size="17"
+      stroke="2"
+      bgOpacity="0"
+      speed="2"
+      color={invert ? "var(--background)" : "var(--foreground)"}
+    />
   );
 }

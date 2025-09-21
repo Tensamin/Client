@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/hover-card";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { WindowControls } from "@/components/windowControls";
 
 export function Navbar() {
   const { setPage } = usePageContext();
@@ -71,15 +72,7 @@ export function Navbar() {
       </Button>
 
       {/* Electron Window Controls */}
-      <Button className="h-9 w-9" variant="outline">
-        <Icon.Minus />
-      </Button>
-      <Button className="h-9 w-9" variant="outline">
-        <Icon.Maximize2 />
-      </Button>
-      <Button className="h-9 w-9" variant="outline">
-        <Icon.X />
-      </Button>
+      <WindowControls />
     </div>
   );
 }
