@@ -69,7 +69,7 @@ function FitJson({
       }
     }
     setFontSize(size);
-  }, [min, max, step, text]);
+  }, [min, max, step]);
 
   useEffect(() => {
     recompute();

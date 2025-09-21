@@ -63,8 +63,9 @@ export function Loading({ message }: { message?: string }) {
               <AlertDialogHeader>
                 <AlertDialogTitle>Clear All Storage</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will clear all data stored in your browser's storage,
-                  including your user data. This action cannot be undone.
+                  This will clear all data stored in your browser storage,
+                  including your user and theme data. This action cannot be
+                  undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

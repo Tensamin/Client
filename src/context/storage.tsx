@@ -46,12 +46,12 @@ export function useStorageContext() {
 
 function createDBPromise() {
   if (typeof window === "undefined") {
-    return Promise.resolve(null as any);
+    return Promise.resolve(null);
   }
   return openDB<DBType>("tensamin", 1, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("kv")) {
-        const store = db.createObjectStore("kv", { keyPath: "key" });
+        db.createObjectStore("kv", { keyPath: "key" });
       }
     },
   });

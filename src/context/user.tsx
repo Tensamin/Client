@@ -50,8 +50,6 @@ export function UserProvider({
   children: React.ReactNode;
 }>) {
   const fetchedUsersRef = useRef<Map<string, User>>(new Map());
-  const statesProcessedRef = useRef(false);
-  const fetchQueueRef = useRef<Set<string>>(new Set());
   const prevLastMessageRef = useRef<unknown>(null);
   const [currentReceiverUuid, setCurrentReceiverUuid] = useState<string>("0");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -86,12 +84,67 @@ export function UserProvider({
   const { send, isReady, lastMessage } = useSocketContext();
   const { page, pageData } = usePageContext();
 
+  useEffect(() => {
+    if (page === "chat" && pageData !== currentReceiverUuid) {
+      // Reset Receiver
+      setCurrentReceiverUuid(pageData);
+      setFailedMessagesAmount(0);
+    }
+  }, [page, pageData, currentReceiverUuid]);
+
+  useEffect(() => {
+    if (isReady) {
+      send(
+        "get_chats",
+        {
+          log_level: 0,
+          message: "USER_CONTEXT_GET_CONVERSATIONS",
+        },
+        {}
+      ).then((data: AdvancedSuccessMessage | unknown) => {
+        if (!data) return;
+        const dataTyped = data as AdvancedSuccessMessage;
+        if (dataTyped.type !== "error") {
+          setConversations(dataTyped.data.user_ids || []);
+        } else {
+          log(
+            "error",
+            "USER_CONTEXT",
+            "ERROR_USER_CONTEXT_GET_CONVERSATIONS",
+            dataTyped.log.message
+          );
+        }
+      });
+      send(
+        "get_communities",
+        {
+          log_level: 0,
+          message: "USER_CONTEXT_GET_COMMUNITIES",
+        },
+        {}
+      ).then((data: AdvancedSuccessMessage | unknown) => {
+        if (!data) return;
+        const dataTyped = data as AdvancedSuccessMessage;
+        if (dataTyped.type !== "error") {
+          setCommunities(dataTyped.data.communities || []);
+        } else {
+          log(
+            "error",
+            "USER_CONTEXT",
+            "ERROR_USER_CONTEXT_GET_COMMUNITIES",
+            dataTyped.log.message
+          );
+        }
+      });
+    }
+  }, [isReady, send]);
+
   if (lastMessage && lastMessage !== prevLastMessageRef.current) {
     prevLastMessageRef.current = lastMessage;
 
     if (lastMessage.type === "client_changed") {
       const data = lastMessage.data as AdvancedSuccessMessageData;
-      if (!data.user_id || !data.user_state) return;
+      if (!data.user_id || !data.user_state) return null;
       get(data.user_id, true).then((user) => {
         fetchedUsersRef.current.set(user.uuid, {
           ...user,
@@ -170,7 +223,7 @@ export function UserProvider({
         created_at: data.data.created_at,
       };
 
-      let newUser: User = {
+      const newUser: User = {
         ...apiUserData,
         loading: false,
         ...(existingUser ? { state: existingUser.state } : { state: "NONE" }),
@@ -208,61 +261,6 @@ export function UserProvider({
       } as User;
     }
   }
-
-  useEffect(() => {
-    if (page === "chat" && pageData !== currentReceiverUuid) {
-      // Reset Receiver
-      setCurrentReceiverUuid(pageData);
-      setFailedMessagesAmount(0);
-    }
-  }, [page, pageData, currentReceiverUuid]);
-
-  useEffect(() => {
-    if (isReady) {
-      send(
-        "get_chats",
-        {
-          log_level: 0,
-          message: "USER_CONTEXT_GET_CONVERSATIONS",
-        },
-        {}
-      ).then((data: AdvancedSuccessMessage | unknown) => {
-        if (!data) return;
-        const dataTyped = data as AdvancedSuccessMessage;
-        if (dataTyped.type !== "error") {
-          setConversations(dataTyped.data.user_ids || []);
-        } else {
-          log(
-            "error",
-            "USER_CONTEXT",
-            "ERROR_USER_CONTEXT_GET_CONVERSATIONS",
-            dataTyped.log.message
-          );
-        }
-      });
-      send(
-        "get_communities",
-        {
-          log_level: 0,
-          message: "USER_CONTEXT_GET_COMMUNITIES",
-        },
-        {}
-      ).then((data: AdvancedSuccessMessage | unknown) => {
-        if (!data) return;
-        const dataTyped = data as AdvancedSuccessMessage;
-        if (dataTyped.type !== "error") {
-          setCommunities(dataTyped.data.communities || []);
-        } else {
-          log(
-            "error",
-            "USER_CONTEXT",
-            "ERROR_USER_CONTEXT_GET_COMMUNITIES",
-            dataTyped.log.message
-          );
-        }
-      });
-    }
-  }, [isReady, send]);
 
   return (
     <UserContext.Provider

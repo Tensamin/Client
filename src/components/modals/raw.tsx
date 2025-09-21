@@ -23,13 +23,11 @@ export function BigModal({
   description,
   icon,
   loading,
-  statusIcon,
 }: Readonly<{
   title: string;
   description: string;
   icon?: string;
   loading: boolean;
-  statusIcon: string;
 }>) {
   return loading ? (
     <Card className="bg-input/30 p-3 rounded-xl border-input">

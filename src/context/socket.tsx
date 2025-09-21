@@ -258,7 +258,7 @@ export function SocketProvider({
           setPage("error", "ERROR_SOCKET_CONTEXT_IDENTIFICATION_FAILED");
         });
     }
-  }, [connected, privateKeyHash, send, setPage]);
+  }, [connected, privateKeyHash, send, setPage, identified, ownUuid]);
 
   useEffect(() => {
     if (!connected) return;

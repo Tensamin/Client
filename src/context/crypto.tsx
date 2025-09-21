@@ -121,7 +121,7 @@ export function CryptoProvider({
       setPage("login", "ERROR_AUTH_NO_PRIVATE_KEY");
       return;
     }
-  }, [data.privateKey, page]);
+  }, [data.uuid, data.privateKey, page, setPage]);
 
   useEffect(() => {
     const worker = new Worker(
