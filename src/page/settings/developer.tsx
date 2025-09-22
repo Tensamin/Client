@@ -104,7 +104,7 @@ function FitJson({
 }
 
 export default function Page() {
-  const { data, set } = useStorageContext();
+  const { data, set, translate } = useStorageContext();
 
   const [entries, setEntries] = useState<{ key: string; value: Value }[]>([]);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -224,7 +224,9 @@ export default function Page() {
             checked={data?.debug === true}
             onCheckedChange={(value) => set("debug", value)}
           />
-          <Label htmlFor="debugModeSwitch">Enable Debug Mode</Label>
+          <Label htmlFor="debugModeSwitch">
+            {translate("SETTINGS_PAGE_ENABLE_DEBUG_MODE")}
+          </Label>
         </div>
 
         <div className="w-full flex flex-col gap-2">
@@ -237,7 +239,7 @@ export default function Page() {
                 className="min-w-0 flex-1 h-9 text-sm"
               />
               <Button size="sm" className="shrink-0" onClick={openAddDialog}>
-                New Entry
+                {translate("DEVELOPER_PAEG_NEW_ENTREY_DIALOG_LABEL")}
               </Button>
             </div>
           </div>
@@ -248,13 +250,13 @@ export default function Page() {
                   <thead className="bg-muted">
                     <tr className="border-b border-border">
                       <th className="px-2 py-1.5 text-left font-medium align-middle">
-                        Key
+                        {translate("DEVELOPER_PAEG_TABLE_KEY")}
                       </th>
                       <th className="px-2 py-1.5 text-left font-medium align-middle">
-                        Value
+                        {translate("DEVELOPER_PAEG_TABLE_VALUE")}
                       </th>
                       <th className="px-2 py-1.5 text-right font-medium align-middle w-0">
-                        Actions
+                        {translate("DEVELOPER_PAEG_TABLE_ACTION")}
                       </th>
                     </tr>
                   </thead>
@@ -297,7 +299,7 @@ export default function Page() {
                                 onClick={handleSaveEdit}
                                 className="w-full"
                               >
-                                Save
+                                {translate("SAVE")}
                               </Button>
                               <Button
                                 className="w-full"
@@ -305,7 +307,7 @@ export default function Page() {
                                 variant="outline"
                                 onClick={handleCancelEdit}
                               >
-                                Cancel
+                                {translate("CANCEL")}
                               </Button>
                             </div>
                           ) : (
@@ -317,7 +319,7 @@ export default function Page() {
                                   handleEdit(entry.key, entry.value)
                                 }
                               >
-                                Edit
+                                {translate("EDIT")}
                               </Button>
                               <Button
                                 className="w-full"
@@ -325,7 +327,7 @@ export default function Page() {
                                 variant="destructive"
                                 onClick={() => handleDelete(entry.key)}
                               >
-                                Delete
+                                {translate("DELETE")}
                               </Button>
                             </div>
                           )}
@@ -337,7 +339,9 @@ export default function Page() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center rounded-lg border p-4 text-center bg-card">
-                <div className="text-sm font-medium">No entries found</div>
+                <div className="text-sm font-medium">
+                  {translate("DEVELOPER_PAGE_NO_ENTRIES")}
+                </div>
               </div>
             )}
           </div>
@@ -351,14 +355,18 @@ export default function Page() {
       >
         <DialogContent className="sm:max-w-md p-4">
           <DialogHeader>
-            <DialogTitle>New Entry</DialogTitle>
+            <DialogTitle>
+              {translate("DEVELOPER_PAEG_NEW_ENTREY_DIALOG_LABEL")}
+            </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Add a new key/value pair. The value must be valid JSON.
+              {translate("DEVELOPER_PAEG_NEW_ENTREY_DIALOG_DESCRIPTION")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="newKey">Key</Label>
+              <Label htmlFor="newKey">
+                {translate("DEVELOPER_PAEG_NEW_ENTREY_DIALOG_LABEL")}
+              </Label>
               <Input
                 id="newKey"
                 value={newKey}
@@ -371,7 +379,9 @@ export default function Page() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="newValue">Value (JSON)</Label>
+              <Label htmlFor="newValue">
+                {translate("DEVELOPER_PAEG_NEW_ENTREY_DIALOG_VALUE_LABEL")}
+              </Label>
               <Textarea
                 id="newValue"
                 value={newValue}
@@ -389,9 +399,9 @@ export default function Page() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeAddDialog}>
-              Cancel
+              {translate("CANCEL")}
             </Button>
-            <Button onClick={handleCreateEntry}>Create</Button>
+            <Button onClick={handleCreateEntry}>{translate("CREATE")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -403,15 +413,16 @@ export default function Page() {
       >
         <AlertDialogContent className="sm:max-w-md p-4">
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+            <AlertDialogTitle>
+              {translate("DEVELOPER_PAGE_DELETE_ENTRY_LABEL")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this entry? This action cannot be
-              undone.
+              {translate("DEVELOPER_PAGE_DELETE_ENTRY_DESCRIPTION")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <Button variant="outline" onClick={handleCancelDelete}>
-              Cancel
+              {translate("CANCEL")}
             </Button>
             <Button
               variant="destructive"
@@ -423,7 +434,7 @@ export default function Page() {
                 handleCancelDelete();
               }}
             >
-              Confirm Delete
+              {translate("DEVELOPER_PAGE_DELETE_ENTRY_LABEL")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

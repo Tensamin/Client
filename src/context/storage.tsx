@@ -166,7 +166,7 @@ export function StorageProvider({
 
   function translate(input: string) {
     if (!language || typeof language[input] === "undefined") {
-      return "u";
+      return input;
     } else {
       return language[input];
     }

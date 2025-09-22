@@ -86,13 +86,13 @@ function MainPage() {
           <div className="pt-2 pt-1 pl-1 pr-1" hidden />
           <UserModal key={ownUuid} uuid={ownUuid} size="big" />
           <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden p-1">
-            <div className="relative grid grid-cols-2 w-full">
+            <div className="relative grid grid-cols-2 w-full gap-2">
               {["COMMUNITIES", "CONVERSATIONS"].map((cat: string) => (
                 <Button
                   key={cat}
                   variant="ghost"
                   type="button"
-                  className="relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-transparent hover:bg-transparent"
+                  className="relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20"
                   onClick={() =>
                     setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
                   }

@@ -186,6 +186,7 @@ export default function Page() {
               />
             );
           })}
+          <div className="h-full" />
           <div className="text-sm text-muted-foreground pt-15">
             {translate("SETTINGS_PAGE_LABEL_INFORMATION")}
           </div>
@@ -201,7 +202,6 @@ export default function Page() {
               {translate("IOTA_PING")}: {iotaPing}ms
             </p>
           </div>
-          <div className="pb-15" />
         </div>
       </PageDiv>
       <PageDiv className="w-full flex flex-col p-3">
