@@ -53,8 +53,7 @@ const apiNotInitializedError = new Error(
 
 export function useCryptoContext() {
   const context = useContext(CryptoContext);
-  if (!context)
-    throw new Error("useContext function used outside of its provider");
+  if (!context) throw new Error("hook outside of provider");
   return context;
 }
 

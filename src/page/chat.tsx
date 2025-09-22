@@ -8,8 +8,8 @@ import { MaxSendBoxSize } from "@/lib/utils";
 
 // Components
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Box } from "@/components/chat/box";
+import { PageDiv, PageTextarea } from "@/components/pageDiv";
 
 // Main
 export default function Page() {
@@ -32,11 +32,11 @@ export default function Page() {
 
   return (
     <div className="h-full w-full flex flex-col gap-2 overflow-hidden">
-      <div className="h-full p-2 bg-card/46 border rounded-lg overflow-y-auto">
+      <PageDiv className="h-full">
         <QueryClientProvider client={client}>
           <Box />
         </QueryClientProvider>
-      </div>
+      </PageDiv>
       <div className="flex gap-2">
         <Button
           variant="outline"
@@ -44,7 +44,7 @@ export default function Page() {
         >
           <Icon.Plus />
         </Button>
-        <Textarea
+        <PageTextarea
           ref={textareaRef}
           value={message}
           onKeyDown={(e) => {
@@ -60,7 +60,7 @@ export default function Page() {
           }}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Send a message"
-          className="w-full p-2 rounded-lg resize-none overflow-hidden min-h-10 max-h-52 border dark:border-border dark:bg-card/46 bg-card/46"
+          className="w-full overflow-hidden min-h-10 max-h-52"
         />
       </div>
     </div>

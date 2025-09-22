@@ -50,8 +50,7 @@ const SocketContext = createContext<SocketContextType | null>(null);
 
 export function useSocketContext() {
   const context = useContext(SocketContext);
-  if (!context)
-    throw new Error("useContext function used outside of its provider");
+  if (!context) throw new Error("hook outside of provider");
   return context;
 }
 

@@ -13,6 +13,7 @@ import { SocketProvider } from "@/context/socket";
 import { UserProvider } from "@/context/user";
 import { MessageProvider } from "@/context/message";
 import { usePageContext } from "@/context/page";
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import {
@@ -37,8 +38,9 @@ import ChatPage from "@/page/chat";
 function MainPage() {
   const { ownUuid } = useCryptoContext();
   const { page, pageData } = usePageContext();
-  const [category, setCategory] = useState<"Conversations" | "Communities">(
-    "Conversations"
+  const { translate } = useStorageContext();
+  const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
+    "CONVERSATIONS"
   );
 
   function PageSwitch() {
@@ -56,7 +58,11 @@ function MainPage() {
         jsxPage = <ChatPage />;
         break;
       default:
-        jsxPage = <div>Unkown Page | {pageData}</div>;
+        jsxPage = (
+          <div>
+            {translate("PAGE_UNKNOWN")} | {pageData}
+          </div>
+        );
         break;
     }
 
@@ -81,14 +87,14 @@ function MainPage() {
           <UserModal key={ownUuid} uuid={ownUuid} size="big" />
           <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden p-1">
             <div className="relative grid grid-cols-2 w-full">
-              {["Communities", "Conversations"].map((cat: string) => (
+              {["COMMUNITIES", "CONVERSATIONS"].map((cat: string) => (
                 <Button
                   key={cat}
                   variant="ghost"
                   type="button"
                   className="relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-transparent hover:bg-transparent"
                   onClick={() =>
-                    setCategory(cat as "Communities" | "Conversations")
+                    setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
                   }
                   aria-pressed={category === cat}
                   aria-label={cat}
@@ -106,16 +112,16 @@ function MainPage() {
                     />
                   )}
                   <span className="relative z-10 hover:underline underline-offset-2 text-sm">
-                    {cat}
+                    {translate(cat)}
                   </span>
                 </Button>
               ))}
             </div>
           </div>
           <div>
-            {["Communities", "Conversations"].map((cat) => {
+            {["COMMUNITIES", "CONVERSATIONS"].map((cat) => {
               if (cat !== category) return null;
-              return category === "Communities" ? (
+              return category === "COMMUNITIES" ? (
                 <Communities key={category} />
               ) : (
                 <Conversations key={category} />

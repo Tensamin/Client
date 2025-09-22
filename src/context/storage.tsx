@@ -19,6 +19,7 @@ type StorageContextType = {
   set: (key: string, value: Value) => void;
   clearAll: () => void;
   data: Data;
+  translate: (input: string) => string;
 };
 
 type Data = {
@@ -32,18 +33,11 @@ type DBType = IDBPDatabase<{
   };
 }>;
 
-export type Value = string | boolean | number | object;
+type Language = Record<string, string>;
 
-// Main
-const StorageContext = createContext<StorageContextType | null>(null);
+export type Value = string | boolean | number | object | Language;
 
-export function useStorageContext() {
-  const context = useContext(StorageContext);
-  if (!context)
-    throw new Error("useContext function used outside of its provider");
-  return context;
-}
-
+// Helper Functions
 function createDBPromise() {
   if (typeof window === "undefined") {
     return Promise.resolve(null);
@@ -57,6 +51,15 @@ function createDBPromise() {
   });
 }
 
+// Main
+const StorageContext = createContext<StorageContextType | null>(null);
+
+export function useStorageContext() {
+  const context = useContext(StorageContext);
+  if (!context) throw new Error("hook outside of provider");
+  return context;
+}
+
 export function StorageProvider({
   children,
 }: Readonly<{
@@ -65,6 +68,7 @@ export function StorageProvider({
   const [data, setData] = useState<Data>({});
   const [ready, setReady] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
+  const [language, setLanguage] = useState<Language | null>(null);
 
   const dbPromise = useMemo(() => createDBPromise(), []);
 
@@ -150,12 +154,31 @@ export function StorageProvider({
     })();
   }, [dbPromise, loadData]);
 
-  return ready ? (
+  useEffect(() => {
+    if ((typeof data.language === "undefined" || !data.language) && ready) {
+      setLanguage({
+        "": "",
+      });
+    } else {
+      setLanguage(data.language as Language);
+    }
+  }, [data.language]);
+
+  function translate(input: string) {
+    if (!language || typeof language[input] === "undefined") {
+      return "u";
+    } else {
+      return language[input];
+    }
+  }
+
+  return ready && language !== null ? (
     <StorageContext.Provider
       value={{
         set,
         clearAll,
         data,
+        translate,
       }}
     >
       {children}

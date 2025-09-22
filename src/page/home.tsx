@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { AdvancedSuccessMessage } from "@/lib/types";
 import { LoadingIcon } from "@/components/loading";
+import { PageDiv } from "@/components/pageDiv";
 
 // Main
 export default function Page() {
@@ -77,7 +78,7 @@ export default function Page() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <PageDiv className="flex flex-col gap-4 h-full">
       <div className="flex gap-2">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -129,6 +130,6 @@ export default function Page() {
         </Button>
       </div>
       <p>Homepage :)</p>
-    </div>
+    </PageDiv>
   );
 }

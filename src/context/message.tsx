@@ -22,8 +22,7 @@ const MessageContext = createContext<MessageContextType | null>(null);
 
 export function useMessageContext() {
   const context = useContext(MessageContext);
-  if (!context)
-    throw new Error("useContext function used outside of its provider");
+  if (!context) throw new Error("hook outside of provider");
   return context;
 }
 
@@ -39,8 +38,9 @@ export function MessageProvider({
     loaded: number,
     amount: number
   ): Promise<Messages> {
-    if (!isReady) throw new Error("Socket not ready");
-    if (!id) throw new Error("No user id");
+    if (!isReady)
+      throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
+    if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
     const messages = await send(
       "message_get",
       {

@@ -39,8 +39,7 @@ const UserContext = createContext<UserContextType | null>(null);
 
 export function useUserContext() {
   const context = useContext(UserContext);
-  if (!context)
-    throw new Error("useContext function used outside of its provider");
+  if (!context) throw new Error("hook outside of provider");
   return context;
 }
 
@@ -187,7 +186,7 @@ export function UserProvider({
   async function get(uuid: string, refetch: boolean = false): Promise<User> {
     try {
       if (!uuid || uuid === "0") {
-        throw new Error("Invalid UUID");
+        throw new Error("ERROR_USER_CONTEXT_GET_NO_USER_ID");
       }
 
       const hasUser = fetchedUsersRef.current.has(uuid);

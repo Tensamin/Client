@@ -15,6 +15,7 @@ import { InitialMessages } from "@/lib/utils";
 
 // Context Imports
 import { useMessageContext } from "@/context/message";
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import { MessageGroup, Message, Messages } from "@/components/chat/message";
@@ -42,6 +43,7 @@ function ActualBox() {
   const timeoutRef = useRef<number | null>(null);
   //const nextIdRef = useRef(TOTAL_MESSAGES);
 
+  const { translate } = useStorageContext();
   const { getMessages } = useMessageContext();
 
   const {
@@ -238,11 +240,13 @@ function ActualBox() {
       <div className="flex flex-col h-full items-center justify-center text-sm">
         <Image
           src="/assets/images/megamind.png"
-          alt="Error"
+          alt={translate("ERROR")}
           width={200}
           height={200}
         />
-        <p className="text-xl">No successfully decrypted messages?</p>
+        <p className="text-xl">
+          {translate("ERROR_CONVERSATION_LOADING_FAILED")}
+        </p>
       </div>
     );
   }

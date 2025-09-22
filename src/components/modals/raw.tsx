@@ -1,10 +1,8 @@
 // Lib Imports
-import {
-  convertStringToInitials,
-  ThemeSize,
-  getColorFor,
-  formatStatus,
-} from "@/lib/utils";
+import { convertStringToInitials, ThemeSize, getColorFor } from "@/lib/utils";
+
+// Context Imports
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import { Card, CardHeader } from "@/components/ui/card";
@@ -72,6 +70,7 @@ export function MediumModal({
   onClick?: () => void;
   statusIcon?: string;
 }>) {
+  const { translate } = useStorageContext();
   return loading ? (
     <Button
       data-slot="card"
@@ -106,7 +105,7 @@ export function MediumModal({
                 />
               </div>
             </TooltipTrigger>
-            <TooltipContent>{formatStatus(statusIcon)}</TooltipContent>
+            <TooltipContent>{translate("STATUS_" + statusIcon)}</TooltipContent>
           </Tooltip>
         )}
       </div>

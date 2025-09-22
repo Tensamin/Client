@@ -1,6 +1,16 @@
+"use client";
+
+// Package Imports
+import { useEffect, useState } from "react";
+import * as Icon from "lucide-react";
+import { toast } from "sonner";
+
+// Context Imports
 import { useCryptoContext } from "@/context/crypto";
 import { useUserContext } from "@/context/user";
-import { useEffect, useState } from "react";
+import { useStorageContext } from "@/context/storage";
+
+// Components
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ContextMenu,
@@ -9,8 +19,8 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import * as Icon from "lucide-react";
-import { toast } from "sonner";
+
+// Types
 import { ErrorType } from "@/lib/types";
 
 export type Message = {
@@ -26,6 +36,7 @@ export type Messages = {
   previous: number;
 };
 
+// Main
 export function MessageGroup({ data }: { data: Message }) {
   return (
     <div>
@@ -36,6 +47,7 @@ export function MessageGroup({ data }: { data: Message }) {
 
 function FinalMessage({ data }: { data: string }) {
   const { decrypt, get_shared_secret, privateKey } = useCryptoContext();
+  const { translate } = useStorageContext();
   const { get, ownUuid, currentReceiverUuid, setFailedMessagesAmount } =
     useUserContext();
   const [content, setContent] = useState<string>("");
@@ -80,9 +92,9 @@ function FinalMessage({ data }: { data: string }) {
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(content);
-              toast.success("Copied to clipboard!");
+              toast.success(translate("COPY_MESSAGE_TO_CLIPBOARD"));
             } catch {
-              toast.error("Failed to copy to clipboard.");
+              toast.error("ERROR_COPY_MESSAGE_TO_CLIPBOARD");
             }
           }}
         >

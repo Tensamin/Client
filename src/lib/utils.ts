@@ -30,23 +30,6 @@ export function getColorFor(state: string) {
   }
 }
 
-export function formatStatus(state: string) {
-  switch (state) {
-    case "NONE":
-      return "No Status";
-    case "IDLE":
-      return "Idle";
-    case "DND":
-      return "Do Not Disturb";
-    case "USER_OFFLINE":
-      return "User Offline";
-    case "IOTA_OFFLINE":
-      return "Iota Offline";
-    case "ONLINE":
-      return "Online";
-  }
-}
-
 export function handleError(sender: string, message: string, error: unknown) {
   let msg = "UNKNOWN";
   if (error) {

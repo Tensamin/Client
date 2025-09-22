@@ -8,6 +8,7 @@ import { Padding } from "@/lib/utils";
 import { usePageContext } from "@/context/page";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useUserContext } from "@/context/user";
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import {
@@ -23,6 +24,7 @@ export function Navbar() {
   const { setPage, page } = usePageContext();
   const { open, isMobile } = useSidebar();
   const { failedMessagesAmount } = useUserContext();
+  const { translate } = useStorageContext();
 
   return (
     <div
@@ -62,8 +64,12 @@ export function Navbar() {
           </HoverCardTrigger>
           <HoverCardContent className="w-full">
             <div>
-              {failedMessagesAmount} message{failedMessagesAmount !== 1 && "s"}{" "}
-              could not be loaded!
+              {failedMessagesAmount +
+                translate(
+                  failedMessagesAmount === 1
+                    ? "FAILED_MESSAGES_SINGLE"
+                    : "FAILED_MESSAGES_MULTIPLE"
+                )}
             </div>
           </HoverCardContent>
         </HoverCard>

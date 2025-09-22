@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 // Main
 export function Loading({ message }: { message?: string }) {
   const isError = (message?.split("_")[0] ?? "") === "ERROR";
-  const { data, clearAll } = useStorageContext();
+  const { data, clearAll, translate } = useStorageContext();
 
   const [showClearButton, setShowClearButton] = useState(false);
 
@@ -44,12 +44,12 @@ export function Loading({ message }: { message?: string }) {
           src={
             isError ? "/assets/images/logo.png" : "/assets/images/loading.gif"
           }
-          alt="Image"
+          alt={translate("IMAGE")}
           className="w-75 h-75"
         />
-        {isError || data?.debug ? (
+        {(isError || data?.debug) && typeof message !== "undefined" ? (
           <p className="text-2xl font-semibold text-foreground">
-            {message || "NO_MESSAGE"}
+            {translate(message) || "NO_MESSAGE"}
           </p>
         ) : null}
       </div>
@@ -57,26 +57,28 @@ export function Loading({ message }: { message?: string }) {
         <div className="fixed top-0 left-0 m-3">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive">Clear Storage</Button>
+              <Button variant="destructive">
+                {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
+              </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Clear All Storage</AlertDialogTitle>
+                <AlertDialogTitle>
+                  {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will clear all data stored in your browser storage,
-                  including your user and theme data. This action cannot be
-                  undone.
+                  {translate("RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => {
                     clearAll();
                     window.location.reload();
                   }}
                 >
-                  Clear All
+                  {translate("RESCUE_CLEAR_STORAGE_BUTTON_ACTION")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
