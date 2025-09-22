@@ -67,9 +67,15 @@ function MainPage() {
     }
 
     return (
-      <div className={`${open && !isMobile && `pl-${Padding / 2}`} h-full`}>
+      <div
+        className={`${
+          open && !isMobile ? `pl-${Padding / 2}` : ""
+        } flex-1 min-h-0 overflow-hidden`}
+      >
         <div
-          className={`${open && !isMobile ? "rounded-tl-xl border-l" : ""} w-full h-full border-t border-input bg-background p-2`}
+          className={`${
+            open && !isMobile ? "rounded-tl-xl border-l" : ""
+          } w-full h-full border-t border-input bg-background p-2 overflow-y-auto`}
         >
           {jsxPage}
         </div>
@@ -131,7 +137,7 @@ function MainPage() {
         </SidebarHeader>
         <SidebarContent></SidebarContent>
       </Sidebar>
-      <div className="w-full h-screen flex flex-col bg-sidebar">
+      <div className="w-full h-screen flex flex-col bg-sidebar min-h-0">
         <Navbar />
         <PageSwitch />
       </div>

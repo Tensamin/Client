@@ -28,7 +28,7 @@ export function Navbar() {
 
   return (
     <div
-      className={`${open && !isMobile ? `pr-${Padding} pl-${Padding / 2}` : `px-${Padding}`} w-full my-${Padding} h-9 flex gap-${Padding} items-center bg-sidebar`}
+      className={`${open && !isMobile ? `pr-${Padding} pl-${Padding / 2}` : `px-${Padding}`} w-full my-${Padding} h-9 flex gap-${Padding} items-center bg-sidebar shrink-0`}
     >
       <Button asChild className="h-9 w-9" variant="outline">
         <SidebarTrigger />
