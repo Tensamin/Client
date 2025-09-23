@@ -224,6 +224,13 @@ export function StorageProvider({
         VERSION: "Version: ",
         CLIENT_PING: "Client Ping: ",
         IOTA_PING: "Iota Ping: ",
+
+        STATUS_IOTA_OFFLINE: "Iota Offline",
+        STATUS_USER_OFFLINE: "User Offline",
+        STATUS_ONLINE: "Online",
+        STATUS_DND: "Do Not Disturb",
+        STATUS_IDLE: "Idle",
+        STATUS_NONE: "None",
       });
     } else {
       setLanguage(data.language as Language);
