@@ -235,11 +235,11 @@ export default function Page() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by key..."
+                placeholder={translate("DEVELOPER_PAGE_SEARCH_PLACEHOLDER")}
                 className="min-w-0 flex-1 h-9 text-sm"
               />
               <Button size="sm" className="shrink-0" onClick={openAddDialog}>
-                {translate("DEVELOPER_PAEG_NEW_ENTREY_DIALOG_LABEL")}
+                {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_LABEL")}
               </Button>
             </div>
           </div>
@@ -250,13 +250,13 @@ export default function Page() {
                   <thead className="bg-muted">
                     <tr className="border-b border-border">
                       <th className="px-2 py-1.5 text-left font-medium align-middle">
-                        {translate("DEVELOPER_PAEG_TABLE_KEY")}
+                        {translate("DEVELOPER_PAGE_TABLE_KEY")}
                       </th>
                       <th className="px-2 py-1.5 text-left font-medium align-middle">
-                        {translate("DEVELOPER_PAEG_TABLE_VALUE")}
+                        {translate("DEVELOPER_PAGE_TABLE_VALUE")}
                       </th>
                       <th className="px-2 py-1.5 text-right font-medium align-middle w-0">
-                        {translate("DEVELOPER_PAEG_TABLE_ACTION")}
+                        {translate("DEVELOPER_PAGE_TABLE_ACTION")}
                       </th>
                     </tr>
                   </thead>
@@ -356,16 +356,16 @@ export default function Page() {
         <DialogContent className="sm:max-w-md p-4">
           <DialogHeader>
             <DialogTitle>
-              {translate("DEVELOPER_PAEG_NEW_ENTREY_DIALOG_LABEL")}
+              {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_LABEL")}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {translate("DEVELOPER_PAEG_NEW_ENTREY_DIALOG_DESCRIPTION")}
+              {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_DESCRIPTION")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div className="grid gap-2">
               <Label htmlFor="newKey">
-                {translate("DEVELOPER_PAEG_NEW_ENTREY_DIALOG_LABEL")}
+                {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_KEY_LABEL")}
               </Label>
               <Input
                 id="newKey"
@@ -374,13 +374,15 @@ export default function Page() {
                   setNewKey(e.target.value);
                   setAddError(null);
                 }}
-                placeholder="myKey"
+                placeholder={translate(
+                  "DEVELOPER_PAGE_NEW_ENTREY_DIALOG_KEY_EXAMPLE"
+                )}
                 className="h-9 text-sm"
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="newValue">
-                {translate("DEVELOPER_PAEG_NEW_ENTREY_DIALOG_VALUE_LABEL")}
+                {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_VALUE_LABEL")}
               </Label>
               <Textarea
                 id="newValue"
@@ -390,7 +392,9 @@ export default function Page() {
                   setAddError(null);
                 }}
                 className="h-44 max-h-[50vh] w-full resize-none overflow-auto font-mono text-xs leading-tight"
-                placeholder='e.g. {"enabled": true} or 42 or "hello"'
+                placeholder={translate(
+                  "DEVELOPER_PAGE_NEW_ENTREY_DIALOG_VALUE_EXAMPLE"
+                )}
               />
               {addError && (
                 <span className="text-xs text-destructive">{addError}</span>

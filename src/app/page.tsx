@@ -4,9 +4,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 
-// Lib Imports
-import { Padding } from "@/lib/utils";
-
 // Context Imports
 import { CryptoProvider, useCryptoContext } from "@/context/crypto";
 import { SocketProvider } from "@/context/socket";
@@ -60,7 +57,7 @@ function MainPage() {
       default:
         jsxPage = (
           <div>
-            {translate("PAGE_UNKNOWN")} | {pageData}
+            {translate("PAGE_UNKNOWN")} | {page};{pageData}
           </div>
         );
         break;
@@ -69,7 +66,7 @@ function MainPage() {
     return (
       <div
         className={`${
-          open && !isMobile ? `pl-${Padding / 2}` : ""
+          open && !isMobile ? `pl-1` : ""
         } flex-1 min-h-0 overflow-hidden`}
       >
         <div
@@ -86,10 +83,7 @@ function MainPage() {
   return (
     <>
       <Sidebar className="group-data-[side=left]:border-0">
-        <SidebarHeader
-          className={`p-0 pl-${Padding} pt-${Padding} pr-${Padding / 2} flex flex-col gap-${Padding * 3}`}
-        >
-          <div className="pt-2 pt-1 pl-1 pr-1" hidden />
+        <SidebarHeader className="p-0 pl-2 pt-2 pr-1 flex flex-col gap-6">
           <UserModal key={ownUuid} uuid={ownUuid} size="big" />
           <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden p-1">
             <div className="relative grid grid-cols-2 w-full gap-2">
@@ -98,7 +92,7 @@ function MainPage() {
                   key={cat}
                   variant="ghost"
                   type="button"
-                  className="relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20"
+                  className={`relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20 ${category !== cat ? "hover:border hover:border-input/30" : ""}`}
                   onClick={() =>
                     setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
                   }
@@ -117,7 +111,7 @@ function MainPage() {
                       }}
                     />
                   )}
-                  <span className="relative z-10 hover:underline underline-offset-2 text-sm">
+                  <span className="relative z-10 text-sm">
                     {translate(cat)}
                   </span>
                 </Button>

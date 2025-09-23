@@ -10,6 +10,7 @@ import { handleError, log } from "@/lib/utils";
 // Context Imports
 import { useSocketContext } from "@/context/socket";
 import { useUserContext } from "@/context/user";
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ import { PageDiv } from "@/components/pageDiv";
 export default function Page() {
   const { send } = useSocketContext();
   const { refetchConversations } = useUserContext();
+  const { translate } = useStorageContext();
 
   const [open, setOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
@@ -82,13 +84,17 @@ export default function Page() {
       <div className="flex gap-2">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm">Add Conversation</Button>
+            <Button size="sm">
+              {translate("HOME_PAGE_ADD_CONVERSATION_LABEL")}
+            </Button>
           </DialogTrigger>
           <DialogContent showCloseButton={false}>
             <DialogHeader>
-              <DialogTitle>Add Friend</DialogTitle>
+              <DialogTitle>
+                {translate("HOME_PAGE_ADD_CONVERSATION_LABEL")}
+              </DialogTitle>
               <DialogDescription>
-                This will send a friend request to the user.
+                {translate("HOME_PAGE_ADD_CONVERSATION_DESCRIPTION")}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -101,7 +107,9 @@ export default function Page() {
                       addConversation();
                     }
                   }}
-                  placeholder="Type a username"
+                  placeholder={translate(
+                    "HOME_PAGE_ADD_CONVERSATION_INPUT_PLACEHOLDER"
+                  )}
                   className="w-full"
                 />
                 <div className="flex gap-2">
@@ -111,14 +119,18 @@ export default function Page() {
                     variant="outline"
                     onClick={() => setOpen(false)}
                   >
-                    Cancel
+                    {translate("CANCEL")}
                   </Button>
                   <Button
                     size="sm"
                     onClick={addConversation}
                     disabled={!newUsername || loading}
                   >
-                    {loading ? <LoadingIcon invert /> : "Add Conversation"}
+                    {loading ? (
+                      <LoadingIcon invert />
+                    ) : (
+                      translate("HOME_PAGE_ADD_CONVERSATION_LABEL")
+                    )}
                   </Button>
                 </div>
               </div>
@@ -126,7 +138,7 @@ export default function Page() {
           </DialogContent>
         </Dialog>
         <Button size="sm" disabled>
-          Add Community
+          {translate("HOME_PAGE_ADD_COMMUNITY_LABEL")}
         </Button>
       </div>
       <p>Homepage :)</p>
