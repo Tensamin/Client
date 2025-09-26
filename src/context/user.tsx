@@ -6,7 +6,6 @@ import { createContext, useContext, useState, useRef, useEffect } from "react";
 // Lib Imports
 import { user } from "@/lib/endpoints";
 import {
-  AdvancedSuccessMessage,
   AdvancedSuccessMessageData,
   Community,
   Conversation,
@@ -32,6 +31,8 @@ type UserContextType = {
   setConversations: (conversations: Conversation[]) => void;
   setCommunities: (communities: Community[]) => void;
   refetchConversations: () => Promise<void>;
+  reloadUsers: boolean;
+  setReloadUsers: (reload: boolean) => void;
 };
 
 // Main
@@ -54,6 +55,7 @@ export function UserProvider({
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
+  const [reloadUsers, setReloadUsers] = useState<boolean>(false);
 
   async function refetchConversations() {
     await send("get_chats").then((data) => {
@@ -83,11 +85,18 @@ export function UserProvider({
   }, [page, pageData, currentReceiverUuid]);
 
   useEffect(() => {
-    if (isReady) {
+    if (isReady && conversations.length === 0) {
       send("get_chats").then((data) => {
         if (data.type !== "error") {
           setConversations(data.data.user_ids || []);
         } else {
+          setConversations([
+            {
+              user_id: "0",
+              call_active: false,
+              last_message_at: 0,
+            },
+          ]);
           log(
             "error",
             "USER_CONTEXT",
@@ -96,10 +105,22 @@ export function UserProvider({
           );
         }
       });
+    }
+  }, [isReady, send, conversations.length]);
+
+  useEffect(() => {
+    if (isReady && communities.length === 0) {
       send("get_communities").then((data) => {
         if (data.type !== "error") {
           setCommunities(data.data.communities || []);
         } else {
+          setCommunities([
+            {
+              community_address: "error",
+              community_title: "Failed to load communities",
+              position: "0",
+            },
+          ]);
           log(
             "error",
             "USER_CONTEXT",
@@ -109,7 +130,7 @@ export function UserProvider({
         }
       });
     }
-  }, [isReady, send]);
+  }, [isReady, send, communities.length]);
 
   if (lastMessage && lastMessage !== prevLastMessageRef.current) {
     prevLastMessageRef.current = lastMessage;
@@ -174,6 +195,7 @@ export function UserProvider({
         return existingUser!;
       }
 
+      setReloadUsers(true);
       log("debug", "USER_CONTEXT", "USER_CONTEXT_USER_NOT_FETCHED");
       const response = await fetch(`${user}${uuid}`);
       const data = await response.json();
@@ -247,6 +269,8 @@ export function UserProvider({
         setConversations,
         setCommunities,
         refetchConversations,
+        reloadUsers,
+        setReloadUsers,
       }}
     >
       {children}

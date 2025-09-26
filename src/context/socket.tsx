@@ -1,14 +1,7 @@
 "use client";
 
 // Package Imports
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { v7 } from "uuid";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
@@ -228,7 +221,6 @@ export function SocketProvider({
       })
         .then((data) => {
           if (data.type !== "error") {
-            alert(JSON.stringify(data));
             setIdentified(true);
             setIsReady(true);
             log(
@@ -250,10 +242,10 @@ export function SocketProvider({
           setPage("error", "ERROR_SOCKET_CONTEXT_IDENTIFICATION_FAILED");
         });
     }
-  }, [connected, privateKeyHash, send, setPage, identified, ownUuid]);
+  }, [connected, privateKeyHash, setPage, identified, ownUuid]);
 
   useEffect(() => {
-    if (!connected) return;
+    if (!isReady) return;
 
     const interval = setInterval(() => {
       const now1 = Date.now();
@@ -271,7 +263,7 @@ export function SocketProvider({
     return () => {
       clearInterval(interval);
     };
-  }, [connected, send]);
+  }, [isReady]);
 
   switch (readyState) {
     case ReadyState.OPEN:

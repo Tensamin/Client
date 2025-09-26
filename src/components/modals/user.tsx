@@ -17,7 +17,7 @@ export function UserModal({
   uuid: string;
   size: "big" | "medium";
 }) {
-  const { get } = useUserContext();
+  const { get, reloadUsers, setReloadUsers } = useUserContext();
   const { setPage } = usePageContext();
   const [user, setUser] = useState<User>({
     username: "",
@@ -35,8 +35,10 @@ export function UserModal({
   });
 
   useEffect(() => {
+    if (user.uuid !== "" && !reloadUsers) return;
     get(uuid, false).then(setUser);
-  }, [uuid, get]);
+    setReloadUsers(false);
+  }, [uuid, get, user.uuid, reloadUsers]);
 
   const props = {
     title: user.display,

@@ -3,9 +3,6 @@
 // Package Imports
 import { createContext, useContext } from "react";
 
-// Lib Imports
-import { AdvancedSuccessMessage } from "@/lib/types";
-
 // Context Imports
 import { useSocketContext } from "@/context/socket";
 import { usePageContext } from "@/context/page";
