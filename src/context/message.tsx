@@ -41,18 +41,13 @@ export function MessageProvider({
     if (!isReady)
       throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
     if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
-    const messages = await send(
-      "message_get",
-      {
-        log_level: 0,
-        message: "SOCKET_CONTEXT_REQUESTING_MESSAGES",
-      },
-      { chat_partner_id: id, loaded_messages: loaded, message_amount: amount }
-    ).then((data: AdvancedSuccessMessage | unknown) => {
-      if (!data) return;
-      const dataTyped = data as AdvancedSuccessMessage;
-      if (dataTyped.type === "error") throw new Error(dataTyped.log.message);
-      if (!dataTyped.data.message_chunk) {
+    const messages = await send("message_get", {
+      user_id: id,
+      amount: amount,
+      offset: loaded,
+    }).then((data) => {
+      if (data.type === "error") throw new Error();
+      if (!data.data.message_chunk) {
         return [
           {
             message_content: "NO_MESSAGES_WITH_USER",
@@ -63,7 +58,7 @@ export function MessageProvider({
         ];
       }
       const getTime = (m: Message) => Number(m.message_time) || 0;
-      const sorted = [...dataTyped.data.message_chunk]
+      const sorted = [...data.data.message_chunk]
         .sort((a, b) => getTime(b) - getTime(a))
         .reverse();
       return sorted;

@@ -25,18 +25,14 @@ export type AdvancedSuccessMessageData = {
   communities?: Community[] | null;
   user_states?: [] | null;
   user_state?: string | null;
+  amount?: number | null;
+  offset?: number | null;
 };
 
 export type AdvancedSuccessMessage = {
   type: string;
-  log: LogBody;
   data: AdvancedSuccessMessageData;
   id: string;
-};
-
-export type LogBody = {
-  log_level: number;
-  message: string;
 };
 
 export type User = {

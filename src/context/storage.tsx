@@ -231,6 +231,10 @@ export function StorageProvider({
         STATUS_DND: "Do Not Disturb",
         STATUS_IDLE: "Idle",
         STATUS_NONE: "None",
+
+        RESCUE_CLEAR_STORAGE_BUTTON_LABEL: "Clear Storage",
+        RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION:
+          "This will clear all your settings and log you out of your account.",
       });
     } else {
       setLanguage(data.language as Language);

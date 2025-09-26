@@ -24,7 +24,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AdvancedSuccessMessage } from "@/lib/types";
 import { LoadingIcon } from "@/components/loading";
 import { PageDiv } from "@/components/pageDiv";
 
@@ -43,7 +42,7 @@ export default function Page() {
     try {
       await fetch(username_to_uuid + newUsername)
         .then((res) => res.json())
-        .then(async (data: AdvancedSuccessMessage) => {
+        .then(async (data) => {
           if (data.type === "error") {
             log(
               "error",
@@ -52,19 +51,10 @@ export default function Page() {
               data.log.message
             );
           } else {
-            await send(
-              "add_chat",
-              {
-                log_level: 0,
-                message: "ADD_CONVERSATION",
-              },
-              {
-                user_id: data.data.user_id,
-              }
-            ).then(async (data: AdvancedSuccessMessage | unknown) => {
-              if (!data) return;
-              const typedData = data as AdvancedSuccessMessage;
-              if (typedData.type !== "error") {
+            await send("add_chat", {
+              user_id: data.data.user_id,
+            }).then(async (data) => {
+              if (data.type !== "error") {
                 await refetchConversations();
               }
             });

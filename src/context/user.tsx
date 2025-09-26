@@ -56,24 +56,15 @@ export function UserProvider({
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
 
   async function refetchConversations() {
-    await send(
-      "get_chats",
-      {
-        log_level: 0,
-        message: "USER_CONTEXT_GET_CONVERSATIONS",
-      },
-      {}
-    ).then((data: AdvancedSuccessMessage | unknown) => {
-      if (!data) return;
-      const dataTyped = data as AdvancedSuccessMessage;
-      if (dataTyped.type !== "error") {
-        setConversations(dataTyped.data.user_ids || []);
+    await send("get_chats").then((data) => {
+      if (data.type !== "error") {
+        setConversations(data.data.user_ids || []);
       } else {
         log(
           "error",
           "USER_CONTEXT",
           "ERROR_USER_CONTEXT_GET_CONVERSATIONS",
-          dataTyped.log.message
+          data
         );
       }
     });
@@ -93,45 +84,27 @@ export function UserProvider({
 
   useEffect(() => {
     if (isReady) {
-      send(
-        "get_chats",
-        {
-          log_level: 0,
-          message: "USER_CONTEXT_GET_CONVERSATIONS",
-        },
-        {}
-      ).then((data: AdvancedSuccessMessage | unknown) => {
-        if (!data) return;
-        const dataTyped = data as AdvancedSuccessMessage;
-        if (dataTyped.type !== "error") {
-          setConversations(dataTyped.data.user_ids || []);
+      send("get_chats").then((data) => {
+        if (data.type !== "error") {
+          setConversations(data.data.user_ids || []);
         } else {
           log(
             "error",
             "USER_CONTEXT",
             "ERROR_USER_CONTEXT_GET_CONVERSATIONS",
-            dataTyped.log.message
+            data
           );
         }
       });
-      send(
-        "get_communities",
-        {
-          log_level: 0,
-          message: "USER_CONTEXT_GET_COMMUNITIES",
-        },
-        {}
-      ).then((data: AdvancedSuccessMessage | unknown) => {
-        if (!data) return;
-        const dataTyped = data as AdvancedSuccessMessage;
-        if (dataTyped.type !== "error") {
-          setCommunities(dataTyped.data.communities || []);
+      send("get_communities").then((data) => {
+        if (data.type !== "error") {
+          setCommunities(data.data.communities || []);
         } else {
           log(
             "error",
             "USER_CONTEXT",
             "ERROR_USER_CONTEXT_GET_COMMUNITIES",
-            dataTyped.log.message
+            data
           );
         }
       });

@@ -1,6 +1,6 @@
 // Package Imports
 import React from "react";
-import { version } from "@/../package.json";
+import packageJson from "@/../package.json";
 
 // Context Imports
 import { usePageContext } from "@/context/page";
@@ -193,7 +193,7 @@ export default function Page() {
           </div>
           <div className="text-xs text-muted-foreground pt-1">
             {/* Put iotaPing into the translate */}
-            <p>{translate("VERSION", version)}</p>
+            <p>{translate("VERSION", packageJson.version)}</p>
             <p>{translate("CLIENT_PING", ownPing + "ms")}</p>
             <p>{translate("IOTA_PING", iotaPing + "ms")}</p>
           </div>

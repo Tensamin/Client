@@ -1,5 +1,6 @@
 // Package Imports
 import React, { useState } from "react";
+import * as Icon from "lucide-react";
 import { Ring } from "ldrs/react";
 import "ldrs/react/Ring.css";
 
@@ -15,16 +16,44 @@ import { usePageContext } from "@/context/page";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 export default function Page() {
   const [hover, setHover] = useState(false);
   const [privateKey, setPrivateKey] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const tuFileRef = React.useRef<HTMLInputElement>(null);
+
   const { set } = useStorageContext();
   const { pageData } = usePageContext();
   log("info", "LOGIN_PAGE", "REASONE_FOR_LOGIN", pageData);
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    e.preventDefault();
+    setHover(false);
+    setLoading(true);
+    const files = e.target.files;
+    if (!files) return;
+    if (files.length === 0) return;
+    const file = files[0];
+
+    try {
+      const text = await file.text();
+      const splitText = text.replaceAll("\n", "").split("::");
+
+      const uuid = splitText[0];
+      const privateKey = splitText[1];
+
+      if (!uuid || !privateKey) throw new Error();
+
+      const buf = Buffer.from(privateKey, "base64");
+      if (buf.length !== 72) log("warn", "LOGIN", "WARN_UNUSUAL_KEY_LENGTH");
+      await login(uuid, privateKey);
+    } catch {
+      log("error", "LOGIN", "ERROR_INVALID_TU_FILE");
+    }
+  }
 
   async function handleDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
@@ -93,74 +122,121 @@ export default function Page() {
   }
 
   return (
-    <div
-      className="w-full h-screen flex items-center justify-center"
-      onDrop={handleDrop}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setHover(true);
-      }}
-      onDragLeave={() => setHover(false)}
-    >
-      <div className="flex flex-col gap-5">
-        <Card
-          className={`${hover ? "opacity-50" : "opacity-100"} transition-opacity duration-300 ease-in-out`}
-        >
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form
-              className="flex flex-col gap-5"
-              onSubmit={handleSubmit}
-              autoComplete="on"
-            >
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  required
-                  id="username"
-                  type="text"
-                  name="username"
-                  autoComplete="username"
-                  disabled={hover || loading}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="password">Private Key</Label>
-                <Label
-                  htmlFor="password"
-                  className="text-xs text-muted-foreground text-left font-normal"
+    <div className="w-full h-screen flex items-center justify-center">
+      <div className="flex flex-col gap-5 w-full sm:w-2/3 md:w-3/4 lg:w-4/6 xl:w-1/2 2xl:w-1/3">
+        <div className="flex flex-col md:flex-row w-full gap-3 px-10">
+          <Card className="transition-opacity duration-300 ease-in-out w-full md:w-1/2">
+            <CardHeader>
+              <CardTitle className="select-none">
+                Login using credentials
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form
+                className="flex flex-col gap-5"
+                onSubmit={handleSubmit}
+                autoComplete="on"
+              >
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    required
+                    id="username"
+                    type="text"
+                    name="username"
+                    autoComplete="username"
+                    disabled={loading}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="password">Private Key</Label>
+                  <Label
+                    htmlFor="password"
+                    className="text-xs text-muted-foreground text-left font-normal"
+                  >
+                    You can drag and drop a .tu file onto this page
+                  </Label>
+                  <Input
+                    required
+                    id="password"
+                    type="password"
+                    name="password"
+                    autoComplete="current-password"
+                    disabled={loading}
+                    value={privateKey}
+                    onChange={(e) => setPrivateKey(e.target.value)}
+                  />
+                </div>
+                <Button
+                  className="select-none"
+                  type="submit"
+                  disabled={hover || loading || !privateKey}
                 >
-                  You can drag and drop a .tu file onto this page
-                </Label>
-                <Input
-                  required
-                  id="password"
-                  type="password"
-                  name="password"
-                  autoComplete="current-password"
-                  disabled={hover || loading}
-                  value={privateKey}
-                  onChange={(e) => setPrivateKey(e.target.value)}
-                />
-              </div>
-              <Button type="submit" disabled={hover || loading || !privateKey}>
-                {loading ? (
-                  <Ring
-                    size="17"
-                    stroke="2"
-                    bgOpacity={0}
-                    speed={2}
-                    color="var(--background)"
+                  {loading ? (
+                    <Ring
+                      size="17"
+                      stroke="2"
+                      bgOpacity={0}
+                      speed={2}
+                      color="var(--background)"
+                    />
+                  ) : (
+                    "Login"
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+          <Card className="w-full md:w-1/2">
+            <CardHeader>
+              <CardTitle className="select-none">
+                Login using .tu file
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="w-full h-full">
+              <input
+                hidden
+                ref={tuFileRef}
+                type="file"
+                accept=".tu"
+                onChange={async (e) => await handleFileSelect(e)}
+              />
+              <div
+                className={`${hover ? "opacity-50" : "opacity-100"} transition-opacity duration-300 ease-in-out flex flex-col gap-10 items-center justify-center w-full h-full border-dashed rounded-xl cursor-pointer select-none text-xs ${buttonVariants({ variant: "outline" })}`}
+                onClick={() => tuFileRef.current?.click()}
+                onDrop={handleDrop}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setHover(true);
+                }}
+                onDragLeave={() => setHover(false)}
+              >
+                {hover ? (
+                  <Icon.FileInput
+                    strokeWidth={1.2}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setHover(true);
+                    }}
+                    onDragLeave={() => setHover(false)}
                   />
                 ) : (
-                  "Login"
+                  <Icon.FileKey
+                    strokeWidth={1.2}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setHover(true);
+                    }}
+                    onDragLeave={() => setHover(false)}
+                  />
                 )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                {hover
+                  ? "Release to select your .tu file"
+                  : "Drag & Drop or Select the .tu file"}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
         <div className="text-xs text-muted-foreground/75 w-full flex flex-col text-center">
           <p>By logging in you agree to our</p>
           <p>

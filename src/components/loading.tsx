@@ -78,7 +78,7 @@ export function Loading({ message }: { message?: string }) {
                     window.location.reload();
                   }}
                 >
-                  {translate("RESCUE_CLEAR_STORAGE_BUTTON_ACTION")}
+                  {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

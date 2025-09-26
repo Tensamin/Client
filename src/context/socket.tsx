@@ -17,7 +17,6 @@ import {
   AdvancedSuccessMessage,
   AdvancedSuccessMessageData,
   ErrorType,
-  LogBody,
 } from "@/lib/types";
 import { log, RetryCount } from "@/lib/utils";
 import { client_wss } from "@/lib/endpoints";
@@ -39,10 +38,9 @@ type SocketContextType = {
   iotaPing: number;
   send: (
     requestType: string,
-    logData: LogBody,
-    data: AdvancedSuccessMessageData,
+    data?: AdvancedSuccessMessageData,
     noResponse?: boolean
-  ) => Promise<AdvancedSuccessMessage | unknown>;
+  ) => Promise<AdvancedSuccessMessage>;
   isReady: boolean;
 };
 
@@ -77,7 +75,6 @@ export function SocketProvider({
   async function handleMessage(message: MessageEvent) {
     let parsedMessage: AdvancedSuccessMessage = {
       type: "",
-      log: { log_level: 0, message: "" },
       data: {},
       id: "",
     };
@@ -129,113 +126,109 @@ export function SocketProvider({
 
   const connected = readyState === ReadyState.OPEN;
 
-  const send = useCallback(
-    async (
-      requestType: string,
-      logData: LogBody,
-      data: AdvancedSuccessMessageData,
-      noResponse: boolean = false
-    ) => {
-      if (
-        !forceLoad &&
-        readyState !== ReadyState.CLOSED &&
-        readyState !== ReadyState.CLOSING
-      ) {
-        if (noResponse) {
-          const messageToSend = {
-            type: requestType,
-            log: logData,
-            data,
-          };
+  async function send(
+    requestType: string,
+    data: AdvancedSuccessMessageData = {},
+    noResponse: boolean = false
+  ): Promise<AdvancedSuccessMessage> {
+    if (
+      !forceLoad &&
+      readyState !== ReadyState.CLOSED &&
+      readyState !== ReadyState.CLOSING
+    ) {
+      if (noResponse) {
+        const messageToSend = {
+          type: requestType,
+          data,
+        };
 
-          try {
-            if (messageToSend.type !== "ping") {
-              log(
-                "debug",
-                "SOCKET_CONTEXT",
-                "SOCKET_CONTEXT_SEND",
-                messageToSend
-              );
-            }
-            sendRaw(JSON.stringify(messageToSend));
-          } catch (err: unknown) {
+        try {
+          if (messageToSend.type !== "ping") {
             log(
-              "error",
+              "debug",
               "SOCKET_CONTEXT",
-              "ERROR_SOCKET_CONTEXT_UNKNOWN",
-              (err as ErrorType).message
+              "SOCKET_CONTEXT_SEND",
+              messageToSend
             );
           }
-          return null;
+          sendRaw(JSON.stringify(messageToSend));
+        } catch (err: unknown) {
+          log(
+            "error",
+            "SOCKET_CONTEXT",
+            "ERROR_SOCKET_CONTEXT_UNKNOWN",
+            (err as ErrorType).message
+          );
         }
-
-        return new Promise((resolve, reject) => {
-          const id = v7();
-
-          const messageToSend = {
-            id,
-            type: requestType,
-            log: logData,
-            data,
-          };
-
-          const timeoutId = setTimeout(() => {
-            pendingRequests.current.delete(id);
-            log(
-              "error",
-              "SOCKET_CONTEXT",
-              "ERROR_SOCKET_CONTEXT_TIMEOUT",
-              `${requestType}, ${id}`
-            );
-            reject();
-          }, responseTimeout);
-
-          pendingRequests.current.set(id, { resolve, reject, timeoutId });
-
-          try {
-            if (messageToSend.type !== "ping") {
-              log(
-                "debug",
-                "SOCKET_CONTEXT",
-                "SOCKET_CONTEXT_SEND",
-                messageToSend
-              );
-            }
-            sendRaw(JSON.stringify(messageToSend));
-          } catch (err: unknown) {
-            clearTimeout(timeoutId);
-            pendingRequests.current.delete(id);
-            log(
-              "error",
-              "SOCKET_CONTEXT",
-              "ERROR_SOCKET_CONTEXT_UNKNOWN",
-              (err as ErrorType).message
-            );
-            reject(err);
-          }
-        });
+        return {
+          id: "",
+          type: "error",
+          data: {},
+        };
       }
-    },
-    [sendRaw, readyState, forceLoad]
-  );
+
+      return new Promise((resolve, reject) => {
+        const id = v7();
+
+        const messageToSend = {
+          id,
+          type: requestType,
+          data,
+        };
+
+        const timeoutId = setTimeout(() => {
+          pendingRequests.current.delete(id);
+          log(
+            "error",
+            "SOCKET_CONTEXT",
+            "ERROR_SOCKET_CONTEXT_TIMEOUT",
+            `${requestType}, ${id}`
+          );
+          reject();
+        }, responseTimeout);
+
+        pendingRequests.current.set(id, { resolve, reject, timeoutId });
+
+        try {
+          if (messageToSend.type !== "ping") {
+            log(
+              "debug",
+              "SOCKET_CONTEXT",
+              "SOCKET_CONTEXT_SEND",
+              messageToSend
+            );
+          }
+          sendRaw(JSON.stringify(messageToSend));
+        } catch (err: unknown) {
+          clearTimeout(timeoutId);
+          pendingRequests.current.delete(id);
+          log(
+            "error",
+            "SOCKET_CONTEXT",
+            "ERROR_SOCKET_CONTEXT_UNKNOWN",
+            (err as ErrorType).message
+          );
+          reject(err);
+        }
+      });
+    } else {
+      return {
+        id: "",
+        type: "error",
+        data: {},
+      };
+    }
+  }
 
   useEffect(() => {
     if (connected && !identified && privateKeyHash) {
-      send(
-        "identification",
-        {
-          log_level: 0,
-          message: "SOCKET_CONTEXT_IDENTIFICATION",
-        },
-        {
-          user_id: ownUuid,
-          private_key_hash: privateKeyHash,
-        }
-      )
-        .then((data: AdvancedSuccessMessage | unknown) => {
-          if (!data) return;
-          const dataTyped = data as AdvancedSuccessMessage;
-          if (dataTyped.type !== "error") {
+      send("identification", {
+        user_id: ownUuid,
+        private_key_hash: privateKeyHash,
+      })
+        .then((data) => {
+          if (data.type !== "error") {
+            alert(JSON.stringify(data));
             setIdentified(true);
             setIsReady(true);
             log(
@@ -244,7 +237,7 @@ export function SocketProvider({
               "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS"
             );
           } else {
-            setPage("error", `ERROR_${dataTyped.log.message}`);
+            setPage("error", `ERROR_SOCKET_CONTEXT_IDENTIFICATION_FAILED`);
           }
         })
         .catch((err) => {
@@ -264,23 +257,14 @@ export function SocketProvider({
 
     const interval = setInterval(() => {
       const now1 = Date.now();
-      send(
-        "ping",
-        {
-          log_level: -1,
-          message: "SOCKET_CONTEXT_PING",
-        },
-        {
-          last_ping: now1,
-        }
-      ).then((data: AdvancedSuccessMessage | unknown) => {
-        if (!data) return;
-        const dataTyped = data as AdvancedSuccessMessage;
-        if (dataTyped.type !== "error") {
+      send("ping", {
+        last_ping: now1,
+      }).then((data) => {
+        if (data.type !== "error") {
           const now2 = Date.now();
           const now = now2 - now1;
           setOwnPing(now);
-          setIotaPing(dataTyped.data.ping_iota || 0);
+          setIotaPing(data.data.ping_iota || 0);
         }
       });
     }, 5000);
@@ -291,9 +275,7 @@ export function SocketProvider({
 
   switch (readyState) {
     case ReadyState.OPEN:
-      if (!identified)
-        return <Loading message="SOCKET_CONTEXT_LOADING_IDENTIFYING" />;
-      return (
+      return identified ? (
         <SocketContext.Provider
           value={{
             readyState,
@@ -306,6 +288,8 @@ export function SocketProvider({
         >
           {children}
         </SocketContext.Provider>
+      ) : (
+        <Loading message="SOCKET_CONTEXT_LOADING_IDENTIFYING" />
       );
     case ReadyState.CONNECTING:
       return <Loading message="SOCKET_CONTEXT_LOADING_CONNECTING" />;
