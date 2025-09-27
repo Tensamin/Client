@@ -6,6 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // Lib Imports
 import { MaxSendBoxSize } from "@/lib/utils";
 
+// Context Imports
+import { useStorageContext } from "@/context/storage";
+
 // Components
 import { Button } from "@/components/ui/button";
 import { Box } from "@/components/chat/box";
@@ -13,6 +16,7 @@ import { PageDiv, PageTextarea } from "@/components/pageDiv";
 
 // Main
 export default function Page() {
+  const { data } = useStorageContext();
   const [client] = React.useState(() => new QueryClient());
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -48,9 +52,8 @@ export default function Page() {
           ref={textareaRef}
           value={message}
           onKeyDown={(e) => {
-            const sendWithShiftEnter = false;
             if (
-              sendWithShiftEnter
+              data.reverseEnterInChats
                 ? e.key === "Enter" && e.shiftKey
                 : e.key === "Enter" && !e.shiftKey
             ) {

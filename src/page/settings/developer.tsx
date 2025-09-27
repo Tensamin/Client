@@ -217,134 +217,119 @@ export default function Page() {
 
   return (
     <>
-      <div className="flex w-full min-w-0 flex-col gap-10">
-        <div className="flex flex-wrap items-center gap-2">
-          <Switch
-            id="debugModeSwitch"
-            checked={data?.debug === true}
-            onCheckedChange={(value) => set("debug", value)}
-          />
-          <Label htmlFor="debugModeSwitch">
-            {translate("SETTINGS_PAGE_ENABLE_DEBUG_MODE")}
-          </Label>
+      <div className="flex flex-col w-full min-w-0 gap-2">
+        <div className="flex gap-2 flex-row items-center justify-between">
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={translate("DEVELOPER_PAGE_SEARCH_PLACEHOLDER")}
+              className="min-w-0 flex-1 h-9 text-sm"
+            />
+            <Button size="sm" className="shrink-0" onClick={openAddDialog}>
+              {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_LABEL")}
+            </Button>
+          </div>
         </div>
-
-        <div className="w-full flex flex-col gap-2">
-          <div className="flex gap-2 flex-row items-center justify-between">
-            <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={translate("DEVELOPER_PAGE_SEARCH_PLACEHOLDER")}
-                className="min-w-0 flex-1 h-9 text-sm"
-              />
-              <Button size="sm" className="shrink-0" onClick={openAddDialog}>
-                {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_LABEL")}
-              </Button>
-            </div>
-          </div>
-          <div>
-            {filteredEntries.length ? (
-              <div className="w-full overflow-hidden rounded-lg border">
-                <table className="w-full table-auto bg-card text-xs">
-                  <thead className="bg-muted">
-                    <tr className="border-b border-border">
-                      <th className="px-2 py-1.5 text-left font-medium align-middle">
-                        {translate("DEVELOPER_PAGE_TABLE_KEY")}
-                      </th>
-                      <th className="px-2 py-1.5 text-left font-medium align-middle">
-                        {translate("DEVELOPER_PAGE_TABLE_VALUE")}
-                      </th>
-                      <th className="px-2 py-1.5 text-right font-medium align-middle w-0">
-                        {translate("DEVELOPER_PAGE_TABLE_ACTION")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {filteredEntries.map((entry) => (
-                      <tr key={entry.key} className="hover:bg-muted/50">
-                        <td className="whitespace-nowrap px-2 py-1.5 font-medium text-foreground align-middle w-25">
-                          {entry.key}
-                        </td>
-                        <td className="px-2 py-1.5 align-middle">
-                          {editingKey === entry.key ? (
-                            <div className="flex w-full flex-col gap-2">
-                              <Textarea
-                                value={editValue}
-                                onChange={(e) => {
-                                  setEditValue(e.target.value);
-                                  setEditError(null);
-                                }}
-                                className="min-h-10 h-auto w-full max-w-[35vw] max-h-[50vh] overflow-x-auto font-mono text-xs leading-tight"
-                                placeholder='Enter JSON value (e.g. {"foo": "bar"})'
-                              />
-                              {editError && (
-                                <span className="text-xs text-destructive">
-                                  {editError}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <FitJson
-                              value={entry.value}
-                              sensitive={entry.key === "privateKey"}
+        <div>
+          {filteredEntries.length ? (
+            <div className="w-full overflow-hidden rounded-lg border">
+              <table className="w-full table-auto bg-card text-xs">
+                <thead className="bg-muted">
+                  <tr className="border-b border-border">
+                    <th className="px-2 py-1.5 text-left font-medium align-middle">
+                      {translate("DEVELOPER_PAGE_TABLE_KEY")}
+                    </th>
+                    <th className="px-2 py-1.5 text-left font-medium align-middle">
+                      {translate("DEVELOPER_PAGE_TABLE_VALUE")}
+                    </th>
+                    <th className="px-2 py-1.5 text-right font-medium align-middle w-0">
+                      {translate("DEVELOPER_PAGE_TABLE_ACTION")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredEntries.map((entry) => (
+                    <tr key={entry.key} className="hover:bg-muted/50">
+                      <td className="whitespace-nowrap px-2 py-1.5 font-medium text-foreground align-middle w-25">
+                        {entry.key}
+                      </td>
+                      <td className="px-2 py-1.5 align-middle">
+                        {editingKey === entry.key ? (
+                          <div className="flex w-full flex-col gap-2">
+                            <Textarea
+                              value={editValue}
+                              onChange={(e) => {
+                                setEditValue(e.target.value);
+                                setEditError(null);
+                              }}
+                              className="min-h-10 h-auto w-full max-w-[35vw] max-h-[50vh] overflow-x-auto font-mono text-xs leading-tight"
+                              placeholder='Enter JSON value (e.g. {"foo": "bar"})'
                             />
-                          )}
-                        </td>
-                        <td className="whitespace-nowrap px-2 py-1.5 font-medium align-middle">
-                          {editingKey === entry.key ? (
-                            <div className="flex w-20 justify-end gap-2">
-                              <Button
-                                size="sm"
-                                onClick={handleSaveEdit}
-                                className="w-full"
-                              >
-                                {translate("SAVE")}
-                              </Button>
-                              <Button
-                                className="w-full"
-                                size="sm"
-                                variant="outline"
-                                onClick={handleCancelEdit}
-                              >
-                                {translate("CANCEL")}
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex w-20 justify-end gap-2">
-                              <Button
-                                className="w-full"
-                                size="sm"
-                                onClick={() =>
-                                  handleEdit(entry.key, entry.value)
-                                }
-                              >
-                                {translate("EDIT")}
-                              </Button>
-                              <Button
-                                className="w-full"
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleDelete(entry.key)}
-                              >
-                                {translate("DELETE")}
-                              </Button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                            {editError && (
+                              <span className="text-xs text-destructive">
+                                {editError}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <FitJson
+                            value={entry.value}
+                            sensitive={entry.key === "privateKey"}
+                          />
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-2 py-1.5 font-medium align-middle">
+                        {editingKey === entry.key ? (
+                          <div className="flex w-20 justify-end gap-2">
+                            <Button
+                              size="sm"
+                              onClick={handleSaveEdit}
+                              className="w-full"
+                            >
+                              {translate("SAVE")}
+                            </Button>
+                            <Button
+                              className="w-full"
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelEdit}
+                            >
+                              {translate("CANCEL")}
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex w-20 justify-end gap-2">
+                            <Button
+                              className="w-full"
+                              size="sm"
+                              onClick={() => handleEdit(entry.key, entry.value)}
+                            >
+                              {translate("EDIT")}
+                            </Button>
+                            <Button
+                              className="w-full"
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDelete(entry.key)}
+                            >
+                              {translate("DELETE")}
+                            </Button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-lg border p-4 text-center bg-card">
+              <div className="text-sm font-medium">
+                {translate("DEVELOPER_PAGE_NO_ENTRIES")}
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center rounded-lg border p-4 text-center bg-card">
-                <div className="text-sm font-medium">
-                  {translate("DEVELOPER_PAGE_NO_ENTRIES")}
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

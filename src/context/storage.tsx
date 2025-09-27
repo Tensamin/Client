@@ -101,6 +101,9 @@ export function StorageProvider({
       HOME_PAGE_ADD_CONVERSATION_INPUT_PLACEHOLDER: "Enter username...",
       HOME_PAGE_ADD_COMMUNITY_LABEL: "Add Community",
 
+      // Chat Page
+      ERROR_CONVERSATION_LOADING_FAILED: "No conversation?",
+
       // Settings
       SETTINGS_PAGE_LABEL_ACCOUNT: "Account",
       SETTINGS_PAGE_LABEL_APPEARANCE: "Appearance",
@@ -158,6 +161,9 @@ export function StorageProvider({
       ERROR_SOCKET_CONTEXT_CANNOT_CONNECT: "Could not connect to the Omikron",
       ERROR_SOCKET_CONTEXT_CANNOT_CONNECT_EXTRA:
         "Check your internet connection and try again.\n If the issue persists check the Tensamin status page.",
+      ERROR_INVALID_USER_ID: "No Iota found for this user",
+      ERROR_INVALID_USER_ID_EXTRA:
+        "Check your Iota's internet connection and try again.\n If the issue persists try restarting your Iota.",
 
       // Other Stuff
       CANCEL: "Cancel",
@@ -216,8 +222,7 @@ export function StorageProvider({
           value === false ||
           value === null ||
           typeof value === "undefined" ||
-          value === "" ||
-          Object.keys(value).length === 0
+          value === ""
         ) {
           await db.delete("kv", key);
           setData((prevData) => {

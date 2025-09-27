@@ -211,7 +211,11 @@ export function SocketProvider({
             setIsReady(true);
             debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS");
           } else {
-            setPage("error", data.type.toUpperCase());
+            setPage(
+              "error",
+              data.type.toUpperCase(),
+              data.type.toUpperCase() + "_EXTRA"
+            );
           }
         })
         .catch((err) => {

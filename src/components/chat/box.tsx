@@ -1,6 +1,5 @@
 // Package Imports
 import React, { memo, useRef, useEffect, useCallback, useMemo } from "react";
-import Image from "next/image";
 import {
   useInfiniteQuery,
   //useQueryClient,
@@ -237,12 +236,11 @@ function ActualBox() {
 
   if (isError) {
     return (
-      <div className="flex flex-col h-full items-center justify-center text-sm">
-        <Image
+      <div className="flex flex-col gap-5 h-full items-center justify-center text-sm">
+        <img
           src="/assets/images/megamind.png"
           alt={translate("ERROR")}
-          width={200}
-          height={200}
+          className="w-55 h-55"
         />
         <p className="text-xl">
           {translate("ERROR_CONVERSATION_LOADING_FAILED")}
