@@ -38,6 +38,9 @@ type UserContextType = {
 };
 
 // Main
+let chatsFetched = false;
+let communitiesFetched = false;
+
 const UserContext = createContext<UserContextType | null>(null);
 
 export function useUserContext() {
@@ -84,42 +87,44 @@ export function UserProvider({
   }, [page, pageData, currentReceiverUuid]);
 
   useEffect(() => {
-    if (isReady && conversations.length === 0) {
-      send("get_chats").then((data) => {
-        if (data.type !== "error") {
-          setConversations(data.data.user_ids || []);
-        } else {
-          setConversations([
-            {
-              user_id: "0",
-              call_active: false,
-              last_message_at: 0,
-            },
-          ]);
-          toast.error(translate("ERROR_USER_CONTEXT_GET_CONVERSATIONS"));
-        }
-      });
-    }
-  }, [isReady, send, conversations.length, translate]);
+    if (!isReady || chatsFetched) return;
+    chatsFetched = true;
+
+    send("get_chats").then((data) => {
+      if (data.type !== "error") {
+        setConversations(data.data.user_ids || []);
+      } else {
+        setConversations([
+          {
+            user_id: "0",
+            call_active: false,
+            last_message_at: 0,
+          },
+        ]);
+        toast.error(translate("ERROR_USER_CONTEXT_GET_CONVERSATIONS"));
+      }
+    });
+  }, [isReady]);
 
   useEffect(() => {
-    if (isReady && communities.length === 0) {
-      send("get_communities").then((data) => {
-        if (data.type !== "error") {
-          setCommunities(data.data.communities || []);
-        } else {
-          setCommunities([
-            {
-              community_address: "error",
-              community_title: translate("ERROR_USER_CONTEXT_GET_COMMUNITIES"),
-              position: "0",
-            },
-          ]);
-          toast.error(translate("ERROR_USER_CONTEXT_GET_COMMUNITIES"));
-        }
-      });
-    }
-  }, [isReady, send, communities.length, translate]);
+    if (!isReady || communitiesFetched) return;
+    communitiesFetched = true;
+
+    send("get_communities").then((data) => {
+      if (data.type !== "error") {
+        setCommunities(data.data.communities || []);
+      } else {
+        setCommunities([
+          {
+            community_address: "error",
+            community_title: translate("ERROR_USER_CONTEXT_GET_COMMUNITIES"),
+            position: "0",
+          },
+        ]);
+        toast.error(translate("ERROR_USER_CONTEXT_GET_COMMUNITIES"));
+      }
+    });
+  }, [isReady]);
 
   if (lastMessage && lastMessage !== prevLastMessageRef.current) {
     prevLastMessageRef.current = lastMessage;
