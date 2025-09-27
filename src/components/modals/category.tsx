@@ -8,20 +8,24 @@ import { UserModal } from "@/components/modals/user";
 // Main
 export function Communities() {
   const { communities } = useUserContext();
-  return communities.map((community) => (
-    <Modal.MediumModal
-      key={community.community_address}
-      title={community.community_title}
-      description={community.community_address}
-      loading={false}
-    />
-  ));
+  return (
+    <div className="flex flex-col gap-2 pb-3">
+      {communities.map((community) => (
+        <Modal.MediumModal
+          key={community.community_address}
+          title={community.community_title}
+          description={community.community_address}
+          loading={false}
+        />
+      ))}
+    </div>
+  );
 }
 
 export function Conversations() {
   const { conversations } = useUserContext();
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 pb-3">
       {conversations.map((conversation) => (
         <UserModal
           key={conversation.user_id}

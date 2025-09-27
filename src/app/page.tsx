@@ -83,16 +83,18 @@ function MainPage() {
   return (
     <>
       <Sidebar className="group-data-[side=left]:border-0">
-        <SidebarHeader className="p-0 pl-2 pt-2 pr-1 flex flex-col gap-6">
+        <SidebarHeader className="p-0 pl-2 pt-2 pr-1 flex flex-col">
           <UserModal key={ownUuid} uuid={ownUuid} size="big" />
-          <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden p-1">
-            <div className="relative grid grid-cols-2 w-full gap-2">
+          <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden mx-1 my-2 p-1">
+            <div className="relative grid grid-cols-2 w-full gap-1">
               {["COMMUNITIES", "CONVERSATIONS"].map((cat: string) => (
                 <Button
                   key={cat}
                   variant="ghost"
                   type="button"
-                  className={`relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20 ${category !== cat ? "hover:border hover:border-input/30" : ""}`}
+                  className={`relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20 ${
+                    category !== cat ? "hover:border hover:border-input/30" : ""
+                  }`}
                   onClick={() =>
                     setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
                   }
@@ -118,18 +120,17 @@ function MainPage() {
               ))}
             </div>
           </div>
-          <div>
-            {["COMMUNITIES", "CONVERSATIONS"].map((cat) => {
-              if (cat !== category) return null;
-              return category === "COMMUNITIES" ? (
-                <Communities key={category} />
-              ) : (
-                <Conversations key={category} />
-              );
-            })}
-          </div>
         </SidebarHeader>
-        <SidebarContent></SidebarContent>
+        <SidebarContent className="p-0 pl-2 pt-2 pr-1 scrollbar-hide">
+          {["COMMUNITIES", "CONVERSATIONS"].map((cat) => {
+            if (cat !== category) return null;
+            return category === "COMMUNITIES" ? (
+              <Communities key={category} />
+            ) : (
+              <Conversations key={category} />
+            );
+          })}
+        </SidebarContent>
       </Sidebar>
       <div className="w-full h-screen flex flex-col bg-sidebar min-h-0">
         <Navbar />
