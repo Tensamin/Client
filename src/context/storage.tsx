@@ -201,7 +201,7 @@ export function StorageProvider({
     } finally {
       setReady(true);
     }
-  }, [db]);
+  }, [db, languages.en_int]);
 
   const set = useCallback(
     async (key: string, value: Value) => {
@@ -249,15 +249,15 @@ export function StorageProvider({
         const initializedDb = await dbPromise;
         setDb(initializedDb);
         await loadData();
-      } catch (err: unknown) {
+      } catch {
         setPage("error", "ERROR_STORGE_CONTEXT_INIT_FAILED_UNKNOWN");
       }
     })();
-  }, [dbPromise, loadData]);
+  }, [dbPromise, loadData, setPage]);
 
   useEffect(() => {
     set("language", language as string);
-  }, [language]);
+  }, [language, set]);
 
   useEffect(() => {
     const languagesWithoutEnInt: {
@@ -265,7 +265,7 @@ export function StorageProvider({
     } = { ...languages };
     delete languagesWithoutEnInt["en_int"];
     set("languages", languagesWithoutEnInt);
-  }, [languages]);
+  }, [languages, set]);
 
   function translate(input: string, extraInfo?: string | number) {
     if (

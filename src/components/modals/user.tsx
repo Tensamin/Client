@@ -38,7 +38,7 @@ export function UserModal({
     if (user.uuid !== "" && !reloadUsers) return;
     get(uuid, false).then(setUser);
     setReloadUsers(false);
-  }, [uuid, get, user.uuid, reloadUsers]);
+  }, [uuid, get, user.uuid, reloadUsers, setReloadUsers]);
 
   const props = {
     title: user.display,

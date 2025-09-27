@@ -100,7 +100,7 @@ export function UserProvider({
         }
       });
     }
-  }, [isReady, send, conversations.length]);
+  }, [isReady, send, conversations.length, translate]);
 
   useEffect(() => {
     if (isReady && communities.length === 0) {
@@ -119,7 +119,7 @@ export function UserProvider({
         }
       });
     }
-  }, [isReady, send, communities.length]);
+  }, [isReady, send, communities.length, translate]);
 
   if (lastMessage && lastMessage !== prevLastMessageRef.current) {
     prevLastMessageRef.current = lastMessage;

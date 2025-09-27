@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 // Lib Imports
 import { username_to_uuid } from "@/lib/endpoints";
-import { handleError, log } from "@/lib/utils";
+import { handleError } from "@/lib/utils";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";

@@ -345,7 +345,7 @@ export async function get_shared_secret(
       };
     }
 
-    const { x448 } = await import("@noble/curves/ed448");
+    const { x448 } = await import("@noble/curves/ed448.js");
     const sharedSecret = new Uint8Array(x448.getSharedSecret(dRaw, xRawPeer));
     //const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
 

@@ -1,6 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { toast } from "sonner";
 import * as React from "react";
 
 const MOBILE_BREAKPOINT = 768;

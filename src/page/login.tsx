@@ -109,14 +109,7 @@ export default function Page() {
       const uuid: string = uuidData.data.user_id;
 
       await login(uuid, privateKey);
-    } catch (err: unknown) {
-      let errorMsg = "";
-      if (!err) {
-        errorMsg = "Unknown error.";
-      } else {
-        const error = err as Error;
-        errorMsg = error.message;
-      }
+    } catch {
       toast.error(translate("ERROR_LOGIN_UNKNOWN"));
     }
   }
