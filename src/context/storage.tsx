@@ -10,9 +10,13 @@ import {
   useMemo,
 } from "react";
 import { openDB, IDBPDatabase } from "idb";
+import { toast } from "sonner";
 
 // Lib Imports
-import { handleError, log } from "@/lib/utils";
+import { handleError } from "@/lib/utils";
+
+// Context Imports
+import { usePageContext } from "@/context/page";
 
 // Types
 type StorageContextType = {
@@ -20,6 +24,15 @@ type StorageContextType = {
   clearAll: () => void;
   data: Data;
   translate: (input: string, extraInfo?: string | number) => string;
+  language: string | null;
+  languages: {
+    en_int: Language;
+    [key: string]: Language;
+  };
+  addLanguage: (langKey: string, langData: Language) => void;
+  setLanguage: (langKey: string) => void;
+  removeLanguage: (langKey: string) => void;
+  debugLog: (sender: string, message: string, extraInfo?: unknown) => void;
 };
 
 type Data = {
@@ -65,10 +78,104 @@ export function StorageProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { setPage } = usePageContext();
   const [data, setData] = useState<Data>({});
   const [ready, setReady] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
-  const [language, setLanguage] = useState<Language | null>(null);
+  const [language, setLanguage] = useState<string | null>(null);
+  const [languages, setLanguages] = useState<{
+    en_int: Language;
+    [key: string]: Language;
+  }>({
+    en_int: {
+      GENERIC_NAME: "English International (default)",
+
+      // Sidebar
+      COMMUNITIES: "Communities",
+      CONVERSATIONS: "Conversations",
+
+      // Homepage
+      HOME_PAGE_ADD_CONVERSATION_LABEL: "Add Conversation",
+      HOME_PAGE_ADD_CONVERSATION_DESCRIPTION:
+        "Create a new conversation with a user by entering their username.",
+      HOME_PAGE_ADD_CONVERSATION_INPUT_PLACEHOLDER: "Enter username...",
+      HOME_PAGE_ADD_COMMUNITY_LABEL: "Add Community",
+
+      // Settings
+      SETTINGS_PAGE_LABEL_ACCOUNT: "Account",
+      SETTINGS_PAGE_LABEL_APPEARANCE: "Appearance",
+      SETTINGS_PAGE_LABEL_GENERAL: "General",
+      SETTINGS_PAGE_LABEL_ADVANCED: "Advanced",
+      SETTINGS_PAGE_LABEL_INFORMATION: "Information",
+
+      SETTINGS_PAGE_LABEL_IOTA: "Iota",
+      SETTINGS_PAGE_LABEL_PROFILE: "Profile",
+      SETTINGS_PAGE_LABEL_PRIVACY: "Privacy",
+
+      SETTINGS_PAGE_LOGOUT_BUTTON_ACTION: "Logout",
+      SETTINGS_PAGE_LOGOUT_BUTTON_LABEL: "Are you sure you want to logout?",
+      SETTINGS_PAGE_LOGOUT_BUTTON_DESCRIPTION:
+        "This will log you out of your account and delete all your settings.",
+
+      SETTINGS_PAGE_LABEL_TINT: "Tint",
+      SETTINGS_PAGE_LABEL_CSS: "Custom CSS",
+      SETTINGS_PAGE_LABEL_LAYOUT: "Layout",
+
+      SETTINGS_PAGE_LABEL_AUDIO: "Audio",
+      SETTINGS_PAGE_LABEL_VIDEO: "Video",
+      SETTINGS_PAGE_LABEL_SOUNDBOARD: "Soundboard",
+      SETTINGS_PAGE_LABEL_NOTIFICATIONS: "Notifications",
+      SETTINGS_PAGE_LABEL_ACCESSABILITY: "Accessibility",
+      SETTINGS_PAGE_LABEL_LANGUAGE: "Language",
+      SETTINGS_PAGE_LABEL_PREMIUM: "Premium",
+
+      SETTINGS_PAGE_LABEL_DEVELOPER: "Developer",
+      SETTINGS_PAGE_ENABLE_DEBUG_MODE: "Enable Debug Mode",
+      DEVELOPER_PAGE_NEW_ENTREY_DIALOG_LABEL: "New Entry",
+      DEVELOPER_PAGE_NEW_ENTREY_DIALOG_DESCRIPTION:
+        "Add a new entry to the database.",
+      DEVELOPER_PAGE_NEW_ENTREY_DIALOG_KEY_LABEL: "Key",
+      DEVELOPER_PAGE_NEW_ENTREY_DIALOG_KEY_EXAMPLE: "someKey",
+      DEVELOPER_PAGE_NEW_ENTREY_DIALOG_VALUE_LABEL:
+        "Value (Strings need to be in quotes)",
+      DEVELOPER_PAGE_NEW_ENTREY_DIALOG_VALUE_EXAMPLE:
+        'e.g. {"enabled": true} or 42 or "hello"',
+      DEVELOPER_PAGE_DELETE_ENTRY_LABEL: "Delete Entry",
+      DEVELOPER_PAGE_DELETE_ENTRY_DESCRIPTION:
+        "Are you sure you want to delete this entry?",
+      DEVELOPER_PAGE_SEARCH_PLACEHOLDER: "Search by key...",
+      DEVELOPER_PAGE_TABLE_KEY: "Key",
+      DEVELOPER_PAGE_TABLE_VALUE: "Value",
+      DEVELOPER_PAGE_TABLE_ACTION: "Action",
+
+      // Language Page
+      UNKOWN_LANGUAGE: "Unknown Language",
+      LANGUAGE_PAGE_ADD_LANGUAGE_BUTTON: "Add Language",
+      LANGUAGE_PAGE_SEARCH_LANGUAGES: "Search languages...",
+      LANGUAGE_PAGE_NO_LANGUAGE_FOUND: "No language found.",
+
+      // Other Stuff
+      CANCEL: "Cancel",
+      SAVE: "Save",
+      EDIT: "Edit",
+      DELETE: "Delete",
+
+      VERSION: "Version: ",
+      CLIENT_PING: "Client Ping: ",
+      IOTA_PING: "Iota Ping: ",
+
+      STATUS_IOTA_OFFLINE: "Iota Offline",
+      STATUS_USER_OFFLINE: "User Offline",
+      STATUS_ONLINE: "Online",
+      STATUS_DND: "Do Not Disturb",
+      STATUS_IDLE: "Idle",
+      STATUS_NONE: "None",
+
+      RESCUE_CLEAR_STORAGE_BUTTON_LABEL: "Clear Storage",
+      RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION:
+        "This will clear all your settings and log you out of your account.",
+    },
+  });
 
   const dbPromise = useMemo(() => createDBPromise(), []);
 
@@ -81,6 +188,14 @@ export function StorageProvider({
         loadedData[entry.key] = entry.value;
       });
       setData(loadedData);
+      setLanguages({
+        en_int: languages.en_int,
+        ...(loadedData.languages as Language),
+      } as {
+        en_int: Language;
+        [key: string]: Language;
+      });
+      setLanguage((loadedData.language as string) || "en_int");
     } catch (err: unknown) {
       handleError("STORAGE_CONTEXT", "ERROR_STORAGE_CONTEXT_UNKOWN", err);
     } finally {
@@ -90,16 +205,15 @@ export function StorageProvider({
 
   const set = useCallback(
     async (key: string, value: Value) => {
-      if (!db) {
-        log(
-          "warn",
-          "STORAGE_CONTEXT",
-          "STORAGE_CONTEXT_DATABASE_NOT_READY_SKIPPING"
-        );
-        return;
-      }
+      if (!db) return;
       try {
-        if (value === false) {
+        if (
+          value === false ||
+          value === null ||
+          typeof value === "undefined" ||
+          value === "" ||
+          Object.keys(value).length === 0
+        ) {
           await db.delete("kv", key);
           setData((prevData) => {
             const newData = { ...prevData };
@@ -118,14 +232,7 @@ export function StorageProvider({
   );
 
   const clearAll = useCallback(async () => {
-    if (!db) {
-      log(
-        "warn",
-        "STORAGE_CONTEXT",
-        "STORAGE_CONTEXT_DATABASE_NOT_READY_SKIPPING"
-      );
-      return;
-    }
+    if (!db) return;
     try {
       await db.clear("kv");
       setData({});
@@ -143,110 +250,54 @@ export function StorageProvider({
         setDb(initializedDb);
         await loadData();
       } catch (err: unknown) {
-        log(
-          "error",
-          "STORAGE_CONTEXT",
-          "ERROR_STORGE_CONTEXT_INIT_FAILED_UNKNOWN",
-          err
-        );
-        setReady(true);
+        setPage("error", "ERROR_STORGE_CONTEXT_INIT_FAILED_UNKNOWN");
       }
     })();
   }, [dbPromise, loadData]);
 
   useEffect(() => {
-    if (typeof data.language === "undefined") {
-      setLanguage({
-        CANCEL: "Cancel",
-        SAVE: "Save",
-        EDIT: "Edit",
-        DELETE: "Delete",
+    set("language", language as string);
+  }, [language]);
 
-        // Sidebar
-        COMMUNITIES: "Communities",
-        CONVERSATIONS: "Conversations",
-
-        // Homepage
-        HOME_PAGE_ADD_CONVERSATION_LABEL: "Add Conversation",
-        HOME_PAGE_ADD_CONVERSATION_DESCRIPTION:
-          "Create a new conversation with a user by entering their username.",
-        HOME_PAGE_ADD_CONVERSATION_INPUT_PLACEHOLDER: "Enter username...",
-        HOME_PAGE_ADD_COMMUNITY_LABEL: "Add Community",
-
-        // Settings
-        SETTINGS_PAGE_LABEL_ACCOUNT: "Account",
-        SETTINGS_PAGE_LABEL_APPEARANCE: "Appearance",
-        SETTINGS_PAGE_LABEL_GENERAL: "General",
-        SETTINGS_PAGE_LABEL_ADVANCED: "Advanced",
-        SETTINGS_PAGE_LABEL_INFORMATION: "Information",
-
-        SETTINGS_PAGE_LABEL_IOTA: "Iota",
-        SETTINGS_PAGE_LABEL_PROFILE: "Profile",
-        SETTINGS_PAGE_LABEL_PRIVACY: "Privacy",
-        SETTINGS_PAGE_LABEL_DEVICES: "Devices",
-
-        SETTINGS_PAGE_LOGOUT_BUTTON_ACTION: "Logout",
-        SETTINGS_PAGE_LOGOUT_BUTTON_LABEL: "Are you sure you want to logout?",
-        SETTINGS_PAGE_LOGOUT_BUTTON_DESCRIPTION:
-          "This will log you out of your account and delete all your settings.",
-
-        SETTINGS_PAGE_LABEL_TINT: "Tint",
-        SETTINGS_PAGE_LABEL_CSS: "Custom CSS",
-        SETTINGS_PAGE_LABEL_LAYOUT: "Layout",
-
-        SETTINGS_PAGE_LABEL_AUDIO: "Audio",
-        SETTINGS_PAGE_LABEL_VIDEO: "Video",
-        SETTINGS_PAGE_LABEL_SOUNDBOARD: "Soundboard",
-        SETTINGS_PAGE_LABEL_NOTIFICATIONS: "Notifications",
-        SETTINGS_PAGE_LABEL_ACCESSABILITY: "Accessibility",
-        SETTINGS_PAGE_LABEL_LANGUAGE: "Language",
-        SETTINGS_PAGE_LABEL_PREMIUM: "Premium",
-
-        SETTINGS_PAGE_LABEL_DEVELOPER: "Developer",
-        SETTINGS_PAGE_ENABLE_DEBUG_MODE: "Enable Debug Mode",
-        DEVELOPER_PAGE_NEW_ENTREY_DIALOG_LABEL: "New Entry",
-        DEVELOPER_PAGE_NEW_ENTREY_DIALOG_DESCRIPTION:
-          "Add a new entry to the database.",
-        DEVELOPER_PAGE_NEW_ENTREY_DIALOG_KEY_LABEL: "Key",
-        DEVELOPER_PAGE_NEW_ENTREY_DIALOG_KEY_EXAMPLE: "someKey",
-        DEVELOPER_PAGE_NEW_ENTREY_DIALOG_VALUE_LABEL:
-          "Value (Strings need to be in quotes)",
-        DEVELOPER_PAGE_NEW_ENTREY_DIALOG_VALUE_EXAMPLE:
-          'e.g. {"enabled": true} or 42 or "hello"',
-        DEVELOPER_PAGE_DELETE_ENTRY_LABEL: "Delete Entry",
-        DEVELOPER_PAGE_DELETE_ENTRY_DESCRIPTION:
-          "Are you sure you want to delete this entry?",
-        DEVELOPER_PAGE_SEARCH_PLACEHOLDER: "Search by key...",
-        DEVELOPER_PAGE_TABLE_KEY: "Key",
-        DEVELOPER_PAGE_TABLE_VALUE: "Value",
-        DEVELOPER_PAGE_TABLE_ACTION: "Action",
-
-        VERSION: "Version: ",
-        CLIENT_PING: "Client Ping: ",
-        IOTA_PING: "Iota Ping: ",
-
-        STATUS_IOTA_OFFLINE: "Iota Offline",
-        STATUS_USER_OFFLINE: "User Offline",
-        STATUS_ONLINE: "Online",
-        STATUS_DND: "Do Not Disturb",
-        STATUS_IDLE: "Idle",
-        STATUS_NONE: "None",
-
-        RESCUE_CLEAR_STORAGE_BUTTON_LABEL: "Clear Storage",
-        RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION:
-          "This will clear all your settings and log you out of your account.",
-      });
-    } else {
-      setLanguage(data.language as Language);
-    }
-  }, [data.language]);
+  useEffect(() => {
+    const languagesWithoutEnInt: {
+      [key: string]: Language;
+    } = { ...languages };
+    delete languagesWithoutEnInt["en_int"];
+    set("languages", languagesWithoutEnInt);
+  }, [languages]);
 
   function translate(input: string, extraInfo?: string | number) {
-    if (!language || typeof language[input] === "undefined") {
+    if (
+      !language ||
+      !languages ||
+      typeof languages[language] === "undefined" ||
+      typeof languages[language][input] === "undefined"
+    ) {
       return input;
     } else {
-      return extraInfo ? language[input] + extraInfo : language[input];
+      return extraInfo
+        ? languages[language][input] + extraInfo
+        : languages[language][input];
     }
+  }
+
+  function addLanguage(langKey: string, langData: Language) {
+    setLanguages((prev) => ({ ...prev, [langKey]: langData }));
+    toast.success(translate("STORAGE_CONTEXT_LANGUAGE_ADDED"));
+  }
+
+  function removeLanguage(langKey: string) {
+    setLanguages((prev) => {
+      const updated = { ...prev };
+      delete updated[langKey];
+      return updated;
+    });
+    toast.success(translate("STORAGE_CONTEXT_LANGUAGE_DELETED"));
+  }
+
+  function debugLog(sender: string, message: string, extraInfo?: unknown) {
+    console.log(sender, message, extraInfo);
   }
 
   return ready && language !== null ? (
@@ -256,6 +307,12 @@ export function StorageProvider({
         clearAll,
         data,
         translate,
+        language,
+        languages,
+        addLanguage,
+        setLanguage,
+        removeLanguage,
+        debugLog,
       }}
     >
       {children}

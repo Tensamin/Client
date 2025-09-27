@@ -2,11 +2,11 @@
 import React, { useState } from "react";
 import * as Icon from "lucide-react";
 import { Ring } from "ldrs/react";
+import { toast } from "sonner";
 import "ldrs/react/Ring.css";
 
 // Lib Imports
 import { tos, pp, username_to_uuid } from "@/lib/endpoints";
-import { log } from "@/lib/utils";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
@@ -25,9 +25,9 @@ export default function Page() {
 
   const tuFileRef = React.useRef<HTMLInputElement>(null);
 
-  const { set } = useStorageContext();
+  const { set, debugLog, translate } = useStorageContext();
   const { pageData } = usePageContext();
-  log("info", "LOGIN_PAGE", "REASONE_FOR_LOGIN", pageData);
+  debugLog("LOGIN_PAGE", "REASONE_FOR_LOGIN", pageData);
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     e.preventDefault();
@@ -48,10 +48,13 @@ export default function Page() {
       if (!uuid || !privateKey) throw new Error();
 
       const buf = Buffer.from(privateKey, "base64");
-      if (buf.length !== 72) log("warn", "LOGIN", "WARN_UNUSUAL_KEY_LENGTH");
+      if (buf.length !== 72)
+        toast.warning(translate("WARN_UNUSUAL_KEY_LENGTH"));
       await login(uuid, privateKey);
     } catch {
-      log("error", "LOGIN", "ERROR_INVALID_TU_FILE");
+      toast.error(translate("ERROR_INVALID_TU_FILE"));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -73,23 +76,20 @@ export default function Page() {
       if (!uuid || !privateKey) throw new Error();
 
       const buf = Buffer.from(privateKey, "base64");
-      if (buf.length !== 72) log("warn", "LOGIN", "WARN_UNUSUAL_KEY_LENGTH");
+      if (buf.length !== 72)
+        toast.warning(translate("WARN_UNUSUAL_KEY_LENGTH"));
       await login(uuid, privateKey);
     } catch {
-      log("error", "LOGIN", "ERROR_INVALID_TU_FILE");
+      toast.error(translate("ERROR_INVALID_TU_FILE"));
+    } finally {
+      setLoading(false);
     }
   }
 
   async function login(uuid: string, privateKey: string) {
-    try {
-      set("uuid", uuid);
-      set("privateKey", privateKey);
-      window.location.reload();
-    } catch {
-      log("error", "LOGIN", "ERROR_LOGIN_UNKNOWN");
-    } finally {
-      setLoading(false);
-    }
+    set("uuid", uuid);
+    set("privateKey", privateKey);
+    window.location.reload();
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -117,7 +117,7 @@ export default function Page() {
         const error = err as Error;
         errorMsg = error.message;
       }
-      log("error", "LOGIN", "ERROR_LOGIN_UNKNOWN", errorMsg);
+      toast.error(translate("ERROR_LOGIN_UNKNOWN"));
     }
   }
 

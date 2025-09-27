@@ -2,6 +2,7 @@
 
 // Package Imports
 import { createContext, useContext, useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 
 // Lib Imports
 import { user } from "@/lib/endpoints";
@@ -12,12 +13,13 @@ import {
   ErrorType,
   User,
 } from "@/lib/types";
-import { log, getDisplayFromUsername } from "@/lib/utils";
+import { getDisplayFromUsername } from "@/lib/utils";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
 import { usePageContext } from "@/context/page";
 import { useCryptoContext } from "@/context/crypto";
+import { useStorageContext } from "@/context/storage";
 
 // Types
 type UserContextType = {
@@ -51,6 +53,7 @@ export function UserProvider({
 }>) {
   const fetchedUsersRef = useRef<Map<string, User>>(new Map());
   const prevLastMessageRef = useRef<unknown>(null);
+  const { translate } = useStorageContext();
   const [currentReceiverUuid, setCurrentReceiverUuid] = useState<string>("0");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -62,12 +65,7 @@ export function UserProvider({
       if (data.type !== "error") {
         setConversations(data.data.user_ids || []);
       } else {
-        log(
-          "error",
-          "USER_CONTEXT",
-          "ERROR_USER_CONTEXT_GET_CONVERSATIONS",
-          data
-        );
+        toast.error(translate("ERROR_USER_CONTEXT_GET_CONVERSATIONS"));
       }
     });
   }
@@ -75,6 +73,7 @@ export function UserProvider({
   const { ownUuid } = useCryptoContext();
   const { send, isReady, lastMessage } = useSocketContext();
   const { page, pageData } = usePageContext();
+  const { debugLog } = useStorageContext();
 
   useEffect(() => {
     if (page === "chat" && pageData !== currentReceiverUuid) {
@@ -97,12 +96,7 @@ export function UserProvider({
               last_message_at: 0,
             },
           ]);
-          log(
-            "error",
-            "USER_CONTEXT",
-            "ERROR_USER_CONTEXT_GET_CONVERSATIONS",
-            data
-          );
+          toast.error(translate("ERROR_USER_CONTEXT_GET_CONVERSATIONS"));
         }
       });
     }
@@ -117,16 +111,11 @@ export function UserProvider({
           setCommunities([
             {
               community_address: "error",
-              community_title: "Failed to load communities",
+              community_title: translate("ERROR_USER_CONTEXT_GET_COMMUNITIES"),
               position: "0",
             },
           ]);
-          log(
-            "error",
-            "USER_CONTEXT",
-            "ERROR_USER_CONTEXT_GET_COMMUNITIES",
-            data
-          );
+          toast.error(translate("ERROR_USER_CONTEXT_GET_COMMUNITIES"));
         }
       });
     }
@@ -191,12 +180,12 @@ export function UserProvider({
         refetch || !hasUser || !!(existingUser && existingUser.loading);
 
       if (hasUser && !shouldFetch) {
-        log("debug", "USER_CONTEXT", "USER_CONTEXT_USER_ALREADY_FETCHED");
+        debugLog("USER_CONTEXT", "USER_CONTEXT_USER_ALREADY_FETCHED");
         return existingUser!;
       }
 
       setReloadUsers(true);
-      log("debug", "USER_CONTEXT", "USER_CONTEXT_USER_NOT_FETCHED");
+      debugLog("USER_CONTEXT", "USER_CONTEXT_USER_NOT_FETCHED");
       const response = await fetch(`${user}${uuid}`);
       const data = await response.json();
 

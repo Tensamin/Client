@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { toast } from "sonner";
 import * as React from "react";
 
 const MOBILE_BREAKPOINT = 768;
@@ -34,16 +35,8 @@ export function handleError(sender: string, message: string, error: unknown) {
   if (error) {
     msg = (error as Error).message;
   }
-  log("error", sender, message, msg);
-}
-
-export function log(
-  level: "info" | "warn" | "error" | "debug" = "info",
-  sender: string,
-  type: string,
-  extraInfo?: unknown
-) {
-  console.log(sender, type, extraInfo, level);
+  alert("REMOVE THIS ERROR");
+  console.error(sender, message, msg);
 }
 
 export async function sha256(content: string | BufferSource) {

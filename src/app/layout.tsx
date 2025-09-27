@@ -32,12 +32,14 @@ export default function RootLayout({
           enableSystem
           storageKey="theme"
         >
-          <StorageProvider>
-            <Suspense fallback={<Loading />}>
-              <Toaster position="top-right" richColors expand />
-              <PageProvider>{children}</PageProvider>
-            </Suspense>
-          </StorageProvider>
+          <PageProvider>
+            <StorageProvider>
+              <Suspense fallback={<Loading />}>
+                <Toaster position="top-right" richColors expand />
+                {children}
+              </Suspense>
+            </StorageProvider>
+          </PageProvider>
         </ThemeProvider>
       </body>
     </html>

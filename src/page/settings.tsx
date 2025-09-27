@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import IotaPage from "@/page/settings/iota";
 import ProfilePage from "@/page/settings/profile";
 import PrivacyPage from "@/page/settings/privacy";
-import DevicesPage from "@/page/settings/devices";
 import TintPage from "@/page/settings/tint";
 import CssPage from "@/page/settings/css";
 import LayoutPage from "@/page/settings/layout";
@@ -43,7 +42,6 @@ export const Pages = [
   "iota",
   "profile",
   "privacy",
-  "devices",
   "logout",
   "-appearance",
   "tint",
@@ -69,8 +67,6 @@ function MainPage({ selected }: { selected: string }): React.JSX.Element {
       return <ProfilePage />;
     case "privacy":
       return <PrivacyPage />;
-    case "devices":
-      return <DevicesPage />;
     case "tint":
       return <TintPage />;
     case "css":

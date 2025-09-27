@@ -2,6 +2,7 @@
 
 // Package Imports
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { v7 } from "uuid";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
@@ -11,12 +12,13 @@ import {
   AdvancedSuccessMessageData,
   ErrorType,
 } from "@/lib/types";
-import { log, RetryCount } from "@/lib/utils";
+import { RetryCount } from "@/lib/utils";
 import { client_wss } from "@/lib/endpoints";
 
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
 import { usePageContext } from "@/context/page";
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import { Loading } from "@/components/loading";
@@ -60,6 +62,7 @@ export function SocketProvider({
   const [ownPing, setOwnPing] = useState<number>(0);
   const [iotaPing, setIotaPing] = useState<number>(0);
 
+  const { debugLog } = useStorageContext();
   const { setPage } = usePageContext();
   const { privateKeyHash, ownUuid } = useCryptoContext();
 
@@ -75,10 +78,10 @@ export function SocketProvider({
       try {
         parsedMessage = JSON.parse(message.data);
       } catch {
-        log("error", "SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_INVALID_MESSAGE");
+        debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_INVALID_MESSAGE");
       }
       if (parsedMessage.type !== "pong") {
-        log("debug", "SOCKET_CONTEXT", "SOCKET_CONTEXT_RECEIVE", parsedMessage);
+        debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_RECEIVE", parsedMessage);
       }
       setLastMessage(parsedMessage);
       const currentRequest = pendingRequests.current.get(parsedMessage.id);
@@ -88,19 +91,14 @@ export function SocketProvider({
         currentRequest.resolve(parsedMessage);
       }
     } catch (err: unknown) {
-      log(
-        "error",
-        "SOCKET_CONTEXT",
-        "ERROR_SOCKET_CONTEXT_UNKNOWN",
-        (err as ErrorType).message
-      );
+      debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
     }
   }
 
   const { sendMessage: sendRaw, readyState } = useWebSocket(client_wss, {
-    onOpen: () => log("info", "SOCKET_CONTEXT", "SOCKET_CONTEXT_CONNECTED"),
+    onOpen: () => debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_CONNECTED"),
     onClose: () => {
-      log("info", "SOCKET_CONTEXT", "SOCKET_CONTEXT_DISCONNECTED");
+      debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_DISCONNECTED");
       pendingRequests.current.forEach(({ reject, timeoutId }) => {
         clearTimeout(timeoutId);
         reject(new Error("ERROR_SOCKET_CONTEXT_CLOSED_BEFORE_RESPONSE"));
@@ -137,21 +135,11 @@ export function SocketProvider({
 
         try {
           if (messageToSend.type !== "ping") {
-            log(
-              "debug",
-              "SOCKET_CONTEXT",
-              "SOCKET_CONTEXT_SEND",
-              messageToSend
-            );
+            debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", messageToSend);
           }
           sendRaw(JSON.stringify(messageToSend));
         } catch (err: unknown) {
-          log(
-            "error",
-            "SOCKET_CONTEXT",
-            "ERROR_SOCKET_CONTEXT_UNKNOWN",
-            (err as ErrorType).message
-          );
+          debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
         }
         return {
           id: "",
@@ -171,12 +159,7 @@ export function SocketProvider({
 
         const timeoutId = setTimeout(() => {
           pendingRequests.current.delete(id);
-          log(
-            "error",
-            "SOCKET_CONTEXT",
-            "ERROR_SOCKET_CONTEXT_TIMEOUT",
-            `${requestType}, ${id}`
-          );
+          debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_TIMEOUT");
           reject();
         }, responseTimeout);
 
@@ -184,23 +167,13 @@ export function SocketProvider({
 
         try {
           if (messageToSend.type !== "ping") {
-            log(
-              "debug",
-              "SOCKET_CONTEXT",
-              "SOCKET_CONTEXT_SEND",
-              messageToSend
-            );
+            debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", messageToSend);
           }
           sendRaw(JSON.stringify(messageToSend));
         } catch (err: unknown) {
           clearTimeout(timeoutId);
           pendingRequests.current.delete(id);
-          log(
-            "error",
-            "SOCKET_CONTEXT",
-            "ERROR_SOCKET_CONTEXT_UNKNOWN",
-            (err as ErrorType).message
-          );
+          debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
           reject(err);
         }
       });
@@ -220,21 +193,16 @@ export function SocketProvider({
         private_key_hash: privateKeyHash,
       })
         .then((data) => {
-          if (data.type !== "error") {
+          if (!data.type.startsWith("error")) {
             setIdentified(true);
             setIsReady(true);
-            log(
-              "info",
-              "SOCKET_CONTEXT",
-              "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS"
-            );
+            debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS");
           } else {
-            setPage("error", `ERROR_SOCKET_CONTEXT_IDENTIFICATION_FAILED`);
+            setPage("error", data.type.toUpperCase());
           }
         })
         .catch((err) => {
-          log(
-            "error",
+          debugLog(
             "SOCKET_CONTEXT",
             "ERROR_SOCKET_CONTEXT_IDENTIFICATION_FAILED",
             err

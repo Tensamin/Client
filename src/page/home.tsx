@@ -2,6 +2,7 @@
 
 // Package Imports
 import { useState } from "react";
+import { toast } from "sonner";
 
 // Lib Imports
 import { username_to_uuid } from "@/lib/endpoints";
@@ -44,12 +45,7 @@ export default function Page() {
         .then((res) => res.json())
         .then(async (data) => {
           if (data.type === "error") {
-            log(
-              "error",
-              "CONVERSATION",
-              "ADD_CONVERSATION_FAILED",
-              data.log.message
-            );
+            toast.error(translate("ERROR_HOME_PAGE_ADD_CONVERSATION_FAILED"));
           } else {
             await send("add_chat", {
               user_id: data.data.user_id,
