@@ -23,7 +23,13 @@ import {
 import { Button } from "@/components/ui/button";
 
 // Main
-export function Loading({ message }: { message?: string }) {
+export function Loading({
+  message,
+  extra,
+}: {
+  message?: string;
+  extra?: string;
+}) {
   const isError = (message?.split("_")[0] ?? "") === "ERROR";
   const { data, clearAll, translate } = useStorageContext();
 
@@ -48,16 +54,21 @@ export function Loading({ message }: { message?: string }) {
           className="w-75 h-75"
         />
         {(isError || data?.debug) && typeof message !== "undefined" ? (
-          <p className="text-2xl font-semibold text-foreground">
+          <p className="text-2xl font-semibold text-foreground text-center">
             {translate(message) || "NO_MESSAGE"}
+          </p>
+        ) : null}
+        {(isError || data?.debug) && typeof extra !== "undefined" ? (
+          <p className="text-md font-medium text-muted-foreground text-center whitespace-pre-wrap">
+            {translate(extra) || "NO_MESSAGE"}
           </p>
         ) : null}
       </div>
       {showClearButton || isError ? (
-        <div className="fixed top-0 left-0 m-3">
+        <div className="fixed bottom-0 right-0 m-3">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive">
+              <Button variant="outline">
                 {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
               </Button>
             </AlertDialogTrigger>

@@ -81,7 +81,10 @@ export function SocketProvider({
         debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_INVALID_MESSAGE");
       }
       if (parsedMessage.type !== "pong") {
-        debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_RECEIVE", parsedMessage);
+        debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_RECEIVE", {
+          type: parsedMessage.type,
+          data: parsedMessage.data,
+        });
       }
       setLastMessage(parsedMessage);
       const currentRequest = pendingRequests.current.get(parsedMessage.id);
@@ -111,7 +114,11 @@ export function SocketProvider({
     reconnectAttempts: RetryCount,
     reconnectInterval: 500,
     onReconnectStop: () => {
-      setPage("error", "ERROR_SOCKET_CONTEXT_CANNOT_CONNECT");
+      setPage(
+        "error",
+        "ERROR_SOCKET_CONTEXT_CANNOT_CONNECT",
+        "ERROR_SOCKET_CONTEXT_CANNOT_CONNECT_EXTRA"
+      );
     },
   });
 
@@ -135,7 +142,10 @@ export function SocketProvider({
 
         try {
           if (messageToSend.type !== "ping") {
-            debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", messageToSend);
+            debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", {
+              type: messageToSend.type,
+              data: messageToSend.data,
+            });
           }
           sendRaw(JSON.stringify(messageToSend));
         } catch (err: unknown) {
@@ -167,7 +177,10 @@ export function SocketProvider({
 
         try {
           if (messageToSend.type !== "ping") {
-            debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", messageToSend);
+            debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", {
+              type: messageToSend.type,
+              data: messageToSend.data,
+            });
           }
           sendRaw(JSON.stringify(messageToSend));
         } catch (err: unknown) {

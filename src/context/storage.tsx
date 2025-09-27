@@ -117,8 +117,8 @@ export function StorageProvider({
       SETTINGS_PAGE_LOGOUT_BUTTON_DESCRIPTION:
         "This will log you out of your account and delete all your settings.",
 
-      SETTINGS_PAGE_LABEL_TINT: "Tint",
-      SETTINGS_PAGE_LABEL_CSS: "Custom CSS",
+      SETTINGS_PAGE_LABEL_THEME: "Theme",
+      SETTINGS_PAGE_LABEL_CSSTINT: "CSS & Tint",
       SETTINGS_PAGE_LABEL_LAYOUT: "Layout",
 
       SETTINGS_PAGE_LABEL_AUDIO: "Audio",
@@ -153,6 +153,11 @@ export function StorageProvider({
       LANGUAGE_PAGE_ADD_LANGUAGE_BUTTON: "Add Language",
       LANGUAGE_PAGE_SEARCH_LANGUAGES: "Search languages...",
       LANGUAGE_PAGE_NO_LANGUAGE_FOUND: "No language found.",
+
+      // Socket Context
+      ERROR_SOCKET_CONTEXT_CANNOT_CONNECT: "Could not connect to the Omikron",
+      ERROR_SOCKET_CONTEXT_CANNOT_CONNECT_EXTRA:
+        "Check your internet connection and try again.\n If the issue persists check the Tensamin status page.",
 
       // Other Stuff
       CANCEL: "Cancel",
@@ -296,8 +301,29 @@ export function StorageProvider({
     toast.success(translate("STORAGE_CONTEXT_LANGUAGE_DELETED"));
   }
 
-  function debugLog(sender: string, message: string, extraInfo?: unknown) {
-    console.log(sender, message, extraInfo);
+  function debugLog(
+    sender: string,
+    message: string,
+    extraInfo?: unknown
+  ): void {
+    const tagStyle =
+      "background: #4b4b4b; color: #ffffff; padding: 3px 4px; border-radius: 7px; border: 2px solid rgba(200, 200, 200, 0.2); margin-bottom: 3px;";
+    const msgStyle =
+      "background: #303030; color: #ffffff; padding: 3px 4px; border-radius: 7px; border: 2px solid rgba(200, 200, 200, 0.2);";
+
+    if (typeof extraInfo === "undefined") {
+      extraInfo = "";
+    }
+    console.log(
+      "%c%s%c\n%c%s%c\n",
+      tagStyle,
+      sender,
+      "",
+      msgStyle,
+      message,
+      "",
+      extraInfo
+    );
   }
 
   return ready && language !== null ? (

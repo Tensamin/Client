@@ -141,9 +141,12 @@ function MainPage() {
 }
 
 export default function Page() {
-  const { page, pageData } = usePageContext();
+  const { page, pageData, extraPageData } = usePageContext();
 
-  if (page === "error") return <Loading message={pageData || "ERROR"} />;
+  if (page === "error")
+    return (
+      <Loading message={pageData || "ERROR"} extra={extraPageData || ""} />
+    );
   if (page === "login")
     return (
       <CryptoProvider>

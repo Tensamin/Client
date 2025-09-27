@@ -7,7 +7,8 @@ import { createContext, useContext, useState } from "react";
 type PageContextType = {
   page: string;
   pageData: string;
-  setPage: (page: string, data?: string) => void;
+  extraPageData: string;
+  setPage: (page: string, data?: string, extraData?: string) => void;
 };
 
 const PageContext = createContext<PageContextType | null>(null);
@@ -21,10 +22,12 @@ export function usePageContext() {
 export function PageProvider({ children }: { children: React.ReactNode }) {
   const [page, setPageRaw] = useState("home");
   const [pageData, setPageData] = useState("");
+  const [extraPageData, setExtraPageData] = useState("");
 
-  function setPage(page: string, data: string = "") {
+  function setPage(page: string, data: string = "", extraData: string = "") {
     setPageRaw(page);
     setPageData(data);
+    setExtraPageData(extraData);
   }
 
   return (
@@ -32,6 +35,7 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
       value={{
         page,
         pageData,
+        extraPageData,
         setPage,
       }}
     >
