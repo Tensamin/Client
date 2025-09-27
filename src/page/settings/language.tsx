@@ -13,6 +13,7 @@ import * as Icon from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 export default function Page() {
   const {
@@ -141,16 +142,15 @@ export default function Page() {
                       {lang}
                     </p>
                     {lang !== "en_int" && (
-                      <Button
-                        size="sm"
+                      <Badge
                         variant="destructive"
                         onClick={() => {
                           removeLanguage(lang);
                           setLanguage("en_int");
                         }}
                       >
-                        <Icon.Trash2 color="var(--foreground)" />
-                      </Button>
+                        {translate("DELETE")}
+                      </Badge>
                     )}
                   </CommandItem>
                 ))}
