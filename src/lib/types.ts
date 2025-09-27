@@ -1,4 +1,29 @@
-import { Message } from "@/components/chat/message";
+export type RawMessage = {
+  sent_by_self?: boolean;
+  avatar?: boolean;
+  display?: boolean;
+  timestamp: number;
+  tint?: string;
+  files?: File[];
+  content: string;
+};
+
+export type Message = {
+  send_to_server: boolean;
+  sender: string;
+  avatar?: boolean;
+  display?: boolean;
+  timestamp: number;
+  tint?: string;
+  files?: File[];
+  content: string;
+};
+
+export type Messages = {
+  messages: Message[];
+  next: number;
+  previous: number;
+};
 
 export type JWK = {
   kty: string;
@@ -13,7 +38,8 @@ export type BasicSuccessMessage = {
 };
 
 export type AdvancedSuccessMessageData = {
-  message_chunk?: Message[] | null;
+  content?: string | null;
+  messages?: RawMessage[] | null;
   user_id?: string | null;
   user_ids?: Conversation[] | null;
   private_key_hash?: string | null;
@@ -33,6 +59,20 @@ export type AdvancedSuccessMessage = {
   type: string;
   data: AdvancedSuccessMessageData;
   id: string;
+};
+
+export type File = {
+  name: string;
+  id: string;
+  type:
+    | "image"
+    | "image_top_right"
+    | "video"
+    | "audio"
+    | "json"
+    | "txt"
+    | "pdf"
+    | "file";
 };
 
 export type User = {

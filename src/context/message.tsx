@@ -1,18 +1,23 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
 import { usePageContext } from "@/context/page";
+import { useUserContext } from "@/context/user";
+import { useCryptoContext } from "@/context/crypto";
 
-// Components
-import { Messages, Message } from "@/components/chat/message";
+// Types
+import { File, Message, Messages } from "@/lib/types";
 
 // Main
 type MessageContextType = {
   getMessages: (loaded: number, amount: number) => Promise<Messages>;
+  sendMessage: (content: string, files?: File[]) => Promise<void>;
+  addRealtimeMessageToBox: Message | null;
+  setAddRealtimeMessageToBox: (message: Message | null) => void;
 };
 
 const MessageContext = createContext<MessageContextType | null>(null);
@@ -30,6 +35,10 @@ export function MessageProvider({
 }>) {
   const { send, isReady } = useSocketContext();
   const { pageData: id } = usePageContext();
+  const { ownUuid, currentReceiverUuid, get } = useUserContext();
+  const { get_shared_secret, encrypt, privateKey } = useCryptoContext();
+  const [addRealtimeMessageToBox, setAddRealtimeMessageToBox] =
+    useState<Message | null>(null);
 
   async function getMessages(
     loaded: number,
@@ -38,25 +47,35 @@ export function MessageProvider({
     if (!isReady)
       throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
     if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
-    const messages = await send("message_get", {
+    const messages = await send("messages_get", {
       user_id: id,
       amount: amount,
       offset: loaded,
     }).then((data) => {
       if (data.type === "error") throw new Error();
-      if (!data.data.message_chunk) {
+      if (!data.data.messages) {
         return [
           {
-            message_content: "NO_MESSAGES_WITH_USER",
-            message_time: 0,
-            message_state: "SYSTEM",
-            sender_is_me: false,
+            send_to_server: false,
+            sender: "SYSTEM",
+            avatar: false,
+            display: false,
+            timestamp: Date.now(),
+            content: "NO_MESSAGES_WITH_USER",
           } as Message,
         ];
       }
-      const getTime = (m: Message) => Number(m.message_time) || 0;
-      const sorted = [...data.data.message_chunk]
-        .sort((a, b) => getTime(b) - getTime(a))
+      const sorted = [...data.data.messages]
+        .map((m) => {
+          const n = m;
+          delete n.sent_by_self;
+          return {
+            send_to_server: false,
+            sender: m.sent_by_self ? ownUuid : currentReceiverUuid,
+            ...n,
+          } as Message;
+        })
+        .sort((a, b) => b.timestamp - a.timestamp)
         .reverse();
       return sorted;
     });
@@ -68,10 +87,36 @@ export function MessageProvider({
     };
   }
 
+  async function sendMessage(content: string, files?: File[]): Promise<void> {
+    if (!isReady)
+      throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
+    if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
+    const ownPublicKey = await get(ownUuid, false).then(
+      (data) => data.public_key
+    );
+    const otherPublicKey = await get(currentReceiverUuid, false).then(
+      (data) => data.public_key
+    );
+    const sharedSecret = await get_shared_secret(
+      privateKey,
+      ownPublicKey,
+      otherPublicKey
+    );
+    const encrypted = await encrypt(content, sharedSecret.message);
+    await send("messages_send", {
+      ...(files && { files: files }),
+      content: encrypted.message,
+      user_id: currentReceiverUuid,
+    });
+  }
+
   return (
     <MessageContext.Provider
       value={{
         getMessages,
+        sendMessage,
+        addRealtimeMessageToBox,
+        setAddRealtimeMessageToBox,
       }}
     >
       {children}

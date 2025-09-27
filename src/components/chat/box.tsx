@@ -2,7 +2,7 @@
 import React, { memo, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   useInfiniteQuery,
-  //useQueryClient,
+  useQueryClient,
   InfiniteData,
 } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -17,7 +17,10 @@ import { useMessageContext } from "@/context/message";
 import { useStorageContext } from "@/context/storage";
 
 // Components
-import { MessageGroup, Message, Messages } from "@/components/chat/message";
+import { MessageGroup } from "@/components/chat/message";
+
+// Types
+import { Messages, Message } from "@/lib/types";
 
 // Main
 function flattenPages(
@@ -27,23 +30,24 @@ function flattenPages(
   return data.pages.flatMap((p) => p.messages);
 }
 
-//const TOTAL_MESSAGES = 500;
+const TOTAL_MESSAGES = 500;
 const QUERY_KEY = ["messages", "top-infinite"] as const;
 const SCROLL_THRESHOLD = 48;
-//const BOTTOM_DISTANCE_THRESHOLD = 8;
+const BOTTOM_DISTANCE_THRESHOLD = 8;
 
 export const Box = memo(ActualBox);
 
 function ActualBox() {
   const parentRef = useRef<HTMLDivElement | null>(null);
-  //const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const loadingLockRef = useRef(false);
   const didInitialScrollRef = useRef(false);
   const timeoutRef = useRef<number | null>(null);
-  //const nextIdRef = useRef(TOTAL_MESSAGES);
+  const nextIdRef = useRef(TOTAL_MESSAGES);
 
   const { translate } = useStorageContext();
-  const { getMessages } = useMessageContext();
+  const { getMessages, addRealtimeMessageToBox, sendMessage } =
+    useMessageContext();
 
   const {
     data,
@@ -79,7 +83,7 @@ function ActualBox() {
   const getItemKey = useCallback(
     (index: number) => {
       const msg = messages[index];
-      return msg?.message_time ?? `fallback-${index}`;
+      return msg?.timestamp ?? `fallback-${index}`;
     },
     [messages]
   );
@@ -92,8 +96,6 @@ function ActualBox() {
     getItemKey,
   });
 
-  {
-    /*
   const isPinnedToBottom = useCallback(() => {
     const el = parentRef.current;
     if (!el) return true;
@@ -103,8 +105,6 @@ function ActualBox() {
 
     return distance <= BOTTOM_DISTANCE_THRESHOLD + 2;
   }, []);
-    */
-  }
 
   const maybeLoadOlder = useCallback(async () => {
     if (loadingLockRef.current || !hasPreviousPage || isFetchingPreviousPage) {
@@ -160,18 +160,10 @@ function ActualBox() {
     }
   }, [data, messages.length, rowVirtualizer]);
 
-  {
-    /*
   const addRealtimeMessage = useCallback(
-    (text: string) => {
+    (newMsg: Message) => {
       const wasPinned = isPinnedToBottom();
       nextIdRef.current += 1;
-      const newMsg: Message = {
-        message_time: Number(nextIdRef.current),
-        message_content: text,
-        message_state: "sent",
-        sender_is_me: false,
-      };
 
       let newTotalLength = messages.length + 1;
 
@@ -217,8 +209,14 @@ function ActualBox() {
     },
     [isPinnedToBottom, queryClient, rowVirtualizer, messages.length]
   );
-  */
-  }
+
+  useEffect(() => {
+    if (!addRealtimeMessageToBox) return;
+    addRealtimeMessage(addRealtimeMessageToBox);
+    if (addRealtimeMessageToBox.send_to_server) {
+      sendMessage(addRealtimeMessageToBox.content);
+    }
+  }, [addRealtimeMessageToBox, addRealtimeMessage]);
 
   if (isLoading) {
     return (
@@ -267,7 +265,7 @@ function ActualBox() {
 
           return (
             <div
-              key={`${virtualRow.key}-${msg.message_time}`}
+              key={`${virtualRow.key}-${msg.timestamp}`}
               data-index={virtualRow.index}
               className="absolute left-0 right-0 px-3 py-2"
               style={{

@@ -100,6 +100,7 @@ export function StorageProvider({
         "Create a new conversation with a user by entering their username.",
       HOME_PAGE_ADD_CONVERSATION_INPUT_PLACEHOLDER: "Enter username...",
       HOME_PAGE_ADD_COMMUNITY_LABEL: "Add Community",
+      ERROR_HOME_PAGE_ADD_CONVERSATION_FAILED: "Failed to add conversation",
 
       // Chat Page
       ERROR_CONVERSATION_LOADING_FAILED: "No conversation?",
@@ -182,6 +183,7 @@ export function StorageProvider({
       STATUS_IDLE: "Idle",
       STATUS_NONE: "None",
 
+      RESCUE_BYPASS_BUTTON_LABEL: "Bypass Screen",
       RESCUE_CLEAR_STORAGE_BUTTON_LABEL: "Clear Storage",
       RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION:
         "This will clear all your settings and log you out of your account.",

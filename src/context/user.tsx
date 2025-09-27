@@ -63,6 +63,11 @@ export function UserProvider({
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
   const [reloadUsers, setReloadUsers] = useState<boolean>(false);
 
+  const { ownUuid } = useCryptoContext();
+  const { send, isReady, lastMessage } = useSocketContext();
+  const { page, pageData } = usePageContext();
+  const { debugLog } = useStorageContext();
+
   async function refetchConversations() {
     await send("get_chats").then((data) => {
       if (data.type !== "error") {
@@ -72,11 +77,6 @@ export function UserProvider({
       }
     });
   }
-
-  const { ownUuid } = useCryptoContext();
-  const { send, isReady, lastMessage } = useSocketContext();
-  const { page, pageData } = usePageContext();
-  const { debugLog } = useStorageContext();
 
   useEffect(() => {
     if (page === "chat" && pageData !== currentReceiverUuid) {
@@ -104,7 +104,7 @@ export function UserProvider({
         toast.error(translate("ERROR_USER_CONTEXT_GET_CONVERSATIONS"));
       }
     });
-  }, [isReady]);
+  }, [isReady, send, translate]);
 
   useEffect(() => {
     if (!isReady || communitiesFetched) return;
@@ -124,7 +124,7 @@ export function UserProvider({
         toast.error(translate("ERROR_USER_CONTEXT_GET_COMMUNITIES"));
       }
     });
-  }, [isReady]);
+  }, [isReady, send, translate]);
 
   if (lastMessage && lastMessage !== prevLastMessageRef.current) {
     prevLastMessageRef.current = lastMessage;

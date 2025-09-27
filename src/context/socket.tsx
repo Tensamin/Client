@@ -1,8 +1,14 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { v7 } from "uuid";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
@@ -10,7 +16,6 @@ import useWebSocket, { ReadyState } from "react-use-websocket";
 import {
   AdvancedSuccessMessage,
   AdvancedSuccessMessageData,
-  ErrorType,
 } from "@/lib/types";
 import { RetryCount } from "@/lib/utils";
 import { client_wss } from "@/lib/endpoints";
@@ -93,7 +98,7 @@ export function SocketProvider({
         pendingRequests.current.delete(parsedMessage.id);
         currentRequest.resolve(parsedMessage);
       }
-    } catch (err: unknown) {
+    } catch {
       debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
     }
   }
@@ -124,80 +129,83 @@ export function SocketProvider({
 
   const connected = readyState === ReadyState.OPEN;
 
-  async function send(
-    requestType: string,
-    data: AdvancedSuccessMessageData = {},
-    noResponse: boolean = false
-  ): Promise<AdvancedSuccessMessage> {
-    if (
-      !forceLoad &&
-      readyState !== ReadyState.CLOSED &&
-      readyState !== ReadyState.CLOSING
-    ) {
-      if (noResponse) {
-        const messageToSend = {
-          type: requestType,
-          data,
-        };
+  const send = useCallback(
+    async (
+      requestType: string,
+      data: AdvancedSuccessMessageData = {},
+      noResponse = false
+    ): Promise<AdvancedSuccessMessage> => {
+      if (
+        !forceLoad &&
+        readyState !== ReadyState.CLOSED &&
+        readyState !== ReadyState.CLOSING
+      ) {
+        if (noResponse) {
+          const messageToSend = {
+            type: requestType,
+            data,
+          };
 
-        try {
-          if (messageToSend.type !== "ping") {
-            debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", {
-              type: messageToSend.type,
-              data: messageToSend.data,
-            });
+          try {
+            if (messageToSend.type !== "ping") {
+              debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", {
+                type: messageToSend.type,
+                data: messageToSend.data,
+              });
+            }
+            sendRaw(JSON.stringify(messageToSend));
+          } catch {
+            debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
           }
-          sendRaw(JSON.stringify(messageToSend));
-        } catch (err: unknown) {
-          debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
+          return {
+            id: "",
+            type: "error",
+            data: {},
+          };
         }
+
+        return new Promise((resolve, reject) => {
+          const id = v7();
+
+          const messageToSend = {
+            id,
+            type: requestType,
+            data,
+          };
+
+          const timeoutId = setTimeout(() => {
+            pendingRequests.current.delete(id);
+            debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_TIMEOUT");
+            reject();
+          }, responseTimeout);
+
+          pendingRequests.current.set(id, { resolve, reject, timeoutId });
+
+          try {
+            if (messageToSend.type !== "ping") {
+              debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", {
+                type: messageToSend.type,
+                data: messageToSend.data,
+              });
+            }
+            sendRaw(JSON.stringify(messageToSend));
+          } catch (err: unknown) {
+            clearTimeout(timeoutId);
+            pendingRequests.current.delete(id);
+            debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
+            reject(err);
+          }
+        });
+      } else {
         return {
           id: "",
           type: "error",
           data: {},
         };
       }
-
-      return new Promise((resolve, reject) => {
-        const id = v7();
-
-        const messageToSend = {
-          id,
-          type: requestType,
-          data,
-        };
-
-        const timeoutId = setTimeout(() => {
-          pendingRequests.current.delete(id);
-          debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_TIMEOUT");
-          reject();
-        }, responseTimeout);
-
-        pendingRequests.current.set(id, { resolve, reject, timeoutId });
-
-        try {
-          if (messageToSend.type !== "ping") {
-            debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", {
-              type: messageToSend.type,
-              data: messageToSend.data,
-            });
-          }
-          sendRaw(JSON.stringify(messageToSend));
-        } catch (err: unknown) {
-          clearTimeout(timeoutId);
-          pendingRequests.current.delete(id);
-          debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
-          reject(err);
-        }
-      });
-    } else {
-      return {
-        id: "",
-        type: "error",
-        data: {},
-      };
-    }
-  }
+    },
+    [readyState, forceLoad, debugLog, sendRaw]
+  );
 
   useEffect(() => {
     if (connected && !identified && privateKeyHash) {
@@ -227,7 +235,7 @@ export function SocketProvider({
           setPage("error", "ERROR_SOCKET_CONTEXT_IDENTIFICATION_FAILED");
         });
     }
-  }, [connected, privateKeyHash, setPage, identified, ownUuid]);
+  }, [connected, privateKeyHash, setPage, identified, ownUuid, debugLog, send]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -248,7 +256,7 @@ export function SocketProvider({
     return () => {
       clearInterval(interval);
     };
-  }, [isReady]);
+  }, [isReady, send]);
 
   switch (readyState) {
     case ReadyState.OPEN:

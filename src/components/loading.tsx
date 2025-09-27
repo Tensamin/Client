@@ -65,7 +65,12 @@ export function Loading({
         ) : null}
       </div>
       {showClearButton || isError ? (
-        <div className="fixed bottom-0 right-0 m-3">
+        <div className="fixed bottom-0 right-0 m-3 flex gap-3">
+          {data?.enableLockScreenBypass && (
+            <Button variant="outline">
+              {translate("RESCUE_BYPASS_BUTTON_LABEL")}
+            </Button>
+          )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline">
@@ -82,6 +87,7 @@ export function Loading({
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
+                <div className="w-full" />
                 <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => {
