@@ -104,6 +104,7 @@ export function StorageProvider({
 
       // Chat Page
       ERROR_CONVERSATION_LOADING_FAILED: "No conversation?",
+      NO_MESSAGES_WITH_USER: "You have no messages with this user.",
 
       // Settings
       SETTINGS_PAGE_LABEL_ACCOUNT: "Account",

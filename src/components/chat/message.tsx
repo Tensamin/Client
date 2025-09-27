@@ -43,7 +43,7 @@ function FinalMessage({ message: data }: { message: Message }) {
   useEffect(() => {
     (async () => {
       if (data.content === "NO_MESSAGES_WITH_USER") {
-        setContent(data.content);
+        setContent(translate(data.content));
       } else {
         try {
           const ownPublicKey = await get(ownUuid, false).then(

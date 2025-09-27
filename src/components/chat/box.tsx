@@ -169,29 +169,34 @@ function ActualBox() {
 
       queryClient.setQueryData<InfiniteData<Messages, number>>(
         QUERY_KEY,
-        (old: any) => {
-          if (!old) {
-            newTotalLength = 1;
-            return {
-              pageParams: [0],
-              pages: [{ messages: [newMsg], total: TOTAL_MESSAGES }],
-            };
-          }
+        (old: InfiniteData<Messages, number> | undefined) => {
+          const base: InfiniteData<Messages, number> = old ?? {
+            pageParams: [0],
+            pages: [
+              {
+                messages: [newMsg],
+                previous: 0,
+                next: 0,
+              },
+            ],
+          };
 
-          const lastPageIndex = old.pages.length - 1;
-          const lastPage = old.pages[lastPageIndex];
-          const newPages = old.pages.slice(0, lastPageIndex);
+          const lastPageIndex = base.pages.length - 1;
+          const lastPage = base.pages[lastPageIndex];
+          const newPages = base.pages.slice(0, lastPageIndex);
 
           newPages.push({
             ...lastPage,
             messages: [...lastPage.messages, newMsg],
           });
 
-          newTotalLength =
-            old.pages.reduce((acc: any, p: any) => acc + p.messages.length, 0) +
-            1;
+          const prevTotal = base.pages.reduce(
+            (acc, p) => acc + p.messages.length,
+            0
+          );
+          newTotalLength = prevTotal + 1;
 
-          return { ...old, pages: newPages };
+          return { ...base, pages: newPages };
         }
       );
 
@@ -216,7 +221,7 @@ function ActualBox() {
     if (addRealtimeMessageToBox.send_to_server) {
       sendMessage(addRealtimeMessageToBox.content);
     }
-  }, [addRealtimeMessageToBox, addRealtimeMessage]);
+  }, [addRealtimeMessageToBox, addRealtimeMessage, sendMessage]);
 
   if (isLoading) {
     return (

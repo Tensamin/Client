@@ -47,7 +47,7 @@ export function MessageProvider({
     if (!isReady)
       throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
     if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
-    const messages = await send("messages_get", {
+    const messages = await send("message_get", {
       user_id: id,
       amount: amount,
       offset: loaded,
