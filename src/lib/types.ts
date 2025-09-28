@@ -37,6 +37,14 @@ export type BasicSuccessMessage = {
   message: string;
 };
 
+export type UserState =
+  | "NONE"
+  | "ONLINE"
+  | "IDLE"
+  | "DND"
+  | "USER_OFFLINE"
+  | "IOTA_OFFLINE";
+
 export type AdvancedSuccessMessageData = {
   content?: string | null;
   messages?: RawMessage[] | null;
@@ -53,6 +61,7 @@ export type AdvancedSuccessMessageData = {
   user_state?: string | null;
   amount?: number | null;
   offset?: number | null;
+  user_status?: string | null;
 };
 
 export type AdvancedSuccessMessage = {

@@ -1,5 +1,6 @@
 // Package Imports
 import React, { memo, useRef, useEffect, useCallback, useMemo } from "react";
+import ExportedImage from "next-image-export-optimizer";
 import {
   useInfiniteQuery,
   useQueryClient,
@@ -240,7 +241,9 @@ function ActualBox() {
   if (isError) {
     return (
       <div className="flex flex-col gap-5 h-full items-center justify-center text-sm">
-        <img
+        <ExportedImage
+          width={220}
+          height={220}
           src="/assets/images/megamind.png"
           alt={translate("ERROR")}
           className="w-55 h-55"

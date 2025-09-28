@@ -16,6 +16,7 @@ import useWebSocket, { ReadyState } from "react-use-websocket";
 import {
   AdvancedSuccessMessage,
   AdvancedSuccessMessageData,
+  UserState,
 } from "@/lib/types";
 import { RetryCount } from "@/lib/utils";
 import { client_wss } from "@/lib/endpoints";
@@ -42,6 +43,7 @@ type SocketContextType = {
     noResponse?: boolean
   ) => Promise<AdvancedSuccessMessage>;
   isReady: boolean;
+  initialUserState: UserState;
 };
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -63,6 +65,7 @@ export function SocketProvider({
   const [lastMessage, setLastMessage] = useState<AdvancedSuccessMessage | null>(
     null
   );
+  const [initialUserState, setInitialUserState] = useState<UserState>("NONE");
 
   const [ownPing, setOwnPing] = useState<number>(0);
   const [iotaPing, setIotaPing] = useState<number>(0);
@@ -217,6 +220,9 @@ export function SocketProvider({
           if (!data.type.startsWith("error")) {
             setIdentified(true);
             setIsReady(true);
+            setInitialUserState(
+              (data.data.user_status as UserState) || "ONLINE"
+            );
             debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS");
           } else {
             setPage(
@@ -269,6 +275,7 @@ export function SocketProvider({
             lastMessage,
             ownPing,
             iotaPing,
+            initialUserState,
           }}
         >
           {children}

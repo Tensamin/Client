@@ -5,7 +5,12 @@ import { convertStringToInitials, ThemeSize, getColorFor } from "@/lib/utils";
 import { useStorageContext } from "@/context/storage";
 
 // Components
-import { Card, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -14,6 +19,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
 // Main
 export function BigModal({
@@ -101,7 +107,9 @@ export function MediumModal({
             <TooltipTrigger asChild>
               <div className="rounded-full absolute bg-muted bottom-0 right-0 w-3.5 h-3.5 flex justify-center items-center">
                 <div
-                  className={`w-2.5 h-2.5 rounded-full border ${getColorFor(statusIcon)}`}
+                  className={`w-2.5 h-2.5 rounded-full border ${getColorFor(
+                    statusIcon
+                  )}`}
                 />
               </div>
             </TooltipTrigger>
@@ -123,4 +131,82 @@ export function MediumModal({
 
 export function SmallModal() {
   return <div></div>;
+}
+
+export function Profile({
+  title,
+  description,
+  status,
+  state,
+  icon,
+  badges,
+  loading,
+}: {
+  title: string;
+  description: string;
+  status?: string;
+  state: string;
+  icon?: string;
+  badges?: string[];
+  loading: boolean;
+}) {
+  const { translate } = useStorageContext();
+  return loading ? (
+    <Card className="bg-input/30 p-3 rounded-xl border-input w-75">
+      <CardHeader className="flex p-0 items-center gap-3">
+        <Skeleton className="size-13 rounded-full" />
+        <div className="flex flex-col gap-1">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-3 w-30" />
+        </div>
+      </CardHeader>
+    </Card>
+  ) : (
+    <Card className="bg-input/30 p-3 rounded-xl border-input w-75">
+      <CardHeader className="flex p-0 items-center gap-3">
+        <div className="relative">
+          <Avatar className="border size-13">
+            {icon && <AvatarImage src={icon} />}
+            <AvatarFallback>{convertStringToInitials(title)}</AvatarFallback>
+          </Avatar>
+          {state && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="rounded-full absolute bg-muted bottom-0 right-0 w-4.5 h-4.5 flex justify-center items-center">
+                  <div
+                    className={`w-3 h-3 rounded-full border ${getColorFor(
+                      state
+                    )}`}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>{translate("STATUS_" + state)}</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+        <div className="flex flex-col gap-1">
+          <p className="text-md font-medium leading-4">{title}</p>
+          <p className="text-sm font-bold text-muted-foreground leading-3">
+            {status}
+          </p>
+        </div>
+      </CardHeader>
+      {description && description !== "" && (
+        <CardContent className="whitespace-pre-wrap p-2 border border-input bg-input/40 text-sm rounded-xl">
+          {description}
+        </CardContent>
+      )}
+      {badges && badges.length > 0 && (
+        <CardFooter>
+          <div className="flex flex-wrap gap-2">
+            {badges.map((badge) => (
+              <Badge key={badge} className="text-xs">
+                {badge}
+              </Badge>
+            ))}
+          </div>
+        </CardFooter>
+      )}
+    </Card>
+  );
 }

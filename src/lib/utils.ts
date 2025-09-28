@@ -19,11 +19,11 @@ export function getColorFor(state: string) {
     case "IDLE":
       return "bg-yellow-500 border-yellow-700";
     case "DND":
-      return "bg-red-200 border-red-400";
+      return "bg-red-400 border-red-500";
     case "USER_OFFLINE":
       return "bg-gray-400 border-gray-500/50";
     case "IOTA_OFFLINE":
-      return "bg-destructive border-destructive-foreground/50";
+      return "bg-blue-500 border-blue-600";
     case "ONLINE":
       return "bg-green-500 border-green-700";
   }

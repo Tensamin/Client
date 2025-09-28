@@ -1,7 +1,14 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext, useState, useRef, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+} from "react";
 import { toast } from "sonner";
 
 // Lib Imports
@@ -12,6 +19,7 @@ import {
   Conversation,
   ErrorType,
   User,
+  UserState,
 } from "@/lib/types";
 import { getDisplayFromUsername } from "@/lib/utils";
 
@@ -35,6 +43,10 @@ type UserContextType = {
   refetchConversations: () => Promise<void>;
   reloadUsers: boolean;
   setReloadUsers: (reload: boolean) => void;
+  doCustomEdit: (uuid: string, user: User) => void;
+  fetchedUsers: Map<string, User>;
+  ownState: UserState;
+  setOwnState: (state: UserState) => void;
 };
 
 // Main
@@ -56,17 +68,105 @@ export function UserProvider({
 }>) {
   const fetchedUsersRef = useRef<Map<string, User>>(new Map());
   const prevLastMessageRef = useRef<unknown>(null);
-  const { translate } = useStorageContext();
+
+  const { translate, debugLog } = useStorageContext();
+  const { ownUuid } = useCryptoContext();
+  const { send, isReady, lastMessage, initialUserState } = useSocketContext();
+  const { page, pageData } = usePageContext();
+
   const [currentReceiverUuid, setCurrentReceiverUuid] = useState<string>("0");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
   const [reloadUsers, setReloadUsers] = useState<boolean>(false);
+  const [ownState, setOwnState] = useState<UserState>(initialUserState);
 
-  const { ownUuid } = useCryptoContext();
-  const { send, isReady, lastMessage } = useSocketContext();
-  const { page, pageData } = usePageContext();
-  const { debugLog } = useStorageContext();
+  const get = useCallback(
+    async (uuid: string, refetch: boolean = false): Promise<User> => {
+      try {
+        if (!uuid || uuid === "0") {
+          throw new Error("ERROR_USER_CONTEXT_GET_NO_USER_ID");
+        }
+
+        const hasUser = fetchedUsersRef.current.has(uuid);
+        const existingUser = hasUser
+          ? fetchedUsersRef.current.get(uuid)
+          : undefined;
+        const shouldFetch =
+          refetch || !hasUser || !!(existingUser && existingUser.loading);
+
+        if (hasUser && !shouldFetch) {
+          debugLog("USER_CONTEXT", "USER_CONTEXT_USER_ALREADY_FETCHED");
+          return existingUser!;
+        }
+
+        setReloadUsers(true);
+        debugLog("USER_CONTEXT", "USER_CONTEXT_USER_NOT_FETCHED");
+        const response = await fetch(`${user}${uuid}`);
+        const data = await response.json();
+
+        if (data.type !== "success") {
+          throw new Error(`API error: ${data.message || "Unknown error"}`);
+        }
+
+        const apiUserData: Omit<User, "state" | "loading"> = {
+          uuid,
+          username: data.data.username,
+          display: getDisplayFromUsername(
+            data.data.username,
+            data.data.display
+          ),
+          avatar: data.data.avatar,
+          about: atob(data.data.about),
+          status: data.data.status,
+          sub_level: data.data.sub_level,
+          sub_end: data.data.sub_end,
+          public_key: data.data.public_key,
+          created_at: data.data.created_at,
+        };
+
+        const newUser: User = {
+          ...apiUserData,
+          loading: false,
+          ...(existingUser
+            ? { state: existingUser.state }
+            : { state: "ONLINE" }),
+        };
+
+        fetchedUsersRef.current.set(uuid, newUser);
+        return newUser;
+      } catch (err: unknown) {
+        const error = err as ErrorType;
+
+        const currentExisting = fetchedUsersRef.current.get(uuid);
+        if (currentExisting) {
+          const failedUser: User = {
+            ...currentExisting,
+            about: error.message,
+            loading: false,
+          };
+          fetchedUsersRef.current.set(uuid, failedUser);
+          return failedUser;
+        }
+
+        return {
+          uuid: "0",
+          username: "failed",
+          display: "Failed to load",
+          avatar: null,
+          about: error.message,
+          status: "",
+          sub_level: 0,
+          sub_end: 0,
+          public_key: "",
+          created_at: new Date().toISOString(),
+          state: "ONLINE",
+          loading: false,
+        } as User;
+      }
+    },
+    [debugLog]
+  );
 
   async function refetchConversations() {
     await send("get_chats").then((data) => {
@@ -135,7 +235,7 @@ export function UserProvider({
       get(data.user_id, true).then((user) => {
         fetchedUsersRef.current.set(user.uuid, {
           ...user,
-          state: data.user_state || "NONE",
+          state: data.user_state || "ONLINE",
         });
       });
     }
@@ -171,83 +271,13 @@ export function UserProvider({
     }
   }
 
-  async function get(uuid: string, refetch: boolean = false): Promise<User> {
-    try {
-      if (!uuid || uuid === "0") {
-        throw new Error("ERROR_USER_CONTEXT_GET_NO_USER_ID");
-      }
-
-      const hasUser = fetchedUsersRef.current.has(uuid);
-      const existingUser = hasUser
-        ? fetchedUsersRef.current.get(uuid)
-        : undefined;
-      const shouldFetch =
-        refetch || !hasUser || !!(existingUser && existingUser.loading);
-
-      if (hasUser && !shouldFetch) {
-        debugLog("USER_CONTEXT", "USER_CONTEXT_USER_ALREADY_FETCHED");
-        return existingUser!;
-      }
-
-      setReloadUsers(true);
-      debugLog("USER_CONTEXT", "USER_CONTEXT_USER_NOT_FETCHED");
-      const response = await fetch(`${user}${uuid}`);
-      const data = await response.json();
-
-      if (data.type !== "success") {
-        throw new Error(`API error: ${data.message || "Unknown error"}`);
-      }
-
-      const apiUserData: Omit<User, "state" | "loading"> = {
-        uuid,
-        username: data.data.username,
-        display: getDisplayFromUsername(data.data.username, data.data.display),
-        avatar: data.data.avatar,
-        about: atob(data.data.about),
-        status: data.data.status,
-        sub_level: data.data.sub_level,
-        sub_end: data.data.sub_end,
-        public_key: data.data.public_key,
-        created_at: data.data.created_at,
-      };
-
-      const newUser: User = {
-        ...apiUserData,
-        loading: false,
-        ...(existingUser ? { state: existingUser.state } : { state: "NONE" }),
-      };
-
-      fetchedUsersRef.current.set(uuid, newUser);
-      return newUser;
-    } catch (err: unknown) {
-      const error = err as ErrorType;
-
-      const currentExisting = fetchedUsersRef.current.get(uuid);
-      if (currentExisting) {
-        const failedUser: User = {
-          ...currentExisting,
-          about: error.message,
-          loading: false,
-        };
-        fetchedUsersRef.current.set(uuid, failedUser);
-        return failedUser;
-      }
-
-      return {
-        uuid: "0",
-        username: "failed",
-        display: "Failed to load",
-        avatar: null,
-        about: error.message,
-        status: "",
-        sub_level: 0,
-        sub_end: 0,
-        public_key: "",
-        created_at: new Date().toISOString(),
-        state: "NONE",
-        loading: false,
-      } as User;
-    }
+  function doCustomEdit(uuid: string, user: User) {
+    const newUser = {
+      ...user,
+      display: getDisplayFromUsername(user.username, user.display),
+      about: atob(user.about || ""),
+    };
+    fetchedUsersRef.current.set(uuid, newUser);
   }
 
   return (
@@ -265,6 +295,10 @@ export function UserProvider({
         refetchConversations,
         reloadUsers,
         setReloadUsers,
+        doCustomEdit,
+        fetchedUsers: fetchedUsersRef.current,
+        ownState,
+        setOwnState,
       }}
     >
       {children}

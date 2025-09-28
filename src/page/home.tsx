@@ -27,11 +27,12 @@ import {
 } from "@/components/ui/dialog";
 import { LoadingIcon } from "@/components/loading";
 import { PageDiv } from "@/components/pageDiv";
+import { UserModal } from "@/components/modals/user";
 
 // Main
 export default function Page() {
   const { send } = useSocketContext();
-  const { refetchConversations } = useUserContext();
+  const { refetchConversations, ownUuid } = useUserContext();
   const { translate } = useStorageContext();
 
   const [open, setOpen] = useState(false);
@@ -128,6 +129,7 @@ export default function Page() {
         </Button>
       </div>
       <p>Homepage :)</p>
+      <UserModal size="profile" uuid={ownUuid} />
     </PageDiv>
   );
 }

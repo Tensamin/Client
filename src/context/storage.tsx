@@ -158,6 +158,14 @@ export function StorageProvider({
       LANGUAGE_PAGE_ADD_LANGUAGE_BUTTON: "Add Language",
       LANGUAGE_PAGE_SEARCH_LANGUAGES: "Search languages...",
       LANGUAGE_PAGE_NO_LANGUAGE_FOUND: "No language found.",
+      PROFILE_PAGE_ABOUT:
+        "Coffee enthusiast, cat lover, and part time superhero.",
+      PROFILE_PAGE_UPDATE_SUCCESS: "Profile updated successfully!",
+      ERROR_PROFILE_PAGE_FAILED_BROADCAST:
+        "Failed to broadcast profile changes (users have to reload their client to see the changes)",
+
+      // Profile Page
+      ERROR_PROFILE_PAGE_UPDATE_FAILED: "Failed to update profile",
 
       // Socket Context
       ERROR_SOCKET_CONTEXT_CANNOT_CONNECT: "Could not connect to the Omikron",

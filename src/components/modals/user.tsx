@@ -15,7 +15,7 @@ export function UserModal({
   size,
 }: {
   uuid: string;
-  size: "big" | "medium";
+  size: "big" | "medium" | "profile";
 }) {
   const { get, reloadUsers, setReloadUsers } = useUserContext();
   const { setPage } = usePageContext();
@@ -59,6 +59,15 @@ export function UserModal({
           onClick={() => {
             setPage("chat", user.uuid);
           }}
+        />
+      );
+    case "profile":
+      return (
+        <RawModal.Profile
+          {...props}
+          description={user.about || ""}
+          state={user.state || "NONE"}
+          status={user.status || ""}
         />
       );
     default:
