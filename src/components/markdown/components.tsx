@@ -9,6 +9,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import * as Icon from "lucide-react";
 
 type HProps = React.HTMLAttributes<HTMLHeadingElement>;
 type PProps = React.HTMLAttributes<HTMLParagraphElement>;
@@ -18,149 +21,178 @@ type UlProps = React.HTMLAttributes<HTMLUListElement>;
 type OlProps = React.HTMLAttributes<HTMLOListElement>;
 type LiProps = React.LiHTMLAttributes<HTMLLIElement>;
 type PreProps = React.HTMLAttributes<HTMLPreElement>;
-type CodeProps = React.HTMLAttributes<HTMLElement> & {
-  inline?: boolean;
-};
 type HrProps = React.HTMLAttributes<HTMLHRElement>;
 type ImgProps = React.ImgHTMLAttributes<HTMLImageElement>;
 type EmProps = React.HTMLAttributes<HTMLElement>;
 type StrongProps = React.HTMLAttributes<HTMLElement>;
 
-export const H1 = ({ className, ...props }: HProps) => (
-  <h1
-    className={`mt-10 scroll-m-20 text-xl font-bold tracking-tight ${
-      className ?? ""
-    }`}
-    {...props}
-  />
-);
+export const H1 = ({ className, ...props }: HProps) => {
+  return (
+    <h1
+      className={cn(
+        "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl",
+        className
+      )}
+      {...props}
+    />
+  );
+};
 
-export const H2 = ({ className, ...props }: HProps) => (
-  <h2
-    className={`mt-8 scroll-m-20 text-lg font-semibold tracking-tight ${
-      className ?? ""
-    }`}
-    {...props}
-  />
-);
+export const H2 = ({ className, ...props }: HProps) => {
+  return (
+    <h2
+      className={cn(
+        "scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0",
+        className
+      )}
+      {...props}
+    />
+  );
+};
 
-export const H3 = ({ className, ...props }: HProps) => (
-  <h3
-    className={`mt-6 scroll-m-20 text-md font-semibold tracking-tight ${
-      className ?? ""
-    }`}
-    {...props}
-  />
-);
+export const H3 = ({ className, ...props }: HProps) => {
+  return (
+    <h3
+      className={cn(
+        "scroll-m-20 text-2xl font-semibold tracking-tight",
+        className
+      )}
+      {...props}
+    />
+  );
+};
 
-export const H4 = ({ className, ...props }: HProps) => (
-  <h4
-    className={`mt-4 scroll-m-20 text-sm font-semibold tracking-tight ${
-      className ?? ""
-    }`}
-    {...props}
-  />
-);
+export const H4 = ({ className, ...props }: HProps) => {
+  return (
+    <h4
+      className={cn(
+        "scroll-m-20 text-xl font-semibold tracking-tight",
+        className
+      )}
+      {...props}
+    />
+  );
+};
 
-export const P = ({ className, ...props }: PProps) => (
-  <p
-    className={`leading-7 [&:not(:first-child)]:mt-6 ${className ?? ""}`}
-    {...props}
-  />
-);
+export const P = ({ className, ...props }: PProps) => {
+  return (
+    <p
+      className={cn("leading-6 [&:not(:first-child)]:mt-6", className)}
+      {...props}
+    />
+  );
+};
 
-export const A = ({ className, href = "", ...props }: AProps) => {
+export const A = ({ href = "", className, ...props }: AProps) => {
   const isExternal = /^https?:\/\//.test(href);
   return (
     <Link
       href={href}
-      className={`text-primary underline underline-offset-4 hover:opacity-90 ${
-        className ?? ""
-      }`}
+      className={cn(
+        "font-medium text-primary underline underline-offset-4",
+        className
+      )}
       {...(isExternal ? { target: "_blank", rel: "noreferrer noopener" } : {})}
       {...props}
     />
   );
 };
 
-export const Blockquote = ({ className, ...props }: QProps) => (
-  <blockquote
-    className={`mt-6 border-l-4 pl-4 italic text-muted-foreground ${
-      className ?? ""
-    }`}
-    {...props}
-  />
-);
+export const Blockquote = ({ className, ...props }: QProps) => {
+  return (
+    <blockquote
+      className={cn(
+        "mt-6 border-l-2 pl-6 italic text-muted-foreground",
+        className
+      )}
+      {...props}
+    />
+  );
+};
 
-export const UL = ({ className, ...props }: UlProps) => (
-  <ul className={`my-6 ml-6 list-disc ${className ?? ""}`} {...props} />
-);
+export const UL = ({ className, ...props }: UlProps) => {
+  return (
+    <ul
+      className={cn("my-6 ml-6 list-disc [&>li]:mt-2", className)}
+      {...props}
+    />
+  );
+};
 
-export const OL = ({ className, ...props }: OlProps) => (
-  <ol className={`my-6 ml-6 list-decimal ${className ?? ""}`} {...props} />
-);
+export const OL = ({ className, ...props }: OlProps) => {
+  return (
+    <ol
+      className={cn("my-6 ml-6 list-decimal [&>li]:mt-2", className)}
+      {...props}
+    />
+  );
+};
 
-export const LI = ({ className, ...props }: LiProps) => (
-  <li
-    className={`my-1 marker:text-muted-foreground ${className ?? ""}`}
-    {...props}
-  />
-);
+export const LI = ({ className, ...props }: LiProps) => {
+  return <li className={cn("mt-2", className)} {...props} />;
+};
 
-export const HR = ({ className, ...props }: HrProps) => (
-  <hr className={`my-6 border-t ${className ?? ""}`} {...props} />
-);
+export const HR = ({ className, ...props }: HrProps) => {
+  return <hr className={cn("my-4 border-muted", className)} {...props} />;
+};
 
-export const Img = ({ className, alt, ...props }: ImgProps) => (
-  // If you prefer next/image, replace with <Image ... fill/width/height />
-  <img
-    alt={alt ?? ""}
-    className={`my-4 max-w-full rounded-md border ${className ?? ""}`}
-    {...props}
-  />
-);
+export const Img = ({ className, alt, src, ...props }: ImgProps) => {
+  const isBase64 =
+    typeof src === "string" && /^data:image\/[a-z0-9.+-]+;base64,/i.test(src);
+
+  if (src && !isBase64) {
+    return null;
+  }
+
+  if (!src) {
+    return null;
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt ?? ""}
+      className={cn(
+        "my-4 h-auto max-w-full rounded-md border border-border object-cover",
+        className
+      )}
+      {...props}
+    />
+  );
+};
 
 export const TableComponent = ({
   className,
   ...props
-}: React.TableHTMLAttributes<HTMLTableElement>) => (
-  <Table className={`my-6 w-full ${className ?? ""}`} {...props} />
-);
-
-export const Strong = ({ className, ...props }: StrongProps) => (
-  <strong className={`font-semibold ${className ?? ""}`} {...props} />
-);
-
-export const Em = ({ className, ...props }: EmProps) => (
-  <em className={`italic ${className ?? ""}`} {...props} />
-);
-
-export const Pre = ({ className, ...props }: PreProps) => (
-  <pre
-    className={`my-6 overflow-x-auto rounded-lg border bg-muted p-4 ${
-      className ?? ""
-    }`}
-    {...props}
-  />
-);
-
-export const Code = ({ inline, className, children, ...props }: CodeProps) =>
-  inline ? (
-    <code
-      className={`relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm ${
-        className ?? ""
-      }`}
+}: React.TableHTMLAttributes<HTMLTableElement>) => {
+  return (
+    <Table
+      className={cn("my-6 w-full overflow-hidden rounded-md border", className)}
       {...props}
-    >
-      {children}
-    </code>
-  ) : (
-    <Pre className={className}>
-      <code className="font-mono text-sm" {...props}>
-        {children}
-      </code>
-    </Pre>
+    />
   );
+};
+
+export const Strong = ({ className, ...props }: StrongProps) => {
+  return <strong className={cn("font-semibold", className)} {...props} />;
+};
+
+export const Em = ({ className, ...props }: EmProps) => {
+  return <em className={cn("italic", className)} {...props} />;
+};
+
+export const Pre = ({ className, ...props }: PreProps) => {
+  return (
+    <pre
+      className={cn(
+        "mb-4 mt-6 overflow-x-auto rounded-lg border bg-muted p-4",
+        className
+      )}
+      {...props}
+    />
+  );
+};
 
 export const markdownComponents: Components = {
   h1: H1,
@@ -183,5 +215,29 @@ export const markdownComponents: Components = {
   td: TableCell,
   strong: Strong,
   em: Em,
-  code: Code,
+  code: ({ className, children }) => {
+    return (
+      <div className={cn("flex flex-col p-1 rounded-lg border", className)}>
+        <div className="flex gap-1 items-center">
+          <Button size="icon" variant="ghost" className="w-6 h-6 rounded-sm">
+            <Icon.Copy
+              className="scale-75"
+              color="var(--muted-foreground)"
+              strokeWidth={2}
+            />
+          </Button>
+          {className?.split(" ")[1].replace("language-", "") ? (
+            <span className="text-xs text-muted-foreground">
+              {className.split(" ")[1].replace("language-", "")}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">text</span>
+          )}
+        </div>
+        <code className="text-xs p-1 overflow-scroll scrollbar-hide">
+          {children}
+        </code>
+      </div>
+    );
+  },
 };

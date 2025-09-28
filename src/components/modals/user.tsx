@@ -17,9 +17,9 @@ export function UserModal({
   uuid: string;
   size: "big" | "medium" | "profile";
 }) {
-  const { get, reloadUsers, setReloadUsers, ownState, ownUuid } =
-    useUserContext();
+  const { get, ownState, ownUuid, fetchedUsers } = useUserContext();
   const { setPage } = usePageContext();
+  const userFromMap = JSON.stringify(fetchedUsers.get(uuid));
   const [user, setUser] = useState<User>({
     username: "",
     about: "",
@@ -36,10 +36,8 @@ export function UserModal({
   });
 
   useEffect(() => {
-    if (user.uuid !== "" && !reloadUsers) return;
     get(uuid, false).then(setUser);
-    setReloadUsers(false);
-  }, [uuid, get, user.uuid, reloadUsers, setReloadUsers]);
+  }, [uuid, get, user.uuid, userFromMap]);
 
   const props = {
     title: user.display,
@@ -51,10 +49,11 @@ export function UserModal({
 
   switch (size) {
     case "big":
-      return <RawModal.BigModal {...props} />;
+      return <RawModal.BigModal key={userFromMap} {...props} />;
     case "medium":
       return (
         <RawModal.MediumModal
+          key={userFromMap}
           {...props}
           description={user.status || ""}
           onClick={() => {

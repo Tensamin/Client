@@ -32,7 +32,18 @@ import { LoadingIcon } from "@/components/loading";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+// Types
+type FormState = {
+  username: string;
+  displayName: string;
+  about: string;
+  avatar: string;
+  status: string;
+};
+
 // Main
+const profileFormCache = new Map<string, FormState>();
+
 export default function Page() {
   const { translate, debugLog } = useStorageContext();
   const { send } = useSocketContext();
@@ -40,40 +51,52 @@ export default function Page() {
     useUserContext();
   const { privateKeyHash } = useCryptoContext();
 
-  const [username, setUsername] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [about, setAbout] = useState("");
-  const [avatar, setAvatar] = useState("");
-  const [status, setStatus] = useState("");
+  const [form, setForm] = useState<FormState | null>(() => {
+    return profileFormCache.get(ownUuid) ?? null;
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    get(ownUuid, false).then((user) => {
-      if (!user) return;
-      setUsername(user.username ?? "");
-      setDisplayName(user.display ?? "");
-      setAbout(user.about ?? "");
-      setAvatar(user.avatar ?? "");
-      setStatus(user.status ?? "");
-    });
-  }, [get, ownUuid]);
+    if (form || profileFormCache.has(ownUuid)) return;
+    let cancelled = false;
+
+    (async () => {
+      const user = await get(ownUuid, false);
+      if (cancelled) return;
+      const next: FormState = {
+        username: user?.username ?? "",
+        displayName: user?.display ?? "",
+        about: user?.about ?? "",
+        avatar: user?.avatar ?? "",
+        status: user?.status ?? "",
+      };
+      profileFormCache.set(ownUuid, next);
+      setForm(next);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [get, ownUuid, form]);
+
+  if (!form) return <div />;
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
         <div className="relative">
           <Avatar className="size-15">
-            {avatar && <AvatarImage src={avatar} />}
+            {form.avatar && <AvatarImage src={form.avatar} />}
             <AvatarFallback>
-              {convertStringToInitials(displayName)}
+              {convertStringToInitials(form.displayName)}
             </AvatarFallback>
           </Avatar>
           {ownState && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="rounded-full absolute bg-muted bottom-0 right-0 w-4.5 h-4.5 flex justify-center items-center">
+                <div className="absolute bottom-0 right-0 flex size-4.5 items-center justify-center rounded-full bg-muted">
                   <div
-                    className={`w-3 h-3 rounded-full border ${getColorFor(
+                    className={`size-3 rounded-full border ${getColorFor(
                       ownState
                     )}`}
                   />
@@ -92,11 +115,17 @@ export default function Page() {
               if (!file) return;
               const reader = new FileReader();
               reader.onloadend = () => {
-                setAvatar(reader.result as string);
+                const avatar = reader.result as string;
+                setForm((prev) => {
+                  if (!prev) return prev;
+                  const next = { ...prev, avatar };
+                  profileFormCache.set(ownUuid, next);
+                  return next;
+                });
               };
               reader.readAsDataURL(file);
             }}
-            disabled //={loading}
+            disabled={loading}
           />
           <Select
             value={ownState}
@@ -116,72 +145,96 @@ export default function Page() {
           </Select>
         </div>
       </div>
+
       <Input
         id="display"
         type="text"
-        value={displayName}
-        onChange={(e) => setDisplayName(e.target.value)}
+        value={form.displayName}
+        onChange={(e) => {
+          const displayName = e.target.value;
+          setForm((prev) => {
+            if (!prev) return prev;
+            const next = { ...prev, displayName };
+            profileFormCache.set(ownUuid, next);
+            return next;
+          });
+        }}
         disabled={loading}
       />
+
       <Input
         id="username"
         type="text"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        value={form.username}
+        onChange={(e) => {
+          const username = e.target.value;
+          setForm((prev) => {
+            if (!prev) return prev;
+            const next = { ...prev, username };
+            profileFormCache.set(ownUuid, next);
+            return next;
+          });
+        }}
         disabled={loading}
       />
-      <Textarea
-        value={about}
-        onChange={(e) => setAbout(e.target.value)}
-        placeholder={translate("PROFILE_PAGE_ABOUT")}
-        disabled={loading}
-      />
+
+      <div className="flex w-full flex-col gap-1">
+        <Textarea
+          value={form.about}
+          onChange={(e) => {
+            const about = e.target.value;
+            setForm((prev) => {
+              if (!prev) return prev;
+              const next = { ...prev, about };
+              profileFormCache.set(ownUuid, next);
+              return next;
+            });
+          }}
+          placeholder={translate("PROFILE_PAGE_ABOUT")}
+          className="resize-y"
+          disabled={loading}
+        />
+        <p
+          className={`text-xs ${form.about.length > 200 && "text-destructive"}`}
+        >
+          {form.about.length}/200
+        </p>
+      </div>
+
       <Button
         onClick={async () => {
+          if (form.about.length > 200) {
+            toast.error(translate("ERROR_PROFILE_PAGE_UPDATE_FAILED"));
+            return;
+          }
           setLoading(true);
           try {
-            await fetch(change + ownUuid, {
+            const res = await fetch(change + ownUuid, {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 private_key_hash: privateKeyHash,
-
-                username,
-                display: displayName,
-                about,
-                avatar,
-                status,
+                username: form.username,
+                display: form.displayName,
+                about: form.about,
+                avatar: form.avatar,
+                status: form.status,
               }),
-            })
-              .then((res) => {
-                if (!res.ok) throw new Error();
-                return res.json();
-              })
-              .then((data) => {
-                doCustomEdit(ownUuid, {
-                  ...data.data,
-                  state: ownState,
-                });
-              })
-              .catch((err: unknown) => {
-                debugLog(
-                  "PROFILE_PAGE",
-                  "ERROR_PROFILE_PAGE_UPDATE_FAILED",
-                  err
-                );
-                throw new Error();
-              });
-            await send(
-              "client_changed",
-              {
-                user_state: ownState,
-              },
-              true
-            );
+            });
+            if (!res.ok) throw new Error("request_failed");
+            const data = await res.json();
+            debugLog("PROFILE_PAGE", "DATA_PROFILE_PAGE_UPDATE", data);
+            if (data?.type === "error") throw new Error("api_error");
+
+            doCustomEdit(ownUuid, { ...data.data, state: ownState });
+
+            profileFormCache.set(ownUuid, { ...form });
+
+            await send("client_changed", { user_state: ownState }, true);
+
             toast.success(translate("PROFILE_PAGE_UPDATE_SUCCESS"));
-          } catch {
+          } catch (err: unknown) {
+            debugLog("PROFILE_PAGE", "ERROR_PROFILE_PAGE_UPDATE_FAILED", err);
             toast.error(translate("ERROR_PROFILE_PAGE_UPDATE_FAILED"));
           } finally {
             setLoading(false);
