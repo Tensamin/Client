@@ -17,7 +17,8 @@ export function UserModal({
   uuid: string;
   size: "big" | "medium" | "profile";
 }) {
-  const { get, reloadUsers, setReloadUsers } = useUserContext();
+  const { get, reloadUsers, setReloadUsers, ownState, ownUuid } =
+    useUserContext();
   const { setPage } = usePageContext();
   const [user, setUser] = useState<User>({
     username: "",
@@ -45,7 +46,7 @@ export function UserModal({
     description: user.username || "",
     icon: user.avatar || undefined,
     loading: user.loading,
-    statusIcon: user.state,
+    state: user.uuid === ownUuid ? ownState : user.state,
   };
 
   switch (size) {
@@ -67,7 +68,6 @@ export function UserModal({
           {...props}
           description={user.about || ""}
           state={user.state || "NONE"}
-          status={user.status || ""}
         />
       );
     default:

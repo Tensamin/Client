@@ -20,6 +20,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Text } from "../markdown/text";
 
 // Main
 export function BigModal({
@@ -67,14 +68,14 @@ export function MediumModal({
   icon,
   loading,
   onClick,
-  statusIcon,
+  state,
 }: Readonly<{
   title: string;
   description: string;
   icon?: string;
   loading: boolean;
   onClick?: () => void;
-  statusIcon?: string;
+  state?: string;
 }>) {
   const { translate } = useStorageContext();
   return loading ? (
@@ -102,18 +103,18 @@ export function MediumModal({
             {convertStringToInitials(title)}
           </AvatarFallback>
         </Avatar>
-        {statusIcon && (
+        {state && (
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="rounded-full absolute bg-muted bottom-0 right-0 w-3.5 h-3.5 flex justify-center items-center">
                 <div
                   className={`w-2.5 h-2.5 rounded-full border ${getColorFor(
-                    statusIcon
+                    state
                   )}`}
                 />
               </div>
             </TooltipTrigger>
-            <TooltipContent>{translate("STATUS_" + statusIcon)}</TooltipContent>
+            <TooltipContent>{translate("STATUS_" + state)}</TooltipContent>
           </Tooltip>
         )}
       </div>
@@ -193,7 +194,7 @@ export function Profile({
       </CardHeader>
       {description && description !== "" && (
         <CardContent className="whitespace-pre-wrap p-2 border border-input bg-input/40 text-sm rounded-xl">
-          {description}
+          <Text text={description} />
         </CardContent>
       )}
       {badges && badges.length > 0 && (

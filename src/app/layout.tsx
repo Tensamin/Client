@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 import "./globals.css";
+import "katex/dist/katex.min.css";
+import "highlight.js/styles/github-dark.css";
 
 // Context Imports
 import { StorageProvider } from "@/context/storage";

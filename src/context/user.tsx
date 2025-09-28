@@ -125,12 +125,11 @@ export function UserProvider({
           created_at: data.data.created_at,
         };
 
+        const latest = fetchedUsersRef.current.get(uuid);
         const newUser: User = {
+          ...(latest ?? { state: "NONE", loading: true }),
           ...apiUserData,
           loading: false,
-          ...(existingUser
-            ? { state: existingUser.state }
-            : { state: "ONLINE" }),
         };
 
         fetchedUsersRef.current.set(uuid, newUser);
@@ -160,7 +159,7 @@ export function UserProvider({
           sub_end: 0,
           public_key: "",
           created_at: new Date().toISOString(),
-          state: "ONLINE",
+          state: "NONE",
           loading: false,
         } as User;
       }
@@ -235,7 +234,7 @@ export function UserProvider({
       get(data.user_id, true).then((user) => {
         fetchedUsersRef.current.set(user.uuid, {
           ...user,
-          state: data.user_state || "ONLINE",
+          state: data.user_state || "NONE",
         });
       });
     }
