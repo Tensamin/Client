@@ -165,15 +165,27 @@ export function StorageProvider({
         "Failed to broadcast profile changes (users have to reload their client to see the changes)",
 
       // Profile Page
+      PROFILE_PAGE: "Profile Page",
+      DATA_PROFILE_PAGE_UPDATE: "Profile data updated",
       ERROR_PROFILE_PAGE_UPDATE_FAILED: "Failed to update profile",
 
       // Socket Context
+      SOCKET_CONTEXT: "Socket Context",
+      SOCKET_CONTEXT_CONNECTED: "Connected to Omikron",
+      SOCKET_CONTEXT_SEND: "Sent to socket:",
+      SOCKET_CONTEXT_RECEIVE: "Received from socket:",
+      SOCKET_CONTEXT_IDENTIFICATION_SUCCESS: "Identification success",
       ERROR_SOCKET_CONTEXT_CANNOT_CONNECT: "Could not connect to the Omikron",
       ERROR_SOCKET_CONTEXT_CANNOT_CONNECT_EXTRA:
         "Check your internet connection and try again.\n If the issue persists check the Tensamin status page.",
       ERROR_INVALID_USER_ID: "No Iota found for this user",
       ERROR_INVALID_USER_ID_EXTRA:
         "Check your Iota's internet connection and try again.\n If the issue persists try restarting your Iota.",
+
+      // User Context
+      USER_CONTEXT: "User Context",
+      USER_CONTEXT_USER_NOT_FETCHED: "User not fetched",
+      USER_CONTEXT_USER_ALREADY_FETCHED: "User already fetched",
 
       // Other Stuff
       CANCEL: "Cancel",
@@ -323,22 +335,30 @@ export function StorageProvider({
     extraInfo?: unknown
   ): void {
     const tagStyle =
-      "background: #4b4b4b; color: #ffffff; padding: 3px 4px; border-radius: 7px; border: 2px solid rgba(200, 200, 200, 0.2); margin-bottom: 3px;";
-    const msgStyle =
-      "background: #303030; color: #ffffff; padding: 3px 4px; border-radius: 7px; border: 2px solid rgba(200, 200, 200, 0.2);";
+      "background: #3f3f3f; padding: 1px 4px; border-radius: 2px; " +
+      "font-size: 10px; font-weight: 700; letter-spacing: 0.5px;";
 
-    if (typeof extraInfo === "undefined") {
-      extraInfo = "";
-    }
+    const msgStyle =
+      "padding: 1px 4px; border-radius: 2px; font-size: 10px; " +
+      "font-family: 'Consolas', 'Monaco', monospace; " +
+      (message === "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS"
+        ? // catppuccin frappé
+          "color: #a6d189;" // green
+        : message === "SOCKET_CONTEXT_CONNECTED"
+        ? "color: #a6d189;" // green
+        : message.startsWith("ERROR")
+        ? "color: #e78284;" // red
+        : "");
+
     console.log(
-      "%c%s%c\n%c%s%c\n",
+      "%c%s%c %c%s%c",
       tagStyle,
-      sender,
+      translate(sender),
       "",
       msgStyle,
-      message,
+      translate(message),
       "",
-      extraInfo
+      extraInfo !== undefined ? extraInfo : ""
     );
   }
 

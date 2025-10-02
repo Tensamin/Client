@@ -70,13 +70,12 @@ function FinalMessage({ message: data }: { message: Message }) {
         }
       }
     })();
-  }, []);
+  });
 
   return (
     <ContextMenu>
       <ContextMenuTrigger>
-        {content === "" ? <Skeleton className="h-5 w-50" /> : content}
-        {sender}
+        {content === "" ? <Skeleton className="h-5 w-50" /> : content}: {sender}
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem

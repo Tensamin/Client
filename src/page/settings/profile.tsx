@@ -191,7 +191,7 @@ export default function Page() {
             });
           }}
           placeholder={translate("PROFILE_PAGE_ABOUT")}
-          className="resize-y"
+          className="resize-y h-35"
           disabled={loading}
         />
         <p
@@ -240,7 +240,13 @@ export default function Page() {
             setLoading(false);
           }
         }}
-        disabled={loading}
+        disabled={
+          loading ||
+          form.about.length > 200 ||
+          form.username.length > 15 ||
+          form.displayName.length > 15 ||
+          form.status.length > 15
+        }
       >
         {loading ? <LoadingIcon invert /> : translate("SAVE")}
       </Button>

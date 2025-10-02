@@ -1,7 +1,6 @@
 "use client";
 
 // Package Imports
-import ExportedImage from "next-image-export-optimizer";
 import { useEffect, useState } from "react";
 import { Ring } from "ldrs/react";
 import "ldrs/react/Ring.css";
@@ -47,12 +46,12 @@ export function Loading({
   return (
     <>
       <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10">
-        <ExportedImage
+        <img
           src={
             isError ? "/assets/images/logo.png" : "/assets/images/loading.gif"
           }
-          width={75}
-          height={75}
+          //width={75}
+          //height={75}
           alt={translate("IMAGE")}
           className="w-75 h-75"
         />
