@@ -17,7 +17,8 @@ import { PageProvider } from "@/context/page";
 // Main
 export const metadata: Metadata = {
   title: "Tensamin",
-  description: "Super secure messaging app",
+  description:
+    "True E2E decentralized messages and a highly customizable messaging app",
 };
 
 export default function RootLayout({
@@ -27,6 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="apple-mobile-web-app-title" content="Tensamin" />
+      </head>
       <body className="antialiased max-h-screen overflow-hidden">
         <ThemeProvider
           attribute="class"

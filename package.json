@@ -1,5 +1,6 @@
 {
   "name": "tensamin",
+  "description": "True E2E decentralized messages and a highly customizable messaging app",
   "version": "0.1.3",
   "scripts": {
     "dev": "next dev",
