@@ -60,6 +60,7 @@ export function MessageProvider({
             sender: "SYSTEM",
             avatar: true,
             display: true,
+            tint: "var(--primary)",
             timestamp: Date.now(),
             content: "NO_MESSAGES_WITH_USER",
           } as Message,

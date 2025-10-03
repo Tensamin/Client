@@ -181,6 +181,9 @@ export function StorageProvider({
       ERROR_INVALID_USER_ID: "No Iota found for this user",
       ERROR_INVALID_USER_ID_EXTRA:
         "Check your Iota's internet connection and try again.\n If the issue persists try restarting your Iota.",
+      ERROR_INVALID_SECRET: "Invalid Private Key",
+      ERROR_INVALID_SECRET_EXTRA:
+        "Reload the page and try again. If the issue persists clear your storage and log in again.",
 
       // User Context
       USER_CONTEXT: "User Context",

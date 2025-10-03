@@ -92,8 +92,18 @@ function FinalMessage({ message: data }: { message: Message }) {
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger className="flex">
-        <div className="flex gap-1">
+      <ContextMenuTrigger
+        className="h-auto w-full flex rounded-lg border"
+        style={{
+          background: data.tint
+            ? `color-mix(in srgb, ${data.tint} 30%, transparent)`
+            : "transparent",
+          borderColor: data.tint
+            ? `color-mix(in srgb, ${data.tint} 35%, transparent)`
+            : "transparent",
+        }}
+      >
+        <div className="flex gap-1 w-full py-3 px-2">
           {data.avatar && ( // replace with Activity in the future
             <div className="pt-0.5">
               <UserAvatar
@@ -105,8 +115,10 @@ function FinalMessage({ message: data }: { message: Message }) {
             </div>
           )}
           <div className="flex flex-col">
-            <span className="font-semibold">{sender?.display}</span>
-            <span className="text-sm text-muted-foreground">{content}</span>
+            {data.display && (
+              <span className="font-medium">{sender?.display}</span>
+            )}
+            <span className="text-sm">{content}</span>
           </div>
         </div>
       </ContextMenuTrigger>
