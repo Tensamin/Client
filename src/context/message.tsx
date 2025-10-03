@@ -10,12 +10,15 @@ import { useUserContext } from "@/context/user";
 import { useCryptoContext } from "@/context/crypto";
 
 // Types
-import { File, Message, Messages } from "@/lib/types";
+import { AdvancedSuccessMessage, File, Message, Messages } from "@/lib/types";
 
 // Main
 type MessageContextType = {
   getMessages: (loaded: number, amount: number) => Promise<Messages>;
-  sendMessage: (content: string, files?: File[]) => Promise<void>;
+  sendMessage: (
+    message: Message,
+    files?: File[]
+  ) => Promise<AdvancedSuccessMessage>;
   addRealtimeMessageToBox: Message | null;
   setAddRealtimeMessageToBox: (message: Message | null) => void;
 };
@@ -47,7 +50,7 @@ export function MessageProvider({
     if (!isReady)
       throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
     if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
-    const messages = await send("message_get", {
+    const messages = await send("messages_get", {
       user_id: id,
       amount: amount,
       offset: loaded,
@@ -88,10 +91,14 @@ export function MessageProvider({
     };
   }
 
-  async function sendMessage(content: string, files?: File[]): Promise<void> {
+  async function sendMessage(
+    message: Message,
+    files?: File[]
+  ): Promise<AdvancedSuccessMessage> {
     if (!isReady)
       throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
     if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
+    setAddRealtimeMessageToBox(message);
     const ownPublicKey = await get(ownUuid, false).then(
       (data) => data.public_key
     );
@@ -103,11 +110,11 @@ export function MessageProvider({
       ownPublicKey,
       otherPublicKey
     );
-    const encrypted = await encrypt(content, sharedSecret.message);
-    await send("messages_send", {
-      ...(files && { files: files }),
+    const encrypted = await encrypt(message.content, sharedSecret.message);
+    return await send("message_send", {
+      ...(files && { files }),
       content: encrypted.message,
-      user_id: currentReceiverUuid,
+      receiver_id: currentReceiverUuid,
     });
   }
 

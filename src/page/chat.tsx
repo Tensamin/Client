@@ -8,6 +8,8 @@ import { MaxSendBoxSize } from "@/lib/utils";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
+import { useMessageContext } from "@/context/message";
+import { useUserContext } from "@/context/user";
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -17,13 +19,11 @@ import { PageDiv, PageTextarea } from "@/components/pageDiv";
 // Main
 export default function Page() {
   const { data } = useStorageContext();
+  const { sendMessage } = useMessageContext();
+  const { ownUuid } = useUserContext();
   const [client] = React.useState(() => new QueryClient());
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-
-  function sendMessage() {
-    alert("alarm");
-  }
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -58,7 +58,16 @@ export default function Page() {
                 : e.key === "Enter" && !e.shiftKey
             ) {
               e.preventDefault();
-              sendMessage();
+              sendMessage({
+                send_to_server: true,
+                sender: ownUuid,
+                timestamp: Date.now(),
+                //files
+                content: message,
+              }).then(data => {
+                console.log("meeewwooo", data);
+              })
+              setMessage("");
             }
           }}
           onChange={(e) => setMessage(e.target.value)}

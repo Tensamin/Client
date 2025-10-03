@@ -13,13 +13,6 @@ import { usePageContext } from "@/context/page";
 import { useStorageContext } from "@/context/storage";
 
 // Components
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarProvider,
-  useSidebar,
-} from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Loading } from "@/components/loading";
@@ -40,52 +33,32 @@ function MainPage() {
     "CONVERSATIONS"
   );
 
-  function PageSwitch() {
-    const { open, isMobile } = useSidebar();
-
-    let jsxPage;
-    switch (page) {
-      case "home":
-        jsxPage = <HomePage />;
-        break;
-      case "settings":
-        jsxPage = <SettingsPage />;
-        break;
-      case "chat":
-        jsxPage = <ChatPage />;
-        break;
-      default:
-        jsxPage = (
-          <div>
-            {translate("PAGE_UNKNOWN")} | {page};{pageData}
-          </div>
-        );
-        break;
-    }
-
-    return (
-      <div
-        className={`${
-          open && !isMobile ? `pl-1` : ""
-        } flex-1 min-h-0 overflow-hidden`}
-      >
-        <div
-          className={`${
-            open && !isMobile ? "rounded-tl-xl border-l" : ""
-          } w-full h-full border-t border-input bg-background p-2 overflow-y-auto`}
-        >
-          {jsxPage}
+  let jsxPage;
+  switch (page) {
+    case "home":
+      jsxPage = <HomePage />;
+      break;
+    case "settings":
+      jsxPage = <SettingsPage />;
+      break;
+    case "chat":
+      jsxPage = <ChatPage />;
+      break;
+    default:
+      jsxPage = (
+        <div>
+          {translate("PAGE_UNKNOWN")} | {page};{pageData}
         </div>
-      </div>
-    );
+      );
+      break;
   }
 
   return (
     <>
-      <Sidebar className="group-data-[side=left]:border-0">
-        <SidebarHeader className="p-0 pl-2 pt-2 pr-1 flex flex-col">
+      <div className="w-full h-screen flex bg-sidebar">
+        <div className="w-87 h-full flex flex-col gap-4 p-2">
           <UserModal key={ownUuid} uuid={ownUuid} size="big" />
-          <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden mx-1 my-2 p-1">
+          <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden mx-1 p-1">
             <div className="relative grid grid-cols-2 w-full gap-1">
               {["COMMUNITIES", "CONVERSATIONS"].map((cat: string) => (
                 <Button
@@ -120,21 +93,23 @@ function MainPage() {
               ))}
             </div>
           </div>
-        </SidebarHeader>
-        <SidebarContent className="p-0 pl-2 pt-2 pr-1 scrollbar-hide">
-          {["COMMUNITIES", "CONVERSATIONS"].map((cat) => {
-            if (cat !== category) return null;
-            return category === "COMMUNITIES" ? (
-              <Communities key={category} />
-            ) : (
-              <Conversations key={category} />
-            );
-          })}
-        </SidebarContent>
-      </Sidebar>
-      <div className="w-full h-screen flex flex-col bg-sidebar min-h-0">
-        <Navbar />
-        <PageSwitch />
+          <div className="scrollbar-hide">
+            {["COMMUNITIES", "CONVERSATIONS"].map((cat) => {
+              if (cat !== category) return null;
+              return category === "COMMUNITIES" ? (
+                <Communities key={category} />
+              ) : (
+                <Conversations key={category} />
+              );
+            })}
+          </div>
+        </div>
+        <div className="w-full h-full flex flex-col">
+          <Navbar />
+          <div className="w-full h-full bg-background rounded-tl-xl border overflow-hidden p-2">
+            {jsxPage}
+          </div>
+        </div>
       </div>
     </>
   );
@@ -159,9 +134,7 @@ export default function Page() {
       <SocketProvider>
         <UserProvider>
           <MessageProvider>
-            <SidebarProvider>
-              <MainPage />
-            </SidebarProvider>
+            <MainPage />
           </MessageProvider>
         </UserProvider>
       </SocketProvider>

@@ -46,7 +46,7 @@ function ActualBox() {
   const nextIdRef = useRef(TOTAL_MESSAGES);
 
   const { translate } = useStorageContext();
-  const { getMessages, addRealtimeMessageToBox, sendMessage } =
+  const { getMessages, addRealtimeMessageToBox, setAddRealtimeMessageToBox } =
     useMessageContext();
 
   const {
@@ -75,7 +75,6 @@ function ActualBox() {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
-
   const messages = useMemo(() => flattenPages(data), [data]);
 
   const getScrollElement = useCallback(() => parentRef.current, []);
@@ -218,10 +217,8 @@ function ActualBox() {
   useEffect(() => {
     if (!addRealtimeMessageToBox) return;
     addRealtimeMessage(addRealtimeMessageToBox);
-    if (addRealtimeMessageToBox.send_to_server) {
-      sendMessage(addRealtimeMessageToBox.content);
-    }
-  }, [addRealtimeMessageToBox, addRealtimeMessage, sendMessage]);
+    setAddRealtimeMessageToBox(null);
+  }, [addRealtimeMessageToBox, setAddRealtimeMessageToBox, addRealtimeMessage]);
 
   if (isLoading) {
     return (

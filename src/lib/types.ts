@@ -62,6 +62,7 @@ export type AdvancedSuccessMessageData = {
   amount?: number | null;
   offset?: number | null;
   user_status?: string | null;
+  receiver_id?: string | null;
 };
 
 export type AdvancedSuccessMessage = {

@@ -3,7 +3,6 @@ import * as Icon from "lucide-react";
 
 // Context Imports
 import { usePageContext } from "@/context/page";
-import { useSidebar } from "@/components/ui/sidebar";
 import { useUserContext } from "@/context/user";
 import { useStorageContext } from "@/context/storage";
 
@@ -13,23 +12,16 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { WindowControls } from "@/components/windowControls";
 
 export function Navbar() {
   const { setPage, page } = usePageContext();
-  const { open, isMobile } = useSidebar();
   const { failedMessagesAmount } = useUserContext();
   const { translate } = useStorageContext();
 
   return (
-    <div
-      className={`${open && !isMobile ? "pr-2 pl-1" : "px-2"} w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0`}
-    >
-      <Button asChild className="h-9 w-9" variant="outline">
-        <SidebarTrigger />
-      </Button>
+    <div className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0">
       <Button
         className="h-9 w-9"
         variant="outline"

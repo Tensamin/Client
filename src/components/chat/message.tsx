@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useCryptoContext } from "@/context/crypto";
 import { useUserContext } from "@/context/user";
 import { useStorageContext } from "@/context/storage";
+import { useMessageContext } from "@/context/message";
 
 // Components
 import {
@@ -21,7 +22,7 @@ import {
 
 // Types
 import { ErrorType, Message, User, systemUser } from "@/lib/types";
-import { UserAvatar } from "../modals/raw";
+import { UserAvatar } from "@/components/modals/raw";
 
 // Main
 export function MessageGroup({ data }: { data: Message }) {
@@ -47,27 +48,10 @@ function FinalMessage({ message: data }: { message: Message }) {
         setSender(systemUser);
       } else {
         try {
-          const ownPublicKey = await get(ownUuid, false).then(
-            (data) => data.public_key
-          );
-          const currentReceiver = await get(currentReceiverUuid, false);
-
-          const sharedSecret = await get_shared_secret(
-            privateKey,
-            ownPublicKey,
-            currentReceiver.public_key
-          );
-
-          if (!sharedSecret.success) throw new Error(sharedSecret.message);
-
-          const decrypted = await decrypt(data.content, sharedSecret.message);
-
-          if (!decrypted.success) throw new Error(decrypted.message);
-
-          setContent(decrypted.message);
+          setContent(data.content);
 
           if (data.sender !== "SYSTEM") {
-            setSender(currentReceiver);
+            setSender(await get(data.sender, false));
           } else {
             setSender(systemUser);
           }
@@ -103,20 +87,20 @@ function FinalMessage({ message: data }: { message: Message }) {
             : "transparent",
         }}
       >
-        <div className="flex gap-1 w-full py-3 px-2">
-          {data.avatar && ( // replace with Activity in the future
+        <div className="flex gap-2 w-full">
+          {data.avatar !== false && ( // replace with Activity in the future
             <div className="pt-0.5">
               <UserAvatar
                 icon={sender?.avatar || undefined}
                 title={sender?.display || ""}
                 size="medium"
-                border={false}
+                border
               />
             </div>
           )}
           <div className="flex flex-col">
-            {data.display && (
-              <span className="font-medium">{sender?.display}</span>
+            {data.display !== false && (
+              <span className="font-medium text-md">{sender?.display}</span>
             )}
             <span className="text-sm">{content}</span>
           </div>

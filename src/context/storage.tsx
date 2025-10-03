@@ -90,6 +90,9 @@ export function StorageProvider({
       ERROR_HOME_PAGE_ADD_CONVERSATION_FAILED: "Failed to add conversation",
 
       // Chat Page
+      FAILED_MESSAGES_MULTIPLE: " messages failed to load",
+      FAILED_MESSAGES_SINGLE: "Failed to load 1 message",
+      CHAT_PAGE_INPUT_PLACEHOLDER: "Type a message...",
       ERROR_CONVERSATION_LOADING_FAILED: "No conversation?",
       NO_MESSAGES_WITH_USER: "You have no messages with this user.",
 
@@ -176,6 +179,7 @@ export function StorageProvider({
       ERROR_INVALID_SECRET: "Invalid Private Key",
       ERROR_INVALID_SECRET_EXTRA:
         "Reload the page and try again. If the issue persists clear your storage and log in again.",
+      ERROR_SOCKET_CONTEXT_TIMEOUT: "Socket timeout",
 
       // User Context
       USER_CONTEXT: "User Context",
