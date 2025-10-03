@@ -19,22 +19,6 @@ import { handleError } from "@/lib/utils";
 import { usePageContext } from "@/context/page";
 
 // Types
-type StorageContextType = {
-  set: (key: string, value: Value) => void;
-  clearAll: () => void;
-  data: Data;
-  translate: (input: string, extraInfo?: string | number) => string;
-  language: string | null;
-  languages: {
-    en_int: Language;
-    [key: string]: Language;
-  };
-  addLanguage: (langKey: string, langData: Language) => void;
-  setLanguage: (langKey: string) => void;
-  removeLanguage: (langKey: string) => void;
-  debugLog: (sender: string, message: string, extraInfo?: unknown) => void;
-};
-
 type Data = {
   [key: string]: Value;
 };
@@ -82,6 +66,9 @@ export function StorageProvider({
   const [data, setData] = useState<Data>({});
   const [ready, setReady] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
+  const [themeTint, setRawThemeTint] = useState<string | null>(null);
+  const [themeCSS, setRawThemeCSS] = useState<string | null>(null);
+  const [themeTintType, setRawThemeTintType] = useState<string | null>(null);
   const [language, setLanguage] = useState<string | null>(null);
   const [languages, setLanguages] = useState<{
     en_int: Language;
@@ -123,7 +110,7 @@ export function StorageProvider({
         "This will log you out of your account and delete all your settings.",
 
       SETTINGS_PAGE_LABEL_THEME: "Theme",
-      SETTINGS_PAGE_LABEL_CSSTINT: "CSS & Tint",
+      SETTINGS_PAGE_LABEL_CSS: "Custom CSS",
       SETTINGS_PAGE_LABEL_LAYOUT: "Layout",
 
       SETTINGS_PAGE_LABEL_AUDIO: "Audio",
@@ -169,6 +156,11 @@ export function StorageProvider({
       DATA_PROFILE_PAGE_UPDATE: "Profile data updated",
       ERROR_PROFILE_PAGE_UPDATE_FAILED: "Failed to update profile",
 
+      // Custom CSS Page
+      SETTINGS_CSS_SAVED: "CSS saved successfully",
+      SETTINGS_CSS_CLEARED: "CSS cleared successfully",
+      SETTINGS_CSS_CUSTOM_CSS: "Custom CSS",
+
       // Socket Context
       SOCKET_CONTEXT: "Socket Context",
       SOCKET_CONTEXT_CONNECTED: "Connected to Omikron",
@@ -195,6 +187,7 @@ export function StorageProvider({
       SAVE: "Save",
       EDIT: "Edit",
       DELETE: "Delete",
+      DISCARD: "Discard",
 
       VERSION: "Version: ",
       CLIENT_PING: "Client Ping: ",
@@ -233,12 +226,67 @@ export function StorageProvider({
         [key: string]: Language;
       });
       setLanguage((loadedData.language as string) || "en_int");
+      setRawThemeTint((loadedData.themeTint as string) || null);
+      setRawThemeCSS((loadedData.themeCSS as string) || null);
+      setRawThemeTintType((loadedData.themeTintType as string) || null);
     } catch (err: unknown) {
       handleError("STORAGE_CONTEXT", "ERROR_STORAGE_CONTEXT_UNKOWN", err);
     } finally {
       setReady(true);
     }
   }, [db, languages.en_int]);
+
+  useEffect(() => {
+    if (!themeCSS) return;
+
+    const isRules = /\{/.test(themeCSS);
+    if (isRules) {
+      let style = document.getElementById(
+        "theme-style"
+      ) as HTMLStyleElement | null;
+      if (!style) {
+        style = document.createElement("style");
+        style.id = "theme-style";
+        document.head.appendChild(style);
+      }
+      style.textContent = themeCSS;
+      return () => {
+        style?.remove();
+      };
+    } else {
+      document.body.style.cssText = themeCSS;
+      return () => {
+        document.body.style.cssText = "";
+      };
+    }
+  }, [themeCSS]);
+
+  useEffect(() => {
+    if (themeTint) {
+      alert("New Theme Tint: " + themeTint);
+    }
+  }, [themeTint]);
+
+  useEffect(() => {
+    if (themeTintType) {
+      alert("New Theme Tint Type: " + themeTintType);
+    }
+  }, [themeTintType]);
+
+  function setThemeCSS(css: string) {
+    setRawThemeCSS(css);
+    set("themeCSS", css);
+  }
+
+  function setThemeTint(tint: string) {
+    setRawThemeTint(tint);
+    set("themeTint", tint);
+  }
+
+  function setThemeTintType(tintType: string) {
+    setRawThemeTintType(tintType);
+    set("themeTintType", tintType);
+  }
 
   const set = useCallback(
     async (key: string, value: Value) => {
@@ -378,9 +426,31 @@ export function StorageProvider({
         setLanguage,
         removeLanguage,
         debugLog,
+        setThemeCSS,
+        setThemeTint,
+        setThemeTintType,
       }}
     >
       {children}
     </StorageContext.Provider>
   ) : null;
 }
+
+type StorageContextType = {
+  set: (key: string, value: Value) => void;
+  clearAll: () => void;
+  data: Data;
+  translate: (input: string, extraInfo?: string | number) => string;
+  language: string | null;
+  languages: {
+    en_int: Language;
+    [key: string]: Language;
+  };
+  addLanguage: (langKey: string, langData: Language) => void;
+  setLanguage: (langKey: string) => void;
+  removeLanguage: (langKey: string) => void;
+  debugLog: (sender: string, message: string, extraInfo?: unknown) => void;
+  setThemeCSS: (css: string) => void;
+  setThemeTint: (tint: string) => void;
+  setThemeTintType: (tintType: string) => void;
+};

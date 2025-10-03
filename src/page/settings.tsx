@@ -24,7 +24,7 @@ import IotaPage from "@/page/settings/iota";
 import ProfilePage from "@/page/settings/profile";
 import PrivacyPage from "@/page/settings/privacy";
 import ThemePage from "@/page/settings/theme";
-import CssTintPage from "@/page/settings/cssTint";
+import CssPage from "@/page/settings/css";
 import LayoutPage from "@/page/settings/layout";
 import AudioPage from "@/page/settings/audio";
 import VideoPage from "@/page/settings/video";
@@ -45,7 +45,7 @@ export const Pages = [
   "logout",
   "-appearance",
   "theme",
-  "cssTint",
+  "css",
   "layout",
   "-general",
   "audio",
@@ -69,8 +69,8 @@ function MainPage({ selected }: { selected: string }): React.JSX.Element {
       return <PrivacyPage />;
     case "theme":
       return <ThemePage />;
-    case "cssTint":
-      return <CssTintPage />;
+    case "css":
+      return <CssPage />;
     case "layout":
       return <LayoutPage />;
     case "audio":
