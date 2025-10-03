@@ -195,7 +195,11 @@ export default function Page() {
                 onChange={async (e) => await handleFileSelect(e)}
               />
               <div
-                className={`${hover ? "opacity-50" : "opacity-100"} transition-opacity duration-300 ease-in-out flex flex-col gap-10 items-center justify-center w-full h-full border-dashed rounded-xl cursor-pointer select-none text-xs ${buttonVariants({ variant: "outline" })}`}
+                className={`${
+                  hover ? "opacity-50" : "opacity-100"
+                } transition-opacity duration-300 ease-in-out flex flex-col gap-10 items-center justify-center w-full h-full border-dashed rounded-xl cursor-pointer select-none text-xs ${buttonVariants(
+                  { variant: "outline" }
+                )}`}
                 onClick={() => tuFileRef.current?.click()}
                 onDrop={handleDrop}
                 onDragOver={(e) => {

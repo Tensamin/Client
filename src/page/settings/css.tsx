@@ -13,7 +13,7 @@ export default function Page() {
     data: { themeCSS },
   } = useStorageContext();
   return (
-    <div className="flex flex-col gap-2 h-full">
+    <div className="flex flex-col gap-2 h-full w-[97%]">
       <CodeEditor
         text={themeCSS as string}
         onSubmit={(value) => {

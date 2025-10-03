@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased">
+      <body className="antialiased max-h-screen overflow-hidden">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

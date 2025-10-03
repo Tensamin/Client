@@ -54,64 +54,62 @@ function MainPage() {
   }
 
   return (
-    <>
-      <div className="w-full h-screen flex bg-sidebar">
-        <div className="w-87 h-full flex flex-col gap-4 p-2">
-          <UserModal key={ownUuid} uuid={ownUuid} size="big" />
-          <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden mx-1 p-1">
-            <div className="relative grid grid-cols-2 w-full gap-1">
-              {["COMMUNITIES", "CONVERSATIONS"].map((cat: string) => (
-                <Button
-                  key={cat}
-                  variant="ghost"
-                  type="button"
-                  className={`select-none relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20 ${
-                    category !== cat ? "hover:border hover:border-input/30" : ""
-                  }`}
-                  onClick={() =>
-                    setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
-                  }
-                  aria-pressed={category === cat}
-                  aria-label={cat}
-                >
-                  {category === cat && (
-                    <motion.span
-                      aria-hidden="true"
-                      layoutId="category-pill"
-                      className="absolute inset-0 rounded-full bg-input/50 pointer-events-none border"
-                      transition={{
-                        type: "spring",
-                        stiffness: 350,
-                        damping: 28,
-                      }}
-                    />
-                  )}
-                  <span className="relative z-10 text-sm">
-                    {translate(cat)}
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </div>
-          <div className="scrollbar-hide">
-            {["COMMUNITIES", "CONVERSATIONS"].map((cat) => {
-              if (cat !== category) return null;
-              return category === "COMMUNITIES" ? (
-                <Communities key={category} />
-              ) : (
-                <Conversations key={category} />
-              );
-            })}
+    <div className="w-full h-screen flex bg-sidebar">
+      <div className="w-64 h-full flex flex-col gap-4 p-2 shrink-0">
+        <UserModal key={ownUuid} uuid={ownUuid} size="big" />
+        <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden mx-1 p-1">
+          <div className="relative grid grid-cols-2 w-full gap-1">
+            {["COMMUNITIES", "CONVERSATIONS"].map((cat: string) => (
+              <Button
+                key={cat}
+                variant="ghost"
+                type="button"
+                className={`select-none relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20 ${
+                  category !== cat ? "hover:border hover:border-input/30" : ""
+                }`}
+                onClick={() =>
+                  setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
+                }
+                aria-pressed={category === cat}
+                aria-label={cat}
+              >
+                {category === cat && (
+                  <motion.span
+                    aria-hidden="true"
+                    layoutId="category-pill"
+                    className="absolute inset-0 rounded-full bg-input/50 pointer-events-none border"
+                    transition={{
+                      type: "spring",
+                      stiffness: 350,
+                      damping: 28,
+                    }}
+                  />
+                )}
+                <span className="relative z-10 text-sm flex">
+                  {translate(cat)}
+                </span>
+              </Button>
+            ))}
           </div>
         </div>
-        <div className="w-full h-full flex flex-col">
-          <Navbar />
-          <div className="w-full h-full bg-background rounded-tl-xl border overflow-hidden p-2">
-            {jsxPage}
-          </div>
+        <div className="scrollbar-hide">
+          {["COMMUNITIES", "CONVERSATIONS"].map((cat) => {
+            if (cat !== category) return null;
+            return category === "COMMUNITIES" ? (
+              <Communities key={category} />
+            ) : (
+              <Conversations key={category} />
+            );
+          })}
         </div>
       </div>
-    </>
+      <div className="flex-1 h-full flex flex-col">
+        <Navbar />
+        <div className="flex-1 bg-background rounded-tl-xl border overflow-auto">
+          {jsxPage}
+        </div>
+      </div>
+    </div>
   );
 }
 

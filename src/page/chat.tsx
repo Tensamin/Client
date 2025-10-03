@@ -18,7 +18,7 @@ import { PageDiv, PageTextarea } from "@/components/pageDiv";
 
 // Main
 export default function Page() {
-  const { data } = useStorageContext();
+  const { data, translate } = useStorageContext();
   const { sendMessage } = useMessageContext();
   const { ownUuid } = useUserContext();
   const [client] = React.useState(() => new QueryClient());
@@ -36,7 +36,7 @@ export default function Page() {
 
   return (
     <div className="h-full w-full flex flex-col gap-2 overflow-hidden">
-      <PageDiv className="h-full">
+      <PageDiv className="h-full mt-2 ml-2 mr-2">
         <QueryClientProvider client={client}>
           <Box />
         </QueryClientProvider>
@@ -44,7 +44,7 @@ export default function Page() {
       <div className="flex gap-2">
         <Button
           variant="outline"
-          className="aspect-square h-10 w-10 flex p-2 rounded-lg border dark:border-border dark:bg-card/46 bg-card/46"
+          className="aspect-square h-10 w-10 flex ml-2 rounded-lg border dark:border-border dark:bg-card/46 bg-card/46"
         >
           <Icon.Plus />
         </Button>
@@ -64,15 +64,15 @@ export default function Page() {
                 timestamp: Date.now(),
                 //files
                 content: message,
-              }).then(data => {
+              }).then((data) => {
                 console.log("meeewwooo", data);
-              })
+              });
               setMessage("");
             }
           }}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Send a message"
-          className="w-full overflow-hidden min-h-10 max-h-52"
+          placeholder={translate("CHAT_PAGE_INPUT_PLACEHOLDER")}
+          className="w-full overflow-hidden min-h-10 max-h-52 placeholder:select-none mr-2 mb-2"
         />
       </div>
     </div>

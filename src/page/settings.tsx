@@ -161,8 +161,8 @@ export default function Page() {
 
   return (
     <div className="h-full w-full flex gap-2">
-      <PageDiv className="flex flex-col h-full" scroll>
-        <div className="w-37 h-full">
+      <PageDiv className="flex flex-col h-full w-50 px-0">
+        <div className="flex-1 overflow-y-auto scrollbar-hide px-2">
           {Pages.map((page) => {
             if (page === "logout")
               return <SettingsButton key="logout" page={page} logoutButton />;
@@ -186,8 +186,9 @@ export default function Page() {
               />
             );
           })}
-          <div className="h-full" />
-          <div className="select-none text-sm text-muted-foreground pt-15">
+        </div>
+        <div className="border-t mx-2">
+          <div className="select-none text-sm text-muted-foreground pt-2">
             {translate("SETTINGS_PAGE_LABEL_INFORMATION")}
           </div>
           <div className="text-xs text-muted-foreground pt-1">
@@ -198,17 +199,22 @@ export default function Page() {
           </div>
         </div>
       </PageDiv>
-      <PageDiv className="w-full flex flex-col p-3">
+      <PageDiv className="w-full h-full flex flex-col p-3">
         {Pages.map((page) => {
           if (page === selected)
             return (
-              <div key={page} className="text-lg font-medium mb-4 leading-6">
+              <div
+                key={page}
+                className="text-lg font-medium mb-4 leading-6 select-none"
+              >
                 {translate("SETTINGS_PAGE_LABEL_" + page.toUpperCase())}
               </div>
             );
           return null;
         })}
-        <MainPage selected={selected} />
+        <div className="flex w-full h-full">
+          <MainPage selected={selected} />
+        </div>
       </PageDiv>
     </div>
   );
