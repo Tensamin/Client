@@ -105,7 +105,11 @@ function MainPage() {
       </div>
       <div className="flex-1 h-full flex flex-col">
         <Navbar />
-        <div className="flex-1 bg-background rounded-tl-xl border overflow-auto">
+        <div
+          className={`flex-1 bg-background rounded-tl-xl border overflow-auto ${
+            page !== "chat" && "p-2"
+          }`}
+        >
           {jsxPage}
         </div>
       </div>
