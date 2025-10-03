@@ -61,18 +61,25 @@ export function CodeEditor({
     try {
       postcss.parse(code, { from: undefined });
       monaco.editor.setModelMarkers(model, "postcss", []);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      if (!err) return;
+      const typedErr = err as {
+        line?: number;
+        column?: number;
+        message?: string;
+        reason?: string;
+      };
       const markers: editor.IMarkerData[] = [];
 
       let line = 1;
       let column = 1;
 
-      if (typeof err.line === "number") line = err.line;
-      if (typeof err.column === "number") column = err.column;
+      if (typeof typedErr.line === "number") line = typedErr.line;
+      if (typeof typedErr.column === "number") column = typedErr.column;
 
       markers.push({
         severity: monaco.MarkerSeverity.Error,
-        message: err.message || err.reason || String(err),
+        message: typedErr.message || typedErr.reason || String(err),
         startLineNumber: line,
         startColumn: column,
         endLineNumber: line,

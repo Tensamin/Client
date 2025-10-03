@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { useCryptoContext } from "@/context/crypto";
 import { useUserContext } from "@/context/user";
 import { useStorageContext } from "@/context/storage";
-import { useMessageContext } from "@/context/message";
 
 // Components
 import {

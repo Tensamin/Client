@@ -21,6 +21,11 @@ const eslintConfig = [
       "src/lib/fingerprint.ts",
     ],
   },
+  {
+    rules: {
+      "@next/next/no-img-element": "off",
+    },
+  },
 ];
 
 export default eslintConfig;
