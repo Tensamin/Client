@@ -120,4 +120,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  ::selection {
+    background: var(--color-primary, var(--primary));
+    color: var(--color-primary-foreground, var(--primary-foreground));
+  }
+  ::-moz-selection {
+    background: var(--color-primary, var(--primary));
+    color: var(--color-primary-foreground, var(--primary-foreground));
+  }
 }

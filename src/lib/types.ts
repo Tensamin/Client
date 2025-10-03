@@ -97,6 +97,7 @@ export type User = {
   public_key: string;
   created_at: string;
   loading: boolean;
+  badges?: string[];
 };
 
 export type ErrorType = {
@@ -114,6 +115,22 @@ export type Community = {
   community_address: string;
   community_title: string;
   position: string;
+};
+
+export const systemUser: User = {
+  uuid: "SYSTEM",
+  username: "SYSTEM",
+  public_key: "",
+  created_at: "0",
+  display: "Tensamin",
+  avatar: "/assets/images/systemUser.webp",
+  about: "",
+  loading: false,
+  state: "NONE",
+  status: "",
+  sub_end: 0,
+  sub_level: 0,
+  badges: ["System"],
 };
 
 declare global {

@@ -11,7 +11,6 @@ import { useUserContext } from "@/context/user";
 import { useStorageContext } from "@/context/storage";
 
 // Components
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -21,7 +20,8 @@ import {
 } from "@/components/ui/context-menu";
 
 // Types
-import { ErrorType, Message } from "@/lib/types";
+import { ErrorType, Message, User, systemUser } from "@/lib/types";
+import { UserAvatar } from "../modals/raw";
 
 // Main
 export function MessageGroup({ data }: { data: Message }) {
@@ -38,31 +38,39 @@ function FinalMessage({ message: data }: { message: Message }) {
   const { get, ownUuid, currentReceiverUuid, setFailedMessagesAmount } =
     useUserContext();
   const [content, setContent] = useState<string>("");
-  const [sender, setSender] = useState<string>("");
+  const [sender, setSender] = useState<User | null>(null);
 
   useEffect(() => {
     (async () => {
       if (data.content === "NO_MESSAGES_WITH_USER") {
-        setContent(translate(data.content));
+        setContent(translate("NO_MESSAGES_WITH_USER"));
+        setSender(systemUser);
       } else {
         try {
           const ownPublicKey = await get(ownUuid, false).then(
             (data) => data.public_key
           );
-          const otherPublicKey = await get(currentReceiverUuid, false).then(
-            (data) => data.public_key
-          );
+          const currentReceiver = await get(currentReceiverUuid, false);
+
           const sharedSecret = await get_shared_secret(
             privateKey,
             ownPublicKey,
-            otherPublicKey
+            currentReceiver.public_key
           );
+
           if (!sharedSecret.success) throw new Error(sharedSecret.message);
 
           const decrypted = await decrypt(data.content, sharedSecret.message);
+
           if (!decrypted.success) throw new Error(decrypted.message);
+
           setContent(decrypted.message);
-          setSender(data.sender);
+
+          if (data.sender !== "SYSTEM") {
+            setSender(currentReceiver);
+          } else {
+            setSender(systemUser);
+          }
         } catch (err: unknown) {
           // @ts-expect-error Idk TypeScript is dumb
           setFailedMessagesAmount((prev: number) => prev + 1);
@@ -70,12 +78,37 @@ function FinalMessage({ message: data }: { message: Message }) {
         }
       }
     })();
-  });
+  }, [
+    data,
+    translate,
+    get,
+    ownUuid,
+    currentReceiverUuid,
+    get_shared_secret,
+    privateKey,
+    decrypt,
+    setFailedMessagesAmount,
+  ]);
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger>
-        {content === "" ? <Skeleton className="h-5 w-50" /> : content}: {sender}
+      <ContextMenuTrigger className="flex">
+        <div className="flex gap-1">
+          {data.avatar && ( // replace with Activity in the future
+            <div className="pt-0.5">
+              <UserAvatar
+                icon={sender?.avatar || undefined}
+                title={sender?.display || ""}
+                size="medium"
+                border={false}
+              />
+            </div>
+          )}
+          <div className="flex flex-col">
+            <span className="font-semibold">{sender?.display}</span>
+            <span className="text-sm text-muted-foreground">{content}</span>
+          </div>
+        </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem
@@ -95,7 +128,7 @@ function FinalMessage({ message: data }: { message: Message }) {
           <Icon.Reply /> Reply
         </ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem disabled>
+        <ContextMenuItem disabled={data.sender !== ownUuid || true}>
           <Icon.Trash /> Delete
         </ContextMenuItem>
       </ContextMenuContent>

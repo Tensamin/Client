@@ -35,7 +35,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 // Types
 type FormState = {
   username: string;
-  displayName: string;
+  display: string;
   about: string;
   avatar: string;
   status: string;
@@ -65,7 +65,7 @@ export default function Page() {
       if (cancelled) return;
       const next: FormState = {
         username: user?.username ?? "",
-        displayName: user?.display ?? "",
+        display: user?.display ?? "",
         about: user?.about ?? "",
         avatar: user?.avatar ?? "",
         status: user?.status ?? "",
@@ -85,10 +85,10 @@ export default function Page() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
         <div className="relative">
-          <Avatar className="size-15">
+          <Avatar className="size-15 border" key={form.avatar}>
             {form.avatar && <AvatarImage src={form.avatar} />}
-            <AvatarFallback>
-              {convertStringToInitials(form.displayName)}
+            <AvatarFallback className="text-2xl">
+              {convertStringToInitials(form.display)}
             </AvatarFallback>
           </Avatar>
           {ownState && (
@@ -107,26 +107,42 @@ export default function Page() {
           )}
         </div>
         <div className="flex flex-col gap-2">
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                const avatar = reader.result as string;
+          <div className="flex gap-2">
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  const avatar = reader.result as string;
+                  setForm((prev) => {
+                    if (!prev) return prev;
+                    const next = { ...prev, avatar };
+                    profileFormCache.set(ownUuid, next);
+                    return next;
+                  });
+                };
+                reader.readAsDataURL(file);
+              }}
+              disabled={loading}
+            />
+            <Button
+              variant="destructive"
+              disabled={loading || !form.avatar}
+              onClick={() => {
                 setForm((prev) => {
                   if (!prev) return prev;
-                  const next = { ...prev, avatar };
+                  const next = { ...prev, avatar: "" };
                   profileFormCache.set(ownUuid, next);
                   return next;
                 });
-              };
-              reader.readAsDataURL(file);
-            }}
-            disabled={loading}
-          />
+              }}
+            >
+              Remove
+            </Button>
+          </div>
           <Select
             value={ownState}
             onValueChange={setOwnState}
@@ -149,12 +165,12 @@ export default function Page() {
       <Input
         id="display"
         type="text"
-        value={form.displayName}
+        value={form.display}
         onChange={(e) => {
-          const displayName = e.target.value;
+          const display = e.target.value;
           setForm((prev) => {
             if (!prev) return prev;
-            const next = { ...prev, displayName };
+            const next = { ...prev, display };
             profileFormCache.set(ownUuid, next);
             return next;
           });
@@ -215,7 +231,7 @@ export default function Page() {
               body: JSON.stringify({
                 private_key_hash: privateKeyHash,
                 username: form.username,
-                display: form.displayName,
+                display: form.display,
                 about: form.about,
                 avatar: form.avatar,
                 status: form.status,
@@ -244,7 +260,7 @@ export default function Page() {
           loading ||
           form.about.length > 200 ||
           form.username.length > 15 ||
-          form.displayName.length > 15 ||
+          form.display.length > 15 ||
           form.status.length > 15
         }
       >

@@ -58,8 +58,8 @@ export function MessageProvider({
           {
             send_to_server: false,
             sender: "SYSTEM",
-            avatar: false,
-            display: false,
+            avatar: true,
+            display: true,
             timestamp: Date.now(),
             content: "NO_MESSAGES_WITH_USER",
           } as Message,

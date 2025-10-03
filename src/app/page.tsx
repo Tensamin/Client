@@ -92,7 +92,7 @@ function MainPage() {
                   key={cat}
                   variant="ghost"
                   type="button"
-                  className={`relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20 ${
+                  className={`select-none relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20 ${
                     category !== cat ? "hover:border hover:border-input/30" : ""
                   }`}
                   onClick={() =>

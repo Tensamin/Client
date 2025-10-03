@@ -168,7 +168,10 @@ export default function Page() {
               return <SettingsButton key="logout" page={page} logoutButton />;
             if (page.startsWith("-"))
               return (
-                <div key={page} className="text-sm text-muted-foreground">
+                <div
+                  key={page}
+                  className="select-none text-sm text-muted-foreground"
+                >
                   {translate(
                     "SETTINGS_PAGE_LABEL_" + page.toUpperCase().replace("-", "")
                   )}
@@ -184,11 +187,11 @@ export default function Page() {
             );
           })}
           <div className="h-full" />
-          <div className="text-sm text-muted-foreground pt-15">
+          <div className="select-none text-sm text-muted-foreground pt-15">
             {translate("SETTINGS_PAGE_LABEL_INFORMATION")}
           </div>
           <div className="text-xs text-muted-foreground pt-1">
-            {/* Put iotaPing into the translate */}
+            {/* Put ping numbers into the translate */}
             <p>{translate("VERSION", packageJson.version)}</p>
             <p>{translate("CLIENT_PING", ownPing + "ms")}</p>
             <p>{translate("IOTA_PING", iotaPing + "ms")}</p>
