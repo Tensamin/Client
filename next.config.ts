@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "export",
-  distDir: "dist",
+  distDir: "dist/app",
+  assetPrefix: "./",
 };
 
 export default nextConfig;
