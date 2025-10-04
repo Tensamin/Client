@@ -48,7 +48,7 @@ export function Loading({
       <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10">
         <img
           src={
-            isError ? "/assets/images/logo.png" : "/assets/images/loading.gif"
+            isError ? "./assets/images/logo.png" : "./assets/images/loading.gif"
           }
           //width={75}
           //height={75}
