@@ -70,7 +70,7 @@ export function SocketProvider({
   const [ownPing, setOwnPing] = useState<number>(0);
   const [iotaPing, setIotaPing] = useState<number>(0);
 
-  const { debugLog } = useStorageContext();
+  const { debugLog, bypass } = useStorageContext();
   const { setPage } = usePageContext();
   const { privateKeyHash, ownUuid } = useCryptoContext();
 
@@ -263,6 +263,28 @@ export function SocketProvider({
       clearInterval(interval);
     };
   }, [isReady, send]);
+
+  if (bypass && !identified && readyState !== ReadyState.OPEN) {
+    return (
+      <SocketContext.Provider
+        value={{
+          readyState: ReadyState.CLOSED,
+          send: async () => ({
+            id: "",
+            type: "error",
+            data: {},
+          }),
+          isReady: false,
+          lastMessage: null,
+          ownPing: 0,
+          iotaPing: 0,
+          initialUserState: "NONE",
+        }}
+      >
+        {children}
+      </SocketContext.Provider>
+    );
+  }
 
   switch (readyState) {
     case ReadyState.OPEN:

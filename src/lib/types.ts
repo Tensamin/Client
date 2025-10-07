@@ -99,6 +99,7 @@ export type User = {
   created_at: string;
   loading: boolean;
   badges?: string[];
+  storeTime?: number;
 };
 
 export type ErrorType = {

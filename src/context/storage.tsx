@@ -16,11 +16,18 @@ import { toast } from "sonner";
 import { handleError } from "@/lib/utils";
 
 // Context Imports
-import { usePageContext } from "@/context/page";
+import { User } from "@/lib/types";
+
+// Components
+import { RawLoading } from "@/components/loading";
 
 // Types
 type Data = {
   [key: string]: Value;
+};
+
+type OfflineData = {
+  storedUsers?: (User & { storeTime: number })[];
 };
 
 type DBType = IDBPDatabase<{
@@ -36,7 +43,7 @@ type DBType = IDBPDatabase<{
 
 type Language = Record<string, string>;
 
-export type Value = string | boolean | number | object | Language;
+export type Value = string | boolean | number | object | Language | object[];
 
 // Helper Functions
 function createDBPromise() {
@@ -69,9 +76,10 @@ export function StorageProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { setPage } = usePageContext();
+  const [failed, setFailed] = useState(false);
   const [userData, setUserData] = useState<Data>({});
-  const [offlineData, setOfflineData] = useState<Data>({});
+  const [offlineData, setOfflineData] = useState<OfflineData | null>(null);
+  const [bypass, setBypass] = useState(false);
   const [ready, setReady] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
   const [themeTint, setRawThemeTint] = useState<string | null>(null);
@@ -194,6 +202,11 @@ export function StorageProvider({
       USER_CONTEXT_USER_NOT_FETCHED: "User not fetched",
       USER_CONTEXT_USER_ALREADY_FETCHED: "User already fetched",
 
+      // Bypass Messages
+      BYPASS_CRYPTO_CONTEXT_ENCRYPT: "Encryption bypassed",
+      BYPASS_CRYPTO_CONTEXT_DECRYPT: "Decryption bypassed",
+      BYPASS_CRYPTO_CONTEXT_GET_SHARED_SECRET: "Get shared secret bypassed",
+
       // Other Stuff
       CANCEL: "Cancel",
       SAVE: "Save",
@@ -231,10 +244,6 @@ export function StorageProvider({
       userData.forEach((entry) => {
         loadedUserData[entry.key] = entry.value;
       });
-      
-      // temp
-      loadedUserData["enableLockScreenBypass"] = true;
-
       setUserData(loadedUserData);
       offlineData.forEach((entry) => {
         loadedOfflineData[entry.key] = entry.value;
@@ -360,10 +369,10 @@ export function StorageProvider({
         setDb(initializedDb);
         await loadData();
       } catch {
-        setPage("error", "ERROR_STORGE_CONTEXT_INIT_FAILED_UNKNOWN");
+        setFailed(true);
       }
     })();
-  }, [dbPromise, loadData, setPage]);
+  }, [dbPromise, loadData, setFailed]);
 
   useEffect(() => {
     set("language", language as string);
@@ -376,6 +385,20 @@ export function StorageProvider({
     delete languagesWithoutEnInt["en_int"];
     set("languages", languagesWithoutEnInt);
   }, [languages, set]);
+
+  function addOfflineUser(user: User) {
+    if (!db) return;
+    db.put("offline", {
+      key: "storedUsers",
+      value: [
+        ...(offlineData?.storedUsers || []),
+        {
+          ...user,
+          storeTime: Date.now(),
+        },
+      ],
+    });
+  }
 
   function translate(input: string, extraInfo?: string | number) {
     if (
@@ -439,12 +462,31 @@ export function StorageProvider({
     );
   }
 
+  if (typeof window !== "undefined") {
+    // @ts-expect-error window does not have bypassLockScreen
+    window.bypassLockScreen = () => setBypass(true);
+  }
+
+  if (failed) {
+    return (
+      <RawLoading
+        debug={false}
+        isError={true}
+        addBypassButton={false}
+        addClearButton={false}
+        message="Unsupported Browser"
+        extra="Please try another browser, the current one does not support IndexedDB. Tensamin was developed and tested on Chromium based browsers."
+      />
+    );
+  }
+
   return ready && language !== null ? (
     <StorageContext.Provider
       value={{
         set,
         clearAll,
         data: userData,
+        offlineData,
         translate,
         language,
         languages,
@@ -455,17 +497,29 @@ export function StorageProvider({
         setThemeCSS,
         setThemeTint,
         setThemeTintType,
+        bypass,
+        setBypass,
+        addOfflineUser,
       }}
     >
       {children}
     </StorageContext.Provider>
-  ) : null;
+  ) : (
+    <RawLoading
+      debug={false}
+      isError={false}
+      addBypassButton={false}
+      addClearButton={false}
+      message=""
+    />
+  );
 }
 
 type StorageContextType = {
   set: (key: string, value: Value) => void;
   clearAll: () => void;
   data: Data;
+  offlineData: OfflineData | null;
   translate: (input: string, extraInfo?: string | number) => string;
   language: string | null;
   languages: {
@@ -479,4 +533,7 @@ type StorageContextType = {
   setThemeCSS: (css: string) => void;
   setThemeTint: (tint: string) => void;
   setThemeTintType: (tintType: string) => void;
+  bypass: boolean;
+  setBypass: (bypass: boolean) => void;
+  addOfflineUser: (user: User) => void;
 };

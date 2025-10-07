@@ -3,6 +3,9 @@
 // Package Imports
 import { createContext, useContext, useState } from "react";
 
+// Context Imports
+import { useStorageContext } from "@/context/storage";
+
 // Main
 type PageContextType = {
   page: string;
@@ -24,7 +27,10 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
   const [pageData, setPageData] = useState("");
   const [extraPageData, setExtraPageData] = useState("");
 
+  const { bypass } = useStorageContext();
+
   function setPage(page: string, data: string = "", extraData: string = "") {
+    if (bypass && page === "error") return;
     setPageRaw(page);
     setPageData(data);
     setExtraPageData(extraData);

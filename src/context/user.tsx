@@ -69,7 +69,8 @@ export function UserProvider({
   const fetchedUsersRef = useRef<Map<string, User>>(new Map());
   const prevLastMessageRef = useRef<unknown>(null);
 
-  const { translate, debugLog } = useStorageContext();
+  const { translate, debugLog, offlineData, addOfflineUser } =
+    useStorageContext();
   const { ownUuid } = useCryptoContext();
   const { send, isReady, lastMessage, initialUserState } = useSocketContext();
   const { page, pageData } = usePageContext();
@@ -80,6 +81,12 @@ export function UserProvider({
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
   const [reloadUsers, setReloadUsers] = useState<boolean>(false);
   const [ownState, setOwnState] = useState<UserState>(initialUserState);
+
+  useEffect(() => {
+    offlineData?.storedUsers?.map((user: User & { storeTime: number }) => {
+      fetchedUsersRef.current.set(user.uuid, user);
+    });
+  }, [offlineData]);
 
   const get = useCallback(
     async (uuid: string, refetch: boolean = false): Promise<User> => {
@@ -133,6 +140,7 @@ export function UserProvider({
         };
 
         fetchedUsersRef.current.set(uuid, newUser);
+        addOfflineUser(newUser);
         return newUser;
       } catch (err: unknown) {
         const error = err as ErrorType;
@@ -164,7 +172,7 @@ export function UserProvider({
         } as User;
       }
     },
-    [debugLog]
+    [debugLog, addOfflineUser]
   );
 
   async function refetchConversations() {

@@ -70,7 +70,7 @@ export function CryptoProvider({
   const [ownUuid, setOwnUuid] = useState("");
 
   const { setPage, page } = usePageContext();
-  const { data } = useStorageContext();
+  const { data, bypass } = useStorageContext();
 
   async function encrypt(
     message: string,
@@ -146,6 +146,31 @@ export function CryptoProvider({
         privateKey,
         privateKeyHash,
         ownUuid,
+      }}
+    >
+      {children}
+    </CryptoContext.Provider>
+  ) : bypass ? (
+    <CryptoContext.Provider
+      value={{
+        encrypt: () =>
+          Promise.resolve({
+            success: false,
+            message: "BYPASS_CRYPTO_CONTEXT_ENCRYPT",
+          }),
+        decrypt: () =>
+          Promise.resolve({
+            success: false,
+            message: "BYPASS_CRYPTO_CONTEXT_DECRYPT",
+          }),
+        get_shared_secret: () =>
+          Promise.resolve({
+            success: false,
+            message: "BYPASS_CRYPTO_CONTEXT_GET_SHARED_SECRET",
+          }),
+        privateKey: "",
+        privateKeyHash: "",
+        ownUuid: "",
       }}
     >
       {children}

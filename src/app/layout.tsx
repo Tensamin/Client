@@ -38,14 +38,14 @@ export default function RootLayout({
           enableSystem
           storageKey="theme"
         >
-          <PageProvider>
-            <StorageProvider>
+          <StorageProvider>
+            <PageProvider>
               <Suspense fallback={<Loading />}>
                 <Toaster position="top-right" richColors expand />
                 {children}
               </Suspense>
-            </StorageProvider>
-          </PageProvider>
+            </PageProvider>
+          </StorageProvider>
         </ThemeProvider>
       </body>
     </html>

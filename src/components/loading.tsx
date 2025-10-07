@@ -2,7 +2,7 @@
 
 // Package Imports
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { Ring } from "ldrs/react";
 import "ldrs/react/Ring.css";
 
@@ -25,6 +25,50 @@ import { Button } from "@/components/ui/button";
 import { MotionDivWrapper } from "@/components/animation/presence";
 
 // Main
+function ClearButton() {
+  const { translate, clearAll } = useStorageContext();
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline">
+          {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {translate("RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION")}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <div className="w-full" />
+          <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              clearAll();
+              window.location.reload();
+            }}
+          >
+            {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function BypassButton() {
+  const { setBypass, bypass, translate } = useStorageContext();
+  return (
+    <Button variant="outline" onClick={() => setBypass(true)} disabled={bypass}>
+      {translate("RESCUE_BYPASS_BUTTON_LABEL")}
+    </Button>
+  );
+}
+
 export function Loading({
   message,
   extra,
@@ -33,7 +77,7 @@ export function Loading({
   extra?: string;
 }) {
   const isError = (message?.split("_")[0] ?? "") === "ERROR";
-  const { data, clearAll, translate } = useStorageContext();
+  const { data, translate } = useStorageContext();
 
   const [showClearButton, setShowClearButton] = useState(false);
 
@@ -46,6 +90,33 @@ export function Loading({
   }, []);
 
   return (
+    <RawLoading
+      message={translate(message as string) || "NO_MESSAGE"}
+      extra={translate(extra as string) || ""}
+      isError={isError}
+      debug={(data?.debug as boolean) || false}
+      addBypassButton={(data?.enableLockScreenBypass as boolean) || false}
+      addClearButton={showClearButton || isError}
+    />
+  );
+}
+
+export function RawLoading({
+  message,
+  extra,
+  isError,
+  debug,
+  addClearButton,
+  addBypassButton,
+}: {
+  message: string;
+  extra?: string;
+  isError: boolean;
+  debug: boolean;
+  addClearButton?: boolean;
+  addBypassButton?: boolean;
+}) {
+  return (
     <>
       <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10">
         <img
@@ -54,61 +125,32 @@ export function Loading({
           }
           //width={75}
           //height={75}
-          alt={translate("IMAGE")}
+          alt="Tensamin"
           className="w-75 h-75"
         />
-        {(isError || data?.debug) && typeof message !== "undefined" ? (
+        {(isError || debug) && typeof message !== "undefined" ? (
           <p className="text-2xl font-semibold text-foreground text-center">
-            {translate(message) || "NO_MESSAGE"}
+            {message}
           </p>
         ) : null}
-        {(isError || data?.debug) && typeof extra !== "undefined" ? (
+        {(isError || debug) && typeof extra !== "undefined" ? (
           <p className="text-md font-medium text-muted-foreground text-center whitespace-pre-wrap">
-            {translate(extra) || "NO_MESSAGE"}
+            {extra}
           </p>
         ) : null}
       </div>
       <div className="fixed bottom-0 right-0 m-3 flex gap-3">
-        <AnimatePresence initial={false}>
-          <MotionDivWrapper
-            key={0}
-            visible={data?.enableLockScreenBypass as boolean}
-          >
-            <Button variant="outline">
-              {translate("RESCUE_BYPASS_BUTTON_LABEL")}
-            </Button>
-          </MotionDivWrapper>
-          <MotionDivWrapper key={1} visible={showClearButton || isError}>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline">
-                  {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {translate("RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION")}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <div className="w-full" />
-                  <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => {
-                      clearAll();
-                      window.location.reload();
-                    }}
-                  >
-                    {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </MotionDivWrapper>
+        <AnimatePresence initial={false} mode="popLayout">
+          {addBypassButton ? (
+            <MotionDivWrapper key="bypass">
+              <BypassButton />
+            </MotionDivWrapper>
+          ) : null}
+          {addClearButton ? (
+            <MotionDivWrapper key="clear">
+              <ClearButton />
+            </MotionDivWrapper>
+          ) : null}
         </AnimatePresence>
       </div>
     </>
