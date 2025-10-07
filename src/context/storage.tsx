@@ -24,7 +24,11 @@ type Data = {
 };
 
 type DBType = IDBPDatabase<{
-  kv: {
+  data: {
+    key: string;
+    value: Value;
+  };
+  offline: {
     key: string;
     value: Value;
   };
@@ -41,8 +45,11 @@ function createDBPromise() {
   }
   return openDB<DBType>("tensamin", 1, {
     upgrade(db) {
-      if (!db.objectStoreNames.contains("kv")) {
-        db.createObjectStore("kv", { keyPath: "key" });
+      if (!db.objectStoreNames.contains("data")) {
+        db.createObjectStore("data", { keyPath: "key" });
+      }
+      if (!db.objectStoreNames.contains("offline")) {
+        db.createObjectStore("offline", { keyPath: "key" });
       }
     },
   });
@@ -63,7 +70,8 @@ export function StorageProvider({
   children: React.ReactNode;
 }>) {
   const { setPage } = usePageContext();
-  const [data, setData] = useState<Data>({});
+  const [userData, setUserData] = useState<Data>({});
+  const [offlineData, setOfflineData] = useState<Data>({});
   const [ready, setReady] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
   const [themeTint, setRawThemeTint] = useState<string | null>(null);
@@ -216,23 +224,35 @@ export function StorageProvider({
   const loadData = useCallback(async () => {
     if (!db) return;
     try {
-      const allEntries = await db.getAll("kv");
-      const loadedData: Data = {};
-      allEntries.forEach((entry) => {
-        loadedData[entry.key] = entry.value;
+      const userData = await db.getAll("data");
+      const loadedUserData: Data = {};
+      const offlineData = await db.getAll("offline");
+      const loadedOfflineData: Data = {};
+      userData.forEach((entry) => {
+        loadedUserData[entry.key] = entry.value;
       });
-      setData(loadedData);
+      
+      // temp
+      loadedUserData["enableLockScreenBypass"] = true;
+
+      setUserData(loadedUserData);
+      offlineData.forEach((entry) => {
+        loadedOfflineData[entry.key] = entry.value;
+      });
+      setOfflineData(loadedOfflineData);
+
+      // Extra User Data Stuff
       setLanguages({
         en_int: languages.en_int,
-        ...(loadedData.languages as Language),
+        ...(loadedUserData.languages as Language),
       } as {
         en_int: Language;
         [key: string]: Language;
       });
-      setLanguage((loadedData.language as string) || "en_int");
-      setRawThemeTint((loadedData.themeTint as string) || null);
-      setRawThemeCSS((loadedData.themeCSS as string) || null);
-      setRawThemeTintType((loadedData.themeTintType as string) || null);
+      setLanguage((loadedUserData.language as string) || "en_int");
+      setRawThemeTint((loadedUserData.themeTint as string) || null);
+      setRawThemeCSS((loadedUserData.themeCSS as string) || null);
+      setRawThemeTintType((loadedUserData.themeTintType as string) || null);
     } catch (err: unknown) {
       handleError("STORAGE_CONTEXT", "ERROR_STORAGE_CONTEXT_UNKOWN", err);
     } finally {
@@ -302,15 +322,15 @@ export function StorageProvider({
           typeof value === "undefined" ||
           value === ""
         ) {
-          await db.delete("kv", key);
-          setData((prevData) => {
+          await db.delete("data", key);
+          setUserData((prevData) => {
             const newData = { ...prevData };
             delete newData[key];
             return newData;
           });
         } else {
-          await db.put("kv", { key, value });
-          setData((prevData) => ({ ...prevData, [key]: value }));
+          await db.put("data", { key, value });
+          setUserData((prevData) => ({ ...prevData, [key]: value }));
         }
       } catch (err: unknown) {
         handleError("STORAGE_CONTEXT", "ERROR_UPDATING_DATABASE_UNKNOWN", err);
@@ -322,8 +342,10 @@ export function StorageProvider({
   const clearAll = useCallback(async () => {
     if (!db) return;
     try {
-      await db.clear("kv");
-      setData({});
+      await db.clear("data");
+      setUserData({});
+      await db.clear("offline");
+      setOfflineData({});
     } catch (err: unknown) {
       handleError("STORAGE_CONTEXT", "ERROR_CLEARING_DATABASE_UNKNOWN", err);
     }
@@ -422,7 +444,7 @@ export function StorageProvider({
       value={{
         set,
         clearAll,
-        data,
+        data: userData,
         translate,
         language,
         languages,

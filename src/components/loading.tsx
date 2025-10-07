@@ -2,6 +2,7 @@
 
 // Package Imports
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Ring } from "ldrs/react";
 import "ldrs/react/Ring.css";
 
@@ -21,6 +22,7 @@ import {
   AlertDialogHeader,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { MotionDivWrapper } from "@/components/animation/presence";
 
 // Main
 export function Loading({
@@ -66,44 +68,49 @@ export function Loading({
           </p>
         ) : null}
       </div>
-      {showClearButton || isError ? (
-        <div className="fixed bottom-0 right-0 m-3 flex gap-3">
-          {data?.enableLockScreenBypass && (
+      <div className="fixed bottom-0 right-0 m-3 flex gap-3">
+        <AnimatePresence initial={false}>
+          <MotionDivWrapper
+            key={0}
+            visible={data?.enableLockScreenBypass as boolean}
+          >
             <Button variant="outline">
               {translate("RESCUE_BYPASS_BUTTON_LABEL")}
             </Button>
-          )}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline">
-                {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
+          </MotionDivWrapper>
+          <MotionDivWrapper key={1} visible={showClearButton || isError}>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">
                   {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {translate("RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION")}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <div className="w-full" />
-                <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => {
-                    clearAll();
-                    window.location.reload();
-                  }}
-                >
-                  {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      ) : null}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {translate("RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <div className="w-full" />
+                  <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      clearAll();
+                      window.location.reload();
+                    }}
+                  >
+                    {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </MotionDivWrapper>
+        </AnimatePresence>
+      </div>
     </>
   );
 }
