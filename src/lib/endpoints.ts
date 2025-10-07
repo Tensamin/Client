@@ -7,8 +7,8 @@ export const username_to_uuid = authServer + "/api/get/uuid/";
 export const user = authServer + "/api/get/";
 export const change = authServer + "/api/change/";
 
-export const tos = "https://docs.tensamin.methanium.net/legal/terms-of-service";
-export const pp = "https://docs.tensamin.methanium.net/legal/privacy-policy";
+export const tos = "https://tensamin.methanium.net/docs/legal/terms-of-service";
+export const pp = "https://tensamin.methanium.net/docs/legal/privacy-policy";
 
 export const client_wss = "wss://tensamin.methanium.net/ws/client/";
 export const call_wss = "wss://tensamin.methanium.net/ws/call/";
