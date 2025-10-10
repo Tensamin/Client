@@ -82,7 +82,7 @@ export default function Page() {
   if (!form) return <div />;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 w-100">
       <div className="flex items-center gap-4">
         <div className="relative">
           <Avatar className="size-15 border" key={form.avatar}>

@@ -1,5 +1,5 @@
 // Package Imports
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 // Context Imports
 import { useUserContext } from "@/context/user";
@@ -7,7 +7,7 @@ import { usePageContext } from "@/context/page";
 
 // Components
 import * as RawModal from "@/components/modals/raw";
-import { User } from "@/lib/types";
+import { fallbackUser } from "@/lib/types";
 
 // Main
 export function UserModal({
@@ -19,25 +19,12 @@ export function UserModal({
 }) {
   const { get, ownState, ownUuid, fetchedUsers } = useUserContext();
   const { setPage } = usePageContext();
-  const userFromMap = JSON.stringify(fetchedUsers.get(uuid));
-  const [user, setUser] = useState<User>({
-    username: "",
-    about: "",
-    sub_level: 0,
-    sub_end: 0,
-    created_at: "",
-    public_key: "",
-    uuid: "",
-    display: "",
-    avatar: "",
-    status: "",
-    state: "NONE",
-    loading: true,
-  });
 
   useEffect(() => {
-    get(uuid, false).then(setUser);
-  }, [uuid, get, user.uuid, userFromMap]);
+    get(uuid, false);
+  }, [uuid, get]);
+
+  const user = fetchedUsers.get(uuid) ?? fallbackUser;
 
   const props = {
     title: user.display,
@@ -49,11 +36,11 @@ export function UserModal({
 
   switch (size) {
     case "big":
-      return <RawModal.BigModal key={userFromMap} {...props} />;
+      return <RawModal.BigModal key={user.uuid} {...props} />;
     case "medium":
       return (
         <RawModal.MediumModal
-          key={userFromMap}
+          key={user.uuid}
           {...props}
           description={user.status || ""}
           onClick={() => {

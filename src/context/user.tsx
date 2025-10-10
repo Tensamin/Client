@@ -67,7 +67,10 @@ export function UserProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const fetchedUsersRef = useRef<Map<string, User>>(new Map());
+  const [fetchedUsers, setFetchedUsers] = useState<Map<string, User>>(
+    new Map()
+  );
+  const fetchedUsersRef = useRef(fetchedUsers);
   const prevLastMessageRef = useRef<unknown>(null);
 
   const { translate, debugLog, offlineData, addOfflineUser } =
@@ -84,10 +87,28 @@ export function UserProvider({
   const [ownState, setOwnState] = useState<UserState>(initialUserState);
 
   useEffect(() => {
-    offlineData.forEach((offlineUser: OfflineData) => {
-      fetchedUsersRef.current.set(offlineUser.user.uuid, offlineUser.user);
+    fetchedUsersRef.current = fetchedUsers;
+  }, [fetchedUsers]);
+
+  const updateFetchedUsers = useCallback(
+    (updater: (next: Map<string, User>) => void) => {
+      setFetchedUsers((prev) => {
+        const next = new Map(prev);
+        updater(next);
+        fetchedUsersRef.current = next;
+        return next;
+      });
+    },
+    []
+  );
+
+  useEffect(() => {
+    updateFetchedUsers((draft) => {
+      offlineData.forEach((offlineUser: OfflineData) => {
+        draft.set(offlineUser.user.uuid, offlineUser.user);
+      });
     });
-  }, [offlineData]);
+  }, [offlineData, updateFetchedUsers]);
 
   const get = useCallback(
     async (uuid: string, refetch: boolean = false): Promise<User> => {
@@ -140,7 +161,9 @@ export function UserProvider({
           loading: false,
         };
 
-        fetchedUsersRef.current.set(uuid, newUser);
+        updateFetchedUsers((draft) => {
+          draft.set(uuid, newUser);
+        });
         addOfflineUser(newUser);
         return newUser;
       } catch (err: unknown) {
@@ -153,7 +176,9 @@ export function UserProvider({
             about: error.message,
             loading: false,
           };
-          fetchedUsersRef.current.set(uuid, failedUser);
+          updateFetchedUsers((draft) => {
+            draft.set(uuid, failedUser);
+          });
           return failedUser;
         }
 
@@ -173,7 +198,7 @@ export function UserProvider({
         } as User;
       }
     },
-    [debugLog, addOfflineUser]
+    [debugLog, addOfflineUser, updateFetchedUsers]
   );
 
   async function refetchConversations() {
@@ -241,9 +266,11 @@ export function UserProvider({
       const data = lastMessage.data as AdvancedSuccessMessageData;
       if (!data.user_id || !data.user_state) return null;
       get(data.user_id, true).then((user) => {
-        fetchedUsersRef.current.set(user.uuid, {
-          ...user,
-          state: data.user_state || "NONE",
+        updateFetchedUsers((draft) => {
+          draft.set(user.uuid, {
+            ...user,
+            state: data.user_state || "NONE",
+          });
         });
       });
     }
@@ -253,13 +280,15 @@ export function UserProvider({
         user_states: Record<string, string>;
       };
 
-      Object.keys(data.user_states).forEach((uuid) => {
-        const existingUser = fetchedUsersRef.current.get(uuid);
-        let user: User;
-        if (existingUser) {
-          user = { ...existingUser, state: data.user_states[uuid] };
-        } else {
-          user = {
+      updateFetchedUsers((draft) => {
+        Object.entries(data.user_states).forEach(([uuid, nextState]) => {
+          const existingUser = draft.get(uuid);
+          if (existingUser) {
+            draft.set(uuid, { ...existingUser, state: nextState });
+            return;
+          }
+
+          draft.set(uuid, {
             uuid,
             username: uuid,
             display: uuid,
@@ -270,11 +299,10 @@ export function UserProvider({
             sub_end: 0,
             public_key: "",
             created_at: new Date().toISOString(),
-            state: data.user_states[uuid],
+            state: nextState,
             loading: true,
-          };
-        }
-        fetchedUsersRef.current.set(uuid, user);
+          });
+        });
       });
     }
   }
@@ -284,7 +312,9 @@ export function UserProvider({
       ...user,
       display: getDisplayFromUsername(user.username, user.display),
     };
-    fetchedUsersRef.current.set(uuid, newUser);
+    updateFetchedUsers((draft) => {
+      draft.set(uuid, newUser);
+    });
   }
 
   return (
@@ -303,7 +333,7 @@ export function UserProvider({
         reloadUsers,
         setReloadUsers,
         doCustomEdit,
-        fetchedUsers: fetchedUsersRef.current,
+        fetchedUsers,
         ownState,
         setOwnState,
       }}

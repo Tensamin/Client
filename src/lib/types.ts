@@ -134,6 +134,21 @@ export const systemUser: User = {
   badges: ["System"],
 };
 
+export const fallbackUser: User = {
+  uuid: "",
+  username: "",
+  about: "",
+  sub_level: 0,
+  sub_end: 0,
+  created_at: "",
+  public_key: "",
+  display: "",
+  avatar: "",
+  status: "",
+  state: "NONE",
+  loading: true,
+};
+
 export type OfflineData = {
   user: User;
   storeTime: number;

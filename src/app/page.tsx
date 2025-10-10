@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 // Context Imports
@@ -29,29 +29,31 @@ function MainPage() {
   const { ownUuid } = useCryptoContext();
   const { page, pageData } = usePageContext();
   const { translate } = useStorageContext();
+  const [jsxPage, setJsxPage] = useState<React.JSX.Element | null>(null);
   const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
     "CONVERSATIONS"
   );
 
-  let jsxPage;
-  switch (page) {
-    case "home":
-      jsxPage = <HomePage />;
-      break;
-    case "settings":
-      jsxPage = <SettingsPage />;
-      break;
-    case "chat":
-      jsxPage = <ChatPage />;
-      break;
-    default:
-      jsxPage = (
-        <div>
-          {translate("PAGE_UNKNOWN")} | {page};{pageData}
-        </div>
-      );
-      break;
-  }
+  useEffect(() => {
+    switch (page) {
+      case "home":
+        setJsxPage(<HomePage />);
+        break;
+      case "settings":
+        setJsxPage(<SettingsPage />);
+        break;
+      case "chat":
+        setJsxPage(<ChatPage />);
+        break;
+      default:
+        setJsxPage(
+          <div>
+            {translate("PAGE_UNKNOWN")} | {page};{pageData}
+          </div>
+        );
+        break;
+    }
+  }, [page, pageData]);
 
   return (
     <div className="w-full h-screen flex bg-sidebar">

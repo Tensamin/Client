@@ -9,7 +9,7 @@ export default function Page() {
   } = useStorageContext();
 
   return (
-    <div className="flex gap-2">
+    <div className="flex items-start gap-2">
       <Switch
         id="reverseEnterInChats"
         checked={reverseEnterInChats ? true : false}
