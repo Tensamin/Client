@@ -20,6 +20,7 @@ import {
   ErrorType,
   User,
   UserState,
+  OfflineData,
 } from "@/lib/types";
 import { getDisplayFromUsername } from "@/lib/utils";
 
@@ -83,8 +84,8 @@ export function UserProvider({
   const [ownState, setOwnState] = useState<UserState>(initialUserState);
 
   useEffect(() => {
-    offlineData?.storedUsers?.map((user: User & { storeTime: number }) => {
-      fetchedUsersRef.current.set(user.uuid, user);
+    offlineData.forEach((offlineUser: OfflineData) => {
+      fetchedUsersRef.current.set(offlineUser.user.uuid, offlineUser.user);
     });
   }, [offlineData]);
 
@@ -124,7 +125,7 @@ export function UserProvider({
             data.data.display
           ),
           avatar: data.data.avatar,
-          about: atob(data.data.about),
+          about: data.data.about,
           status: data.data.status,
           sub_level: data.data.sub_level,
           sub_end: data.data.sub_end,
@@ -282,7 +283,6 @@ export function UserProvider({
     const newUser = {
       ...user,
       display: getDisplayFromUsername(user.username, user.display),
-      about: atob(user.about || ""),
     };
     fetchedUsersRef.current.set(uuid, newUser);
   }

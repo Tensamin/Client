@@ -99,7 +99,6 @@ export type User = {
   created_at: string;
   loading: boolean;
   badges?: string[];
-  storeTime?: number;
 };
 
 export type ErrorType = {
@@ -133,6 +132,11 @@ export const systemUser: User = {
   sub_end: 0,
   sub_level: 0,
   badges: ["System"],
+};
+
+export type OfflineData = {
+  user: User;
+  storeTime: number;
 };
 
 declare global {

@@ -22,12 +22,10 @@ import { User } from "@/lib/types";
 import { RawLoading } from "@/components/loading";
 
 // Types
+import { OfflineData } from "@/lib/types";
+
 type Data = {
   [key: string]: Value;
-};
-
-type OfflineData = {
-  storedUsers?: (User & { storeTime: number })[];
 };
 
 type DBType = IDBPDatabase<{
@@ -78,7 +76,7 @@ export function StorageProvider({
 }>) {
   const [failed, setFailed] = useState(false);
   const [userData, setUserData] = useState<Data>({});
-  const [offlineData, setOfflineData] = useState<OfflineData | null>(null);
+  const [offlineData, setOfflineData] = useState<OfflineData[]>([]);
   const [bypass, setBypass] = useState(false);
   const [ready, setReady] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
@@ -240,15 +238,32 @@ export function StorageProvider({
       const userData = await db.getAll("data");
       const loadedUserData: Data = {};
       const offlineData = await db.getAll("offline");
-      const loadedOfflineData: Data = {};
+      const loadedOfflineData: { storedUsers: OfflineData[] } = {
+        storedUsers: [],
+      };
       userData.forEach((entry) => {
         loadedUserData[entry.key] = entry.value;
       });
       setUserData(loadedUserData);
       offlineData.forEach((entry) => {
-        loadedOfflineData[entry.key] = entry.value;
+        if (entry.key !== "storedUsers") return;
+        entry.value.forEach((userEntry: { user: User; storeTime: number }) => {
+          if (userEntry.storeTime + 1000 * 60 * 60 * 24 * 7 < Date.now()) {
+            if (!db) return;
+            const updated = (offlineData || []).filter(
+              (entry) => entry.user.uuid !== userEntry.user.uuid
+            );
+            db.put("offline", { key: "storedUsers", value: updated });
+            return;
+          }
+
+          loadedOfflineData.storedUsers.push({
+            user: userEntry.user,
+            storeTime: userEntry.storeTime,
+          });
+        });
       });
-      setOfflineData(loadedOfflineData);
+      setOfflineData(loadedOfflineData.storedUsers);
 
       // Extra User Data Stuff
       setLanguages({
@@ -354,7 +369,7 @@ export function StorageProvider({
       await db.clear("data");
       setUserData({});
       await db.clear("offline");
-      setOfflineData({});
+      setOfflineData([]);
     } catch (err: unknown) {
       handleError("STORAGE_CONTEXT", "ERROR_CLEARING_DATABASE_UNKNOWN", err);
     }
@@ -391,9 +406,9 @@ export function StorageProvider({
     db.put("offline", {
       key: "storedUsers",
       value: [
-        ...(offlineData?.storedUsers || []),
+        ...(offlineData || []),
         {
-          ...user,
+          user,
           storeTime: Date.now(),
         },
       ],
@@ -519,7 +534,7 @@ type StorageContextType = {
   set: (key: string, value: Value) => void;
   clearAll: () => void;
   data: Data;
-  offlineData: OfflineData | null;
+  offlineData: OfflineData[];
   translate: (input: string, extraInfo?: string | number) => string;
   language: string | null;
   languages: {
