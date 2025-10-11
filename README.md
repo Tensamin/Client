@@ -1,4 +1,5 @@
-# -> [tensamin.methanium.net](https://tensamin.methanium.net)
+## [Launch App](https://tensamin.methanium.net/app/)
 
-> [Documentation](https://docs.tensamin.methanium.net)
-> [Methanium](https://methanium.net)
+> [Homepage](https://tensamin.methanium.net/)
+
+> [Documentation](https://tensamin.methanium.net/docs/)
