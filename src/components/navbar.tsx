@@ -1,4 +1,6 @@
 // Package Imports
+import { useEffect, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import * as Icon from "lucide-react";
 
 // Context Imports
@@ -14,14 +16,25 @@ import {
 } from "@/components/ui/hover-card";
 import { Button } from "@/components/ui/button";
 import { WindowControls } from "@/components/windowControls";
+import { MotionDivWrapper } from "@/components/animation/presence";
 
 export function Navbar() {
   const { setPage, page } = usePageContext();
-  const { failedMessagesAmount } = useUserContext();
+  const { failedMessagesAmount, currentReceiverUuid, get } = useUserContext();
   const { translate } = useStorageContext();
+  const [receiverUsername, setReceiverUsername] = useState("");
+
+  useEffect(() => {
+    if (currentReceiverUuid) {
+      get(currentReceiverUuid, false).then((user) =>
+        setReceiverUsername(user.display)
+      );
+    }
+  }, [currentReceiverUuid]);
 
   return (
-    <div className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0">
+    <div className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0 pr-2">
+      {/* Static */}
       <Button
         className="h-9 w-9"
         variant="outline"
@@ -41,36 +54,47 @@ export function Navbar() {
         <Icon.Settings />
       </Button>
 
-      {/* Only when user is selected */}
-      {page === "chat" && <p>Username</p>}
-      <div className="w-full" />
-      {failedMessagesAmount > 0 && page === "chat" && (
-        <HoverCard>
-          <HoverCardTrigger asChild>
+      {/* Dynamic */}
+      <AnimatePresence initial={false}>
+        {/* Only when user is selected */}
+        {page === "chat" && (
+          <MotionDivWrapper>
+            <p>{receiverUsername}</p>
+          </MotionDivWrapper>
+        )}
+        <div className="w-full" />
+        {failedMessagesAmount > 0 && page === "chat" && (
+          <MotionDivWrapper>
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                <Button className="h-9 w-9" variant="outline">
+                  <Icon.TriangleAlert />
+                </Button>
+              </HoverCardTrigger>
+              <HoverCardContent className="w-full">
+                <div>
+                  {failedMessagesAmount +
+                    translate(
+                      failedMessagesAmount === 1
+                        ? "FAILED_MESSAGES_SINGLE"
+                        : "FAILED_MESSAGES_MULTIPLE"
+                    )}
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+          </MotionDivWrapper>
+        )}
+        {page === "chat" && (
+          <MotionDivWrapper>
             <Button className="h-9 w-9" variant="outline">
-              <Icon.TriangleAlert />
+              <Icon.Phone />
             </Button>
-          </HoverCardTrigger>
-          <HoverCardContent className="w-full">
-            <div>
-              {failedMessagesAmount +
-                translate(
-                  failedMessagesAmount === 1
-                    ? "FAILED_MESSAGES_SINGLE"
-                    : "FAILED_MESSAGES_MULTIPLE"
-                )}
-            </div>
-          </HoverCardContent>
-        </HoverCard>
-      )}
-      {page === "chat" && (
-        <Button className="h-9 w-9" variant="outline">
-          <Icon.Phone />
-        </Button>
-      )}
+          </MotionDivWrapper>
+        )}
 
-      {/* Electron Window Controls */}
-      <WindowControls />
+        {/* Electron Window Controls */}
+        <WindowControls />
+      </AnimatePresence>
     </div>
   );
 }
