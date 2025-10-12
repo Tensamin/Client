@@ -30,7 +30,7 @@ export function Navbar() {
         setReceiverUsername(user.display)
       );
     }
-  }, [currentReceiverUuid]);
+  }, [currentReceiverUuid, get]);
 
   return (
     <div className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0 pr-2">
