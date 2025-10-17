@@ -124,7 +124,7 @@ export function CryptoProvider({
 
   useEffect(() => {
     const worker = new Worker(
-      new URL("@/worker/encryption.ts", import.meta.url),
+      new URL("../worker/encryption.ts", import.meta.url),
       {
         type: "module",
       }
