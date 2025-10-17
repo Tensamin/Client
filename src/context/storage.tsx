@@ -181,6 +181,7 @@ export function StorageProvider({
       // Socket Context
       SOCKET_CONTEXT: "Socket Context",
       SOCKET_CONTEXT_CONNECTED: "Connected to Omikron",
+      SOCKET_CONTEXT_DISCONNECTED: "Disconnected from Omikron",
       SOCKET_CONTEXT_SEND: "Sent to socket:",
       SOCKET_CONTEXT_RECEIVE: "Received from socket:",
       SOCKET_CONTEXT_IDENTIFICATION_SUCCESS: "Identification success",
@@ -223,6 +224,8 @@ export function StorageProvider({
       STATUS_IDLE: "Idle",
       STATUS_NONE: "None",
 
+      ERROR: "Unknown Error",
+      ERROR_EXTRA: "An unknown error occurred. Please try again.",
       RESCUE_BYPASS_BUTTON_LABEL: "Bypass Screen",
       RESCUE_CLEAR_STORAGE_BUTTON_LABEL: "Clear Storage",
       RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION:
@@ -247,12 +250,15 @@ export function StorageProvider({
       setUserData(loadedUserData);
       offlineData.forEach((entry) => {
         if (entry.key !== "storedUsers") return;
+
         entry.value.forEach((userEntry: { user: User; storeTime: number }) => {
           if (userEntry.storeTime + 1000 * 60 * 60 * 24 * 7 < Date.now()) {
             if (!db) return;
+
             const updated = (offlineData || []).filter(
               (entry) => entry.user.uuid !== userEntry.user.uuid
             );
+
             db.put("offline", { key: "storedUsers", value: updated });
             return;
           }
@@ -461,6 +467,8 @@ export function StorageProvider({
           "color: #a6d189;" // green
         : message === "SOCKET_CONTEXT_CONNECTED"
         ? "color: #a6d189;" // green
+        : message === "SOCKET_CONTEXT_DISCONNECTED"
+        ? "color: #e78284;" // red
         : message.startsWith("ERROR")
         ? "color: #e78284;" // red
         : "");
