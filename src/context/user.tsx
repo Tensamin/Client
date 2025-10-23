@@ -37,6 +37,7 @@ type UserContextType = {
   failedMessagesAmount: number;
   setFailedMessagesAmount: (amount: number) => void;
   currentReceiverUuid: string;
+  currentReceiverSharedSecret: string;
   conversations: Conversation[];
   communities: Community[];
   setConversations: (conversations: Conversation[]) => void;
@@ -81,11 +82,13 @@ export function UserProvider({
     setOfflineCommunities,
     setOfflineConversations,
   } = useStorageContext();
-  const { ownUuid } = useCryptoContext();
+  const { ownUuid, get_shared_secret, privateKey } = useCryptoContext();
   const { send, isReady, lastMessage, initialUserState } = useSocketContext();
   const { page, pageData } = usePageContext();
 
   const [currentReceiverUuid, setCurrentReceiverUuid] = useState<string>("0");
+  const [currentReceiverSharedSecret, setCurrentReceiverSharedSecret] =
+    useState<string>("0");
   const [conversations, setConversations] = useState<Conversation[]>(
     offlineData.storedConversations
   );
@@ -233,9 +236,33 @@ export function UserProvider({
     if (page === "chat" && pageData !== currentReceiverUuid) {
       // Reset Receiver
       setCurrentReceiverUuid(pageData);
+      get(pageData).then((otherUser) => {
+        get(ownUuid).then((ownUser) => {
+          get_shared_secret(
+            privateKey,
+            ownUser.public_key,
+            otherUser.public_key
+          ).then((sharedSecret) => {
+            if (!sharedSecret.success) {
+              toast.error(translate(sharedSecret.message));
+              return;
+            }
+            setCurrentReceiverSharedSecret(sharedSecret.message);
+          });
+        });
+      });
       setFailedMessagesAmount(0);
     }
-  }, [page, pageData, currentReceiverUuid]);
+  }, [
+    page,
+    pageData,
+    currentReceiverUuid,
+    get,
+    get_shared_secret,
+    ownUuid,
+    privateKey,
+    translate,
+  ]);
 
   useEffect(() => {
     if (!isReady || chatsFetched) return;
@@ -341,6 +368,7 @@ export function UserProvider({
         get,
         ownUuid,
         currentReceiverUuid,
+        currentReceiverSharedSecret,
         failedMessagesAmount,
         setFailedMessagesAmount,
         conversations,

@@ -64,7 +64,7 @@ export function UserAvatar({
           <TooltipTrigger asChild>
             <div
               className={`rounded-full absolute bg-muted ${
-                size === "small" && "-bottom-0.25 -right-0.25"
+                size === "small" && "-bottom-px -right-px"
               } ${size === "large" && "bottom-0 right-0"} ${
                 size === "large" && "w-3.5 h-3.5"
               } ${

@@ -345,13 +345,11 @@ export async function get_shared_secret(
       };
     }
 
-    //const { x448 } = await import("@noble/curves/ed448.js");
-    //const sharedSecret = new Uint8Array(x448.getSharedSecret(dRaw, xRawPeer));
+    const { x448 } = await import("@noble/curves/ed448.js");
+    const sharedSecret = new Uint8Array(x448.getSharedSecret(dRaw, xRawPeer));
     //const aeadKey = await hkdfAesGcmFromShared(sharedSecret, infoStr);
 
-    //return { success: true, message: bytesToHex(sharedSecret) };
-
-    return { success: false, message: "ERROR_ENCRYPTION_WORKER_NO_SUBTLE" };
+    return { success: true, message: bytesToHex(sharedSecret) };
   } catch {
     return {
       success: false,

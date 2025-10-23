@@ -216,6 +216,10 @@ export function StorageProvider({
       BYPASS_CRYPTO_CONTEXT_DECRYPT: "Decryption bypassed",
       BYPASS_CRYPTO_CONTEXT_GET_SHARED_SECRET: "Get shared secret bypassed",
 
+      // Worker
+      ERROR_ENCRYPTION_WORKER_NO_SUBTLE:
+        "The Crypto worker is missing subtle crypto.",
+
       // Other Stuff
       CANCEL: "Cancel",
       SAVE: "Save",
@@ -236,6 +240,7 @@ export function StorageProvider({
 
       ERROR: "Unknown Error",
       ERROR_EXTRA: "An unknown error occurred. Please try again.",
+      ERROR_DECRYPTING_MESSAGE: "Error decrypting message",
       RESCUE_BYPASS_BUTTON_LABEL: "Bypass Screen",
       RESCUE_CLEAR_STORAGE_BUTTON_LABEL: "Clear Storage",
       RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION:

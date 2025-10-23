@@ -35,8 +35,13 @@ export function MessageGroup({ data }: { data: Message }) {
 function FinalMessage({ message: data }: { message: Message }) {
   const { decrypt, get_shared_secret, privateKey } = useCryptoContext();
   const { translate } = useStorageContext();
-  const { get, ownUuid, currentReceiverUuid, setFailedMessagesAmount } =
-    useUserContext();
+  const {
+    get,
+    ownUuid,
+    currentReceiverUuid,
+    currentReceiverSharedSecret,
+    setFailedMessagesAmount,
+  } = useUserContext();
   const [content, setContent] = useState<string>("");
   const [sender, setSender] = useState<User | null>(null);
 
@@ -47,7 +52,15 @@ function FinalMessage({ message: data }: { message: Message }) {
         setSender(systemUser);
       } else {
         try {
-          setContent(data.content);
+          decrypt(data.content, currentReceiverSharedSecret).then((data) => {
+            if (!data.success) {
+              // @ts-expect-error Idk TypeScript is (still) dumb
+              setFailedMessagesAmount((prev: number) => prev + 1);
+              setContent(translate("ERROR_DECRYPTING_MESSAGE"));
+              return;
+            }
+            setContent(data.message);
+          });
 
           if (data.sender !== "SYSTEM") {
             setSender(await get(data.sender, false));
@@ -67,6 +80,7 @@ function FinalMessage({ message: data }: { message: Message }) {
     get,
     ownUuid,
     currentReceiverUuid,
+    currentReceiverSharedSecret,
     get_shared_secret,
     privateKey,
     decrypt,
