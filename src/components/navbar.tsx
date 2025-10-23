@@ -55,10 +55,10 @@ export function Navbar() {
       </Button>
 
       {/* Dynamic */}
-      <AnimatePresence initial={false} key="navbar-dynamic-elements">
+      <AnimatePresence key="navbar-dynamic-elements">
         {/* Only when user is selected */}
         {page === "chat" && (
-          <MotionDivWrapper key="receiver-username">
+          <MotionDivWrapper fadeInFromTop key="receiver-username">
             <p>{receiverUsername}</p>
           </MotionDivWrapper>
         )}
