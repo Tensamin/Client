@@ -55,16 +55,16 @@ export function Navbar() {
       </Button>
 
       {/* Dynamic */}
-      <AnimatePresence initial={false}>
+      <AnimatePresence initial={false} key="navbar-dynamic-elements">
         {/* Only when user is selected */}
         {page === "chat" && (
-          <MotionDivWrapper>
+          <MotionDivWrapper key="receiver-username">
             <p>{receiverUsername}</p>
           </MotionDivWrapper>
         )}
         <div className="w-full" />
         {failedMessagesAmount > 0 && page === "chat" && (
-          <MotionDivWrapper>
+          <MotionDivWrapper key="failed-messages">
             <HoverCard>
               <HoverCardTrigger asChild>
                 <Button className="h-9 w-9" variant="outline">
@@ -85,7 +85,7 @@ export function Navbar() {
           </MotionDivWrapper>
         )}
         {page === "chat" && (
-          <MotionDivWrapper>
+          <MotionDivWrapper key="call-button">
             <Button className="h-9 w-9" variant="outline">
               <Icon.Phone />
             </Button>
@@ -93,7 +93,7 @@ export function Navbar() {
         )}
 
         {/* Electron Window Controls */}
-        <WindowControls />
+        <WindowControls key="electron-window-controls" />
       </AnimatePresence>
     </div>
   );

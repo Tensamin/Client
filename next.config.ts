@@ -4,19 +4,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "export",
   distDir: "dist/app",
-  assetPrefix: "./",
+  assetPrefix: process.env.NODE_ENV === "production" ? "/app/" : "/",
   experimental: {
     reactCompiler: true,
     optimizeCss: true,
-  },
-
-  webpack: (config) => {
-    config.module.rules.push({
-      test: /\.worker\.ts$/,
-      loader: "worker-loader",
-      options: { filename: "[name].js" },
-    });
-    return config;
   },
 };
 
