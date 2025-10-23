@@ -15,6 +15,7 @@ import { InitialMessages } from "@/lib/utils";
 // Context Imports
 import { useMessageContext } from "@/context/message";
 import { useStorageContext } from "@/context/storage";
+import { useUserContext } from "@/context/user";
 
 // Components
 import { MessageGroup } from "@/components/chat/message";
@@ -30,8 +31,9 @@ function flattenPages(
   return data.pages.flatMap((p) => p.messages);
 }
 
+type MessagesQueryKey = ["messages", "top-infinite", string];
+
 const TOTAL_MESSAGES = 500;
-const QUERY_KEY = ["messages", "top-infinite"] as const;
 const SCROLL_THRESHOLD = 48;
 const BOTTOM_DISTANCE_THRESHOLD = 8;
 
@@ -48,6 +50,13 @@ function ActualBox() {
   const { translate } = useStorageContext();
   const { getMessages, addRealtimeMessageToBox, setAddRealtimeMessageToBox } =
     useMessageContext();
+  const { currentReceiverUuid } = useUserContext();
+
+  const queryKey = useMemo<MessagesQueryKey>(
+    () => ["messages", "top-infinite", currentReceiverUuid || "0"],
+    [currentReceiverUuid]
+  );
+  const shouldLoadMessages = currentReceiverUuid !== "0";
 
   const {
     data,
@@ -60,10 +69,10 @@ function ActualBox() {
     Messages,
     Error,
     InfiniteData<Messages, number>,
-    typeof QUERY_KEY,
+    MessagesQueryKey,
     number
   >({
-    queryKey: QUERY_KEY,
+    queryKey,
     initialPageParam: 0,
     queryFn: async ({ pageParam }) =>
       await getMessages(pageParam, InitialMessages),
@@ -74,6 +83,7 @@ function ActualBox() {
     getPreviousPageParam: (data: Messages) => data.next,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    enabled: shouldLoadMessages,
   });
   const messages = useMemo(() => flattenPages(data), [data]);
 
@@ -159,6 +169,11 @@ function ActualBox() {
     }
   }, [data, messages.length, rowVirtualizer]);
 
+  useEffect(() => {
+    didInitialScrollRef.current = false;
+    loadingLockRef.current = false;
+  }, [currentReceiverUuid]);
+
   const addRealtimeMessage = useCallback(
     (newMsg: Message) => {
       const wasPinned = isPinnedToBottom();
@@ -167,7 +182,7 @@ function ActualBox() {
       let newTotalLength = messages.length + 1;
 
       queryClient.setQueryData<InfiniteData<Messages, number>>(
-        QUERY_KEY,
+        queryKey,
         (old: InfiniteData<Messages, number> | undefined) => {
           const base: InfiniteData<Messages, number> = old ?? {
             pageParams: [0],
@@ -211,7 +226,7 @@ function ActualBox() {
         }, 16);
       }
     },
-    [isPinnedToBottom, queryClient, rowVirtualizer, messages.length]
+    [isPinnedToBottom, queryClient, rowVirtualizer, messages.length, queryKey]
   );
 
   useEffect(() => {
