@@ -52,15 +52,21 @@ function FinalMessage({ message: data }: { message: Message }) {
         setSender(systemUser);
       } else {
         try {
-          decrypt(data.content, currentReceiverSharedSecret).then((data) => {
-            if (!data.success) {
-              // @ts-expect-error Idk TypeScript is (still) dumb
-              setFailedMessagesAmount((prev: number) => prev + 1);
-              setContent(translate("ERROR_DECRYPTING_MESSAGE"));
-              return;
-            }
-            setContent(data.message);
-          });
+          if (data.send_to_server) {
+            setContent(data.content);
+          } else {
+            decrypt(data.content, currentReceiverSharedSecret).then(
+              (sharedSecretData) => {
+                if (!sharedSecretData.success) {
+                  // @ts-expect-error Idk TypeScript is (still) dumb
+                  setFailedMessagesAmount((prev: number) => prev + 1);
+                  setContent(translate("ERROR_DECRYPTING_MESSAGE"));
+                  return;
+                }
+                setContent(sharedSecretData.message);
+              }
+            );
+          }
 
           if (data.sender !== "SYSTEM") {
             setSender(await get(data.sender, false));
