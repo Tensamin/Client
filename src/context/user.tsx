@@ -20,7 +20,6 @@ import {
   ErrorType,
   User,
   UserState,
-  OfflineData,
   StoredUser,
 } from "@/lib/types";
 import { getDisplayFromUsername } from "@/lib/utils";
@@ -99,11 +98,11 @@ export function UserProvider({
 
   useEffect(() => {
     setOfflineConversations(conversations);
-  }, [conversations]);
+  }, [conversations, setOfflineConversations]);
 
   useEffect(() => {
     setOfflineCommunities(communities);
-  }, [communities]);
+  }, [communities, setOfflineCommunities]);
 
   useEffect(() => {
     fetchedUsersRef.current = fetchedUsers;
