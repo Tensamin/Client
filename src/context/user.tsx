@@ -21,6 +21,7 @@ import {
   User,
   UserState,
   OfflineData,
+  StoredUser,
 } from "@/lib/types";
 import { getDisplayFromUsername } from "@/lib/utils";
 
@@ -73,18 +74,36 @@ export function UserProvider({
   const fetchedUsersRef = useRef(fetchedUsers);
   const prevLastMessageRef = useRef<unknown>(null);
 
-  const { translate, debugLog, offlineData, addOfflineUser } =
-    useStorageContext();
+  const {
+    translate,
+    debugLog,
+    offlineData,
+    addOfflineUser,
+    setOfflineCommunities,
+    setOfflineConversations,
+  } = useStorageContext();
   const { ownUuid } = useCryptoContext();
   const { send, isReady, lastMessage, initialUserState } = useSocketContext();
   const { page, pageData } = usePageContext();
 
   const [currentReceiverUuid, setCurrentReceiverUuid] = useState<string>("0");
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [communities, setCommunities] = useState<Community[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>(
+    offlineData.storedConversations
+  );
+  const [communities, setCommunities] = useState<Community[]>(
+    offlineData.storedCommunities
+  );
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
   const [reloadUsers, setReloadUsers] = useState<boolean>(false);
   const [ownState, setOwnState] = useState<UserState>(initialUserState);
+
+  useEffect(() => {
+    setOfflineConversations(conversations);
+  }, [conversations]);
+
+  useEffect(() => {
+    setOfflineCommunities(communities);
+  }, [communities]);
 
   useEffect(() => {
     fetchedUsersRef.current = fetchedUsers;
@@ -104,7 +123,7 @@ export function UserProvider({
 
   useEffect(() => {
     updateFetchedUsers((draft) => {
-      offlineData.forEach((offlineUser: OfflineData) => {
+      offlineData.storedUsers.forEach((offlineUser: StoredUser) => {
         draft.set(offlineUser.user.uuid, offlineUser.user);
       });
     });

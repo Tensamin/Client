@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { handleError } from "@/lib/utils";
 
 // Context Imports
-import { User } from "@/lib/types";
+import { Community, Conversation, User } from "@/lib/types";
 
 // Components
 import { RawLoading } from "@/components/loading";
@@ -76,7 +76,11 @@ export function StorageProvider({
 }>) {
   const [failed, setFailed] = useState(false);
   const [userData, setUserData] = useState<Data>({});
-  const [offlineData, setOfflineData] = useState<OfflineData[]>([]);
+  const [offlineData, setOfflineData] = useState<OfflineData>({
+    storedUsers: [],
+    storedConversations: [],
+    storedCommunities: [],
+  });
   const [bypass, setBypass] = useState(false);
   const [ready, setReady] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
@@ -185,6 +189,8 @@ export function StorageProvider({
       SOCKET_CONTEXT_SEND: "Sent to socket:",
       SOCKET_CONTEXT_RECEIVE: "Received from socket:",
       SOCKET_CONTEXT_IDENTIFICATION_SUCCESS: "Identification success",
+      ERROR_SOCKET_CONTEXT_IDENTIFICATION_FAILED:
+        "Unknown identification error",
       ERROR_SOCKET_CONTEXT_CANNOT_CONNECT: "Could not connect to the Omikron",
       ERROR_SOCKET_CONTEXT_CANNOT_CONNECT_EXTRA:
         "Check your internet connection and try again.\n If the issue persists check the Tensamin status page.",
@@ -196,7 +202,7 @@ export function StorageProvider({
 
       ERROR_NO_IOTA: "No Iota for this user found",
       ERROR_NO_IOTA_EXTRA:
-        "Check your Iota's internet connection and try again.\n If the issue persists try restarting your Iota.",
+        "Check the internet connection of your Iota and try again.\n This error occurs when the Omikron cannot find a connected Iota for your user.",
 
       ERROR_SOCKET_CONTEXT_TIMEOUT: "Socket timeout",
 
@@ -245,35 +251,54 @@ export function StorageProvider({
       const userData = await db.getAll("data");
       const loadedUserData: Data = {};
       const offlineData = await db.getAll("offline");
-      const loadedOfflineData: { storedUsers: OfflineData[] } = {
+      const loadedOfflineData: OfflineData = {
         storedUsers: [],
+        storedConversations: [],
+        storedCommunities: [],
       };
       userData.forEach((entry) => {
         loadedUserData[entry.key] = entry.value;
       });
       setUserData(loadedUserData);
       offlineData.forEach((entry) => {
-        if (entry.key !== "storedUsers") return;
+        switch (entry.key) {
+          case "storedUsers":
+            entry.value.forEach(
+              (userEntry: { user: User; storeTime: number }) => {
+                if (
+                  userEntry.storeTime + 1000 * 60 * 60 * 24 * 7 <
+                  Date.now()
+                ) {
+                  if (!db) return;
 
-        entry.value.forEach((userEntry: { user: User; storeTime: number }) => {
-          if (userEntry.storeTime + 1000 * 60 * 60 * 24 * 7 < Date.now()) {
-            if (!db) return;
+                  const updated = (offlineData || []).filter(
+                    (entry) => entry.user.uuid !== userEntry.user.uuid
+                  );
 
-            const updated = (offlineData || []).filter(
-              (entry) => entry.user.uuid !== userEntry.user.uuid
+                  db.put("offline", { key: "storedUsers", value: updated });
+                  return;
+                }
+
+                loadedOfflineData.storedUsers.push({
+                  user: userEntry.user,
+                  storeTime: userEntry.storeTime,
+                });
+              }
             );
-
-            db.put("offline", { key: "storedUsers", value: updated });
-            return;
-          }
-
-          loadedOfflineData.storedUsers.push({
-            user: userEntry.user,
-            storeTime: userEntry.storeTime,
-          });
-        });
+            break;
+          case "storedConversations":
+            entry.value.forEach((conversation: Conversation) => {
+              loadedOfflineData.storedConversations.push(conversation);
+            });
+            break;
+          case "storedCommunities":
+            entry.value.forEach((community: Community) => {
+              loadedOfflineData.storedCommunities.push(community);
+            });
+            break;
+        }
       });
-      setOfflineData(loadedOfflineData.storedUsers);
+      setOfflineData(loadedOfflineData);
 
       // Extra User Data Stuff
       setLanguages({
@@ -379,7 +404,11 @@ export function StorageProvider({
       await db.clear("data");
       setUserData({});
       await db.clear("offline");
-      setOfflineData([]);
+      setOfflineData({
+        storedUsers: [],
+        storedConversations: [],
+        storedCommunities: [],
+      });
     } catch (err: unknown) {
       handleError("STORAGE_CONTEXT", "ERROR_CLEARING_DATABASE_UNKNOWN", err);
     }
@@ -416,12 +445,28 @@ export function StorageProvider({
     db.put("offline", {
       key: "storedUsers",
       value: [
-        ...(offlineData || []),
+        ...(offlineData.storedUsers || []),
         {
           user,
           storeTime: Date.now(),
         },
       ],
+    });
+  }
+
+  function setOfflineConversations(conversations: Conversation[]) {
+    if (!db) return;
+    db.put("offline", {
+      key: "storedConversations",
+      value: conversations,
+    });
+  }
+
+  function setOfflineCommunities(communities: Community[]) {
+    if (!db) return;
+    db.put("offline", {
+      key: "storedCommunities",
+      value: communities,
     });
   }
 
@@ -491,7 +536,10 @@ export function StorageProvider({
 
   if (typeof window !== "undefined") {
     // @ts-expect-error window does not have bypassLockScreen
-    window.bypassLockScreen = () => setBypass(true);
+    window.bypassLockScreen = () => {
+      setBypass(true);
+      console.log("Set bypass to true!");
+    };
   }
 
   if (failed) {
@@ -527,6 +575,8 @@ export function StorageProvider({
         bypass,
         setBypass,
         addOfflineUser,
+        setOfflineCommunities,
+        setOfflineConversations,
       }}
     >
       {children}
@@ -546,7 +596,7 @@ type StorageContextType = {
   set: (key: string, value: Value) => void;
   clearAll: () => void;
   data: Data;
-  offlineData: OfflineData[];
+  offlineData: OfflineData;
   translate: (input: string, extraInfo?: string | number) => string;
   language: string | null;
   languages: {
@@ -563,4 +613,6 @@ type StorageContextType = {
   bypass: boolean;
   setBypass: (bypass: boolean) => void;
   addOfflineUser: (user: User) => void;
+  setOfflineCommunities: (communities: Community[]) => void;
+  setOfflineConversations: (conversations: Conversation[]) => void;
 };

@@ -18,7 +18,7 @@ import {
   AdvancedSuccessMessageData,
   UserState,
 } from "@/lib/types";
-import { RetryCount } from "@/lib/utils";
+import { RetryCount, responseTimeout } from "@/lib/utils";
 import { client_wss } from "@/lib/endpoints";
 
 // Context Imports
@@ -30,8 +30,6 @@ import { useStorageContext } from "@/context/storage";
 import { Loading } from "@/components/loading";
 
 // Main
-const responseTimeout = 5000;
-
 type SocketContextType = {
   readyState: ReadyState;
   lastMessage: AdvancedSuccessMessage | null;
@@ -178,7 +176,11 @@ export function SocketProvider({
 
           const timeoutId = setTimeout(() => {
             pendingRequests.current.delete(id);
-            debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_TIMEOUT");
+            debugLog(
+              "SOCKET_CONTEXT",
+              "ERROR_SOCKET_CONTEXT_TIMEOUT",
+              requestType
+            );
             reject();
           }, responseTimeout);
 
@@ -247,13 +249,13 @@ export function SocketProvider({
     if (!isReady) return;
 
     const interval = setInterval(() => {
-      const now1 = Date.now();
+      const originalNow = Date.now();
       send("ping", {
-        last_ping: now1,
+        last_ping: originalNow,
       }).then((data) => {
         if (data.type !== "error") {
-          const now2 = Date.now();
-          const now = now2 - now1;
+          const actuallyNow = Date.now();
+          const now = actuallyNow - originalNow;
           setOwnPing(now);
           setIotaPing(data.data.ping_iota || 0);
         }

@@ -149,9 +149,15 @@ export const fallbackUser: User = {
   loading: true,
 };
 
-export type OfflineData = {
+export type StoredUser = {
   user: User;
   storeTime: number;
+};
+
+export type OfflineData = {
+  storedUsers: StoredUser[];
+  storedConversations: Conversation[];
+  storedCommunities: Community[];
 };
 
 declare global {
