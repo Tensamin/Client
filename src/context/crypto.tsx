@@ -143,7 +143,7 @@ export function CryptoProvider({
       }
     );
     apiRef.current = Comlink.wrap(worker);
-    setIsWorkerReady(true);
+    if (apiRef.current) setIsWorkerReady(true);
     return () => {
       worker.terminate();
       setIsWorkerReady(false);

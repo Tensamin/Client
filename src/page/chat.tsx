@@ -35,7 +35,7 @@ export default function Page() {
   }, [message]);
 
   return (
-    <div className="h-full w-full flex flex-col gap-2 overflow-hidden p-2">
+    <div className="h-full w-full flex flex-col gap-2 overflow-hidden">
       <PageDiv className="h-full">
         <QueryClientProvider client={client}>
           <Box />

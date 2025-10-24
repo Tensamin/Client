@@ -54,7 +54,7 @@ export function MessageProvider({
         offset: loaded,
       }).then((data) => {
         if (data.type === "error") throw new Error();
-        if (!data.data.messages) {
+        if (data.data.messages?.length === 0 || !data.data.messages) {
           return [
             {
               send_to_server: false,

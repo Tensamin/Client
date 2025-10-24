@@ -600,7 +600,7 @@ export function StorageProvider({
     return (
       <RawLoading
         debug={false}
-        isError={true}
+        isError
         addBypassButton={false}
         addClearButton={false}
         message="Unsupported Browser"

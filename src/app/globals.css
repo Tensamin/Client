@@ -129,3 +129,11 @@
     color: var(--color-primary-foreground, var(--primary-foreground));
   }
 }
+
+::view-transition-group(category-pill),
+::view-transition-old(category-pill),
+::view-transition-new(category-pill) {
+  border-radius: 9999px;
+  animation-duration: 250ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}

@@ -1,65 +1,32 @@
 "use client";
 
 // Package Imports
-import React, {
-  useEffect,
-  useState,
-  useTransition,
-  ViewTransition,
-} from "react";
-import { motion } from "framer-motion";
+import { useState, useTransition, ViewTransition } from "react";
 
 // Context Imports
-import { CryptoProvider, useCryptoContext } from "@/context/crypto";
-import { SocketProvider } from "@/context/socket";
-import { UserProvider } from "@/context/user";
-import { MessageProvider } from "@/context/message";
+import { useCryptoContext } from "@/context/crypto";
 import { usePageContext } from "@/context/page";
 import { useStorageContext } from "@/context/storage";
 
 // Components
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
-import { Loading } from "@/components/loading";
 import { UserModal } from "@/components/modals/user";
 import { Communities, Conversations } from "@/components/modals/category";
 
 // Pages
-import LoginPage from "@/page/login";
 import HomePage from "@/page/home";
 import SettingsPage from "@/page/settings";
 import ChatPage from "@/page/chat";
 
-function MainPage() {
+export default function Page() {
   const { ownUuid } = useCryptoContext();
-  const { page, pageData } = usePageContext();
+  const { page } = usePageContext();
   const { translate } = useStorageContext();
-  const [jsxPage, setJsxPage] = useState<React.JSX.Element | null>(null);
   const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
     "CONVERSATIONS"
   );
-  const [_transition, startTransition] = useTransition();
-
-  useEffect(() => {
-    switch (page) {
-      case "home":
-        setJsxPage(<HomePage />);
-        break;
-      case "settings":
-        setJsxPage(<SettingsPage />);
-        break;
-      case "chat":
-        setJsxPage(<ChatPage />);
-        break;
-      default:
-        setJsxPage(
-          <div>
-            {translate("PAGE_UNKNOWN")} | {page};{pageData}
-          </div>
-        );
-        break;
-    }
-  }, [page, pageData]);
+  const [, startTransition] = useTransition();
 
   return (
     <div className="w-full h-screen flex bg-sidebar">
@@ -67,39 +34,38 @@ function MainPage() {
         <UserModal key={ownUuid} uuid={ownUuid} size="big" />
         <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden mx-1 p-1">
           <div className="relative grid grid-cols-2 w-full gap-1">
-            {["COMMUNITIES", "CONVERSATIONS"].map((cat: string) => (
-              <Button
-                key={cat}
-                variant="ghost"
-                type="button"
-                className={`select-none relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20 ${
-                  category !== cat ? "hover:border hover:border-input/30" : ""
-                }`}
-                onClick={() =>
-                  startTransition(() =>
-                    setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
-                  )
-                }
-                aria-pressed={category === cat}
-                aria-label={cat}
-              >
-                {category === cat && (
-                  <motion.span
+            <ViewTransition>
+              {["COMMUNITIES", "CONVERSATIONS"].map((cat: string) => (
+                <Button
+                  key={cat}
+                  variant="ghost"
+                  type="button"
+                  className={`select-none relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20 ${
+                    category !== cat ? "hover:border hover:border-input/30" : ""
+                  }`}
+                  onClick={() =>
+                    startTransition(() =>
+                      setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
+                    )
+                  }
+                  aria-pressed={category === cat}
+                  aria-label={cat}
+                >
+                  <span
                     aria-hidden="true"
-                    layoutId="category-pill"
-                    className="absolute inset-0 rounded-full bg-input/50 pointer-events-none border"
-                    transition={{
-                      type: "spring",
-                      stiffness: 350,
-                      damping: 28,
+                    className="absolute inset-0 rounded-full bg-input/50 pointer-events-none border transition-opacity"
+                    style={{
+                      viewTransitionName:
+                        category === cat ? "category-pill" : undefined,
+                      opacity: category === cat ? 1 : 0,
                     }}
                   />
-                )}
-                <span className="relative z-10 text-sm flex">
-                  {translate(cat)}
-                </span>
-              </Button>
-            ))}
+                  <span className="relative z-10 text-sm flex">
+                    {translate(cat)}
+                  </span>
+                </Button>
+              ))}
+            </ViewTransition>
           </div>
         </div>
         <div className="scrollbar-hide">
@@ -117,41 +83,14 @@ function MainPage() {
       </div>
       <div className="flex-1 h-full flex flex-col">
         <Navbar />
-        <div
-          className={`flex-1 bg-background rounded-tl-xl border overflow-auto ${
-            page !== "chat" && "p-2"
-          }`}
-        >
-          {jsxPage}
+        <div className="flex-1 bg-background rounded-tl-xl border overflow-auto p-2">
+          <ViewTransition>
+            {page === "home" && <HomePage />}
+            {page === "settings" && <SettingsPage />}
+            {page === "chat" && <ChatPage />}
+          </ViewTransition>
         </div>
       </div>
     </div>
-  );
-}
-
-export default function Page() {
-  const { page, pageData, extraPageData } = usePageContext();
-
-  if (page === "error")
-    return (
-      <Loading message={pageData || "ERROR"} extra={extraPageData || ""} />
-    );
-  if (page === "login")
-    return (
-      <CryptoProvider>
-        <LoginPage />
-      </CryptoProvider>
-    );
-
-  return (
-    <CryptoProvider>
-      <SocketProvider>
-        <UserProvider>
-          <MessageProvider>
-            <MainPage />
-          </MessageProvider>
-        </UserProvider>
-      </SocketProvider>
-    </CryptoProvider>
   );
 }

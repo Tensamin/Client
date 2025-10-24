@@ -1,3 +1,5 @@
+"use client";
+
 // Package Imports
 import React, { useCallback, useState } from "react";
 import * as Icon from "lucide-react";
