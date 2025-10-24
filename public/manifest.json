@@ -8,16 +8,38 @@
   "theme_color": "#fafafa",
   "icons": [
     {
-      "src": "/assets/app/web-app-manifest-192x192.png",
+      "src": "/assets/app/logo-512x512-maskable-background.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/app/logo-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/app/logo-512x512-notMaskable.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/app/logo-192x192-maskable-background.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/app/logo-192x192-maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/assets/app/web-app-manifest-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "src": "/assets/app/logo-192x192-notMaskable.png",
+      "sizes": "192x192",
+      "type": "image/png"
     }
   ],
   "categories": ["social", "messaging", "communication", "privacy"]
