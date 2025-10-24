@@ -185,7 +185,7 @@ export function UserProvider({
         updateFetchedUsers((draft) => {
           draft.set(uuid, newUser);
         });
-        addOfflineUser(newUser);
+        await addOfflineUser(newUser);
         return newUser;
       } catch (err: unknown) {
         const error = err as ErrorType;

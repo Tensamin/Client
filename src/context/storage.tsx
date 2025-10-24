@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { handleError } from "@/lib/utils";
 
 // Context Imports
-import { Community, Conversation, User } from "@/lib/types";
+import { Community, Conversation, User, StoredUser } from "@/lib/types";
 
 // Components
 import { RawLoading } from "@/components/loading";
@@ -455,20 +455,44 @@ export function StorageProvider({
   }, [languages, set]);
 
   const addOfflineUser = useCallback(
-    (user: User) => {
+    async (user: User) => {
       if (!db) return;
-      db.put("offline", {
-        key: "storedUsers",
-        value: [
-          ...(offlineData.storedUsers || []),
-          {
+      try {
+        const tx = db.transaction("offline", "readwrite");
+        const store = tx.objectStore("offline");
+        const entry = await store.get("storedUsers");
+        const rawValue = entry?.value;
+        const current: StoredUser[] = Array.isArray(rawValue)
+          ? (rawValue as StoredUser[])
+          : [];
+
+        const storeTime = Date.now();
+        const existingIndex = current.findIndex(
+          (stored) => stored.user.uuid === user.uuid
+        );
+
+        const updated: StoredUser[] = [...current];
+        if (existingIndex !== -1) {
+          updated[existingIndex] = {
             user,
-            storeTime: Date.now(),
-          },
-        ],
-      });
+            storeTime,
+          };
+        } else {
+          updated.push({ user, storeTime });
+        }
+
+        await store.put({ key: "storedUsers", value: updated });
+        await tx.done;
+
+        setOfflineData((prev) => ({
+          ...prev,
+          storedUsers: updated,
+        }));
+      } catch (err: unknown) {
+        handleError("STORAGE_CONTEXT", "ERROR_ADD_OFFLINE_USER_UNKNOWN", err);
+      }
     },
-    [db, offlineData]
+    [db]
   );
 
   const setOfflineConversations = useCallback(
@@ -642,7 +666,7 @@ type StorageContextType = {
   setThemeTintType: (tintType: string) => void;
   bypass: boolean;
   setBypass: (bypass: boolean) => void;
-  addOfflineUser: (user: User) => void;
+  addOfflineUser: (user: User) => Promise<void>;
   setOfflineCommunities: (communities: Community[]) => void;
   setOfflineConversations: (conversations: Conversation[]) => void;
 };
