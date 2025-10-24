@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
@@ -29,12 +29,15 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
 
   const { bypass } = useStorageContext();
 
-  function setPage(page: string, data: string = "", extraData: string = "") {
-    if (bypass && page === "error") return;
-    setPageRaw(page);
-    setPageData(data);
-    setExtraPageData(extraData);
-  }
+  const setPage = useCallback(
+    (page: string, data: string = "", extraData: string = "") => {
+      if (bypass && page === "error") return;
+      setPageRaw(page);
+      setPageData(data);
+      setExtraPageData(extraData);
+    },
+    [bypass]
+  );
 
   return (
     <PageContext.Provider

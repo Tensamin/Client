@@ -222,7 +222,7 @@ export function UserProvider({
     [debugLog, addOfflineUser, updateFetchedUsers]
   );
 
-  async function refetchConversations() {
+  const refetchConversations = useCallback(async () => {
     await send("get_chats").then((data) => {
       if (data.type !== "error") {
         setConversations(data.data.user_ids || []);
@@ -230,7 +230,7 @@ export function UserProvider({
         toast.error(translate("ERROR_USER_CONTEXT_GET_CONVERSATIONS"));
       }
     });
-  }
+  }, [send, translate]);
 
   useEffect(() => {
     if (page === "chat" && pageData !== currentReceiverUuid) {
@@ -304,12 +304,13 @@ export function UserProvider({
     });
   }, [isReady, send, translate]);
 
-  if (lastMessage && lastMessage !== prevLastMessageRef.current) {
+  useEffect(() => {
+    if (!lastMessage || lastMessage === prevLastMessageRef.current) return;
     prevLastMessageRef.current = lastMessage;
 
     if (lastMessage.type === "client_changed") {
       const data = lastMessage.data as AdvancedSuccessMessageData;
-      if (!data.user_id || !data.user_state) return null;
+      if (!data.user_id || !data.user_state) return;
       get(data.user_id, true).then((user) => {
         updateFetchedUsers((draft) => {
           draft.set(user.uuid, {
@@ -350,17 +351,20 @@ export function UserProvider({
         });
       });
     }
-  }
+  }, [get, lastMessage, updateFetchedUsers]);
 
-  function doCustomEdit(uuid: string, user: User) {
-    const newUser = {
-      ...user,
-      display: getDisplayFromUsername(user.username, user.display),
-    };
-    updateFetchedUsers((draft) => {
-      draft.set(uuid, newUser);
-    });
-  }
+  const doCustomEdit = useCallback(
+    (uuid: string, user: User) => {
+      const newUser = {
+        ...user,
+        display: getDisplayFromUsername(user.username, user.display),
+      };
+      updateFetchedUsers((draft) => {
+        draft.set(uuid, newUser);
+      });
+    },
+    [updateFetchedUsers]
+  );
 
   return (
     <UserContext.Provider

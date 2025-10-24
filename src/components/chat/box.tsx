@@ -278,13 +278,13 @@ function ActualBox() {
           height: `${rowVirtualizer.getTotalSize()}px`,
         }}
       >
-        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+        {rowVirtualizer.getVirtualItems().map((virtualRow, index) => {
           const msg: Message = messages[virtualRow.index];
           if (!msg) return null;
 
           return (
             <div
-              key={`${virtualRow.key}-${msg.timestamp}`}
+              key={index}
               data-index={virtualRow.index}
               className="absolute left-0 right-0 px-3 py-2"
               style={{

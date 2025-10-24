@@ -132,17 +132,17 @@ export default function Page() {
     return entries.filter((e) => e.key.toLowerCase().includes(q));
   }, [entries, search]);
 
-  const handleDelete = (key: string) => {
+  const handleDelete = useCallback((key: string) => {
     setKeyToDelete(key);
     setShowDeleteDialog(true);
-  };
+  }, []);
 
-  const handleCancelDelete = () => {
+  const handleCancelDelete = useCallback(() => {
     setShowDeleteDialog(false);
     setKeyToDelete(null);
-  };
+  }, []);
 
-  const handleEdit = (key: string, value: Value) => {
+  const handleEdit = useCallback((key: string, value: Value) => {
     setEditingKey(key);
     setEditError(null);
     try {
@@ -150,9 +150,9 @@ export default function Page() {
     } catch {
       setEditValue(String(value));
     }
-  };
+  }, []);
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = useCallback(() => {
     if (!editingKey) return;
     if (!editValue.trim()) {
       setEditError("Value cannot be empty.");
@@ -167,27 +167,27 @@ export default function Page() {
     } catch {
       setEditError("Invalid JSON. Please correct and try again.");
     }
-  };
+  }, [editValue, editingKey, set]);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setEditingKey(null);
     setEditValue("");
     setEditError(null);
-  };
+  }, []);
 
-  const openAddDialog = () => {
+  const openAddDialog = useCallback(() => {
     setIsAddOpen(true);
     setNewKey("");
     setNewValue("");
     setAddError(null);
-  };
+  }, []);
 
-  const closeAddDialog = () => {
+  const closeAddDialog = useCallback(() => {
     setIsAddOpen(false);
     setAddError(null);
-  };
+  }, []);
 
-  const handleCreateEntry = () => {
+  const handleCreateEntry = useCallback(() => {
     const key = newKey.trim();
     if (!key) {
       setAddError("Key is required.");
@@ -212,7 +212,7 @@ export default function Page() {
     } catch {
       setAddError("Invalid JSON for value. Please provide valid JSON.");
     }
-  };
+  }, [data, newKey, newValue, set]);
 
   return (
     <>

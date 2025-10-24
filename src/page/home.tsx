@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
@@ -39,7 +39,7 @@ export default function Page() {
   const [newUsername, setNewUsername] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function addConversation() {
+  const addConversation = useCallback(async () => {
     setLoading(true);
     try {
       await fetch(username_to_uuid + newUsername)
@@ -64,7 +64,7 @@ export default function Page() {
       setNewUsername("");
       setLoading(false);
     }
-  }
+  }, [newUsername, refetchConversations, send, translate]);
 
   return (
     <PageDiv className="flex flex-col gap-4 h-full">

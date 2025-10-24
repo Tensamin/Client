@@ -1,5 +1,5 @@
 // Package Imports
-import React from "react";
+import React, { useCallback } from "react";
 import packageJson from "@/../package.json";
 
 // Context Imports
@@ -155,9 +155,12 @@ export default function Page() {
   const { data, set, translate } = useStorageContext();
 
   const selected = data.lastSettingsMenu as string;
-  const setSelected = (page: string) => {
-    set("lastSettingsMenu", page);
-  };
+  const setSelected = useCallback(
+    (page: string) => {
+      set("lastSettingsMenu", page);
+    },
+    [set]
+  );
 
   return (
     <div className="h-full w-full flex gap-2">

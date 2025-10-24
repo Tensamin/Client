@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
@@ -43,80 +43,93 @@ export function MessageProvider({
   const [addRealtimeMessageToBox, setAddRealtimeMessageToBox] =
     useState<Message | null>(null);
 
-  async function getMessages(
-    loaded: number,
-    amount: number
-  ): Promise<Messages> {
-    if (!isReady)
-      throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
-    if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
-    const messages = await send("messages_get", {
-      user_id: id,
-      amount: amount,
-      offset: loaded,
-    }).then((data) => {
-      if (data.type === "error") throw new Error();
-      if (!data.data.messages) {
-        return [
-          {
-            send_to_server: false,
-            sender: "SYSTEM",
-            avatar: true,
-            display: true,
-            tint: "var(--primary)",
-            timestamp: Date.now(),
-            content: "NO_MESSAGES_WITH_USER",
-          } as Message,
-        ];
-      }
-      const sorted = [...data.data.messages]
-        .map((m) => {
-          const n = m;
-          delete n.sent_by_self;
-          return {
-            send_to_server: false,
-            sender: m.sent_by_self ? ownUuid : currentReceiverUuid,
-            ...n,
-          } as Message;
-        })
-        .sort((a, b) => b.timestamp - a.timestamp)
-        .reverse();
-      return sorted;
-    });
+  const getMessages = useCallback(
+    async (loaded: number, amount: number): Promise<Messages> => {
+      if (!isReady)
+        throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
+      if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
+      const messages = await send("messages_get", {
+        user_id: id,
+        amount: amount,
+        offset: loaded,
+      }).then((data) => {
+        if (data.type === "error") throw new Error();
+        if (!data.data.messages) {
+          return [
+            {
+              send_to_server: false,
+              sender: "SYSTEM",
+              avatar: true,
+              display: true,
+              tint: "var(--primary)",
+              timestamp: Date.now(),
+              content: "NO_MESSAGES_WITH_USER",
+            } as Message,
+          ];
+        }
+        const sorted = [...data.data.messages]
+          .map((m) => {
+            const n = m;
+            delete n.sent_by_self;
+            return {
+              send_to_server: false,
+              sender: m.sent_by_self ? ownUuid : currentReceiverUuid,
+              ...n,
+            } as Message;
+          })
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .reverse();
+        return sorted;
+      });
 
-    return {
-      messages: messages || [],
-      next: loaded + amount,
-      previous: loaded - amount,
-    };
-  }
+      return {
+        messages: messages || [],
+        next: loaded + amount,
+        previous: loaded - amount,
+      };
+    },
+    [currentReceiverUuid, id, isReady, ownUuid, send]
+  );
 
-  async function sendMessage(
-    message: Message,
-    files?: File[]
-  ): Promise<AdvancedSuccessMessage> {
-    if (!isReady)
-      throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
-    if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
-    setAddRealtimeMessageToBox(message);
-    const ownPublicKey = await get(ownUuid, false).then(
-      (data) => data.public_key
-    );
-    const otherPublicKey = await get(currentReceiverUuid, false).then(
-      (data) => data.public_key
-    );
-    const sharedSecret = await get_shared_secret(
+  const sendMessage = useCallback(
+    async (
+      message: Message,
+      files?: File[]
+    ): Promise<AdvancedSuccessMessage> => {
+      if (!isReady)
+        throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
+      if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
+      setAddRealtimeMessageToBox(message);
+      const ownPublicKey = await get(ownUuid, false).then(
+        (data) => data.public_key
+      );
+      const otherPublicKey = await get(currentReceiverUuid, false).then(
+        (data) => data.public_key
+      );
+      const sharedSecret = await get_shared_secret(
+        privateKey,
+        ownPublicKey,
+        otherPublicKey
+      );
+      const encrypted = await encrypt(message.content, sharedSecret.message);
+      return await send("message_send", {
+        ...(files && { files }),
+        content: encrypted.message,
+        receiver_id: currentReceiverUuid,
+      });
+    },
+    [
+      currentReceiverUuid,
+      encrypt,
+      get,
+      get_shared_secret,
+      id,
+      isReady,
+      ownUuid,
       privateKey,
-      ownPublicKey,
-      otherPublicKey
-    );
-    const encrypted = await encrypt(message.content, sharedSecret.message);
-    return await send("message_send", {
-      ...(files && { files }),
-      content: encrypted.message,
-      receiver_id: currentReceiverUuid,
-    });
-  }
+      send,
+    ]
+  );
 
   return (
     <MessageContext.Provider

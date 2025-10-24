@@ -1,5 +1,5 @@
 // Package Imports
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import * as Icon from "lucide-react";
 import { Ring } from "ldrs/react";
 import { toast } from "sonner";
@@ -29,90 +29,104 @@ export default function Page() {
   const { pageData } = usePageContext();
   debugLog("LOGIN_PAGE", "REASONE_FOR_LOGIN", pageData);
 
-  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    e.preventDefault();
-    setHover(false);
-    setLoading(true);
-    const files = e.target.files;
-    if (!files) return;
-    if (files.length === 0) return;
-    const file = files[0];
+  const login = useCallback(
+    async (uuid: string, privateKey: string) => {
+      set("uuid", uuid);
+      set("privateKey", privateKey);
+      window.location.reload();
+    },
+    [set]
+  );
 
-    try {
-      const text = await file.text();
-      const splitText = text.replaceAll("\n", "").split("::");
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      e.preventDefault();
+      setHover(false);
+      setLoading(true);
+      const files = e.target.files;
+      if (!files) return;
+      if (files.length === 0) return;
+      const file = files[0];
 
-      const uuid = splitText[0];
-      const privateKey = splitText[1];
+      try {
+        const text = await file.text();
+        const splitText = text.replaceAll("\n", "").split("::");
 
-      if (!uuid || !privateKey) throw new Error();
+        const uuid = splitText[0];
+        const nextPrivateKey = splitText[1];
 
-      const buf = Buffer.from(privateKey, "base64");
-      if (buf.length !== 72)
-        toast.warning(translate("WARN_UNUSUAL_KEY_LENGTH"));
-      await login(uuid, privateKey);
-    } catch {
-      toast.error(translate("ERROR_INVALID_TU_FILE"));
-    } finally {
-      setLoading(false);
-    }
-  }
+        if (!uuid || !nextPrivateKey) throw new Error();
 
-  async function handleDrop(e: React.DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-    setHover(false);
-    setLoading(true);
-    const { files } = e.dataTransfer;
-    if (files.length === 0) return;
-    const file = files[0];
-
-    try {
-      const text = await file.text();
-      const splitText = text.replaceAll("\n", "").split("::");
-
-      const uuid = splitText[0];
-      const privateKey = splitText[1];
-
-      if (!uuid || !privateKey) throw new Error();
-
-      const buf = Buffer.from(privateKey, "base64");
-      if (buf.length !== 72)
-        toast.warning(translate("WARN_UNUSUAL_KEY_LENGTH"));
-      await login(uuid, privateKey);
-    } catch {
-      toast.error(translate("ERROR_INVALID_TU_FILE"));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function login(uuid: string, privateKey: string) {
-    set("uuid", uuid);
-    set("privateKey", privateKey);
-    window.location.reload();
-  }
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const username = formData.get("username") as string;
-
-    try {
-      const uuidResponse = await fetch(`${username_to_uuid}${username}`);
-      const uuidData = await uuidResponse.json();
-      if (uuidData.type !== "success") {
-        throw new Error(uuidData.log.message || "Failed to retrieve user ID.");
+        const buf = Buffer.from(nextPrivateKey, "base64");
+        if (buf.length !== 72)
+          toast.warning(translate("WARN_UNUSUAL_KEY_LENGTH"));
+        await login(uuid, nextPrivateKey);
+      } catch {
+        toast.error(translate("ERROR_INVALID_TU_FILE"));
+      } finally {
+        setLoading(false);
       }
-      const uuid: string = uuidData.data.user_id;
+    },
+    [login, translate]
+  );
 
-      await login(uuid, privateKey);
-    } catch {
-      toast.error(translate("ERROR_LOGIN_UNKNOWN"));
-    }
-  }
+  const handleDrop = useCallback(
+    async (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setHover(false);
+      setLoading(true);
+      const { files } = e.dataTransfer;
+      if (files.length === 0) return;
+      const file = files[0];
+
+      try {
+        const text = await file.text();
+        const splitText = text.replaceAll("\n", "").split("::");
+
+        const uuid = splitText[0];
+        const nextPrivateKey = splitText[1];
+
+        if (!uuid || !nextPrivateKey) throw new Error();
+
+        const buf = Buffer.from(nextPrivateKey, "base64");
+        if (buf.length !== 72)
+          toast.warning(translate("WARN_UNUSUAL_KEY_LENGTH"));
+        await login(uuid, nextPrivateKey);
+      } catch {
+        toast.error(translate("ERROR_INVALID_TU_FILE"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [login, translate]
+  );
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setLoading(true);
+
+      const form = e.currentTarget;
+      const formData = new FormData(form);
+      const username = formData.get("username") as string;
+
+      try {
+        const uuidResponse = await fetch(`${username_to_uuid}${username}`);
+        const uuidData = await uuidResponse.json();
+        if (uuidData.type !== "success") {
+          throw new Error(
+            uuidData.log.message || "Failed to retrieve user ID."
+          );
+        }
+        const uuid: string = uuidData.data.user_id;
+
+        await login(uuid, privateKey);
+      } catch {
+        toast.error(translate("ERROR_LOGIN_UNKNOWN"));
+      }
+    },
+    [login, privateKey, translate]
+  );
 
   return (
     <div className="w-full h-screen flex items-center justify-center">
@@ -192,7 +206,7 @@ export default function Page() {
                 ref={tuFileRef}
                 type="file"
                 accept=".tu"
-                onChange={async (e) => await handleFileSelect(e)}
+                onChange={handleFileSelect}
               />
               <div
                 className={`${

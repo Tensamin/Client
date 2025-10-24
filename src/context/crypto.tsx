@@ -1,7 +1,14 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import * as Comlink from "comlink";
 
 // Lib Imports
@@ -72,34 +79,40 @@ export function CryptoProvider({
   const { setPage, page } = usePageContext();
   const { data, bypass } = useStorageContext();
 
-  async function encrypt(
-    message: string,
-    password: string
-  ): Promise<BasicSuccessMessage> {
-    if (!apiRef.current) throw apiNotInitializedError;
-    return await apiRef.current.encrypt(message, password);
-  }
+  const encrypt = useCallback(
+    async (message: string, password: string): Promise<BasicSuccessMessage> => {
+      if (!apiRef.current) throw apiNotInitializedError;
+      return await apiRef.current.encrypt(message, password);
+    },
+    []
+  );
 
-  async function decrypt(
-    encryptedMessage: string,
-    password: string
-  ): Promise<BasicSuccessMessage> {
-    if (!apiRef.current) throw apiNotInitializedError;
-    return await apiRef.current.decrypt(encryptedMessage, password);
-  }
+  const decrypt = useCallback(
+    async (
+      encryptedMessage: string,
+      password: string
+    ): Promise<BasicSuccessMessage> => {
+      if (!apiRef.current) throw apiNotInitializedError;
+      return await apiRef.current.decrypt(encryptedMessage, password);
+    },
+    []
+  );
 
-  async function get_shared_secret(
-    own_private_key: string,
-    own_public_key: string,
-    other_public_key: string
-  ): Promise<BasicSuccessMessage> {
-    if (!apiRef.current) throw apiNotInitializedError;
-    return await apiRef.current.get_shared_secret(
-      own_private_key,
-      own_public_key,
-      other_public_key
-    );
-  }
+  const get_shared_secret = useCallback(
+    async (
+      own_private_key: string,
+      own_public_key: string,
+      other_public_key: string
+    ): Promise<BasicSuccessMessage> => {
+      if (!apiRef.current) throw apiNotInitializedError;
+      return await apiRef.current.get_shared_secret(
+        own_private_key,
+        own_public_key,
+        other_public_key
+      );
+    },
+    []
+  );
 
   useEffect(() => {
     if (page === "login") {

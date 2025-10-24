@@ -74,35 +74,38 @@ export function SocketProvider({
 
   const forceLoad = false;
 
-  async function handleMessage(message: MessageEvent) {
-    let parsedMessage: AdvancedSuccessMessage = {
-      type: "",
-      data: {},
-      id: "",
-    };
-    try {
+  const handleMessage = useCallback(
+    async (message: MessageEvent) => {
+      let parsedMessage: AdvancedSuccessMessage = {
+        type: "",
+        data: {},
+        id: "",
+      };
       try {
-        parsedMessage = JSON.parse(message.data);
+        try {
+          parsedMessage = JSON.parse(message.data);
+        } catch {
+          debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_INVALID_MESSAGE");
+        }
+        if (parsedMessage.type !== "pong") {
+          debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_RECEIVE", {
+            type: parsedMessage.type,
+            data: parsedMessage.data,
+          });
+        }
+        setLastMessage(parsedMessage);
+        const currentRequest = pendingRequests.current.get(parsedMessage.id);
+        if (currentRequest) {
+          clearTimeout(currentRequest.timeoutId);
+          pendingRequests.current.delete(parsedMessage.id);
+          currentRequest.resolve(parsedMessage);
+        }
       } catch {
-        debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_INVALID_MESSAGE");
+        debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
       }
-      if (parsedMessage.type !== "pong") {
-        debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_RECEIVE", {
-          type: parsedMessage.type,
-          data: parsedMessage.data,
-        });
-      }
-      setLastMessage(parsedMessage);
-      const currentRequest = pendingRequests.current.get(parsedMessage.id);
-      if (currentRequest) {
-        clearTimeout(currentRequest.timeoutId);
-        pendingRequests.current.delete(parsedMessage.id);
-        currentRequest.resolve(parsedMessage);
-      }
-    } catch {
-      debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
-    }
-  }
+    },
+    [debugLog]
+  );
 
   const { sendMessage: sendRaw, readyState } = useWebSocket(client_wss, {
     onOpen: () => debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_CONNECTED"),

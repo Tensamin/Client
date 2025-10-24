@@ -361,21 +361,6 @@ export function StorageProvider({
     }
   }, [themeTintType]);
 
-  function setThemeCSS(css: string) {
-    setRawThemeCSS(css);
-    set("themeCSS", css);
-  }
-
-  function setThemeTint(tint: string) {
-    setRawThemeTint(tint);
-    set("themeTint", tint);
-  }
-
-  function setThemeTintType(tintType: string) {
-    setRawThemeTintType(tintType);
-    set("themeTintType", tintType);
-  }
-
   const set = useCallback(
     async (key: string, value: Value) => {
       if (!db) return;
@@ -401,6 +386,30 @@ export function StorageProvider({
       }
     },
     [db]
+  );
+
+  const setThemeCSS = useCallback(
+    (css: string) => {
+      setRawThemeCSS(css);
+      set("themeCSS", css);
+    },
+    [set]
+  );
+
+  const setThemeTint = useCallback(
+    (tint: string) => {
+      setRawThemeTint(tint);
+      set("themeTint", tint);
+    },
+    [set]
+  );
+
+  const setThemeTintType = useCallback(
+    (tintType: string) => {
+      setRawThemeTintType(tintType);
+      set("themeTintType", tintType);
+    },
+    [set]
   );
 
   const clearAll = useCallback(async () => {
@@ -445,99 +454,115 @@ export function StorageProvider({
     set("languages", languagesWithoutEnInt);
   }, [languages, set]);
 
-  function addOfflineUser(user: User) {
-    if (!db) return;
-    db.put("offline", {
-      key: "storedUsers",
-      value: [
-        ...(offlineData.storedUsers || []),
-        {
-          user,
-          storeTime: Date.now(),
-        },
-      ],
-    });
-  }
+  const addOfflineUser = useCallback(
+    (user: User) => {
+      if (!db) return;
+      db.put("offline", {
+        key: "storedUsers",
+        value: [
+          ...(offlineData.storedUsers || []),
+          {
+            user,
+            storeTime: Date.now(),
+          },
+        ],
+      });
+    },
+    [db, offlineData]
+  );
 
-  function setOfflineConversations(conversations: Conversation[]) {
-    if (!db) return;
-    db.put("offline", {
-      key: "storedConversations",
-      value: conversations,
-    });
-  }
+  const setOfflineConversations = useCallback(
+    (conversations: Conversation[]) => {
+      if (!db) return;
+      db.put("offline", {
+        key: "storedConversations",
+        value: conversations,
+      });
+    },
+    [db]
+  );
 
-  function setOfflineCommunities(communities: Community[]) {
-    if (!db) return;
-    db.put("offline", {
-      key: "storedCommunities",
-      value: communities,
-    });
-  }
+  const setOfflineCommunities = useCallback(
+    (communities: Community[]) => {
+      if (!db) return;
+      db.put("offline", {
+        key: "storedCommunities",
+        value: communities,
+      });
+    },
+    [db]
+  );
 
-  function translate(input: string, extraInfo?: string | number) {
-    if (
-      !language ||
-      !languages ||
-      typeof languages[language] === "undefined" ||
-      typeof languages[language][input] === "undefined"
-    ) {
-      return input;
-    } else {
-      return extraInfo
-        ? languages[language][input] + extraInfo
-        : languages[language][input];
-    }
-  }
+  const translate = useCallback(
+    (input: string, extraInfo?: string | number) => {
+      if (
+        !language ||
+        !languages ||
+        typeof languages[language] === "undefined" ||
+        typeof languages[language][input] === "undefined"
+      ) {
+        return input;
+      } else {
+        return extraInfo
+          ? languages[language][input] + extraInfo
+          : languages[language][input];
+      }
+    },
+    [language, languages]
+  );
 
-  function addLanguage(langKey: string, langData: Language) {
-    setLanguages((prev) => ({ ...prev, [langKey]: langData }));
-    toast.success(translate("STORAGE_CONTEXT_LANGUAGE_ADDED"));
-  }
+  const addLanguage = useCallback(
+    (langKey: string, langData: Language) => {
+      setLanguages((prev) => ({ ...prev, [langKey]: langData }));
+      toast.success(translate("STORAGE_CONTEXT_LANGUAGE_ADDED"));
+    },
+    [translate]
+  );
 
-  function removeLanguage(langKey: string) {
-    setLanguages((prev) => {
-      const updated = { ...prev };
-      delete updated[langKey];
-      return updated;
-    });
-    toast.success(translate("STORAGE_CONTEXT_LANGUAGE_DELETED"));
-  }
+  const removeLanguage = useCallback(
+    (langKey: string) => {
+      setLanguages((prev) => {
+        const updated = { ...prev };
+        delete updated[langKey];
+        return updated;
+      });
+      toast.success(translate("STORAGE_CONTEXT_LANGUAGE_DELETED"));
+    },
+    [translate]
+  );
 
-  function debugLog(
-    sender: string,
-    message: string,
-    extraInfo?: unknown
-  ): void {
-    const tagStyle =
-      "background: #3f3f3f; padding: 1px 4px; border-radius: 2px; " +
-      "font-size: 10px; font-weight: 700; letter-spacing: 0.5px;";
+  const debugLog = useCallback(
+    (sender: string, message: string, extraInfo?: unknown): void => {
+      const tagStyle =
+        "background: #3f3f3f; padding: 1px 4px; border-radius: 2px; " +
+        "font-size: 10px; font-weight: 700; letter-spacing: 0.5px;";
 
-    const msgStyle =
-      "padding: 1px 4px; border-radius: 2px; font-size: 10px; " +
-      "font-family: 'Consolas', 'Monaco', monospace; " +
-      (message === "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS"
-        ? // catppuccin frappé
-          "color: #a6d189;" // green
-        : message === "SOCKET_CONTEXT_CONNECTED"
-        ? "color: #a6d189;" // green
-        : message === "SOCKET_CONTEXT_DISCONNECTED"
-        ? "color: #e78284;" // red
-        : message.startsWith("ERROR")
-        ? "color: #e78284;" // red
-        : "");
+      const msgStyle =
+        "padding: 1px 4px; border-radius: 2px; font-size: 10px; " +
+        "font-family: 'Consolas', 'Monaco', monospace; " +
+        (message === "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS"
+          ? "color: #a6d189;"
+          : message === "SOCKET_CONTEXT_CONNECTED"
+          ? "color: #a6d189;"
+          : message === "SOCKET_CONTEXT_DISCONNECTED"
+          ? "color: #e78284;"
+          : message.startsWith("ERROR")
+          ? "color: #e78284;"
+          : "");
 
-    console.log(
-      "%c%s%c %c%s%c",
-      tagStyle,
-      translate(sender),
-      "",
-      msgStyle,
-      translate(message),
-      "",
-      extraInfo !== undefined ? extraInfo : ""
-    );
-  }
+      console.log(
+        "%c%s%c %c%s%c",
+        tagStyle,
+        translate(sender),
+        "",
+        msgStyle,
+        translate(message),
+        "",
+        extraInfo !== undefined ? extraInfo : ""
+      );
+    },
+    [translate]
+  );
 
   if (typeof window !== "undefined") {
     // @ts-expect-error window does not have bypassLockScreen
