@@ -1,6 +1,11 @@
 {
-  "name": "Tensamin",
-  "short_name": "True E2E decentralized messages and a highly customizable messaging app",
+  "name": "Tensamin \\ True E2EE, decentralized messages",
+  "short_name": "Tensamin",
+  "description": "True E2EE, decentralized messages. Open source and privacy first.",
+  "start_url": "/app/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#fafafa",
   "icons": [
     {
       "src": "/assets/app/web-app-manifest-192x192.png",
@@ -14,5 +19,6 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "categories": ["social", "messaging", "communication", "privacy"]
 }
