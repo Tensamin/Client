@@ -35,8 +35,8 @@ export default function Page() {
   }, [message]);
 
   return (
-    <div className="h-full w-full flex flex-col gap-2 overflow-hidden">
-      <PageDiv className="h-full mt-2 ml-2 mr-2">
+    <div className="h-full w-full flex flex-col gap-2 overflow-hidden p-2">
+      <PageDiv className="h-full">
         <QueryClientProvider client={client}>
           <Box />
         </QueryClientProvider>
@@ -44,7 +44,7 @@ export default function Page() {
       <div className="flex gap-2">
         <Button
           variant="outline"
-          className="aspect-square h-10 w-10 flex ml-2 rounded-lg border dark:border-border dark:bg-card/46 bg-card/46"
+          className="aspect-square h-10 w-10 flex rounded-lg border dark:border-border dark:bg-card/46 bg-card/46"
         >
           <Icon.Plus />
         </Button>
@@ -72,7 +72,7 @@ export default function Page() {
           }}
           onChange={(e) => setMessage(e.target.value)}
           placeholder={translate("CHAT_PAGE_INPUT_PLACEHOLDER")}
-          className="w-full overflow-hidden min-h-10 max-h-52 placeholder:select-none mr-2 mb-2"
+          className="w-full overflow-hidden min-h-10 max-h-52 placeholder:select-none"
         />
       </div>
     </div>

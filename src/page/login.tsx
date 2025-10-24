@@ -132,6 +132,63 @@ export default function Page() {
     <div className="w-full h-screen flex items-center justify-center">
       <div className="flex flex-col gap-5 w-full sm:w-2/3 md:w-3/4 lg:w-4/6 xl:w-1/2 2xl:w-1/3">
         <div className="flex flex-col md:flex-row w-full gap-3 px-10">
+          <Card className="w-full md:w-1/2 gap-3">
+            <CardHeader>
+              <CardTitle className="select-none">
+                Login using .tu file
+                <p className="text-xs text-muted-foreground/70 font-normal mt-2">
+                  Recommended
+                </p>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="w-full h-full">
+              <input
+                hidden
+                ref={tuFileRef}
+                type="file"
+                accept=".tu"
+                onChange={handleFileSelect}
+              />
+              <div
+                className={`${
+                  hover ? "opacity-60" : "opacity-100"
+                } transition-opacity duration-300 ease-in-out flex flex-col gap-10 items-center justify-center w-full h-full border-dashed rounded-xl cursor-pointer select-none text-sm md:py-0 py-15 ${buttonVariants(
+                  { variant: "outline" }
+                )}`}
+                onClick={() => tuFileRef.current?.click()}
+                onDrop={handleDrop}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setHover(true);
+                }}
+                onDragLeave={() => setHover(false)}
+              >
+                {hover ? (
+                  <Icon.FileInput
+                    className="size-8"
+                    strokeWidth={1.5}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setHover(true);
+                    }}
+                    onDragLeave={() => setHover(false)}
+                  />
+                ) : (
+                  <Icon.FileKey
+                    className="size-8"
+                    strokeWidth={1.5}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setHover(true);
+                    }}
+                    onDragLeave={() => setHover(false)}
+                  />
+                )}
+                {hover ? "Release to login" : "Select a .tu file"}
+              </div>
+            </CardContent>
+          </Card>
+          <div className="h-0.75 md:w-0.75 md:h-auto m-5 bg-input/60 rounded-full" />
           <Card className="transition-opacity duration-300 ease-in-out w-full md:w-1/2">
             <CardHeader>
               <CardTitle className="select-none">
@@ -152,23 +209,19 @@ export default function Page() {
                     type="text"
                     name="username"
                     autoComplete="username"
+                    placeholder="some_user"
                     disabled={loading}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="password">Private Key</Label>
-                  <Label
-                    htmlFor="password"
-                    className="text-xs text-muted-foreground text-left font-normal"
-                  >
-                    You can drag and drop a .tu file onto this page
-                  </Label>
                   <Input
                     required
                     id="password"
                     type="password"
                     name="password"
                     autoComplete="current-password"
+                    placeholder="•••••••••••••••"
                     disabled={loading}
                     value={privateKey}
                     onChange={(e) => setPrivateKey(e.target.value)}
@@ -192,59 +245,6 @@ export default function Page() {
                   )}
                 </Button>
               </form>
-            </CardContent>
-          </Card>
-          <Card className="w-full md:w-1/2">
-            <CardHeader>
-              <CardTitle className="select-none">
-                Login using .tu file
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="w-full h-full">
-              <input
-                hidden
-                ref={tuFileRef}
-                type="file"
-                accept=".tu"
-                onChange={handleFileSelect}
-              />
-              <div
-                className={`${
-                  hover ? "opacity-50" : "opacity-100"
-                } transition-opacity duration-300 ease-in-out flex flex-col gap-10 items-center justify-center w-full h-full border-dashed rounded-xl cursor-pointer select-none text-xs ${buttonVariants(
-                  { variant: "outline" }
-                )}`}
-                onClick={() => tuFileRef.current?.click()}
-                onDrop={handleDrop}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setHover(true);
-                }}
-                onDragLeave={() => setHover(false)}
-              >
-                {hover ? (
-                  <Icon.FileInput
-                    strokeWidth={1.2}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setHover(true);
-                    }}
-                    onDragLeave={() => setHover(false)}
-                  />
-                ) : (
-                  <Icon.FileKey
-                    strokeWidth={1.2}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setHover(true);
-                    }}
-                    onDragLeave={() => setHover(false)}
-                  />
-                )}
-                {hover
-                  ? "Release to select your .tu file"
-                  : "Drag & Drop or Select the .tu file"}
-              </div>
             </CardContent>
           </Card>
         </div>

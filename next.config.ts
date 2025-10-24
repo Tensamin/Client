@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   output: "export",
   distDir: "dist/app",
   assetPrefix: process.env.NODE_ENV === "production" ? "/app/" : "/",
+  reactCompiler: true,
   experimental: {
-    reactCompiler: true,
     optimizeCss: true,
   },
 };

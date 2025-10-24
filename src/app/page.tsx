@@ -1,7 +1,12 @@
 "use client";
 
 // Package Imports
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+  useTransition,
+  ViewTransition,
+} from "react";
 import { motion } from "framer-motion";
 
 // Context Imports
@@ -33,6 +38,7 @@ function MainPage() {
   const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
     "CONVERSATIONS"
   );
+  const [_transition, startTransition] = useTransition();
 
   useEffect(() => {
     switch (page) {
@@ -70,7 +76,9 @@ function MainPage() {
                   category !== cat ? "hover:border hover:border-input/30" : ""
                 }`}
                 onClick={() =>
-                  setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
+                  startTransition(() =>
+                    setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
+                  )
                 }
                 aria-pressed={category === cat}
                 aria-label={cat}
@@ -95,14 +103,16 @@ function MainPage() {
           </div>
         </div>
         <div className="scrollbar-hide">
-          {["COMMUNITIES", "CONVERSATIONS"].map((cat) => {
-            if (cat !== category) return null;
-            return category === "COMMUNITIES" ? (
-              <Communities key={category} />
-            ) : (
-              <Conversations key={category} />
-            );
-          })}
+          <ViewTransition>
+            {["COMMUNITIES", "CONVERSATIONS"].map((cat) => {
+              if (cat !== category) return null;
+              return category === "COMMUNITIES" ? (
+                <Communities key={category} />
+              ) : (
+                <Conversations key={category} />
+              );
+            })}
+          </ViewTransition>
         </div>
       </div>
       <div className="flex-1 h-full flex flex-col">
