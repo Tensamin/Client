@@ -6,6 +6,8 @@
 /dist/
 /.next/
 /out/
+/tauri/target/
+/tauri/gen/schemas
 
 # Environment
 .env*

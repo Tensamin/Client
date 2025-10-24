@@ -115,27 +115,57 @@ export function CryptoProvider({
   );
 
   useEffect(() => {
+    let cancelled = false;
+
     if (page === "login") {
-      setIsReady(true);
-      return;
-    } else if (
+      Promise.resolve().then(() => {
+        if (!cancelled) setIsReady(true);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (
       typeof data.privateKey !== "undefined" &&
       data.privateKey !== null &&
       data.privateKey !== ""
     ) {
-      setPrivateKey(data.privateKey as string);
-      setOwnUuid(data.uuid as string);
-      sha256(data.privateKey as string)
-        .then(setPrivateKeyHash)
-        .then(() => setIsReady(true));
-      return;
-    } else {
-      setPage("login", "ERROR_AUTH_NO_PRIVATE_KEY");
-      return;
+      const privateKeyValue = String(data.privateKey);
+      const ownUuidValue = typeof data.uuid === "string" ? data.uuid : "";
+
+      Promise.resolve().then(() => {
+        if (cancelled) return;
+        setPrivateKey(privateKeyValue);
+        setOwnUuid(ownUuidValue);
+      });
+
+      sha256(privateKeyValue)
+        .then((hash) => {
+          if (cancelled) return;
+          setPrivateKeyHash(hash);
+          setIsReady(true);
+        })
+        .catch(() => {
+          if (!cancelled) setIsReady(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
     }
-  }, [data.uuid, data.privateKey, page, setPage]);
+
+    Promise.resolve().then(() => {
+      if (!cancelled) setPage("login", "ERROR_AUTH_NO_PRIVATE_KEY");
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data.privateKey, data.uuid, page, setPage]);
 
   useEffect(() => {
+    let cancelled = false;
     const worker = new Worker(
       new URL("../worker/encryption.ts", import.meta.url),
       {
@@ -143,10 +173,15 @@ export function CryptoProvider({
       }
     );
     apiRef.current = Comlink.wrap(worker);
-    if (apiRef.current) setIsWorkerReady(true);
+
+    Promise.resolve().then(() => {
+      if (!cancelled) setIsWorkerReady(true);
+    });
+
     return () => {
+      cancelled = true;
+      apiRef.current = null;
       worker.terminate();
-      setIsWorkerReady(false);
     };
   }, []);
 

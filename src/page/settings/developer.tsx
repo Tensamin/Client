@@ -71,7 +71,10 @@ function FitJson({
   }, [min, max, step]);
 
   useEffect(() => {
-    recompute();
+    const frame = requestAnimationFrame(() => {
+      recompute();
+    });
+    return () => cancelAnimationFrame(frame);
   }, [recompute, text]);
 
   useEffect(() => {
@@ -105,7 +108,10 @@ function FitJson({
 export default function Page() {
   const { data, set, translate } = useStorageContext();
 
-  const [entries, setEntries] = useState<{ key: string; value: Value }[]>([]);
+  const entries = useMemo(
+    () => Object.entries(data || {}).map(([key, value]) => ({ key, value })),
+    [data]
+  );
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const [editError, setEditError] = useState<string | null>(null);
@@ -119,12 +125,6 @@ export default function Page() {
   const [addError, setAddError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    setEntries(
-      Object.entries(data || {}).map(([key, value]) => ({ key, value }))
-    );
-  }, [data]);
 
   const filteredEntries = useMemo(() => {
     const q = search.trim().toLowerCase();

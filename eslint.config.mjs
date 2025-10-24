@@ -10,5 +10,5 @@ export default defineConfig([
       "@next/next/no-img-element": "off",
     },
   },
-  globalIgnores(["node_modules/**", "dist/**"]),
+  globalIgnores(["node_modules/**", "dist/**", "tauri/**"]),
 ]);

@@ -221,6 +221,7 @@ export function StorageProvider({
         "The Crypto worker is missing subtle crypto.",
 
       // Other Stuff
+      CREATE: "Create",
       CANCEL: "Cancel",
       SAVE: "Save",
       EDIT: "Edit",

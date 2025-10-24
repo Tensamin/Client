@@ -1,5 +1,9 @@
-## [Launch App](https://tensamin.methanium.net/app/)
+# Tensamin Frontend
 
-> [Homepage](https://tensamin.methanium.net/)
+[Developer Options](https://tensamin.methanium.net/docs/components/frontend/dev-options/)
+[Import Structure](https://tensamin.methanium.net/docs/components/frontend/import/)
 
-> [Documentation](https://tensamin.methanium.net/docs/)
+Version bumps need to happen in:
+- package.json
+- tauri/tauri.conf.json
+- tauri/Cargo.toml

@@ -5,9 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "lint": "eslint"
+    "lint": "eslint",
+    "dev:tauri": "tauri dev",
+    "build:tauri": "tauri build"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2",
     "@monaco-editor/react": "^4.7.0",
     "@noble/curves": "^2.0.1",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -56,6 +60,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2",
     "@eslint/eslintrc": "^3.3.1",
     "@tailwindcss/postcss": "^4.1.16",
     "@types/node": "^24.9.1",
