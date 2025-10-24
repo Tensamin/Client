@@ -1,8 +1,8 @@
 {
-  "name": "Tensamin \\ True E2EE, decentralized messages",
-  "short_name": "Tensamin",
+  "name": "Tensamin",
   "description": "True E2EE, decentralized messages. Open source and privacy first.",
   "start_url": "/app/",
+  "id": "https://tensamin.methanium.net/app/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#fafafa",
@@ -11,7 +11,7 @@
       "src": "/app/assets/app/logo-512x512-maskable-background.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     },
     {
       "src": "/app/assets/app/logo-512x512-maskable.png",
@@ -28,7 +28,7 @@
       "src": "/app/assets/app/logo-192x192-maskable-background.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     },
     {
       "src": "/app/assets/app/logo-192x192-maskable.png",
