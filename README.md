@@ -7,3 +7,5 @@ Version bumps need to happen in:
 - package.json
 - tauri/tauri.conf.json
 - tauri/Cargo.toml
+
+> The Tensamin repositories are slowly moving to a public state
