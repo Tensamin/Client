@@ -195,8 +195,8 @@ export function StorageProvider({
       ERROR_SOCKET_CONTEXT_CANNOT_CONNECT_EXTRA:
         "Check your internet connection and try again.\n If the issue persists check the Tensamin status page.",
 
-      ERROR_INVALID_USER_ID: "The provided User ID is invalid",
-      ERROR_INVALID_PRIVATE_KEY: "The provided Private Key is invalid",
+      ERROR_INVALID_USER_ID: "The provided user id is invalid",
+      ERROR_INVALID_PRIVATE_KEY: "The provided private key is invalid",
       ERROR_INVALID_PRIVATE_KEY_EXTRA:
         "Reload the page and try again. If the issue persists clear your storage and log in again.",
 
