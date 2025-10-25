@@ -50,12 +50,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: app-v__VERSION__
+          tagName: v__VERSION__
           releaseName: "Desktop App v__VERSION__"
           releaseBody: "See the assets to download this version and install."
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ env.TAURI_ARGS }}
+
+      - name: publish on aur
+        uses: ulises-jeremias/github-actions-aur-publish@v1
+        with:
+          pkgname: tensamin-bin
+          pkgbuild: ./tauri/PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Automated Update
+          ssh_keyscan_types: ed25519
+          update_pkgver: false
 
   macos-intel:
     runs-on: macos-latest
@@ -68,6 +80,15 @@ jobs:
 
   linux:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAURI_ARGS: ""
+      RUST_TARGETS: ""
+    steps: *publish-tauri-steps
+
+  linux-arm:
+    runs-on: ubuntu-latest-arm
     permissions:
       contents: write
     env:
