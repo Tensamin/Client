@@ -1,4 +1,4 @@
-name: "publish"
+name: "Build and Release Desktop App"
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
       - release
 
 jobs:
-  publish-tauri-macos-arm:
+  macos-arm:
     runs-on: macos-latest
     permissions:
       contents: write
@@ -57,7 +57,7 @@ jobs:
           prerelease: false
           args: ${{ env.TAURI_ARGS }}
 
-  publish-tauri-macos-intel:
+  macos-intel:
     runs-on: macos-latest
     permissions:
       contents: write
@@ -66,8 +66,8 @@ jobs:
       RUST_TARGETS: "aarch64-apple-darwin,x86_64-apple-darwin"
     steps: *publish-tauri-steps
 
-  publish-tauri-linux-2204:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+  linux:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: write
     env:
@@ -75,8 +75,8 @@ jobs:
       RUST_TARGETS: ""
     steps: *publish-tauri-steps
 
-  publish-tauri-linux-2404:
-    runs-on: blacksmith-2vcpu-ubuntu-2204-arm
+  linux-arm:
+    runs-on: blacksmith-4vcpu-ubuntu-2404-arm
     permissions:
       contents: write
     env:
@@ -84,7 +84,7 @@ jobs:
       RUST_TARGETS: ""
     steps: *publish-tauri-steps
 
-  publish-tauri-windows:
+  windows:
     runs-on: windows-latest
     permissions:
       contents: write
