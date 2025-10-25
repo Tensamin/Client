@@ -93,7 +93,7 @@ jobs:
       RUST_TARGETS: ""
     steps: *publish-tauri-steps
 
-  publish-aur:
+  publish-aur-bin:
     needs: [macos-arm, macos-intel, linux, linux-arm, windows]
     runs-on: ubuntu-24.04
     permissions:
@@ -105,9 +105,29 @@ jobs:
         uses: ulises-jeremias/github-actions-aur-publish@v1
         with:
           pkgname: tensamin-bin
-          pkgbuild: ./tauri/PKGBUILD
+          pkgbuild: ./tauri/PKGBUILD-bin
           assets: |
             ./tauri/tensamin.install
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Automated Update
+          ssh_keyscan_types: ed25519
+          update_pkgver: false
+
+  publish-aur-git:
+    needs: [macos-arm, macos-intel, linux, linux-arm, windows]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: publish on aur
+        uses: ulises-jeremias/github-actions-aur-publish@v1
+        with:
+          pkgname: tensamin-git
+          pkgbuild: ./tauri/PKGBUILD-git
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
