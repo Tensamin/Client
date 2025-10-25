@@ -25,7 +25,7 @@
   },
   "bundle": {
     "category": "SocialNetworking",
-    "homepage": "https://tensamin.methanium.net/",
+    "homepage": "https://tensamin.net",
     "active": true,
     "targets": ["deb", "rpm", "msi", "dmg"],
     "icon": ["icons/icon.icns", "icons/icon.ico", "icons/icon.png"]
