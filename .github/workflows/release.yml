@@ -66,8 +66,8 @@ jobs:
       RUST_TARGETS: "aarch64-apple-darwin,x86_64-apple-darwin"
     steps: *publish-tauri-steps
 
-  linux:
-    runs-on: ubuntu-24.04
+  linux-arm:
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: write
     env:
@@ -75,8 +75,8 @@ jobs:
       RUST_TARGETS: ""
     steps: *publish-tauri-steps
 
-  linux-arm:
-    runs-on: ubuntu-24.04-arm
+  linux:
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     env:
@@ -95,7 +95,7 @@ jobs:
 
   publish-aur:
     needs: [macos-arm, macos-intel, linux, linux-arm, windows]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
