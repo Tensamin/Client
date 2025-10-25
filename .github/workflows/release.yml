@@ -67,16 +67,7 @@ jobs:
     steps: *publish-tauri-steps
 
   linux:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    permissions:
-      contents: write
-    env:
-      TAURI_ARGS: ""
-      RUST_TARGETS: ""
-    steps: *publish-tauri-steps
-
-  linux-arm:
-    runs-on: blacksmith-4vcpu-ubuntu-2404-arm
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     env:
