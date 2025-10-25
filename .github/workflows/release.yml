@@ -57,18 +57,6 @@ jobs:
           prerelease: false
           args: ${{ env.TAURI_ARGS }}
 
-      - name: publish on aur
-        uses: ulises-jeremias/github-actions-aur-publish@v1
-        with:
-          pkgname: tensamin-bin
-          pkgbuild: ./tauri/PKGBUILD
-          commit_username: ${{ secrets.AUR_USERNAME }}
-          commit_email: ${{ secrets.AUR_EMAIL }}
-          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Automated Update
-          ssh_keyscan_types: ed25519
-          update_pkgver: false
-
   macos-intel:
     runs-on: macos-latest
     permissions:
@@ -79,7 +67,7 @@ jobs:
     steps: *publish-tauri-steps
 
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     env:
@@ -88,7 +76,7 @@ jobs:
     steps: *publish-tauri-steps
 
   linux-arm:
-    runs-on: ubuntu-latest-arm
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: write
     env:
@@ -104,3 +92,25 @@ jobs:
       TAURI_ARGS: ""
       RUST_TARGETS: ""
     steps: *publish-tauri-steps
+
+  publish-aur:
+    needs: [macos-arm, macos-intel, linux, linux-arm, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: publish on aur
+        uses: ulises-jeremias/github-actions-aur-publish@v1
+        with:
+          pkgname: tensamin-bin
+          pkgbuild: ./tauri/PKGBUILD
+          assets: |
+            ./tauri/tensamin.install
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Automated Update
+          ssh_keyscan_types: ed25519
+          update_pkgver: false
