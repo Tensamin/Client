@@ -133,4 +133,4 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: Automated Update
           ssh_keyscan_types: ed25519
-          update_pkgver: false
+          update_pkgver: true
