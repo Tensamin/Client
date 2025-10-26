@@ -5,6 +5,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useState,
   useTransition,
 } from "react";
@@ -58,6 +59,14 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
     [bypass]
   );
 
+  useEffect(() => {
+    if (bypass && page === "error") {
+      setPageRaw("home");
+      setPageData("");
+      setExtraPageData("");
+    }
+  }, [bypass, page]);
+
   const contextValues = {
     page,
     pageData,
@@ -65,7 +74,7 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
     setPage,
   };
 
-  if (page === "error")
+  if (page === "error" && !bypass)
     return (
       <Loading message={pageData || "ERROR"} extra={extraPageData || ""} />
     );

@@ -53,7 +53,7 @@ export function UserAvatar({
         {icon && <AvatarImage src={icon} />}
         <AvatarFallback
           className={`${size === "large" && "text-xl"} ${
-            size === "small" && "text-md"
+            size === "small" && "text-xs"
           }`}
         >
           {convertStringToInitials(title)}

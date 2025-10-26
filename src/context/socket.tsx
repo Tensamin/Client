@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   useCallback,
+  useEffectEvent,
 } from "react";
 import { v7 } from "uuid";
 import useWebSocket, { ReadyState } from "react-use-websocket";
@@ -215,6 +216,16 @@ export function SocketProvider({
     [readyState, forceLoad, debugLog, sendRaw]
   );
 
+  const sendPing = useEffectEvent(async () => {
+    const originalNow = Date.now();
+    const data = await send("ping", { last_ping: originalNow });
+    if (data.type !== "error") {
+      const travelTime = Date.now() - originalNow;
+      setOwnPing(travelTime);
+      setIotaPing(data.data.ping_iota || 0);
+    }
+  });
+
   useEffect(() => {
     if (connected && !identified && privateKeyHash) {
       send("identification", {
@@ -252,24 +263,16 @@ export function SocketProvider({
     if (!isReady) return;
 
     const interval = setInterval(() => {
-      const originalNow = Date.now();
-      send("ping", {
-        last_ping: originalNow,
-      }).then((data) => {
-        if (data.type !== "error") {
-          const actuallyNow = Date.now();
-          const now = actuallyNow - originalNow;
-          setOwnPing(now);
-          setIotaPing(data.data.ping_iota || 0);
-        }
-      });
+      void sendPing();
     }, 5000);
     return () => {
       clearInterval(interval);
     };
-  }, [isReady, send]);
+  }, [isReady]);
 
-  if (bypass && !identified && readyState !== ReadyState.OPEN) {
+  const actuallyBypass = bypass && !identified;
+
+  if (actuallyBypass) {
     return (
       <SocketContext.Provider
         value={{

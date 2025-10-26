@@ -87,8 +87,8 @@ export function StorageProvider({
   const [themeTint, setRawThemeTint] = useState<string | null>(null);
   const [themeCSS, setRawThemeCSS] = useState<string | null>(null);
   const [themeTintType, setRawThemeTintType] = useState<string | null>(null);
-  const [language, setLanguage] = useState<string | null>(null);
-  const [languages, setLanguages] = useState<{
+  const [language, setLanguageState] = useState<string | null>(null);
+  const [languages, setLanguagesState] = useState<{
     en_int: Language;
     [key: string]: Language;
   }>({
@@ -307,14 +307,14 @@ export function StorageProvider({
       setOfflineData(loadedOfflineData);
 
       // Extra User Data Stuff
-      setLanguages({
+      setLanguagesState({
         en_int: languages.en_int,
         ...(loadedUserData.languages as Language),
       } as {
         en_int: Language;
         [key: string]: Language;
       });
-      setLanguage((loadedUserData.language as string) || "en_int");
+      setLanguageState((loadedUserData.language as string) || "en_int");
       setRawThemeTint((loadedUserData.themeTint as string) || null);
       setRawThemeCSS((loadedUserData.themeCSS as string) || null);
       setRawThemeTintType((loadedUserData.themeTintType as string) || null);
@@ -349,18 +349,6 @@ export function StorageProvider({
       };
     }
   }, [themeCSS]);
-
-  useEffect(() => {
-    if (themeTint) {
-      alert("New Theme Tint: " + themeTint);
-    }
-  }, [themeTint]);
-
-  useEffect(() => {
-    if (themeTintType) {
-      alert("New Theme Tint Type: " + themeTintType);
-    }
-  }, [themeTintType]);
 
   const set = useCallback(
     async (key: string, value: Value) => {
@@ -413,6 +401,25 @@ export function StorageProvider({
     [set]
   );
 
+  const persistLanguages = useCallback(
+    (nextLanguages: { en_int: Language; [key: string]: Language }) => {
+      const languagesWithoutEnInt: { [key: string]: Language } = {
+        ...nextLanguages,
+      };
+      delete languagesWithoutEnInt["en_int"];
+      set("languages", languagesWithoutEnInt);
+    },
+    [set]
+  );
+
+  const setLanguage = useCallback(
+    (langKey: string) => {
+      setLanguageState(langKey);
+      set("language", langKey);
+    },
+    [set]
+  );
+
   const clearAll = useCallback(async () => {
     if (!db) return;
     try {
@@ -442,18 +449,6 @@ export function StorageProvider({
       }
     })();
   }, [dbPromise, loadData, setFailed]);
-
-  useEffect(() => {
-    set("language", language as string);
-  }, [language, set]);
-
-  useEffect(() => {
-    const languagesWithoutEnInt: {
-      [key: string]: Language;
-    } = { ...languages };
-    delete languagesWithoutEnInt["en_int"];
-    set("languages", languagesWithoutEnInt);
-  }, [languages, set]);
 
   const addOfflineUser = useCallback(
     async (user: User) => {
@@ -538,22 +533,27 @@ export function StorageProvider({
 
   const addLanguage = useCallback(
     (langKey: string, langData: Language) => {
-      setLanguages((prev) => ({ ...prev, [langKey]: langData }));
+      setLanguagesState((prev) => {
+        const updated = { ...prev, [langKey]: langData };
+        persistLanguages(updated);
+        return updated;
+      });
       toast.success(translate("STORAGE_CONTEXT_LANGUAGE_ADDED"));
     },
-    [translate]
+    [persistLanguages, translate]
   );
 
   const removeLanguage = useCallback(
     (langKey: string) => {
-      setLanguages((prev) => {
+      setLanguagesState((prev) => {
         const updated = { ...prev };
         delete updated[langKey];
+        persistLanguages(updated);
         return updated;
       });
       toast.success(translate("STORAGE_CONTEXT_LANGUAGE_DELETED"));
     },
-    [translate]
+    [persistLanguages, translate]
   );
 
   const debugLog = useCallback(
@@ -593,6 +593,7 @@ export function StorageProvider({
     // @ts-expect-error window does not have bypassLockScreen
     window.bypassLockScreen = () => {
       setBypass(true);
+      void set("enableLockScreenBypass", true);
       console.log("Set bypass to true!");
     };
   }

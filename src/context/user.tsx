@@ -8,12 +8,14 @@ import {
   useRef,
   useEffect,
   useCallback,
+  useEffectEvent,
 } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
 import { user } from "@/lib/endpoints";
 import {
+  AdvancedSuccessMessage,
   AdvancedSuccessMessageData,
   Community,
   Conversation,
@@ -89,27 +91,31 @@ export function UserProvider({
   const [currentReceiverUuid, setCurrentReceiverUuid] = useState<string>("0");
   const [currentReceiverSharedSecret, setCurrentReceiverSharedSecret] =
     useState<string>("0");
-  const [conversations, setConversations] = useState<Conversation[]>(
+  const [conversations, setConversationsState] = useState<Conversation[]>(
     offlineData.storedConversations
   );
-  const [communities, setCommunities] = useState<Community[]>(
+  const [communities, setCommunitiesState] = useState<Community[]>(
     offlineData.storedCommunities
   );
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
   const [reloadUsers, setReloadUsers] = useState<boolean>(false);
   const [ownState, setOwnState] = useState<UserState>(initialUserState);
 
-  useEffect(() => {
-    setOfflineConversations(conversations);
-  }, [conversations, setOfflineConversations]);
+  const setConversationsAndSync = useCallback(
+    (next: Conversation[]) => {
+      setConversationsState(next);
+      setOfflineConversations(next);
+    },
+    [setOfflineConversations]
+  );
 
-  useEffect(() => {
-    setOfflineCommunities(communities);
-  }, [communities, setOfflineCommunities]);
-
-  useEffect(() => {
-    fetchedUsersRef.current = fetchedUsers;
-  }, [fetchedUsers]);
+  const setCommunitiesAndSync = useCallback(
+    (next: Community[]) => {
+      setCommunitiesState(next);
+      setOfflineCommunities(next);
+    },
+    [setOfflineCommunities]
+  );
 
   const updateFetchedUsers = useCallback(
     (updater: (next: Map<string, User>) => void) => {
@@ -225,12 +231,12 @@ export function UserProvider({
   const refetchConversations = useCallback(async () => {
     await send("get_chats").then((data) => {
       if (data.type !== "error") {
-        setConversations(data.data.user_ids || []);
+        setConversationsAndSync(data.data.user_ids || []);
       } else {
         toast.error(translate("ERROR_USER_CONTEXT_GET_CONVERSATIONS"));
       }
     });
-  }, [send, translate]);
+  }, [send, translate, setConversationsAndSync]);
 
   useEffect(() => {
     if (page === "chat" && pageData !== currentReceiverUuid) {
@@ -270,9 +276,9 @@ export function UserProvider({
 
     send("get_chats").then((data) => {
       if (data.type !== "error") {
-        setConversations(data.data.user_ids || []);
+        setConversationsAndSync(data.data.user_ids || []);
       } else {
-        setConversations([
+        setConversationsAndSync([
           {
             user_id: "0",
             call_active: false,
@@ -282,7 +288,7 @@ export function UserProvider({
         toast.error(translate("ERROR_USER_CONTEXT_GET_CONVERSATIONS"));
       }
     });
-  }, [isReady, send, translate]);
+  }, [isReady, send, translate, setConversationsAndSync]);
 
   useEffect(() => {
     if (!isReady || communitiesFetched) return;
@@ -290,9 +296,9 @@ export function UserProvider({
 
     send("get_communities").then((data) => {
       if (data.type !== "error") {
-        setCommunities(data.data.communities || []);
+        setCommunitiesAndSync(data.data.communities || []);
       } else {
-        setCommunities([
+        setCommunitiesAndSync([
           {
             community_address: "error",
             community_title: translate("ERROR_USER_CONTEXT_GET_COMMUNITIES"),
@@ -302,56 +308,62 @@ export function UserProvider({
         toast.error(translate("ERROR_USER_CONTEXT_GET_COMMUNITIES"));
       }
     });
-  }, [isReady, send, translate]);
+  }, [isReady, send, translate, setCommunitiesAndSync]);
 
-  useEffect(() => {
-    if (!lastMessage || lastMessage === prevLastMessageRef.current) return;
-    prevLastMessageRef.current = lastMessage;
-
-    if (lastMessage.type === "client_changed") {
-      const data = lastMessage.data as AdvancedSuccessMessageData;
-      if (!data.user_id || !data.user_state) return;
-      get(data.user_id, true).then((user) => {
+  const handleSocketMessage = useEffectEvent(
+    async (message: AdvancedSuccessMessage) => {
+      if (message.type === "client_changed") {
+        const data = message.data as AdvancedSuccessMessageData;
+        if (!data.user_id || !data.user_state) return;
+        const user = await get(data.user_id, true);
         updateFetchedUsers((draft) => {
           draft.set(user.uuid, {
             ...user,
             state: data.user_state || "NONE",
           });
         });
-      });
-    }
+      }
 
-    if (lastMessage.type === "get_states") {
-      const data = lastMessage.data as AdvancedSuccessMessageData & {
-        user_states: Record<string, string>;
-      };
+      if (message.type === "get_states") {
+        const data = message.data as AdvancedSuccessMessageData & {
+          user_states: Record<string, string>;
+        };
 
-      updateFetchedUsers((draft) => {
-        Object.entries(data.user_states).forEach(([uuid, nextState]) => {
-          const existingUser = draft.get(uuid);
-          if (existingUser) {
-            draft.set(uuid, { ...existingUser, state: nextState });
-            return;
-          }
+        updateFetchedUsers((draft) => {
+          Object.entries(data.user_states ?? {}).forEach(
+            ([uuid, nextState]) => {
+              const existingUser = draft.get(uuid);
+              if (existingUser) {
+                draft.set(uuid, { ...existingUser, state: nextState });
+                return;
+              }
 
-          draft.set(uuid, {
-            uuid,
-            username: uuid,
-            display: uuid,
-            avatar: null,
-            about: "",
-            status: "",
-            sub_level: 0,
-            sub_end: 0,
-            public_key: "",
-            created_at: new Date().toISOString(),
-            state: nextState,
-            loading: true,
-          });
+              draft.set(uuid, {
+                uuid,
+                username: uuid,
+                display: uuid,
+                avatar: null,
+                about: "",
+                status: "",
+                sub_level: 0,
+                sub_end: 0,
+                public_key: "",
+                created_at: new Date().toISOString(),
+                state: nextState,
+                loading: true,
+              });
+            }
+          );
         });
-      });
+      }
     }
-  }, [get, lastMessage, updateFetchedUsers]);
+  );
+
+  useEffect(() => {
+    if (!lastMessage || lastMessage === prevLastMessageRef.current) return;
+    prevLastMessageRef.current = lastMessage;
+    void handleSocketMessage(lastMessage);
+  }, [lastMessage]);
 
   const doCustomEdit = useCallback(
     (uuid: string, user: User) => {
@@ -377,8 +389,8 @@ export function UserProvider({
         setFailedMessagesAmount,
         conversations,
         communities,
-        setConversations,
-        setCommunities,
+        setConversations: setConversationsAndSync,
+        setCommunities: setCommunitiesAndSync,
         refetchConversations,
         reloadUsers,
         setReloadUsers,

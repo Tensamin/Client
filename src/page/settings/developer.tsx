@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useEffectEvent,
+} from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,7 +55,7 @@ function FitJson({
     }
   }, [value]);
 
-  const recompute = useCallback(() => {
+  const recompute = useEffectEvent(() => {
     const container = containerRef.current;
     const pre = preRef.current;
     if (!container || !pre) return;
@@ -68,14 +75,14 @@ function FitJson({
       }
     }
     setFontSize(size);
-  }, [min, max, step]);
+  });
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       recompute();
     });
     return () => cancelAnimationFrame(frame);
-  }, [recompute, text]);
+  }, [recompute, text, min, max, step]);
 
   useEffect(() => {
     const ro = new ResizeObserver(() => {

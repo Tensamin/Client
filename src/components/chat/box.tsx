@@ -1,5 +1,12 @@
 // Package Imports
-import { memo, useRef, useEffect, useCallback, useMemo } from "react";
+import {
+  memo,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+  useEffectEvent,
+} from "react";
 import {
   useInfiniteQuery,
   useQueryClient,
@@ -174,66 +181,63 @@ function ActualBox() {
     loadingLockRef.current = false;
   }, [currentReceiverUuid]);
 
-  const addRealtimeMessage = useCallback(
-    (newMsg: Message) => {
-      const wasPinned = isPinnedToBottom();
-      nextIdRef.current += 1;
+  const handleRealtimeMessage = useEffectEvent((newMsg: Message) => {
+    const wasPinned = isPinnedToBottom();
+    nextIdRef.current += 1;
 
-      let newTotalLength = messages.length + 1;
+    let newTotalLength = messages.length + 1;
 
-      queryClient.setQueryData<InfiniteData<Messages, number>>(
-        queryKey,
-        (old: InfiniteData<Messages, number> | undefined) => {
-          const base: InfiniteData<Messages, number> = old ?? {
-            pageParams: [0],
-            pages: [
-              {
-                messages: [newMsg],
-                previous: 0,
-                next: 0,
-              },
-            ],
-          };
+    queryClient.setQueryData<InfiniteData<Messages, number>>(
+      queryKey,
+      (old: InfiniteData<Messages, number> | undefined) => {
+        const base: InfiniteData<Messages, number> = old ?? {
+          pageParams: [0],
+          pages: [
+            {
+              messages: [newMsg],
+              previous: 0,
+              next: 0,
+            },
+          ],
+        };
 
-          const lastPageIndex = base.pages.length - 1;
-          const lastPage = base.pages[lastPageIndex];
-          const newPages = base.pages.slice(0, lastPageIndex);
+        const lastPageIndex = base.pages.length - 1;
+        const lastPage = base.pages[lastPageIndex];
+        const newPages = base.pages.slice(0, lastPageIndex);
 
-          newPages.push({
-            ...lastPage,
-            messages: [...lastPage.messages, newMsg],
-          });
+        newPages.push({
+          ...lastPage,
+          messages: [...lastPage.messages, newMsg],
+        });
 
-          const prevTotal = base.pages.reduce(
-            (acc, p) => acc + p.messages.length,
-            0
-          );
-          newTotalLength = prevTotal + 1;
+        const prevTotal = base.pages.reduce(
+          (acc, p) => acc + p.messages.length,
+          0
+        );
+        newTotalLength = prevTotal + 1;
 
-          return { ...base, pages: newPages };
-        }
-      );
+        return { ...base, pages: newPages };
+      }
+    );
 
-      if (wasPinned) {
+    if (wasPinned) {
+      requestAnimationFrame(() => {
+        rowVirtualizer.scrollToIndex(newTotalLength - 1, { align: "end" });
+      });
+
+      setTimeout(() => {
         requestAnimationFrame(() => {
           rowVirtualizer.scrollToIndex(newTotalLength - 1, { align: "end" });
         });
-
-        setTimeout(() => {
-          requestAnimationFrame(() => {
-            rowVirtualizer.scrollToIndex(newTotalLength - 1, { align: "end" });
-          });
-        }, 16);
-      }
-    },
-    [isPinnedToBottom, queryClient, rowVirtualizer, messages.length, queryKey]
-  );
+      }, 16);
+    }
+  });
 
   useEffect(() => {
     if (!addRealtimeMessageToBox) return;
-    addRealtimeMessage(addRealtimeMessageToBox);
+    handleRealtimeMessage(addRealtimeMessageToBox);
     setAddRealtimeMessageToBox(null);
-  }, [addRealtimeMessageToBox, setAddRealtimeMessageToBox, addRealtimeMessage]);
+  }, [addRealtimeMessageToBox, setAddRealtimeMessageToBox]);
 
   if (isLoading) {
     return (
@@ -255,7 +259,7 @@ function ActualBox() {
         <img
           //width={220}
           //height={220}
-          src="./assets/images/megamind.png"
+          src="/assets/images/megamind.png"
           alt={translate("ERROR")}
           className="w-55 h-55"
         />
