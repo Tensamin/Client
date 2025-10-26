@@ -24,13 +24,9 @@ pkgver() {
   )
 }
 
-prepare() {
-  cd Frontend
-  npx bun install
-}
-
 build() {
   cd Frontend
+  npx bun install
   npx bun tauri build -b deb
 }
 
