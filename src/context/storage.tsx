@@ -83,6 +83,7 @@ export function StorageProvider({
   });
   const [bypass, setBypass] = useState(false);
   const [ready, setReady] = useState(false);
+  const [isTauri, setIsTauri] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
   const [themeTint, setRawThemeTint] = useState<string | null>(null);
   const [themeCSS, setRawThemeCSS] = useState<string | null>(null);
@@ -248,6 +249,10 @@ export function StorageProvider({
         "This will clear all your settings and log you out of your account.",
     },
   });
+
+  useEffect(() => {
+    setIsTauri(typeof window !== "undefined" && "__TAURI__" in window);
+  }, []);
 
   const dbPromise = useMemo(() => createDBPromise(), []);
 
@@ -629,6 +634,7 @@ export function StorageProvider({
         setThemeTint,
         setThemeTintType,
         bypass,
+        isTauri,
         setBypass,
         addOfflineUser,
         setOfflineCommunities,
@@ -667,6 +673,7 @@ type StorageContextType = {
   setThemeTint: (tint: string) => void;
   setThemeTintType: (tintType: string) => void;
   bypass: boolean;
+  isTauri: boolean;
   setBypass: (bypass: boolean) => void;
   addOfflineUser: (user: User) => Promise<void>;
   setOfflineCommunities: (communities: Community[]) => void;

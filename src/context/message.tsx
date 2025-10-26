@@ -69,12 +69,10 @@ export function MessageProvider({
         }
         const sorted = [...data.data.messages]
           .map((m) => {
-            const n = m;
-            delete n.sent_by_self;
             return {
               send_to_server: false,
               sender: m.sent_by_self ? ownUuid : currentReceiverUuid,
-              ...n,
+              ...m,
             } as Message;
           })
           .sort((a, b) => b.timestamp - a.timestamp)

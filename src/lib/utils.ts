@@ -54,32 +54,6 @@ export async function sha256(content: string | BufferSource) {
     .join("");
 }
 
-export function isElectron() {
-  if (
-    typeof navigator !== "undefined" &&
-    navigator.userAgent.includes("Electron")
-  ) {
-    return true;
-  }
-
-  if (
-    typeof process !== "undefined" &&
-    process.versions &&
-    process.versions.electron
-  ) {
-    return true;
-  }
-
-  try {
-    if (typeof window !== "undefined" && window.require) {
-      const electron = window.require("electron");
-      if (electron) return true;
-    }
-  } catch {}
-
-  return false;
-}
-
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
     undefined
