@@ -21,6 +21,7 @@ import { CryptoProvider } from "@/context/crypto";
 import LoginPage from "@/page/login";
 
 // Components
+import { Toaster } from "@/components/ui/sonner";
 import { Loading } from "@/components/loading";
 
 // Main
@@ -83,6 +84,7 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
     return (
       <PageContext.Provider value={contextValues}>
         <CryptoProvider>
+          <Toaster position="top-right" richColors expand />
           <LoginPage />
         </CryptoProvider>
       </PageContext.Provider>
@@ -90,6 +92,7 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <PageContext.Provider value={contextValues}>
+      <Toaster position="top-right" richColors expand />
       <CryptoProvider>
         <SocketProvider>
           <UserProvider>

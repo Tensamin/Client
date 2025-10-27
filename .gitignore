@@ -14,3 +14,6 @@
 *.tsbuildinfo
 next-env.d.ts
 .env.sentry-build-plugin
+
+# Rust Analyzer
+/target/

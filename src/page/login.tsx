@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import * as Icon from "lucide-react";
 import { Ring } from "ldrs/react";
 import { toast } from "sonner";
@@ -27,7 +27,7 @@ export default function Page() {
 
   const tuFileRef = React.useRef<HTMLInputElement>(null);
 
-  const { set, debugLog, translate } = useStorageContext();
+  const { set, debugLog, translate, data } = useStorageContext();
   const { pageData } = usePageContext();
   debugLog("LOGIN_PAGE", "REASONE_FOR_LOGIN", pageData);
 
@@ -35,10 +35,28 @@ export default function Page() {
     async (uuid: string, privateKey: string) => {
       set("uuid", uuid);
       set("privateKey", privateKey);
-      window.location.reload();
+      if (uuid === "" || privateKey === "") {
+        toast.error(translate("ERROR_EMPTY_CREDENTIALS"));
+      } else {
+        //window.location.reload();
+      }
     },
     [set]
   );
+
+  useEffect(() => {
+    if (
+      data.privateKey === "" ||
+      !data.privateKey ||
+      data.uuid === "" ||
+      !data.uuid
+    ) {
+      console.log(data.uuid);
+      console.log(data.privateKey);
+    } else {
+      window.location.reload();
+    }
+  }, [data.uuid, data.privateKey]);
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,9 +150,9 @@ export default function Page() {
 
   return (
     <div className="w-full h-screen flex items-center justify-center">
-      <div className="flex flex-col gap-5 w-full sm:w-2/3 md:w-3/4 lg:w-4/6 xl:w-1/2 2xl:w-1/3">
-        <div className="flex flex-col md:flex-row w-full gap-3 px-10">
-          <Card className="w-full md:w-1/2 gap-3">
+      <div className="flex flex-col gap-5 w-full">
+        <div className="flex flex-col md:flex-row w-full gap-3 px-10 justify-center">
+          <Card className="w-full md:w-100 gap-3">
             <CardHeader>
               <CardTitle className="select-none">
                 Login using .tu file
@@ -191,7 +209,7 @@ export default function Page() {
             </CardContent>
           </Card>
           <div className="h-0.75 md:w-0.75 md:h-auto m-5 bg-input/60 rounded-full" />
-          <Card className="transition-opacity duration-300 ease-in-out w-full md:w-1/2">
+          <Card className="transition-opacity duration-300 ease-in-out w-full md:w-100">
             <CardHeader>
               <CardTitle className="select-none">
                 Login using credentials

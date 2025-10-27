@@ -11,8 +11,7 @@ url="https://github.com/Tensamin/Frontend"
 license=('Custom')
 depends=('cairo' 'desktop-file-utils' 'gdk-pixbuf2' 'glib2' 'gtk3' 'hicolor-icon-theme' 'libsoup' 'pango' 'webkit2gtk-4.1')
 makedepends=('git' 'openssl' 'appmenu-gtk-module' 'libappindicator-gtk3' 'librsvg' 'cargo' 'npm' 'nodejs')
-provides=('tensamin')
-conflicts=('tensamin-bin' 'tensamin')
+conflicts=('tensamin-bin')
 source=("git+${url}.git")
 sha256sums=('SKIP')
 

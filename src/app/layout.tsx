@@ -12,7 +12,6 @@ import { PageProvider } from "@/context/page";
 
 // Components
 import { Loading } from "@/components/loading";
-import { Toaster } from "@/components/ui/sonner";
 
 // Main
 export const metadata: Metadata = {
@@ -38,7 +37,6 @@ export default function RootLayout({
           <StorageProvider>
             <PageProvider>
               <Suspense fallback={<Loading />}>
-                <Toaster position="top-right" richColors expand />
                 {children}
               </Suspense>
             </PageProvider>
