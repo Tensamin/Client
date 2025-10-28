@@ -89,16 +89,16 @@ export type User = {
   uuid: string;
   username: string;
   display: string;
-  avatar: string | null;
-  about: string | null;
-  status: string | null;
+  avatar?: string;
+  about?: string;
+  status?: string;
   state: string;
   sub_level: number;
   sub_end: number;
   public_key: string;
   created_at: string;
   loading: boolean;
-  badges?: string[];
+  //badges?: string[];
 };
 
 export type ErrorType = {
@@ -131,7 +131,7 @@ export const systemUser: User = {
   status: "",
   sub_end: 0,
   sub_level: 0,
-  badges: ["System"],
+  //badges: ["System"],
 };
 
 export const fallbackUser: User = {
