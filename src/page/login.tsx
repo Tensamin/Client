@@ -41,7 +41,7 @@ export default function Page() {
         //window.location.reload();
       }
     },
-    [set]
+    [set, translate]
   );
 
   useEffect(() => {

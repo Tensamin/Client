@@ -105,9 +105,9 @@ jobs:
         uses: ulises-jeremias/github-actions-aur-publish@v1
         with:
           pkgname: tensamin-bin
-          pkgbuild: ./tauri/PKGBUILD-bin
+          pkgbuild: ./tauri/aur/bin/PKGBUILD
           assets: |
-            ./tauri/tensamin.install
+            ./tauri/aur/bin/tensamin.install
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
@@ -127,7 +127,7 @@ jobs:
         uses: ulises-jeremias/github-actions-aur-publish@v1
         with:
           pkgname: tensamin-git
-          pkgbuild: ./tauri/PKGBUILD-git
+          pkgbuild: ./tauri/aur/git/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
