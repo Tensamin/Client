@@ -1,4 +1,5 @@
 // Package Imports
+import { Geist, Inter } from "next/font/google";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
@@ -14,6 +15,8 @@ import { PageProvider } from "@/context/page";
 import { Loading } from "@/components/loading";
 
 // Main
+const font = Inter({ subsets: ["latin"] });
+
 export const metadata: Metadata = {
   title: "Tensamin",
   description:
@@ -27,7 +30,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased max-h-screen overflow-hidden">
+      <body
+        className={`antialiased max-h-screen overflow-hidden ${font.className}`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -36,9 +41,7 @@ export default function RootLayout({
         >
           <StorageProvider>
             <PageProvider>
-              <Suspense fallback={<Loading />}>
-                {children}
-              </Suspense>
+              <Suspense fallback={<Loading />}>{children}</Suspense>
             </PageProvider>
           </StorageProvider>
         </ThemeProvider>

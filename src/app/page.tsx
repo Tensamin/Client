@@ -22,11 +22,10 @@ import ChatPage from "@/page/chat";
 export default function Page() {
   const { ownUuid } = useCryptoContext();
   const { page } = usePageContext();
-  const { translate } = useStorageContext();
+  const { translate, data } = useStorageContext();
   const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
     "CONVERSATIONS"
   );
-  const [, startTransition] = useTransition();
 
   return (
     <div className="w-full h-screen flex bg-sidebar">
@@ -34,63 +33,119 @@ export default function Page() {
         <UserModal key={ownUuid} uuid={ownUuid} size="big" />
         <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden mx-1 p-1">
           <div className="relative grid grid-cols-2 w-full gap-1">
-            <ViewTransition>
-              {["COMMUNITIES", "CONVERSATIONS"].map((cat: string) => (
-                <Button
-                  key={cat}
-                  variant="ghost"
-                  type="button"
-                  className={`select-none relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20 ${
-                    category !== cat ? "hover:border hover:border-input/30" : ""
-                  }`}
-                  onClick={() =>
-                    startTransition(() =>
-                      setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
-                    )
-                  }
-                  aria-pressed={category === cat}
-                  aria-label={cat}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-0 rounded-full bg-input/50 pointer-events-none border transition-opacity"
-                    style={{
-                      viewTransitionName:
-                        category === cat ? "category-pill" : undefined,
-                      opacity: category === cat ? 1 : 0,
-                    }}
-                  />
-                  <span className="relative z-10 text-sm flex">
-                    {translate(cat)}
-                  </span>
-                </Button>
-              ))}
-            </ViewTransition>
+            {data.disableViewTransitions ? (
+              <SidebarListSwitcher
+                category={category}
+                setCategory={setCategory}
+              />
+            ) : (
+              <ViewTransition>
+                <SidebarListSwitcher
+                  category={category}
+                  setCategory={setCategory}
+                />
+              </ViewTransition>
+            )}
           </div>
         </div>
         <div className="scrollbar-hide">
-          <ViewTransition>
-            {["COMMUNITIES", "CONVERSATIONS"].map((cat) => {
-              if (cat !== category) return null;
-              return category === "COMMUNITIES" ? (
-                <Communities key={category} />
-              ) : (
-                <Conversations key={category} />
-              );
-            })}
-          </ViewTransition>
+          {data.disableViewTransitions ? (
+            <SidebarList category={category} />
+          ) : (
+            <ViewTransition>
+              <SidebarList category={category} />
+            </ViewTransition>
+          )}
         </div>
       </div>
       <div className="flex-1 h-full flex flex-col">
         <Navbar />
         <div className="flex-1 bg-background rounded-tl-xl border overflow-auto p-2">
-          <ViewTransition>
-            {page === "home" && <HomePage />}
-            {page === "settings" && <SettingsPage />}
-            {page === "chat" && <ChatPage />}
-          </ViewTransition>
+          {data.disableViewTransitions ? (
+            <PageSwitch page={page} />
+          ) : (
+            <ViewTransition name="page-vt">
+              <PageSwitch page={page} />
+            </ViewTransition>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+function SidebarList({
+  category,
+}: {
+  category: "COMMUNITIES" | "CONVERSATIONS";
+}) {
+  return (
+    <>
+      {["COMMUNITIES", "CONVERSATIONS"].map((cat) => {
+        if (cat !== category) return null;
+        return category === "COMMUNITIES" ? (
+          <Communities key={category} />
+        ) : (
+          <Conversations key={category} />
+        );
+      })}
+    </>
+  );
+}
+
+function SidebarListSwitcher({
+  category,
+  setCategory,
+}: {
+  category: string;
+  setCategory: (
+    value: React.SetStateAction<"COMMUNITIES" | "CONVERSATIONS">
+  ) => void;
+}) {
+  const { translate, data } = useStorageContext();
+  const [, startTransition] = useTransition();
+  return (
+    <>
+      {["COMMUNITIES", "CONVERSATIONS"].map((cat: string) => (
+        <Button
+          key={cat}
+          variant="ghost"
+          type="button"
+          className={`select-none relative isolate rounded-full py-1.5 transition-colors dark:hover:bg-input/20 hover:bg-input/20 ${
+            category !== cat ? "hover:border hover:border-input/30" : ""
+          }`}
+          onClick={() =>
+            startTransition(() =>
+              setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
+            )
+          }
+          aria-pressed={category === cat}
+          aria-label={cat}
+        >
+          <span
+            aria-hidden="true"
+            className="absolute inset-0 rounded-full bg-input/50 pointer-events-none border transition-opacity"
+            style={{
+              viewTransitionName:
+                category === cat && !data.disableViewTransitions
+                  ? "category-pill"
+                  : undefined,
+              opacity: category === cat ? 1 : 0,
+            }}
+          />
+          <span className="relative z-10 text-sm flex">{translate(cat)}</span>
+        </Button>
+      ))}
+    </>
+  );
+}
+
+function PageSwitch({ page }: { page: string }) {
+  return (
+    <>
+      {page === "home" && <HomePage />}
+      {page === "settings" && <SettingsPage />}
+      {page === "chat" && <ChatPage />}
+    </>
   );
 }

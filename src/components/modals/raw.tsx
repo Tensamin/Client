@@ -173,10 +173,6 @@ export function MediumModal({
   );
 }
 
-export function SmallModal() {
-  return <div></div>;
-}
-
 export function Profile({
   title,
   description,
@@ -195,7 +191,7 @@ export function Profile({
   loading: boolean;
 }) {
   return loading ? (
-    <Card className="bg-input/30 p-3 rounded-xl border-input w-75">
+    <Card className="bg-input/37 p-3 rounded-2xl border-input w-75">
       <CardHeader className="flex p-0 items-center gap-3">
         <Skeleton className="size-13 rounded-full" />
         <div className="flex flex-col gap-1">
@@ -205,7 +201,7 @@ export function Profile({
       </CardHeader>
     </Card>
   ) : (
-    <Card className="bg-input/30 p-3 rounded-xl border-input w-75">
+    <Card className="bg-input/37 p-3 rounded-2xl border-input w-75">
       <CardHeader className="flex p-0 items-center gap-3">
         <UserAvatar
           icon={icon}

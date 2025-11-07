@@ -130,10 +130,44 @@
   }
 }
 
+@keyframes exitAnimation {
+  from {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+  to {
+    opacity: 0;
+    scale: 0.97;
+    translate: 0 24px;
+  }
+}
+
+@keyframes enterAnimation {
+  from {
+    opacity: 0;
+    scale: 0.97;
+    translate: 0 -24px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
 ::view-transition-group(category-pill),
 ::view-transition-old(category-pill),
 ::view-transition-new(category-pill) {
   border-radius: 9999px;
   animation-duration: 250ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(page-vt) {
+  animation: exitAnimation 0.15s forwards;
+}
+
+::view-transition-new(page-vt) {
+  animation: enterAnimation 0.15s ease-out forwards;
 }
