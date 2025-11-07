@@ -22,7 +22,7 @@ import ChatPage from "@/page/chat";
 export default function Page() {
   const { ownUuid } = useCryptoContext();
   const { page } = usePageContext();
-  const { translate, data } = useStorageContext();
+  const { data } = useStorageContext();
   const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
     "CONVERSATIONS"
   );

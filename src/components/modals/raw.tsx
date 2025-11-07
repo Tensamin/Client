@@ -1,5 +1,9 @@
+// Package Imports
+import * as Icon from "lucide-react";
+import { useEffect, useState, useTransition, ViewTransition } from "react";
+
 // Lib Imports
-import { convertStringToInitials, ThemeSize, getColorFor } from "@/lib/utils";
+import { convertStringToInitials, getColorFor } from "@/lib/utils";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
@@ -14,12 +18,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
 import { Text } from "../markdown/text";
 
 // Main
@@ -29,20 +33,30 @@ export function UserAvatar({
   state,
   size,
   border,
+  loading,
 }: {
   icon?: string;
   title: string;
   state?: string;
   size: "small" | "medium" | "large";
   border: boolean;
+  loading?: boolean;
 }) {
   const { translate } = useStorageContext();
 
-  return (
+  return loading ? (
+    <Skeleton
+      className={`aspect-square select-none ${
+        border && "border border-muted"
+      } ${size === "small" && "size-8"} ${size === "medium" && "size-9"} ${
+        size === "large" && "size-12"
+      } rounded-full`}
+    />
+  ) : (
     <div
       className={`relative aspect-square select-none ${
         border && "border border-muted"
-      } ${size === "small" && "size-8"} ${size === "medium" && "size-10"} ${
+      } ${size === "small" && "size-8"} ${size === "medium" && "size-9"} ${
         size === "large" && "size-12"
       } rounded-full`}
     >
@@ -53,8 +67,8 @@ export function UserAvatar({
         {icon && <AvatarImage src={icon} />}
         <AvatarFallback
           className={`${size === "large" && "text-xl"} ${
-            size === "small" && "text-xs"
-          }`}
+            size === "medium" && "text-sm"
+          } ${size === "small" && "text-xs"}`}
         >
           {convertStringToInitials(title)}
         </AvatarFallback>
@@ -97,30 +111,32 @@ export function BigModal({
   loading: boolean;
 }>) {
   return loading ? (
-    <Card className="bg-input/30 p-3 rounded-xl border-input">
+    <Card className="bg-input/30 p-2.5 rounded-xl border-input">
       <CardHeader className="flex p-0 items-center gap-3">
-        <Skeleton className={`size-${ThemeSize} rounded-full`} />
+        <UserAvatar title={title} size="medium" border loading />
         <div className="flex flex-col gap-1">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-3 w-30" />
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-2 w-30" />
         </div>
       </CardHeader>
     </Card>
   ) : (
-    <Card className="bg-input/30 p-3 rounded-xl border-input">
+    <Card className="bg-input/30 p-2.5 rounded-xl border-input">
       <CardHeader className="flex p-0 items-center gap-3">
         <UserAvatar
           icon={icon}
           title={title}
-          size="small"
+          size="medium"
           state={undefined}
           border
         />
         <div className="flex flex-col gap-1">
           <p className="text-md font-medium leading-4">{title}</p>
-          <p className="text-sm font-bold text-muted-foreground leading-3">
-            {description}
-          </p>
+          <div className="flex gap-1.5 justify-start items-center">
+            <p className="text-sm font-medium text-muted-foreground leading-3">
+              {description}
+            </p>
+          </div>
         </div>
       </CardHeader>
     </Card>
@@ -148,9 +164,7 @@ export function MediumModal({
       variant="outline"
       className="w-full bg-input/30 p-2 rounded-2xl border-input text-card-foreground flex gap-3 items-center justify-start border py-6 shadow-sm"
     >
-      <Skeleton
-        className={`size-${ThemeSize} border border-input rounded-full`}
-      />
+      <UserAvatar title={title} size="small" border loading />
       <Skeleton className="h-5 w-20" />
     </Button>
   ) : (
@@ -193,7 +207,7 @@ export function Profile({
   return loading ? (
     <Card className="bg-input/37 p-3 rounded-2xl border-input w-75">
       <CardHeader className="flex p-0 items-center gap-3">
-        <Skeleton className="size-13 rounded-full" />
+        <UserAvatar title={title} size="large" border loading />
         <div className="flex flex-col gap-1">
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-3 w-30" />
