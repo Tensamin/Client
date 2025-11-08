@@ -31,67 +31,24 @@
           else
             throw "Unsupported system ${system}";
 
-        tensaminPackage = pkgs.buildNpmPackage rec {
+        tensaminPackage = pkgs.stdenvNoCC.mkDerivation rec {
           pname = "tensamin";
           version = "0.1.3";
 
-          src = self;
-          npmDepsHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-          npmBuildScript = "build:tauri";
-          makeCacheWritable = true;
+          src = pkgs.fetchurl {
+            url = "https://github.com/Tensamin/Frontend/releases/download/v${version}/${pname}_${version}_${debArch}_linux.deb";
+            hash = "sha256-9K1DfOEZ2Jo1Meo1pnKZEzh/OsHVItZBoFneNYDcNDo=";
+          };
 
-          nativeBuildInputs = with pkgs; [
-            cargo
-            rustc
-            pkg-config
-            python3
-            cmake
-          ];
+          nativeBuildInputs = [ pkgs.dpkg ];
 
-          buildInputs = with pkgs; [
-            openssl
-            glib
-            atk
-            cairo
-            gdk-pixbuf
-            gtk3
-            pango
-            libayatana-appindicator
-            librsvg
-            libsoup_3
-            webkitgtk_4_1
-            alsa-lib
-            xorg.libX11
-            xorg.libXi
-            xorg.libXtst
-          ];
-
-          CARGO_HOME = "$TMPDIR/cargo-home";
-          RUSTUP_HOME = "$TMPDIR/rustup-home";
-          NPM_CONFIG_CACHE = "$TMPDIR/npm-cache";
-
-          buildPhase = ''
-            runHook preBuild
-
-            export HOME=$TMPDIR/home
-            mkdir -p "$HOME"
-
-            npm run ${npmBuildScript}
-
-            runHook postBuild
-          '';
+          dontUnpack = true;
 
           installPhase = ''
             runHook preInstall
 
             mkdir -p "$out"
-            cp -r "tauri/target/release/bundle/deb/${pname}_${version}_${debArch}/usr/." "$out/"
-
-            runHook postInstall
-          '';
-
-          fixupPhase = ''
-            runHook preFixup
+            dpkg -x "$src" "$out"
 
             if [ -d "$out/usr/bin" ]; then
               mkdir -p "$out/bin"
@@ -100,7 +57,7 @@
               done
             fi
 
-            runHook postFixup
+            runHook postInstall
           '';
 
           meta = with lib; {
