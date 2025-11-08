@@ -40,7 +40,20 @@
             hash = "sha256-9K1DfOEZ2Jo1Meo1pnKZEzh/OsHVItZBoFneNYDcNDo=";
           };
 
-          nativeBuildInputs = [ pkgs.dpkg ];
+          nativeBuildInputs = [
+            pkgs.dpkg
+            pkgs.autoPatchelfHook
+          ];
+
+          buildInputs = with pkgs; [
+            webkitgtk_4_1
+            gtk3
+            glib
+            gdk-pixbuf
+            cairo
+            dbus
+            librsvg
+          ];
 
           dontUnpack = true;
 
