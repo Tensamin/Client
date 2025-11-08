@@ -63,7 +63,6 @@
           meta = with lib; {
             description = "Tensamin Desktop Apps";
             homepage = "https://tensamin.net";
-            license = licenses.unfree;
             platforms = [ system ];
             mainProgram = "tensamin";
           };

@@ -8,7 +8,7 @@
     "lint": "eslint",
     "dev:tauri": "tauri dev",
     "build:tauri": "tauri build",
-    "build:nix": "nix-shell -p pkg-config gtk3 pango atk glib gdk-pixbuf cairo --run 'bun run build:tauri' && NIXPKGS_ALLOW_UNFREE=1 nix build . --impure"
+    "build:nix": "nix-shell -p pkg-config gtk3 pango atk glib gdk-pixbuf cairo --run 'bun run build:tauri' && nix build ."
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
