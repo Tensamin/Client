@@ -7,7 +7,8 @@
     "build": "next telemetry disable && next build",
     "lint": "eslint",
     "dev:tauri": "tauri dev",
-    "build:tauri": "tauri build"
+    "build:tauri": "tauri build",
+    "build:nix": "NIXPKGS_ALLOW_UNFREE=1 nix build . --impure"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

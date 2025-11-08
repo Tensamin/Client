@@ -31,15 +31,16 @@
           else
             throw "Unsupported system ${system}";
 
-        tensaminPackage = pkgs.stdenv.mkDerivation rec {
+        tensaminPackage = pkgs.buildNpmPackage rec {
           pname = "tensamin";
           version = "0.1.3";
 
           src = self;
-          strictDeps = true;
+          npmDepsHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+          npmBuildScript = "build:tauri";
+          makeCacheWritable = true;
 
           nativeBuildInputs = with pkgs; [
-            bun
             cargo
             rustc
             pkg-config
@@ -65,13 +66,9 @@
             xorg.libXtst
           ];
 
-          dontConfigure = true;
-
-          BUN_INSTALL_CACHE_DIR = "$TMPDIR/bun-cache";
-          BUN_INSTALL_GLOBAL_BIN_DIR = "$TMPDIR/bun-bin";
           CARGO_HOME = "$TMPDIR/cargo-home";
           RUSTUP_HOME = "$TMPDIR/rustup-home";
-          npm_config_cache = "$TMPDIR/npm-cache";
+          NPM_CONFIG_CACHE = "$TMPDIR/npm-cache";
 
           buildPhase = ''
             runHook preBuild
@@ -79,8 +76,7 @@
             export HOME=$TMPDIR/home
             mkdir -p "$HOME"
 
-            bun install --frozen-lockfile
-            bun run build:tauri
+            npm run ${npmBuildScript}
 
             runHook postBuild
           '';
