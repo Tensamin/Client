@@ -7,6 +7,7 @@ import * as Icon from "lucide-react";
 import { usePageContext } from "@/context/page";
 import { useUserContext } from "@/context/user";
 import { useStorageContext } from "@/context/storage";
+import { useCallContext } from "@/context/call";
 
 // Components
 import {
@@ -22,6 +23,7 @@ export function Navbar() {
   const { setPage, page } = usePageContext();
   const { failedMessagesAmount, currentReceiverUuid, get } = useUserContext();
   const { translate } = useStorageContext();
+  const { state } = useCallContext();
   const [receiverUsername, setReceiverUsername] = useState("");
 
   useEffect(() => {
@@ -89,7 +91,11 @@ export function Navbar() {
         )}
         {page === "chat" && (
           <MotionDivWrapper key="call-button">
-            <Button className="h-9 w-9" variant="outline">
+            <Button
+              className="h-9 w-9"
+              variant="outline"
+              disabled={state === "CONNECTED" || state === "CONNECTING"}
+            >
               <Icon.Phone />
             </Button>
           </MotionDivWrapper>

@@ -1,7 +1,3 @@
-// Package Imports
-import * as Icon from "lucide-react";
-import { useEffect, useState, useTransition, ViewTransition } from "react";
-
 // Lib Imports
 import { convertStringToInitials, getColorFor } from "@/lib/utils";
 

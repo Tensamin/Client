@@ -16,6 +16,7 @@ import { SocketProvider } from "@/context/socket";
 import { UserProvider } from "@/context/user";
 import { MessageProvider } from "@/context/message";
 import { CryptoProvider } from "@/context/crypto";
+import { CallProvider } from "@/context/call";
 
 // Pages
 import LoginPage from "@/page/login";
@@ -95,9 +96,11 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
       <Toaster position="top-right" richColors expand />
       <CryptoProvider>
         <SocketProvider>
-          <UserProvider>
-            <MessageProvider>{children}</MessageProvider>
-          </UserProvider>
+          <CallProvider>
+            <UserProvider>
+              <MessageProvider>{children}</MessageProvider>
+            </UserProvider>
+          </CallProvider>
         </SocketProvider>
       </CryptoProvider>
     </PageContext.Provider>

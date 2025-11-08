@@ -63,6 +63,17 @@ export type AdvancedSuccessMessageData = {
   offset?: number | null;
   user_status?: string | null;
   receiver_id?: string | null;
+  sender_id?: string | null;
+  call_id?: string | null;
+  call_state?: string | null;
+  receiver?: string | null;
+  payload?: RTCIceCandidate | RTCSessionDescriptionInit | null;
+  about?: {
+    [key: string]: {
+      state: string;
+      streaming: boolean;
+    };
+  } | null;
 };
 
 export type AdvancedSuccessMessage = {
@@ -116,6 +127,12 @@ export type Community = {
   community_address: string;
   community_title: string;
   position: string;
+};
+
+export type CallUser = {
+  state: string;
+  active: boolean;
+  connection?: RTCPeerConnection;
 };
 
 export const systemUser: User = {

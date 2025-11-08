@@ -1,5 +1,5 @@
 // Package Imports
-import { Geist, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";

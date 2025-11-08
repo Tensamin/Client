@@ -12,6 +12,7 @@ import { handleError } from "@/lib/utils";
 import { useSocketContext } from "@/context/socket";
 import { useUserContext } from "@/context/user";
 import { useStorageContext } from "@/context/storage";
+import { useCallContext } from "@/context/call";
 
 // Components
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ export default function Page() {
   const { send } = useSocketContext();
   const { refetchConversations, ownUuid } = useUserContext();
   const { translate } = useStorageContext();
+  const { setShouldConnect, state } = useCallContext();
 
   const [open, setOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
@@ -130,6 +132,14 @@ export default function Page() {
       </div>
       <p>Homepage :)</p>
       <UserModal size="profile" uuid={ownUuid} />
+      <Button
+        disabled={state === "CONNECTED" || state === "CONNECTING"}
+        onClick={() => {
+          setShouldConnect(true);
+        }}
+      >
+        Start Call
+      </Button>
     </PageDiv>
   );
 }
