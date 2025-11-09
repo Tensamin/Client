@@ -134,3 +134,37 @@ jobs:
           commit_message: Automated Update
           ssh_keyscan_types: ed25519
           update_pkgver: true
+
+  update-flake-hash:
+    needs: [linux]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: install nix
+        uses: cachix/install-nix-action@v27
+
+      - name: update flake hash
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          VERSION=$(jq -r '.version' package.json)
+          DEB_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/v${VERSION}/tensamin_${VERSION}_amd64_linux.deb"
+          HASH=$(nix-prefetch-url --type sha256 "${DEB_URL}")
+          SRI=$(nix hash to-sri --type sha256 "${HASH}")
+          sed -i 's|version = "[^"]*"|version = "'"${VERSION}"'"|' flake.nix
+          sed -i 's|hash = "sha256-[^"]*"|hash = "'"${SRI}"'"|' flake.nix
+          if git diff --quiet -- flake.nix; then
+            echo "flake.nix is already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add flake.nix
+          git commit -m "chore: update flake hash"
+          git push
