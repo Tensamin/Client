@@ -8,5 +8,3 @@ Version bumps need to happen in:
 - tauri/tauri.conf.json
 - tauri/Cargo.toml
 - flake.nix
-
-> The Tensamin repositories are slowly moving to a public state
