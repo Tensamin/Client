@@ -42,7 +42,6 @@ export const Pages = [
   "iota",
   "profile",
   "privacy",
-  "logout",
   "-appearance",
   "theme",
   "css",
@@ -94,23 +93,13 @@ function MainPage({ selected }: { selected: string }): React.JSX.Element {
   }
 }
 
-function SettingsButton({
-  page,
-  selected,
-  setSelected,
-  logoutButton,
-}: {
-  page: string;
-  selected?: string;
-  setSelected?: (page: string) => void;
-  logoutButton?: boolean;
-}): React.JSX.Element {
-  const { setPage } = usePageContext();
+function LogoutButton() {
+    const { setPage } = usePageContext();
   const { clearAll, translate } = useStorageContext();
-  return logoutButton ? (
+  return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button className="w-full my-1" variant="outline">
+        <Button className="w-full my-1 text-red-400 hover:text-red-400" variant="outline">
           {translate("SETTINGS_PAGE_LOGOUT_BUTTON_ACTION")}
         </Button>
       </AlertDialogTrigger>
@@ -136,7 +125,20 @@ function SettingsButton({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  ) : (
+  )
+}
+
+function SettingsButton({
+  page,
+  selected,
+  setSelected,
+}: {
+  page: string;
+  selected?: string;
+  setSelected?: (page: string) => void;
+}): React.JSX.Element {
+  const { translate } = useStorageContext();
+  return (
     <Button
       className="w-full my-1"
       variant={selected === page ? "outlineSelected" : "outline"}
@@ -165,30 +167,34 @@ export default function Page() {
   return (
     <div className="h-full w-full flex gap-2">
       <PageDiv className="flex flex-col h-full w-50 px-0">
-        <div className="flex-1 overflow-y-auto scrollbar-hide px-2">
-          {Pages.map((page) => {
-            if (page === "logout")
-              return <SettingsButton key="logout" page={page} logoutButton />;
-            if (page.startsWith("-"))
+        <div className="flex-1 overflow-y-auto scrollbar-hide px-2 flex flex-col justify-between">
+          <div className="flex flex-col mt-2">
+            {Pages.map((page) => {
+              if (page === "logout") return null;
+              if (page.startsWith("-"))
+          return (
+            <div
+              key={page}
+              className="select-none text-sm text-muted-foreground"
+            >
+              {translate(
+                "SETTINGS_PAGE_LABEL_" + page.toUpperCase().replace("-", "")
+              )}
+            </div>
+          );
               return (
-                <div
-                  key={page}
-                  className="select-none text-sm text-muted-foreground"
-                >
-                  {translate(
-                    "SETTINGS_PAGE_LABEL_" + page.toUpperCase().replace("-", "")
-                  )}
-                </div>
+          <SettingsButton
+            key={page}
+            page={page}
+            selected={selected}
+            setSelected={setSelected}
+          />
               );
-            return (
-              <SettingsButton
-                key={page}
-                page={page}
-                selected={selected}
-                setSelected={setSelected}
-              />
-            );
-          })}
+            })}
+          </div>
+          <div className="mt-2 mb-2">
+            <LogoutButton />
+          </div>
         </div>
         <div className="border-t mx-2">
           <div className="select-none text-sm text-muted-foreground pt-2">
