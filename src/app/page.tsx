@@ -12,12 +12,14 @@ import { useStorageContext } from "@/context/storage";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { UserModal } from "@/components/modals/user";
+import { VoiceModal } from "@/components/modals/raw";
 import { Communities, Conversations } from "@/components/modals/category";
 
 // Pages
 import HomePage from "@/page/home";
 import SettingsPage from "@/page/settings";
 import ChatPage from "@/page/chat";
+import CallPage from "@/page/call";
 
 export default function Page() {
   const { ownUuid } = useCryptoContext();
@@ -48,7 +50,7 @@ export default function Page() {
             )}
           </div>
         </div>
-        <div className="scrollbar-hide">
+        <div className="scrollbar-hide flex-1">
           {data.disableViewTransitions ? (
             <SidebarList category={category} />
           ) : (
@@ -57,6 +59,7 @@ export default function Page() {
             </ViewTransition>
           )}
         </div>
+        <VoiceModal />
       </div>
       <div className="flex-1 h-full flex flex-col">
         <Navbar />
@@ -74,6 +77,7 @@ export default function Page() {
   );
 }
 
+// View Transition Stuff
 function SidebarList({
   category,
 }: {
@@ -146,6 +150,7 @@ function PageSwitch({ page }: { page: string }) {
       {page === "home" && <HomePage />}
       {page === "settings" && <SettingsPage />}
       {page === "chat" && <ChatPage />}
+      {page === "call" && <CallPage />}
     </>
   );
 }

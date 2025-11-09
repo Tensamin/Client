@@ -54,6 +54,15 @@ export function CallProvider({
 }>) {
   const usersRef = useRef<Map<string, CallUser>>(new Map());
 
+  function exitCall() {
+    send("disconnect", undefined, true);
+    setShouldConnect(false);
+    usersRef.current.entries().forEach(([_, user]) => {
+      user.connection?.close();
+    });
+    usersRef.current.clear();
+  }
+
   // Websocket Stuff
   const pendingRequests = useRef(new Map());
   const [state, setState] = useState<
@@ -92,6 +101,13 @@ export function CallProvider({
           });
         }
 
+        const currentRequest = pendingRequests.current.get(parsedMessage.id);
+        if (currentRequest) {
+          clearTimeout(currentRequest.timeoutId);
+          pendingRequests.current.delete(parsedMessage.id);
+          currentRequest.resolve(parsedMessage);
+        }
+
         switch (parsedMessage.type) {
           case "client_connected":
             if (
@@ -117,6 +133,19 @@ export function CallProvider({
             debugLog("CALL_CONTEXT", "CALL_CONTEXT_PEERS_UPDATED", {
               peers: Array.from(usersRef.current.keys()),
             });
+            break;
+
+          case "client_disconnected":
+            if (
+              parsedMessage.data.user_id === ownUuid ||
+              !parsedMessage.data.user_id
+            )
+              break;
+
+            usersRef.current
+              .get(parsedMessage.data.user_id)
+              ?.connection?.close();
+            usersRef.current.delete(parsedMessage.data.user_id);
             break;
 
           case "webrtc_ice":
@@ -186,13 +215,6 @@ export function CallProvider({
 
           default:
             break;
-        }
-
-        const currentRequest = pendingRequests.current.get(parsedMessage.id);
-        if (currentRequest) {
-          clearTimeout(currentRequest.timeoutId);
-          pendingRequests.current.delete(parsedMessage.id);
-          currentRequest.resolve(parsedMessage);
         }
       } catch (err: unknown) {
         debugLog("CALL_CONTEXT", "ERROR_CALL_CONTEXT_UNKNOWN", err);
@@ -406,17 +428,34 @@ export function CallProvider({
     };
 
     connection.onconnectionstatechange = () => {
-      debugLog("CALL_CONTEXT", "CALL_CONTEXT_CONNECTION_STATE", {
-        userId,
-        state: connection.connectionState,
-      });
+      switch (connection.connectionState) {
+        case "connecting":
+          const user = usersRef.current.get(userId);
+          if (user) user.active = false;
+          break;
+
+        case "disconnected":
+          usersRef.current.delete(userId);
+          break;
+      }
     };
 
-    connection.oniceconnectionstatechange = () => {
-      debugLog("CALL_CONTEXT", "CALL_CONTEXT_ICE_STATE", {
+    connection.ontrack = (event) => {
+      debugLog("CALL_CONTEXT", "CALL_CONTEXT_TRACK_RECEIVED", {
         userId,
-        state: connection.iceConnectionState,
+        track: event.track.kind,
       });
+      const user = usersRef.current.get(userId);
+      if (user) {
+        const existingStream = user.stream;
+        if (existingStream) {
+          existingStream.addTrack(event.track);
+          user.stream = existingStream;
+        } else {
+          const newStream = new MediaStream([event.track]);
+          user.stream = newStream;
+        }
+      }
     };
 
     const addLocalTracks = async () => {
@@ -451,10 +490,9 @@ export function CallProvider({
           true
         );
       };
-
-      void addLocalTracks();
     }
 
+    void addLocalTracks();
     return connection;
   }
 
@@ -503,12 +541,39 @@ export function CallProvider({
     <CallContext.Provider
       value={{
         users: usersRef.current,
+        exitCall,
         setShouldConnect,
         ownPing,
         send,
         state,
       }}
     >
+      {Array.from(usersRef.current.entries()).map(([userId, user]) =>
+        user.stream ? (
+          <audio
+            onPlaying={() => {
+              const user = usersRef.current.get(userId);
+              if (user) user.active = true;
+            }}
+            onPlay={() => {
+              const user = usersRef.current.get(userId);
+              if (user) user.active = true;
+            }}
+            onAbort={() => {
+              const user = usersRef.current.get(userId);
+              if (user) user.active = false;
+            }}
+            key={userId}
+            autoPlay
+            playsInline
+            ref={(el) => {
+              if (el && el.srcObject !== user.stream) {
+                el.srcObject = user?.stream ?? null;
+              }
+            }}
+          />
+        ) : null
+      )}
       {children}
     </CallContext.Provider>
   );
@@ -518,6 +583,7 @@ type CallContextType = {
   users: Map<string, CallUser>;
   setShouldConnect: (value: boolean) => void;
   ownPing: number;
+  exitCall: () => void;
   send: (
     requestType: string,
     data?: AdvancedSuccessMessageData,

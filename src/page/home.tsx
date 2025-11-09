@@ -29,13 +29,14 @@ import {
 import { LoadingIcon } from "@/components/loading";
 import { PageDiv } from "@/components/pageDiv";
 import { UserModal } from "@/components/modals/user";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Main
 export default function Page() {
   const { send } = useSocketContext();
   const { refetchConversations, ownUuid } = useUserContext();
   const { translate } = useStorageContext();
-  const { setShouldConnect, state } = useCallContext();
+  const { setShouldConnect, state, users } = useCallContext();
 
   const [open, setOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
@@ -140,6 +141,18 @@ export default function Page() {
       >
         Start Call
       </Button>
+      <div>
+        {Array.from(users.entries()).map(([userId]) => {
+          const user = users.get(userId);
+          return (
+            userId !== ownUuid && (
+              <div className="flex items-center gap-2" key={userId}>
+                <Checkbox checked={user?.active} /> Active [{userId}]
+              </div>
+            )
+          );
+        })}
+      </div>
     </PageDiv>
   );
 }

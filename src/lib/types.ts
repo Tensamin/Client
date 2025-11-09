@@ -133,6 +133,7 @@ export type CallUser = {
   state: string;
   active: boolean;
   connection?: RTCPeerConnection;
+  stream?: MediaStream;
 };
 
 export const systemUser: User = {
