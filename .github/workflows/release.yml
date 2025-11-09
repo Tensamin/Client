@@ -1,10 +1,10 @@
-name: "Build and Release Desktop App"
-
+name: Build and Release Desktop App
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths-ignore:
+      - "flake.nix"
+      - ".github/workflows/release.yml"
 
 jobs:
   macos-arm:
