@@ -28,13 +28,30 @@ import {
 } from "@/components/ui/dialog";
 import { LoadingIcon } from "@/components/loading";
 import { PageDiv } from "@/components/pageDiv";
-import { UserModal } from "@/components/modals/user";
+import { CallModal } from "@/components/modals/user";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Main
 export default function Page() {
+  const { users, state, exitCall } = useCallContext();
+  const { get } = useUserContext();
+
+  const usersLength = users.size;
+
   return (
     <PageDiv className="flex flex-col gap-4 h-full">
+      <div className="flex-1 w-full">{/* Main Container */}</div>
+      <div className="w-1/2 flex justify-center items-center border rounded-2xl">
+        <div className=""></div>
+      </div>
+      {Array.from(users).map(([uuid, user]) => (
+        <div key={uuid} className="flex items-center gap-2">
+          <CallModal
+            uuid={uuid}
+            size={usersLength === 1 ? "large" : "medium"}
+          />
+        </div>
+      ))}
       <p>Vall</p>
     </PageDiv>
   );

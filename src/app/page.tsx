@@ -12,7 +12,7 @@ import { useStorageContext } from "@/context/storage";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { UserModal } from "@/components/modals/user";
-import { VoiceModal } from "@/components/modals/raw";
+import { VoiceActions } from "@/components/modals/call";
 import { Communities, Conversations } from "@/components/modals/category";
 
 // Pages
@@ -59,7 +59,7 @@ export default function Page() {
             </ViewTransition>
           )}
         </div>
-        <VoiceModal />
+        <VoiceActions />
       </div>
       <div className="flex-1 h-full flex flex-col">
         <Navbar />

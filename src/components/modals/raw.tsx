@@ -39,7 +39,7 @@ export function UserAvatar({
   icon?: string;
   title: string;
   state?: string;
-  size: "small" | "medium" | "large";
+  size: "small" | "medium" | "large" | "extraLarge" | "jumbo";
   border: boolean;
   loading?: boolean;
 }) {
@@ -51,6 +51,8 @@ export function UserAvatar({
         border && "border border-muted"
       } ${size === "small" && "size-8"} ${size === "medium" && "size-9"} ${
         size === "large" && "size-12"
+      } ${size === "extraLarge" && "size-20"} ${
+        size === "jumbo" && "size-30"
       } rounded-full`}
     />
   ) : (
@@ -59,6 +61,8 @@ export function UserAvatar({
         border && "border border-muted"
       } ${size === "small" && "size-8"} ${size === "medium" && "size-9"} ${
         size === "large" && "size-12"
+      } ${size === "extraLarge" && "size-20"} ${
+        size === "jumbo" && "size-30"
       } rounded-full`}
     >
       <Avatar
@@ -67,7 +71,9 @@ export function UserAvatar({
       >
         {icon && <AvatarImage src={icon} />}
         <AvatarFallback
-          className={`${size === "large" && "text-xl"} ${
+          className={`${size === "extraLarge" && "text-3xl"} ${
+            size === "jumbo" && "text-2xl"
+          } ${size === "large" && "text-xl"} ${
             size === "medium" && "text-sm"
           } ${size === "small" && "text-xs"}`}
         >
@@ -249,49 +255,5 @@ export function Profile({
         </CardFooter>
       )}
     </Card>
-  );
-}
-
-export function VoiceModal() {
-  const { state, exitCall } = useCallContext();
-  const { setPage } = usePageContext();
-
-  return state === "CONNECTED" || state === "CONNECTING" ? (
-    <Card className="bg-input/30 rounded-xl border-input flex flex-col gap-2 justify-center items-center w-full p-2">
-      <div className="w-full bg-green-500 h-2 rounded-full"></div>
-      <div className="flex gap-2 w-full">
-        <TempIcon />
-        <TempIcon />
-        <TempIcon />
-      </div>
-      <div className="flex gap-2 w-full">
-        <TempIcon />
-        <TempIcon />
-        <TempIcon />
-      </div>
-      <div className="flex gap-2 w-full">
-        <Button
-          className="flex justify-center flex-1"
-          onClick={() => setPage("call")}
-        >
-          <Icon.Expand /> Expand
-        </Button>
-        <Button
-          variant="destructive"
-          className="w-9.5"
-          onClick={() => exitCall()}
-        >
-          <Icon.LogOut />
-        </Button>
-      </div>
-    </Card>
-  ) : null;
-}
-
-function TempIcon() {
-  return (
-    <Button className="h-9 flex-3">
-      <Icon.Bomb />
-    </Button>
   );
 }
