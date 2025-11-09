@@ -196,6 +196,23 @@ export function StorageProvider({
       ERROR_SOCKET_CONTEXT_CANNOT_CONNECT_EXTRA:
         "Check your internet connection and try again.\n If the issue persists check the Tensamin status page.",
 
+      // Audio Settings
+      SETTINGS_AUDIO: "Audio",
+      SETTINGS_AUDIO_NO_PERMISSION: "Tensamin doesn't have access to your microphone.",
+      SETTINGS_PAGE_LABEL_RETRY: "Retry",
+      SETTINGS_AUDIO_DEVICES_LOADING: "Loading devices...",
+      SETTINGS_AUDIO_INPUT_DEVICE_LABEL: "Input Device",
+      SETTINGS_AUDIO_OUTPUT_DEVICE_LABEL: "Output Device",
+      SETTINGS_AUDIO_INPUT_VOLUME: "Input Volume",
+      SETTINGS_AUDIO_OUTPUT_VOLUME: "Output Volume",
+      SETTINGS_AUDIO_TEST_LABEL: "Test your microphone and hear how you sound to others. Make sure to speak clearly into your mic.",
+      SETTINGS_AUDIO_START_TEST: "Start Test",
+      SETTINGS_AUDIO_STOP_TEST: "Stop Test",
+      SETTINGS_AUDIO_TEST_VOLUME_1: "Try speaking into your microphone (or just scream as loud as you can).",
+      SETTINGS_AUDIO_TEST_VOLUME_2: "Try speaking a bit louder",
+      SETTINGS_AUDIO_TEST_VOLUME_3: "Sounds good!",
+      SETTINGS_AUDIO_TEST_VOLUME_4: "You might be a bit too loud, try lowering your input volume",
+
       ERROR_INVALID_USER_ID: "The provided user id is invalid",
       ERROR_INVALID_PRIVATE_KEY: "The provided private key is invalid",
       ERROR_INVALID_PRIVATE_KEY_EXTRA:
