@@ -55,7 +55,6 @@ export function CallProvider({
   const usersRef = useRef<Map<string, CallUser>>(new Map());
 
   function exitCall() {
-    send("disconnect", undefined, true);
     setShouldConnect(false);
     usersRef.current.entries().forEach(([_, user]) => {
       user.connection?.close();

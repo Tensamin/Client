@@ -93,41 +93,6 @@ function MainPage({ selected }: { selected: string }): React.JSX.Element {
   }
 }
 
-function LogoutButton() {
-    const { setPage } = usePageContext();
-  const { clearAll, translate } = useStorageContext();
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button className="w-full my-1 text-red-400 hover:text-red-400" variant="outline">
-          {translate("SETTINGS_PAGE_LOGOUT_BUTTON_ACTION")}
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            {translate("SETTINGS_PAGE_LOGOUT_BUTTON_LABEL")}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {translate("SETTINGS_PAGE_LOGOUT_BUTTON_DESCRIPTION")}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => {
-              clearAll();
-              setPage("login");
-            }}
-          >
-            {translate("SETTINGS_PAGE_LOGOUT_BUTTON_ACTION")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
-}
-
 function SettingsButton({
   page,
   selected,
@@ -154,7 +119,8 @@ function SettingsButton({
 
 export default function Page() {
   const { ownPing, iotaPing } = useSocketContext();
-  const { data, set, translate } = useStorageContext();
+  const { data, set, translate, clearAll } = useStorageContext();
+  const { setPage } = usePageContext();
 
   const selected = data.lastSettingsMenu as string;
   const setSelected = useCallback(
@@ -170,30 +136,57 @@ export default function Page() {
         <div className="flex-1 overflow-y-auto scrollbar-hide px-2 flex flex-col justify-between">
           <div className="flex flex-col mt-2">
             {Pages.map((page) => {
-              if (page === "logout") return null;
               if (page.startsWith("-"))
-          return (
-            <div
-              key={page}
-              className="select-none text-sm text-muted-foreground"
-            >
-              {translate(
-                "SETTINGS_PAGE_LABEL_" + page.toUpperCase().replace("-", "")
-              )}
-            </div>
-          );
+                return (
+                  <div
+                    key={page}
+                    className="select-none text-sm text-muted-foreground"
+                  >
+                    {translate(
+                      "SETTINGS_PAGE_LABEL_" +
+                        page.toUpperCase().replace("-", "")
+                    )}
+                  </div>
+                );
               return (
-          <SettingsButton
-            key={page}
-            page={page}
-            selected={selected}
-            setSelected={setSelected}
-          />
+                <SettingsButton
+                  key={page}
+                  page={page}
+                  selected={selected}
+                  setSelected={setSelected}
+                />
               );
             })}
           </div>
-          <div className="mt-2 mb-2">
-            <LogoutButton />
+          <div className="my-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="w-full">
+                  {translate("SETTINGS_PAGE_LOGOUT_BUTTON_ACTION")}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {translate("SETTINGS_PAGE_LOGOUT_BUTTON_LABEL")}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {translate("SETTINGS_PAGE_LOGOUT_BUTTON_DESCRIPTION")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      clearAll();
+                      setPage("login");
+                    }}
+                  >
+                    {translate("SETTINGS_PAGE_LOGOUT_BUTTON_ACTION")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
         <div className="border-t mx-2">

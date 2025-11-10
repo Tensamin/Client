@@ -11,9 +11,11 @@ import {
 } from "react";
 import { openDB, IDBPDatabase } from "idb";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
 
 // Lib Imports
 import { handleError } from "@/lib/utils";
+import { generateColors } from "@/lib/theme";
 
 // Context Imports
 import { Community, Conversation, User, StoredUser } from "@/lib/types";
@@ -198,20 +200,24 @@ export function StorageProvider({
 
       // Audio Settings
       SETTINGS_AUDIO: "Audio",
-      SETTINGS_AUDIO_NO_PERMISSION: "Tensamin doesn't have access to your microphone.",
+      SETTINGS_AUDIO_NO_PERMISSION:
+        "Tensamin doesn't have access to your microphone.",
       SETTINGS_PAGE_LABEL_RETRY: "Retry",
       SETTINGS_AUDIO_DEVICES_LOADING: "Loading devices...",
       SETTINGS_AUDIO_INPUT_DEVICE_LABEL: "Input Device",
       SETTINGS_AUDIO_OUTPUT_DEVICE_LABEL: "Output Device",
       SETTINGS_AUDIO_INPUT_VOLUME: "Input Volume",
       SETTINGS_AUDIO_OUTPUT_VOLUME: "Output Volume",
-      SETTINGS_AUDIO_TEST_LABEL: "Test your microphone and hear how you sound to others. Make sure to speak clearly into your mic.",
+      SETTINGS_AUDIO_TEST_LABEL:
+        "Test your microphone and hear how you sound to others. Make sure to speak clearly into your mic.",
       SETTINGS_AUDIO_START_TEST: "Start Test",
       SETTINGS_AUDIO_STOP_TEST: "Stop Test",
-      SETTINGS_AUDIO_TEST_VOLUME_1: "Try speaking into your microphone (or just scream as loud as you can).",
+      SETTINGS_AUDIO_TEST_VOLUME_1:
+        "Try speaking into your microphone (or just scream as loud as you can).",
       SETTINGS_AUDIO_TEST_VOLUME_2: "Try speaking a bit louder",
       SETTINGS_AUDIO_TEST_VOLUME_3: "Sounds good!",
-      SETTINGS_AUDIO_TEST_VOLUME_4: "You might be a bit too loud, try lowering your input volume",
+      SETTINGS_AUDIO_TEST_VOLUME_4:
+        "You might be a bit too loud, try lowering your input volume",
 
       ERROR_INVALID_USER_ID: "The provided user id is invalid",
       ERROR_INVALID_PRIVATE_KEY: "The provided private key is invalid",
@@ -266,6 +272,7 @@ export function StorageProvider({
         "This will clear all your settings and log you out of your account.",
     },
   });
+  const { systemTheme } = useTheme();
 
   useEffect(() => {
     setIsTauri(typeof window !== "undefined" && "__TAURI__" in window);
@@ -422,6 +429,26 @@ export function StorageProvider({
     },
     [set]
   );
+
+  useEffect(() => {
+    if (
+      !userData.themeHex ||
+      userData.themeHex === "" ||
+      !userData.tintType ||
+      userData.tintType === ""
+    )
+      return;
+
+    const colors = generateColors(
+      userData.themeHex as string,
+      userData.tintType as "hard" | "light",
+      (systemTheme as "light" | "dark") || "dark"
+    );
+
+    Object.entries(colors).forEach(([name, value]) =>
+      document.documentElement.style.setProperty(name, value)
+    );
+  }, [systemTheme, userData.tintType, userData.themeHex]);
 
   const persistLanguages = useCallback(
     (nextLanguages: { en_int: Language; [key: string]: Language }) => {
