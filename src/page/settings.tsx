@@ -132,7 +132,7 @@ export default function Page() {
 
   return (
     <div className="h-full w-full flex gap-2">
-      <PageDiv className="flex flex-col h-full w-50 px-0">
+      <PageDiv className="flex flex-col h-full w-40 shrink-0 flex-none px-0">
         <div className="flex-1 overflow-y-auto scrollbar-hide px-2 flex flex-col justify-between">
           <div className="flex flex-col mt-2">
             {Pages.map((page) => {
@@ -201,7 +201,7 @@ export default function Page() {
           </div>
         </div>
       </PageDiv>
-      <PageDiv className="w-full h-full flex flex-col p-3">
+      <PageDiv className="flex-1 min-w-0 h-full flex flex-col p-3 overflow-hidden">
         {Pages.map((page) => {
           if (page === selected)
             return (
@@ -214,7 +214,7 @@ export default function Page() {
             );
           return null;
         })}
-        <div className="flex w-full h-full">
+        <div className="flex w-full h-full overflow-auto">
           <MainPage selected={selected} />
         </div>
       </PageDiv>

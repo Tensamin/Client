@@ -239,8 +239,8 @@ export default function Page() {
         </div>
         <div>
           {filteredEntries.length ? (
-            <div className="w-full overflow-hidden rounded-lg border">
-              <table className="w-full table-auto bg-card text-xs">
+            <div className="w-full max-w-full overflow-x-auto rounded-lg border">
+              <table className="w-full min-w-[640px] table-auto bg-card text-xs">
                 <thead className="bg-muted">
                   <tr className="border-b border-border">
                     <th className="px-2 py-1.5 text-left font-medium align-middle">
@@ -249,7 +249,7 @@ export default function Page() {
                     <th className="px-2 py-1.5 text-left font-medium align-middle">
                       {translate("DEVELOPER_PAGE_TABLE_VALUE")}
                     </th>
-                    <th className="px-2 py-1.5 text-right font-medium align-middle w-0">
+                    <th className="min-w-36 px-2 py-1.5 text-right font-medium align-middle">
                       {translate("DEVELOPER_PAGE_TABLE_ACTION")}
                     </th>
                   </tr>
@@ -287,36 +287,36 @@ export default function Page() {
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5 font-medium align-middle">
                         {editingKey === entry.key ? (
-                          <div className="flex w-20 justify-end gap-2">
+                          <div className="flex min-w-36 flex-wrap justify-end gap-2 sm:flex-nowrap">
                             <Button
                               size="sm"
                               onClick={handleSaveEdit}
-                              className="w-full"
+                              className="w-full sm:w-auto"
                             >
                               {translate("SAVE")}
                             </Button>
                             <Button
-                              className="w-full"
                               size="sm"
                               variant="outline"
+                              className="w-full sm:w-auto"
                               onClick={handleCancelEdit}
                             >
                               {translate("CANCEL")}
                             </Button>
                           </div>
                         ) : (
-                          <div className="flex w-20 justify-end gap-2">
+                          <div className="flex min-w-36 flex-wrap justify-end gap-2 sm:flex-nowrap">
                             <Button
-                              className="w-full"
                               size="sm"
+                              className="w-full sm:w-auto"
                               onClick={() => handleEdit(entry.key, entry.value)}
                             >
                               {translate("EDIT")}
                             </Button>
                             <Button
-                              className="w-full"
                               size="sm"
                               variant="destructive"
+                              className="w-full sm:w-auto"
                               onClick={() => handleDelete(entry.key)}
                             >
                               {translate("DELETE")}
