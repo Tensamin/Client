@@ -37,44 +37,57 @@ export default function Page() {
             color={(data.themeHex as string) || "#000000"}
             onChange={(value) => set("themeHex", value)}
           />
-          <Input
-            value={(data.themeHex as string) || "#000000"}
-            onChange={(e) => set("themeHex", e.target.value)}
-          />
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4.5 w-50">
+          {/* Theme Hex */}
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="themeHex">Color HEX</Label>
+            <Input
+              id="themeHex"
+              className="w-full"
+              value={(data.themeHex as string) || "#000000"}
+              onChange={(e) => set("themeHex", e.target.value)}
+            />
+          </div>
+
           {/* Color Scheme */}
-          <Select
-            value={data.colorScheme as string}
-            onValueChange={(value) => set("colorScheme", value)}
-          >
-            <SelectTrigger className="w-45">
-              <SelectValue placeholder="System" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="system">System</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="colorScheme">Color Scheme</Label>
+            <Select
+              value={data.colorScheme as string}
+              onValueChange={(value) => set("colorScheme", value)}
+            >
+              <SelectTrigger id="colorScheme" className="w-full">
+                <SelectValue placeholder="System" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="dark">Dark</SelectItem>
+                  <SelectItem value="system">System</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Tint Type */}
-          <Select
-            value={data.tintType as string}
-            onValueChange={(value) => set("tintType", value)}
-          >
-            <SelectTrigger className="w-45">
-              <SelectValue placeholder="None" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="hard">Hard</SelectItem>
-                <SelectItem value="light">Light</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="tintType">Tint Type</Label>
+            <Select
+              value={data.tintType as string}
+              onValueChange={(value) => set("tintType", value)}
+            >
+              <SelectTrigger id="tintType" className="w-full">
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="hard">Hard</SelectItem>
+                  <SelectItem value="light">Light</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       <div className="flex gap-2">

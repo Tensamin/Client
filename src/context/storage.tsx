@@ -272,7 +272,7 @@ export function StorageProvider({
         "This will clear all your settings and log you out of your account.",
     },
   });
-  const { systemTheme } = useTheme();
+  const { resolvedTheme, systemTheme } = useTheme();
 
   useEffect(() => {
     setIsTauri(typeof window !== "undefined" && "__TAURI__" in window);
@@ -439,16 +439,20 @@ export function StorageProvider({
     )
       return;
 
+    const activeScheme = (resolvedTheme ?? systemTheme ?? "light") as
+      | "light"
+      | "dark";
+
     const colors = generateColors(
       userData.themeHex as string,
       userData.tintType as "hard" | "light",
-      (systemTheme as "light" | "dark") || "dark"
+      activeScheme
     );
 
     Object.entries(colors).forEach(([name, value]) =>
       document.documentElement.style.setProperty(name, value)
     );
-  }, [systemTheme, userData.tintType, userData.themeHex]);
+  }, [resolvedTheme, systemTheme, userData.tintType, userData.themeHex]);
 
   const persistLanguages = useCallback(
     (nextLanguages: { en_int: Language; [key: string]: Language }) => {

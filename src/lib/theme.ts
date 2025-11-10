@@ -261,8 +261,8 @@ const buildCharts = (
   const lTargets =
     scheme === "light"
       ? tone === "hard"
-        ? [0.62, 0.6, 0.56, 0.68, 0.65]
-        : [0.65, 0.63, 0.6, 0.7, 0.67]
+        ? [0.7, 0.68, 0.64, 0.76, 0.73]
+        : [0.74, 0.72, 0.68, 0.79, 0.76]
       : tone === "hard"
       ? [0.68, 0.72, 0.78, 0.7, 0.66]
       : [0.72, 0.76, 0.82, 0.74, 0.7];
@@ -299,8 +299,8 @@ export function generateColors(
   // Primary
   const primaryL = schemeIsLight
     ? toneIsHard
-      ? 0.58
-      : 0.64
+      ? 0.72
+      : 0.8
     : toneIsHard
     ? 0.75
     : 0.82;
@@ -309,7 +309,7 @@ export function generateColors(
   );
 
   // Ring (low-chroma brand)
-  const ringL = schemeIsLight ? 0.7 : 0.66;
+  const ringL = schemeIsLight ? 0.82 : 0.66;
   const ring: LCH = toGamut({
     l: ringL,
     c: clamp(primary.c * 0.35, 0, 0.12),
@@ -317,7 +317,7 @@ export function generateColors(
   });
 
   // Accent (pastel brand surface)
-  const accentL = schemeIsLight ? 0.96 : 0.28;
+  const accentL = schemeIsLight ? 0.995 : 0.28;
   const accent: LCH = toGamut({
     l: accentL,
     c: clamp(primary.c * 0.25, 0, 0.1),
@@ -339,24 +339,29 @@ export function generateColors(
   const neutralHue = rotateHue(baseLch.h, toneIsHard ? -6 : 0);
   const neutralChroma = clamp(
     baseLch.c *
-      (schemeIsLight ? (toneIsHard ? 0.16 : 0.12) : toneIsHard ? 0.24 : 0.2),
-    schemeIsLight ? 0.012 : 0.02,
-    schemeIsLight ? 0.045 : 0.08
+      (schemeIsLight ? (toneIsHard ? 0.1 : 0.085) : toneIsHard ? 0.24 : 0.2),
+    schemeIsLight ? 0.008 : 0.02,
+    schemeIsLight ? 0.03 : 0.08
   );
-  const subtlerChroma = clamp(neutralChroma * 0.6, 0.01, 0.045);
-  const borderChroma = clamp(neutralChroma * 0.5, 0.01, 0.04);
-  const sidebarChroma = clamp(neutralChroma * 1.2, 0.018, 0.08);
+  const subtlerChroma = clamp(neutralChroma * 0.5, 0.006, 0.026);
+  const borderChroma = clamp(neutralChroma * 0.4, 0.006, 0.028);
+  const sidebarChroma = clamp(neutralChroma * 1.05, 0.014, 0.07);
+  const inputChroma = clamp(
+    borderChroma * (schemeIsLight ? 3 : 1.8),
+    schemeIsLight ? 0.02 : 0.04,
+    schemeIsLight ? 0.06 : 0.09
+  );
 
   const surfaceLevels = schemeIsLight
     ? {
-        background: toneIsHard ? 0.992 : 0.996,
-        card: toneIsHard ? 0.972 : 0.982,
-        popover: toneIsHard ? 0.976 : 0.986,
-        secondary: toneIsHard ? 0.905 : 0.925,
-        muted: toneIsHard ? 0.948 : 0.962,
-        border: toneIsHard ? 0.845 : 0.872,
-        sidebar: toneIsHard ? 0.942 : 0.956,
-        input: toneIsHard ? 0.822 : 0.842,
+        background: toneIsHard ? 0.995 : 0.998,
+        card: toneIsHard ? 0.982 : 0.99,
+        popover: toneIsHard ? 0.988 : 0.995,
+        secondary: toneIsHard ? 0.945 : 0.965,
+        muted: toneIsHard ? 0.97 : 0.985,
+        border: toneIsHard ? 0.898 : 0.924,
+        sidebar: toneIsHard ? 0.962 : 0.972,
+        input: toneIsHard ? 0.88 : 0.902,
       }
     : {
         background: toneIsHard ? 0.18 : 0.15,
@@ -406,7 +411,7 @@ export function generateColors(
   });
   const input = toGamut({
     l: surfaceLevels.input,
-    c: borderChroma,
+    c: inputChroma,
     h: neutralHue,
   });
   const sidebar = toGamut({
@@ -416,23 +421,23 @@ export function generateColors(
   });
   const sidebarFg = pickTextOn(sidebar);
   const sidebarAccent = toGamut({
-    l: clamp(sidebar.l + (schemeIsLight ? -0.05 : 0.09), 0, 1),
-    c: clamp(primary.c * (toneIsHard ? 0.65 : 0.55), 0.05, 0.2),
+    l: clamp(sidebar.l + (schemeIsLight ? -0.02 : 0.09), 0, 1),
+    c: clamp(primary.c * (toneIsHard ? 0.55 : 0.45), 0.04, 0.18),
     h: rotateHue(primary.h, toneIsHard ? 42 : 34),
   });
   const sidebarAccentFg = pickTextOn(sidebarAccent);
   const sidebarBorder = toGamut({
-    l: clamp(sidebar.l + (schemeIsLight ? -0.08 : 0.12), 0, 1),
+    l: clamp(sidebar.l + (schemeIsLight ? -0.06 : 0.12), 0, 1),
     c: borderChroma,
     h: sidebar.h,
   });
   const sidebarRing = toGamut({
-    l: clamp(sidebar.l + (schemeIsLight ? -0.06 : 0.1), 0, 1),
-    c: clamp(primary.c * 0.4, 0.04, 0.15),
+    l: clamp(sidebar.l + (schemeIsLight ? -0.04 : 0.1), 0, 1),
+    c: clamp(primary.c * 0.35, 0.035, 0.14),
     h: primary.h,
   });
   const destructive = toGamut({
-    l: schemeIsLight ? (toneIsHard ? 0.62 : 0.66) : toneIsHard ? 0.58 : 0.54,
+    l: schemeIsLight ? (toneIsHard ? 0.74 : 0.78) : toneIsHard ? 0.6 : 0.6,
     c: toneIsHard ? 0.26 : 0.22,
     h: 25,
   });
