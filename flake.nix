@@ -37,7 +37,7 @@
 
           src = pkgs.fetchurl {
             url = "https://github.com/Tensamin/Frontend/releases/download/v${version}/${pname}_${version}_${debArch}_linux.deb";
-            hash = "sha256-7Bv6Ai0IRSnZldtR89pB1xFpZ1K5xA+QGxr2ab4Wjh8=";
+            hash = "sha256-/TbLQ+CKG/rTeR35K2f0NiyZ5jUV0VvXHqzwKuINDqM=";
           };
 
           nativeBuildInputs = [
