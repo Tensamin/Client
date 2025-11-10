@@ -339,24 +339,24 @@ export function generateColors(
   const neutralHue = rotateHue(baseLch.h, toneIsHard ? -6 : 0);
   const neutralChroma = clamp(
     baseLch.c *
-      (schemeIsLight ? (toneIsHard ? 0.18 : 0.14) : toneIsHard ? 0.24 : 0.2),
-    schemeIsLight ? 0.018 : 0.02,
-    schemeIsLight ? 0.06 : 0.08
+      (schemeIsLight ? (toneIsHard ? 0.16 : 0.12) : toneIsHard ? 0.24 : 0.2),
+    schemeIsLight ? 0.012 : 0.02,
+    schemeIsLight ? 0.045 : 0.08
   );
-  const subtlerChroma = clamp(neutralChroma * 0.6, 0.015, 0.05);
-  const borderChroma = clamp(neutralChroma * 0.5, 0.012, 0.045);
-  const sidebarChroma = clamp(neutralChroma * 1.2, 0.022, 0.085);
+  const subtlerChroma = clamp(neutralChroma * 0.6, 0.01, 0.045);
+  const borderChroma = clamp(neutralChroma * 0.5, 0.01, 0.04);
+  const sidebarChroma = clamp(neutralChroma * 1.2, 0.018, 0.08);
 
   const surfaceLevels = schemeIsLight
     ? {
-        background: toneIsHard ? 0.985 : 0.99,
-        card: toneIsHard ? 0.965 : 0.975,
-        popover: toneIsHard ? 0.97 : 0.98,
-        secondary: toneIsHard ? 0.9 : 0.92,
-        muted: toneIsHard ? 0.94 : 0.955,
-        border: toneIsHard ? 0.83 : 0.86,
-        sidebar: toneIsHard ? 0.93 : 0.95,
-        input: toneIsHard ? 0.84 : 0.865,
+        background: toneIsHard ? 0.992 : 0.996,
+        card: toneIsHard ? 0.972 : 0.982,
+        popover: toneIsHard ? 0.976 : 0.986,
+        secondary: toneIsHard ? 0.905 : 0.925,
+        muted: toneIsHard ? 0.948 : 0.962,
+        border: toneIsHard ? 0.845 : 0.872,
+        sidebar: toneIsHard ? 0.942 : 0.956,
+        input: toneIsHard ? 0.822 : 0.842,
       }
     : {
         background: toneIsHard ? 0.18 : 0.15,
