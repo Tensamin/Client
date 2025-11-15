@@ -24,11 +24,7 @@ import { Community, Conversation, User, StoredUser } from "@/lib/types";
 import { RawLoading } from "@/components/loading";
 
 // Types
-import { OfflineData } from "@/lib/types";
-
-type Data = {
-  [key: string]: Value;
-};
+import { OfflineData, StoredSettings, Value, Language } from "@/lib/types";
 
 type DBType = IDBPDatabase<{
   data: {
@@ -40,10 +36,6 @@ type DBType = IDBPDatabase<{
     value: Value;
   };
 }>;
-
-type Language = Record<string, string>;
-
-export type Value = string | boolean | number | object | Language | object[];
 
 // Helper Functions
 function createDBPromise() {
@@ -77,7 +69,7 @@ export function StorageProvider({
   children: React.ReactNode;
 }>) {
   const [failed, setFailed] = useState(false);
-  const [userData, setUserData] = useState<Data>({});
+  const [userData, setUserData] = useState<StoredSettings>({});
   const [offlineData, setOfflineData] = useState<OfflineData>({
     storedUsers: [],
     storedConversations: [],
@@ -284,7 +276,7 @@ export function StorageProvider({
     if (!db) return;
     try {
       const userData = await db.getAll("data");
-      const loadedUserData: Data = {};
+      const loadedUserData: StoredSettings = {};
       const offlineData = await db.getAll("offline");
       const loadedOfflineData: OfflineData = {
         storedUsers: [],
@@ -705,7 +697,7 @@ export function StorageProvider({
 type StorageContextType = {
   set: (key: string, value: Value) => void;
   clearAll: () => void;
-  data: Data;
+  data: StoredSettings;
   offlineData: OfflineData;
   translate: (input: string, extraInfo?: string | number) => string;
   language: string | null;

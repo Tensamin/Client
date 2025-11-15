@@ -15,6 +15,7 @@ import { useSocketContext } from "@/context/socket";
 import { usePageContext } from "@/context/page";
 import { useUserContext } from "@/context/user";
 import { useCryptoContext } from "@/context/crypto";
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import { UserAvatar } from "@/components/modals/raw";
@@ -223,6 +224,7 @@ export function MessageProvider({
 export function useNewUserNotification() {
   const { get, ownUuid } = useUserContext();
   const { decrypt, get_shared_secret, privateKey } = useCryptoContext();
+  const { data } = useStorageContext();
 
   return useCallback(
     (userId: string, encryptedMessage: string) => {
@@ -282,6 +284,11 @@ export function useNewUserNotification() {
 
             playSound();
           };
+
+          if (!data.enableNotifications) {
+            showFallback();
+            return;
+          }
 
           const showRealNotification = () => {
             const notification = new Notification(otherUser.display, {

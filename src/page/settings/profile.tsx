@@ -207,7 +207,7 @@ export default function Page() {
             });
           }}
           placeholder={translate("PROFILE_PAGE_ABOUT")}
-          className="resize-y h-35"
+          className="resize-none h-35"
           disabled={loading}
         />
         <p
