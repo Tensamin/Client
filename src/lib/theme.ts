@@ -344,13 +344,18 @@ export function generateColors(
     schemeIsLight ? 0.03 : 0.08
   );
   const subtlerChroma = clamp(neutralChroma * 0.5, 0.006, 0.026);
-  const borderChroma = clamp(neutralChroma * 0.4, 0.006, 0.028);
+  const borderChroma = clamp(
+    neutralChroma * (schemeIsLight ? 0.65 : 0.55),
+    schemeIsLight ? 0.01 : 0.024,
+    schemeIsLight ? 0.052 : 0.09
+  );
   const sidebarChroma = clamp(neutralChroma * 1.05, 0.014, 0.07);
   const inputChroma = clamp(
     borderChroma * (schemeIsLight ? 3 : 1.8),
     schemeIsLight ? 0.02 : 0.04,
     schemeIsLight ? 0.06 : 0.09
   );
+  const borderHue = rotateHue(baseLch.h, toneIsHard ? -10 : -6);
 
   const surfaceLevels = schemeIsLight
     ? {
@@ -359,7 +364,7 @@ export function generateColors(
         popover: toneIsHard ? 0.988 : 0.995,
         secondary: toneIsHard ? 0.945 : 0.965,
         muted: toneIsHard ? 0.97 : 0.985,
-        border: toneIsHard ? 0.898 : 0.924,
+        border: toneIsHard ? 0.878 : 0.904,
         sidebar: toneIsHard ? 0.962 : 0.972,
         input: toneIsHard ? 0.88 : 0.902,
       }
@@ -369,7 +374,7 @@ export function generateColors(
         popover: toneIsHard ? 0.2 : 0.18,
         secondary: toneIsHard ? 0.3 : 0.27,
         muted: toneIsHard ? 0.25 : 0.22,
-        border: toneIsHard ? 0.32 : 0.28,
+        border: toneIsHard ? 0.3 : 0.26,
         sidebar: toneIsHard ? 0.13 : 0.11,
         input: toneIsHard ? 0.34 : 0.3,
       };
@@ -403,11 +408,19 @@ export function generateColors(
     c: subtlerChroma,
     h: neutralHue,
   });
-  const mutedFg = pickTextOn(muted);
+  const mutedForeground = toGamut({
+    l: clamp(muted.l + (schemeIsLight ? -0.4 : 0.3), 0, 1),
+    c: clamp(
+      muted.c * (toneIsHard ? 2 : 0.95),
+      schemeIsLight ? 0.012 : 0.04,
+      schemeIsLight ? 0.08 : 0.12
+    ),
+    h: muted.h,
+  });
   const border = toGamut({
     l: surfaceLevels.border,
     c: borderChroma,
-    h: neutralHue,
+    h: borderHue,
   });
   const input = toGamut({
     l: surfaceLevels.input,
@@ -455,7 +468,7 @@ export function generateColors(
       ? secondaryFg.oklch
       : secondaryFg.hex,
     "--muted": formatOut(colorScheme, muted),
-    "--muted-foreground": schemeIsLight ? mutedFg.oklch : mutedFg.hex,
+    "--muted-foreground": formatOut(colorScheme, mutedForeground),
     "--border": formatOut(colorScheme, border),
     "--input": formatOut(colorScheme, input),
     "--destructive": formatOut(colorScheme, destructive),

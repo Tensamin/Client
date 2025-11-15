@@ -97,7 +97,6 @@ export default function Page() {
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   {translate("IOTA_PAGE_LOAD_SETTINGS_DESCRIPTION")}
-                  {value ? ` "${value}"` : ""}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -136,7 +135,7 @@ export default function Page() {
             </AlertDialogContent>
           </AlertDialog>
           <Button
-            disabled={loading}
+            disabled={loading || !value || value === ""}
             onClick={() => {
               send("settings_save", {
                 settings_name: value,
@@ -303,7 +302,7 @@ export default function Page() {
             <p className="text-destructive">
               {translate("IOTA_PAGE_INCLUDE_PRIVATE_KEY_WARNING_TITLE")}
             </p>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground w-120">
               {translate("IOTA_PAGE_INCLUDE_PRIVATE_KEY_WARNING_DESCRIPTION")}
             </p>
           </div>

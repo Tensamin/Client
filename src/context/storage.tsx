@@ -172,14 +172,12 @@ export function StorageProvider({
       SETTINGS_PAGE_LABEL_SOUNDBOARD: "Soundboard",
       SETTINGS_SOUNDBOARD_PLACEHOLDER: "Soundboard settings are coming soon.",
       SETTINGS_PAGE_LABEL_NOTIFICATIONS: "Notifications",
-      SETTINGS_NOTIFICATIONS_ENABLE_NATIVE:
-        "Enable native notifications (requires browser permission)",
+      SETTINGS_NOTIFICATIONS_ENABLE_NATIVE: "Enable native notifications",
       SETTINGS_PAGE_LABEL_ACCESSABILITY: "Accessibility",
-      SETTINGS_ACCESSABILITY_REVERSE_ENTER:
-        "Use Enter to create a newline and Ctrl+Enter to send messages",
+      SETTINGS_ACCESSABILITY_REVERSE_ENTER: "Invert enter key behavior",
       SETTINGS_PAGE_LABEL_LANGUAGE: "Language",
       SETTINGS_PAGE_LABEL_PREMIUM: "Premium",
-      SETTINGS_PREMIUM_STATUS_LABEL: "Your status:",
+      SETTINGS_PREMIUM_STATUS_LABEL: "Status:",
       SETTINGS_PREMIUM_LEVEL_FREE: "Free",
       SETTINGS_PREMIUM_LEVEL_PREMIUM: "Premium",
       SETTINGS_PREMIUM_LEVEL_ERROR: "Unknown",
@@ -226,24 +224,25 @@ export function StorageProvider({
       IOTA_PAGE_SELECT_PROFILE_PLACEHOLDER: "Select a profile",
       IOTA_PAGE_SEARCH_PROFILE_PLACEHOLDER: "Search profiles...",
       IOTA_PAGE_NO_PROFILE_FOUND: "No profiles found.",
-      IOTA_PAGE_LOAD_SETTINGS_TITLE: "Load remote settings",
+      IOTA_PAGE_LOAD_SETTINGS_TITLE:
+        "Are you sure you want to load this profile?",
       IOTA_PAGE_LOAD_SETTINGS_DESCRIPTION:
-        "Load a saved profile from your connected Iota.",
+        "This will replace your current settings! Make sure to save them first if you want to keep them.",
       IOTA_PAGE_ADD_PROFILE_TOOLTIP: "Create a new profile",
       IOTA_PAGE_ADD_PROFILE_TITLE: "Create profile",
       IOTA_PAGE_ADD_PROFILE_DESCRIPTION:
         "Name a profile so you can quickly load it later.",
       IOTA_PAGE_PROFILE_NAME_LABEL: "Profile name",
-      IOTA_PAGE_PROFILE_NAME_PLACEHOLDER: "e.g. Work Setup",
+      IOTA_PAGE_PROFILE_NAME_PLACEHOLDER: "e.g. Profile 1",
       IOTA_PAGE_ADD_PROFILE_BUTTON: "Add profile",
-      IOTA_PAGE_INCLUDE_PRIVATE_KEY_LABEL: "Include private key when syncing",
-      IOTA_PAGE_INCLUDE_PRIVATE_KEY_WARNING_TITLE: "Keep your key secure",
+      IOTA_PAGE_INCLUDE_PRIVATE_KEY_LABEL: "Include private key",
+      IOTA_PAGE_INCLUDE_PRIVATE_KEY_WARNING_TITLE: "This is not recommended!",
       IOTA_PAGE_INCLUDE_PRIVATE_KEY_WARNING_DESCRIPTION:
-        "Only enable this if you fully trust the destination device.",
+        "Including your private key can act as a backup to restore your account and for quickly switching between accounts, but the securiy risks that come with it are significant. Only enable this option if you trust the Iota host.",
       IOTA_PAGE_INCLUDE_PRIVATE_KEY_ALERT_TITLE: "Include private key?",
       IOTA_PAGE_INCLUDE_PRIVATE_KEY_ALERT_DESCRIPTION:
         "Anyone with access to this profile can read your private key.",
-      IOTA_PAGE_INCLUDE_PRIVATE_KEY_ALERT_CONTINUE: "Yes, include it",
+      IOTA_PAGE_INCLUDE_PRIVATE_KEY_ALERT_CONTINUE: "Continue",
 
       // Language Page
       UNKOWN_LANGUAGE: "Unknown Language",
@@ -282,8 +281,7 @@ export function StorageProvider({
       SETTINGS_THEME_TINT_TYPE_PLACEHOLDER: "Select a tint style",
       SETTINGS_THEME_TINT_TYPE_OPTION_HARD: "Hard",
       SETTINGS_THEME_TINT_TYPE_OPTION_LIGHT: "Light",
-      SETTINGS_THEME_DISABLE_VIEW_TRANSITIONS_LABEL:
-        "Disable animated view transitions",
+      SETTINGS_THEME_DISABLE_VIEW_TRANSITIONS_LABEL: "Disable view transitions",
 
       // Socket Context
       SOCKET_CONTEXT: "Socket Context",
