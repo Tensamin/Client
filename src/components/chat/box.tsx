@@ -6,8 +6,6 @@ import {
   InfiniteData,
 } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Ring } from "ldrs/react";
-import "ldrs/react/Ring.css";
 
 // Lib Imports
 import { InitialMessages } from "@/lib/utils";
@@ -19,6 +17,7 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import { MessageGroup as MessageGroupComponent } from "@/components/chat/message";
+import { DelayedLoadingIcon } from "@/components/loading";
 
 // Types
 import {
@@ -295,13 +294,7 @@ export function Box() {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center text-sm">
-        <Ring
-          size="30"
-          stroke="4"
-          bgOpacity="0"
-          speed="2"
-          color="var(--foreground)"
-        />
+        <DelayedLoadingIcon />
       </div>
     );
   }

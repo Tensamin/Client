@@ -127,7 +127,6 @@ export function MessageProvider({
         offset: loaded,
       }).then((data) => {
         if (data.type === "error") throw new Error();
-        console.log(loaded);
         if (
           (data.data.messages?.length === 0 || !data.data.messages) &&
           loaded === 0
@@ -318,7 +317,7 @@ export function useNewUserNotification() {
             showFallback();
           }
         } catch (error) {
-          console.error("Failed to send notification", error);
+          toast.error(String(error));
         }
       })();
     },
