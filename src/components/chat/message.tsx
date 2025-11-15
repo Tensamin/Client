@@ -20,31 +20,21 @@ import {
 } from "@/components/ui/context-menu";
 
 // Types
-import { ErrorType, Message, User, systemUser } from "@/lib/types";
+import {
+  ErrorType,
+  Message,
+  MessageGroup as MessageGroupType,
+  User,
+  systemUser,
+} from "@/lib/types";
 import { UserAvatar } from "@/components/modals/raw";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Main
-export function MessageGroup({ data }: { data: Message }) {
-  return (
-    <div>
-      <FinalMessage message={data} />
-    </div>
-  );
-}
+// This needs restructuring!
 
-function FinalMessage({ message: data }: { message: Message }) {
-  const { decrypt } = useCryptoContext();
-  const { translate } = useStorageContext();
-  const {
-    get,
-    fetchedUsers,
-    ownUuid,
-    currentReceiverSharedSecret,
-    setFailedMessagesAmount,
-  } = useUserContext();
-  const [content, setContent] = useState<string>("");
-  const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
+// Main
+export function MessageGroup({ data }: { data: MessageGroupType }) {
+  const { get, fetchedUsers, setFailedMessagesAmount } = useUserContext();
   const cachedSender = useMemo(() => {
     if (data.sender === "SYSTEM") return systemUser;
     if (!data.sender) return null;
@@ -57,6 +47,72 @@ function FinalMessage({ message: data }: { message: Message }) {
   }, [cachedSender]);
 
   useEffect(() => {
+    if (!data.sender || data.sender === "SYSTEM") {
+      setSender(systemUser);
+      return;
+    }
+
+    if (cachedSender && !cachedSender.loading) {
+      setSender(cachedSender);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const fetched = await get(data.sender, false);
+        if (!cancelled) {
+          setSender(fetched);
+        }
+      } catch {
+        if (!cancelled) {
+          // @ts-expect-error Idk TypeScript is dumb
+          setFailedMessagesAmount((prev: number) => prev + 1);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cachedSender, data.sender, get, setFailedMessagesAmount]);
+
+  return (
+    <div className="flex gap-2 pl-1 w-full items-start pb-4.25">
+      {data.avatar !== false && (
+        <UserAvatar
+          icon={sender?.avatar || undefined}
+          title={sender?.display || ""}
+          size="medium"
+          border
+        />
+      )}
+      <div className="flex flex-col w-full">
+        {data.display !== false && (
+          <span className="font-medium text-md select-none pb-px">
+            {sender?.display ?? <Skeleton className="h-4 w-24 rounded-md" />}
+          </span>
+        )}
+        {data.messages.map((message, index) => (
+          <FinalMessage
+            key={`${data.id}-${message.timestamp}-${index}`}
+            message={message}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FinalMessage({ message: data }: { message: Message }) {
+  const { decrypt } = useCryptoContext();
+  const { translate } = useStorageContext();
+  const { ownUuid, currentReceiverSharedSecret, setFailedMessagesAmount } =
+    useUserContext();
+  const [content, setContent] = useState<string>("");
+  const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
+
+  useEffect(() => {
     let cancelled = false;
 
     const isEncryptedMessage =
@@ -67,7 +123,6 @@ function FinalMessage({ message: data }: { message: Message }) {
 
     if (data.content === "NO_MESSAGES_WITH_USER") {
       setContent(translate("NO_MESSAGES_WITH_USER"));
-      setSender(systemUser);
       setIsDecrypting(false);
       return () => {
         cancelled = true;
@@ -121,61 +176,15 @@ function FinalMessage({ message: data }: { message: Message }) {
     setFailedMessagesAmount,
   ]);
 
-  useEffect(() => {
-    if (!data.sender || data.sender === "SYSTEM") {
-      setSender(systemUser);
-      return;
-    }
-
-    if (cachedSender && !cachedSender.loading) {
-      setSender(cachedSender);
-      return;
-    }
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const fetched = await get(data.sender, false);
-        if (!cancelled) {
-          setSender(fetched);
-        }
-      } catch (err: unknown) {
-        if (!cancelled) {
-          // @ts-expect-error Idk TypeScript is dumb
-          setFailedMessagesAmount((prev: number) => prev + 1);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [data.sender, cachedSender, get, setFailedMessagesAmount]);
-
   return (
     <ContextMenu>
-      <ContextMenuTrigger className="h-auto w-full flex rounded-lg">
-        <div className="flex gap-2 pl-1 w-full items-center">
-          {data.avatar !== false && (
-            <UserAvatar
-              icon={sender?.avatar || undefined}
-              title={sender?.display || ""}
-              size="medium"
-              border
-            />
+      <ContextMenuTrigger className="h-auto w-full rounded-lg text-left">
+        <div className="text-sm min-h-4 py-px">
+          {isDecrypting ? (
+            <Skeleton className="h-4 w-24 rounded-md" />
+          ) : (
+            content
           )}
-          <div className="flex flex-col">
-            {data.display !== false && (
-              <span className="font-medium text-md">{sender?.display}</span>
-            )}
-            <div className="text-sm min-h-4">
-              {isDecrypting ? (
-                <Skeleton className="h-4 w-24 rounded-md" />
-              ) : (
-                content
-              )}
-            </div>
-          </div>
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>

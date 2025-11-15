@@ -19,8 +19,18 @@ export type Message = {
   content: string;
 };
 
-export type Messages = {
+export type MessageGroup = {
+  id: string;
+  sender: string;
+  avatar?: boolean;
+  display?: boolean;
+  timestamp: number;
+  tint?: string;
   messages: Message[];
+};
+
+export type Messages = {
+  messages: MessageGroup[];
   next: number;
   previous: number;
 };
@@ -46,6 +56,8 @@ export type UserState =
   | "IOTA_OFFLINE";
 
 export type AdvancedSuccessMessageData = {
+  message?: string | null;
+  send_time?: string | null;
   content?: string | null;
   messages?: RawMessage[] | null;
   user_id?: string | null;

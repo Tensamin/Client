@@ -35,6 +35,7 @@ export function UserAvatar({
   size,
   border,
   loading,
+  className,
 }: {
   icon?: string;
   title: string;
@@ -42,6 +43,7 @@ export function UserAvatar({
   size: "small" | "medium" | "large" | "extraLarge" | "jumbo";
   border: boolean;
   loading?: boolean;
+  className?: string;
 }) {
   const { translate } = useStorageContext();
 
@@ -53,7 +55,7 @@ export function UserAvatar({
         size === "large" && "size-12"
       } ${size === "extraLarge" && "size-20"} ${
         size === "jumbo" && "size-30"
-      } rounded-full`}
+      } rounded-full ${className}`}
     />
   ) : (
     <div
@@ -63,7 +65,7 @@ export function UserAvatar({
         size === "large" && "size-12"
       } ${size === "extraLarge" && "size-20"} ${
         size === "jumbo" && "size-30"
-      } rounded-full`}
+      } rounded-full ${className}`}
     >
       <Avatar
         className={`${!border && "bg-transparent"} object-cover w-full h-full`}
