@@ -155,9 +155,9 @@ export default function Page() {
           <Card className="w-full md:w-100 gap-3">
             <CardHeader>
               <CardTitle className="select-none">
-                Login using .tu file
+                {translate("LOGIN_PAGE_TU_FILE_TITLE")}
                 <p className="text-xs text-muted-foreground/70 font-normal mt-2">
-                  Recommended
+                  {translate("LOGIN_PAGE_TU_FILE_RECOMMENDED")}
                 </p>
               </CardTitle>
             </CardHeader>
@@ -204,7 +204,9 @@ export default function Page() {
                     onDragLeave={() => setHover(false)}
                   />
                 )}
-                {hover ? "Release to login" : "Select a .tu file"}
+                {hover
+                  ? translate("LOGIN_PAGE_TU_FILE_RELEASE")
+                  : translate("LOGIN_PAGE_TU_FILE_SELECT")}
               </div>
             </CardContent>
           </Card>
@@ -212,7 +214,7 @@ export default function Page() {
           <Card className="transition-opacity duration-300 ease-in-out w-full md:w-100">
             <CardHeader>
               <CardTitle className="select-none">
-                Login using credentials
+                {translate("LOGIN_PAGE_CREDENTIALS_TITLE")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -222,26 +224,32 @@ export default function Page() {
                 autoComplete="on"
               >
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username">
+                    {translate("LOGIN_PAGE_USERNAME_LABEL")}
+                  </Label>
                   <Input
                     required
                     id="username"
                     type="text"
                     name="username"
                     autoComplete="username"
-                    placeholder="some_user"
+                    placeholder={translate("LOGIN_PAGE_USERNAME_PLACEHOLDER")}
                     disabled={loading}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="password">Private Key</Label>
+                  <Label htmlFor="password">
+                    {translate("LOGIN_PAGE_PRIVATE_KEY_LABEL")}
+                  </Label>
                   <Input
                     required
                     id="password"
                     type="password"
                     name="password"
                     autoComplete="current-password"
-                    placeholder="•••••••••••••••"
+                    placeholder={translate(
+                      "LOGIN_PAGE_PRIVATE_KEY_PLACEHOLDER"
+                    )}
                     disabled={loading}
                     value={privateKey}
                     onChange={(e) => setPrivateKey(e.target.value)}
@@ -261,7 +269,7 @@ export default function Page() {
                       color="var(--background)"
                     />
                   ) : (
-                    "Login"
+                    translate("LOGIN_PAGE_SUBMIT_BUTTON")
                   )}
                 </Button>
               </form>
@@ -269,7 +277,7 @@ export default function Page() {
           </Card>
         </div>
         <div className="text-xs text-muted-foreground/75 w-full flex flex-col text-center">
-          <p>By logging in you agree to our</p>
+          <p>{translate("LOGIN_PAGE_TOS_NOTICE")}</p>
           <p>
             <a
               className="underline"
@@ -277,16 +285,16 @@ export default function Page() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Terms of Service
+              {translate("LOGIN_PAGE_TERMS_LINK")}
             </a>
-            {" and "}
+            {` ${translate("LOGIN_PAGE_AND")} `}
             <a
               className="underline"
               href={pp}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Privacy Policy
+              {translate("LOGIN_PAGE_PRIVACY_LINK")}
             </a>
           </p>
         </div>

@@ -4,6 +4,7 @@ import * as Icon from "lucide-react";
 // Context Imports
 import { useCallContext } from "@/context/call";
 import { usePageContext } from "@/context/page";
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import { Card } from "@/components/ui/card";
@@ -110,6 +111,7 @@ export function MediumModal({
 export function VoiceActions() {
   const { state, exitCall } = useCallContext();
   const { setPage } = usePageContext();
+  const { translate } = useStorageContext();
 
   return state === "CONNECTED" || state === "CONNECTING" ? (
     <Card className="bg-input/30 rounded-xl border-input flex flex-col gap-2 justify-center items-center w-full p-2">
@@ -129,7 +131,7 @@ export function VoiceActions() {
           className="flex justify-center flex-1"
           onClick={() => setPage("call")}
         >
-          <Icon.Expand /> Expand
+          <Icon.Expand /> {translate("VOICE_ACTIONS_EXPAND")}
         </Button>
         <Button
           variant="destructive"

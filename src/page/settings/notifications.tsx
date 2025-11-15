@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 
 // Main
 export default function Page() {
-  const { data, set } = useStorageContext();
+  const { data, set, translate } = useStorageContext();
 
   useEffect(() => {
     if (!window.Notification) {
@@ -36,7 +36,9 @@ export default function Page() {
           checked={(data.enableNotifications as boolean) ?? false}
           onCheckedChange={(value) => set("enableNotifications", value)}
         />
-        <Label htmlFor="enableNotifications">Enable Native Notifications</Label>
+        <Label htmlFor="enableNotifications">
+          {translate("SETTINGS_NOTIFICATIONS_ENABLE_NATIVE")}
+        </Label>
       </div>
     </div>
   );

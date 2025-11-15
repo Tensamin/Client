@@ -2,6 +2,7 @@
 
 // Context Imports
 import { useCallContext } from "@/context/call";
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import { PageDiv } from "@/components/pageDiv";
@@ -10,6 +11,7 @@ import { CallModal } from "@/components/modals/user";
 // Main
 export default function Page() {
   const { users } = useCallContext();
+  const { translate } = useStorageContext();
 
   const usersLength = users.size;
 
@@ -27,7 +29,7 @@ export default function Page() {
           />
         </div>
       ))}
-      <p>Vall</p>
+      <p>{translate("CALL_PAGE_PLACEHOLDER_MESSAGE")}</p>
     </PageDiv>
   );
 }

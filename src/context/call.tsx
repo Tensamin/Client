@@ -30,13 +30,30 @@ import {
 
 // Main
 const iceServers = [
-  { urls: "stun:webrtc.tensamin.net:3478" },
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun.l.google.com:5349" },
+  { urls: "stun:stun1.l.google.com:3478" },
+  { urls: "stun:stun1.l.google.com:5349" },
+  { urls: "stun:stun2.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:5349" },
+  { urls: "stun:stun3.l.google.com:3478" },
+  { urls: "stun:stun3.l.google.com:5349" },
+  { urls: "stun:stun4.l.google.com:19302" },
+  { urls: "stun:stun4.l.google.com:5349" },
+  {
+    urls: "turn:openrelay.metered.ca:80",
+    username: "openrelayproject",
+    credentials: "openrelayproject",
+  },
+  //{ urls: "stun:webrtc.tensamin.net:3478" },
+  /*
   {
     urls: "turns:webrtc.tensamin.net:5349",
     username: "tensamin",
     credential:
       "d31297d3f156d7a0d62ce40a324c1a2ddc1dd6182c7bee4bb31efd9bbb0ac7ca",
   },
+  */
 ];
 
 const CallContext = createContext<CallContextType | null>(null);
@@ -197,17 +214,24 @@ export function CallProvider({
                   parsedMessage.data.payload as RTCSessionDescriptionInit
                 )
               );
-              if (parsedMessage.data.payload.type === "offer") {
+              if (
+                (parsedMessage.data.payload as RTCSessionDescriptionInit)
+                  .type === "offer"
+              ) {
                 const answer = await connection.createAnswer();
                 await connection.setLocalDescription(answer);
                 debugLog("CALL_CONTEXT", "CALL_CONTEXT_SDP_SEND", {
                   variant: "answer",
                   receiverId: parsedMessage.data.sender_id,
                 });
-                void send("webrtc_sdp", {
-                  receiver_id: parsedMessage.data.sender_id,
-                  payload: connection.localDescription!,
-                });
+                void send(
+                  "webrtc_sdp",
+                  {
+                    receiver_id: parsedMessage.data.sender_id,
+                    payload: connection.localDescription!,
+                  },
+                  true
+                );
               }
             }
             break;

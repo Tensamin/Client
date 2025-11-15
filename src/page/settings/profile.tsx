@@ -140,7 +140,7 @@ export default function Page() {
                 });
               }}
             >
-              Remove
+              {translate("PROFILE_PAGE_REMOVE_AVATAR")}
             </Button>
           </div>
           <Select
@@ -213,7 +213,7 @@ export default function Page() {
         <p
           className={`text-xs ${form.about.length > 200 && "text-destructive"}`}
         >
-          {form.about.length}/200
+          {translate("PROFILE_PAGE_ABOUT_COUNT", `${form.about.length}/200`)}
         </p>
       </div>
 

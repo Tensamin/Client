@@ -105,7 +105,11 @@ export default function Page() {
         ) {
           audioInputDevices.push({
             deviceId: device.deviceId,
-            label: device.label || `Microphone ${audioInputDevices.length + 1}`,
+            label:
+              device.label ||
+              `${translate("SETTINGS_AUDIO_MICROPHONE_FALLBACK")} ${
+                audioInputDevices.length + 1
+              }`,
             kind: device.kind,
           });
         } else if (
@@ -116,7 +120,11 @@ export default function Page() {
         ) {
           audioOutputDevices.push({
             deviceId: device.deviceId,
-            label: device.label || `Speaker ${audioOutputDevices.length + 1}`,
+            label:
+              device.label ||
+              `${translate("SETTINGS_AUDIO_SPEAKER_FALLBACK")} ${
+                audioOutputDevices.length + 1
+              }`,
             kind: device.kind,
           });
         }
@@ -142,7 +150,7 @@ export default function Page() {
     } finally {
       setIsLoadingDevices(false);
     }
-  }, []);
+  }, [translate]);
 
   useEffect(() => {
     const loadDevices = async () => {
@@ -413,14 +421,27 @@ export default function Page() {
                           (device) =>
                             device.deviceId && device.deviceId.trim() !== ""
                         )
-                        .map((device) => (
-                          <SelectItem
-                            key={device.deviceId}
-                            value={device.deviceId}
-                          >
-                            {device.label || "Unknown Device"}
-                          </SelectItem>
-                        ))
+                        .map((device, index) => {
+                          const fallbackBase = translate(
+                            "SETTINGS_AUDIO_MICROPHONE_FALLBACK"
+                          );
+                          const deviceLabel =
+                            device.deviceId === "default"
+                              ? translate("SETTINGS_AUDIO_DEFAULT_DEVICE")
+                              : device.label?.trim()
+                              ? device.label
+                              : `${fallbackBase} ${index + 1}`;
+
+                          return (
+                            <SelectItem
+                              key={device.deviceId}
+                              value={device.deviceId}
+                            >
+                              {deviceLabel ||
+                                translate("SETTINGS_AUDIO_UNKNOWN_DEVICE")}
+                            </SelectItem>
+                          );
+                        })
                     )}
                   </SelectContent>
                 </Select>
@@ -445,14 +466,27 @@ export default function Page() {
                           (device) =>
                             device.deviceId && device.deviceId.trim() !== ""
                         )
-                        .map((device) => (
-                          <SelectItem
-                            key={device.deviceId}
-                            value={device.deviceId}
-                          >
-                            {device.label || "Unknown Device"}
-                          </SelectItem>
-                        ))
+                        .map((device, index) => {
+                          const fallbackBase = translate(
+                            "SETTINGS_AUDIO_SPEAKER_FALLBACK"
+                          );
+                          const deviceLabel =
+                            device.deviceId === "default"
+                              ? translate("SETTINGS_AUDIO_DEFAULT_DEVICE")
+                              : device.label?.trim()
+                              ? device.label
+                              : `${fallbackBase} ${index + 1}`;
+
+                          return (
+                            <SelectItem
+                              key={device.deviceId}
+                              value={device.deviceId}
+                            >
+                              {deviceLabel ||
+                                translate("SETTINGS_AUDIO_UNKNOWN_DEVICE")}
+                            </SelectItem>
+                          );
+                        })
                     )}
                   </SelectContent>
                 </Select>
@@ -523,7 +557,9 @@ export default function Page() {
           </div>
 
           <div className="space-y-4 mb-8">
-            <Label className="text-sm font-medium">Test</Label>
+            <Label className="text-sm font-medium">
+              {translate("SETTINGS_AUDIO_TEST_TITLE")}
+            </Label>
             <p className="text-sm text-muted-foreground">
               {translate("SETTINGS_AUDIO_TEST_LABEL")}
             </p>
@@ -540,7 +576,9 @@ export default function Page() {
             {micTestActive && (
               <div className="mt-3 space-y-2">
                 <div className="text-xs text-muted-foreground font-mono">
-                  Context: {audioContextRef.current?.state || "none"}
+                  {translate("SETTINGS_AUDIO_CONTEXT_PREFIX")}{" "}
+                  {audioContextRef.current?.state ||
+                    translate("SETTINGS_AUDIO_CONTEXT_NONE")}
                 </div>
                 <div className="flex-1">
                   <Slider

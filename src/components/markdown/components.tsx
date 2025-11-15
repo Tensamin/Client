@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import * as Icon from "lucide-react";
+import { useStorageContext } from "@/context/storage";
 
 type HProps = React.HTMLAttributes<HTMLHeadingElement>;
 type PProps = React.HTMLAttributes<HTMLParagraphElement>;
@@ -75,12 +76,7 @@ export const H4 = ({ className, ...props }: HProps) => {
 };
 
 export const P = ({ className, ...props }: PProps) => {
-  return (
-    <p
-      className={cn("leading-6 [&:not(:first-child)]:mt-6", className)}
-      {...props}
-    />
-  );
+  return <p className={cn("leading-6 not-first:mt-6", className)} {...props} />;
 };
 
 export const A = ({ href = "", className, ...props }: AProps) => {
@@ -215,6 +211,8 @@ export const markdownComponents: Components = {
   strong: Strong,
   em: Em,
   code: ({ className, children }) => {
+    const { translate } = useStorageContext();
+    const languageToken = className?.split(" ")[1]?.replace("language-", "");
     return (
       <div className={cn("flex flex-col p-1 rounded-lg border", className)}>
         <div className="flex gap-1 items-center">
@@ -225,12 +223,14 @@ export const markdownComponents: Components = {
               strokeWidth={2}
             />
           </Button>
-          {className?.split(" ")[1].replace("language-", "") ? (
+          {languageToken ? (
             <span className="text-xs text-muted-foreground">
-              {className.split(" ")[1].replace("language-", "")}
+              {languageToken}
             </span>
           ) : (
-            <span className="text-xs text-muted-foreground">text</span>
+            <span className="text-xs text-muted-foreground">
+              {translate("MARKDOWN_CODE_FALLBACK_LABEL")}
+            </span>
           )}
         </div>
         <code className="text-xs p-1 overflow-scroll scrollbar-hide">

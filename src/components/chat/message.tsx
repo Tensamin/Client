@@ -194,19 +194,19 @@ function FinalMessage({ message: data }: { message: Message }) {
               await navigator.clipboard.writeText(content);
               toast.success(translate("COPY_MESSAGE_TO_CLIPBOARD"));
             } catch {
-              toast.error("ERROR_COPY_MESSAGE_TO_CLIPBOARD");
+              toast.error(translate("ERROR_COPY_MESSAGE_TO_CLIPBOARD"));
             }
           }}
         >
-          <Icon.Clipboard /> Copy
+          <Icon.Clipboard /> {translate("CHAT_MESSAGE_COPY")}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem disabled>
-          <Icon.Reply /> Reply
+          <Icon.Reply /> {translate("CHAT_MESSAGE_REPLY")}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem disabled={data.sender !== ownUuid || true}>
-          <Icon.Trash /> Delete
+          <Icon.Trash /> {translate("DELETE")}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

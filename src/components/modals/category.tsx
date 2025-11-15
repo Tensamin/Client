@@ -1,5 +1,6 @@
 // Context Imports
 import { useUserContext } from "@/context/user";
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import * as Modal from "@/components/modals/raw";
@@ -8,11 +9,12 @@ import { UserModal } from "@/components/modals/user";
 // Main
 export function Communities() {
   const { communities } = useUserContext();
+  const { translate } = useStorageContext();
   return (
     <div className="flex flex-col gap-2 pb-3">
       {communities.length === 0 && (
         <div className="text-sm text-center text-muted-foreground">
-          No communities
+          {translate("CATEGORY_NO_COMMUNITIES")}
         </div>
       )}
       {communities.map((community) => (
@@ -29,11 +31,12 @@ export function Communities() {
 
 export function Conversations() {
   const { conversations } = useUserContext();
+  const { translate } = useStorageContext();
   return (
     <div className="flex flex-col gap-2 pb-3">
       {conversations.length === 0 && (
         <div className="text-sm text-center text-muted-foreground">
-          No conversations
+          {translate("CATEGORY_NO_CONVERSATIONS")}
         </div>
       )}
       {conversations.map((conversation) => (

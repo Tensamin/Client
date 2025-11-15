@@ -1,3 +1,6 @@
+import { useStorageContext } from "@/context/storage";
+
 export default function Page() {
-  return <div>Layout Page</div>;
+  const { translate } = useStorageContext();
+  return <div>{translate("SETTINGS_LAYOUT_PLACEHOLDER")}</div>;
 }
