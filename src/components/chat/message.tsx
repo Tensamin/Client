@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as Icon from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,17 +33,26 @@ export function MessageGroup({ data }: { data: Message }) {
 }
 
 function FinalMessage({ message: data }: { message: Message }) {
-  const { decrypt, get_shared_secret, privateKey } = useCryptoContext();
+  const { decrypt } = useCryptoContext();
   const { translate } = useStorageContext();
   const {
     get,
+    fetchedUsers,
     ownUuid,
-    currentReceiverUuid,
     currentReceiverSharedSecret,
     setFailedMessagesAmount,
   } = useUserContext();
   const [content, setContent] = useState<string>("");
-  const [sender, setSender] = useState<User | null>(null);
+  const cachedSender = useMemo(() => {
+    if (data.sender === "SYSTEM") return systemUser;
+    if (!data.sender) return null;
+    return fetchedUsers.get(data.sender) ?? null;
+  }, [data.sender, fetchedUsers]);
+  const [sender, setSender] = useState<User | null>(cachedSender);
+
+  useEffect(() => {
+    setSender(cachedSender);
+  }, [cachedSender]);
 
   useEffect(() => {
     (async () => {
@@ -67,12 +76,6 @@ function FinalMessage({ message: data }: { message: Message }) {
               }
             );
           }
-
-          if (data.sender !== "SYSTEM") {
-            setSender(await get(data.sender, false));
-          } else {
-            setSender(systemUser);
-          }
         } catch (err: unknown) {
           // @ts-expect-error Idk TypeScript is dumb
           setFailedMessagesAmount((prev: number) => prev + 1);
@@ -83,39 +86,53 @@ function FinalMessage({ message: data }: { message: Message }) {
   }, [
     data,
     translate,
-    get,
-    ownUuid,
-    currentReceiverUuid,
     currentReceiverSharedSecret,
-    get_shared_secret,
-    privateKey,
     decrypt,
     setFailedMessagesAmount,
   ]);
 
+  useEffect(() => {
+    if (!data.sender || data.sender === "SYSTEM") {
+      setSender(systemUser);
+      return;
+    }
+
+    if (cachedSender && !cachedSender.loading) {
+      setSender(cachedSender);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const fetched = await get(data.sender, false);
+        if (!cancelled) {
+          setSender(fetched);
+        }
+      } catch (err: unknown) {
+        if (!cancelled) {
+          // @ts-expect-error Idk TypeScript is dumb
+          setFailedMessagesAmount((prev: number) => prev + 1);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data.sender, cachedSender, get, setFailedMessagesAmount]);
+
   return (
     <ContextMenu>
-      <ContextMenuTrigger
-        className="h-auto w-full flex rounded-lg border"
-        style={{
-          background: data.tint
-            ? `color-mix(in srgb, ${data.tint} 30%, transparent)`
-            : "transparent",
-          borderColor: data.tint
-            ? `color-mix(in srgb, ${data.tint} 35%, transparent)`
-            : "transparent",
-        }}
-      >
-        <div className="flex gap-2 w-full">
-          {data.avatar !== false && ( // replace with Activity in the future
-            <div className="pt-0.5">
-              <UserAvatar
-                icon={sender?.avatar || undefined}
-                title={sender?.display || ""}
-                size="medium"
-                border
-              />
-            </div>
+      <ContextMenuTrigger className="h-auto w-full flex rounded-lg">
+        <div className="flex gap-2 pl-1 w-full items-center">
+          {data.avatar !== false && (
+            <UserAvatar
+              icon={sender?.avatar || undefined}
+              title={sender?.display || ""}
+              size="medium"
+              border
+            />
           )}
           <div className="flex flex-col">
             {data.display !== false && (

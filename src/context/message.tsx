@@ -54,7 +54,11 @@ export function MessageProvider({
         offset: loaded,
       }).then((data) => {
         if (data.type === "error") throw new Error();
-        if (data.data.messages?.length === 0 || !data.data.messages) {
+        console.log(loaded);
+        if (
+          (data.data.messages?.length === 0 || !data.data.messages) &&
+          loaded === 0
+        ) {
           return [
             {
               send_to_server: false,
@@ -67,6 +71,7 @@ export function MessageProvider({
             } as Message,
           ];
         }
+        if (!data.data.messages) return [];
         const sorted = [...data.data.messages]
           .map((m) => {
             return {

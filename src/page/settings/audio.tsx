@@ -78,7 +78,6 @@ export default function Page() {
   const [outputDevices, setOutputDevices] = useState<AudioDevice[]>([
     { deviceId: "default", label: "Default", kind: "audiooutput" },
   ]);
-  const [permissionDenied, setPermissionDenied] = useState(false);
   const [isLoadingDevices, setIsLoadingDevices] = useState(true);
 
   // Mic test state
@@ -92,21 +91,6 @@ export default function Page() {
   const enumerateDevices = useCallback(async () => {
     try {
       setIsLoadingDevices(true);
-      setPermissionDenied(false);
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: false,
-        });
-        // Stop the stream immediately
-        stream.getTracks().forEach((track) => {
-          track.stop();
-        });
-      } catch (permissionError) {
-        console.warn("Media permission denied:", permissionError);
-        setPermissionDenied(true);
-      }
 
       const devices = await navigator.mediaDevices.enumerateDevices();
 
@@ -156,7 +140,6 @@ export default function Page() {
       setOutputDevices([
         { deviceId: "default", label: "Default", kind: "audiooutput" },
       ]);
-      setPermissionDenied(true);
     } finally {
       setIsLoadingDevices(false);
     }
@@ -417,38 +400,14 @@ export default function Page() {
   return (
     <TooltipProvider delayDuration={100}>
       <div className="space-y-8 max-w-2xl">
-        {permissionDenied && (
-          <div className="mb-6 p-4 bg-destructive rounded-md">
-            <div className="flex items-center justify-center">
-              <div className="flex-1 items-center justify-center">
-                <h3 className="text-sm font-medium text-destructive-foreground">
-                  {translate("SETTINGS_AUDIO_NO_PERMISSION")}
-                </h3>
-              </div>
-              <Button
-                onClick={handleRetryPermission}
-                size="sm"
-                className="ml-4"
-              >
-                {translate("SETTINGS_PAGE_LABEL_RETRY")}
-              </Button>
-            </div>
-          </div>
-        )}
-        <div
-          className={permissionDenied ? "opacity-50 pointer-events-none" : ""}
-        >
+        <div>
           <div className="space-y-4 mb-8">
             <div className="grid grid-cols-2 gap-8">
               <div className="space-y-2">
                 <Label htmlFor="input-device" className="text-sm font-medium">
                   {translate("SETTINGS_AUDIO_INPUT_DEVICE_LABEL")}
                 </Label>
-                <Select
-                  value={inputDevice}
-                  onValueChange={setInputDevice}
-                  disabled={permissionDenied}
-                >
+                <Select value={inputDevice} onValueChange={setInputDevice}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -480,11 +439,7 @@ export default function Page() {
                 <Label htmlFor="output-device" className="text-sm font-medium">
                   {translate("SETTINGS_AUDIO_OUTPUT_DEVICE_LABEL")}
                 </Label>
-                <Select
-                  value={outputDevice}
-                  onValueChange={setOutputDevice}
-                  disabled={permissionDenied}
-                >
+                <Select value={outputDevice} onValueChange={setOutputDevice}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -531,7 +486,6 @@ export default function Page() {
                           value={[inputVolume]}
                           onValueChange={(values) => setInputVolume(values[0])}
                           className="w-full"
-                          disabled={permissionDenied}
                         />
                       </div>
                     </TooltipTrigger>
@@ -561,7 +515,6 @@ export default function Page() {
                           value={[outputVolume]}
                           onValueChange={(values) => setOutputVolume(values[0])}
                           className="w-full"
-                          disabled={permissionDenied}
                         />
                       </div>
                     </TooltipTrigger>
@@ -587,7 +540,6 @@ export default function Page() {
               onClick={handleMicTest}
               variant={micTestActive ? "destructive" : "default"}
               className="w-fit"
-              disabled={permissionDenied}
             >
               {micTestActive
                 ? translate("SETTINGS_AUDIO_STOP_TEST")

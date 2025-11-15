@@ -1,7 +1,7 @@
 name: Build and Release Desktop App
 on:
   push:
-    branches: [main]
+    branches: [main-disabled]
     paths-ignore:
       - "flake.nix"
       - ".github/workflows/release.yml"

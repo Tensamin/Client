@@ -22,8 +22,12 @@ export function UserModal({
   const { setPage } = usePageContext();
 
   useEffect(() => {
+    const cachedUser = fetchedUsers.get(uuid);
+    if (cachedUser && !cachedUser.loading) {
+      return;
+    }
     get(uuid, false);
-  }, [uuid, get]);
+  }, [uuid, get, fetchedUsers]);
 
   const user = fetchedUsers.get(uuid) ?? fallbackUser;
 
@@ -37,11 +41,11 @@ export function UserModal({
 
   switch (size) {
     case "big":
-      return <RawModal.BigModal key={user.uuid} {...props} />;
+      return <RawModal.BigModal key={uuid} {...props} />;
     case "medium":
       return (
         <RawModal.MediumModal
-          key={user.uuid}
+          key={uuid}
           {...props}
           description={user.status || ""}
           onClick={() => {
@@ -52,6 +56,7 @@ export function UserModal({
     case "profile":
       return (
         <RawModal.Profile
+          key={uuid}
           {...props}
           description={user.about || ""}
           state={user.state || "NONE"}
@@ -73,8 +78,12 @@ export function CallModal({
   const { setPage } = usePageContext();
 
   useEffect(() => {
+    const cachedUser = fetchedUsers.get(uuid);
+    if (cachedUser && !cachedUser.loading) {
+      return;
+    }
     get(uuid, false);
-  }, [uuid, get]);
+  }, [uuid, get, fetchedUsers]);
 
   const user = fetchedUsers.get(uuid) ?? fallbackUser;
 
@@ -88,11 +97,11 @@ export function CallModal({
 
   switch (size) {
     case "large":
-      return <RawCallModal.LargeModal key={user.uuid} {...props} />;
+      return <RawCallModal.LargeModal key={uuid} {...props} />;
     case "medium":
       return (
         <RawCallModal.MediumModal
-          key={user.uuid}
+          key={uuid}
           {...props}
           description={user.status || ""}
           onClick={() => {

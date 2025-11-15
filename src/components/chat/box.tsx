@@ -1,12 +1,5 @@
 // Package Imports
-import {
-  memo,
-  useRef,
-  useEffect,
-  useCallback,
-  useMemo,
-  useEffectEvent,
-} from "react";
+import { useRef, useEffect, useCallback, useMemo, useEffectEvent } from "react";
 import {
   useInfiniteQuery,
   useQueryClient,
@@ -44,9 +37,7 @@ const TOTAL_MESSAGES = 500;
 const SCROLL_THRESHOLD = 48;
 const BOTTOM_DISTANCE_THRESHOLD = 8;
 
-export const Box = memo(ActualBox);
-
-function ActualBox() {
+export function Box() {
   const parentRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
   const loadingLockRef = useRef(false);
@@ -134,18 +125,32 @@ function ActualBox() {
     loadingLockRef.current = true;
 
     const prevScrollHeight = el.scrollHeight;
+    const prevScrollTop = el.scrollTop;
+    const prevOffset = rowVirtualizer.scrollOffset ?? prevScrollTop;
 
-    await fetchPreviousPage();
+    try {
+      await fetchPreviousPage();
+    } catch (error) {
+      loadingLockRef.current = false;
+      throw error;
+    }
 
     requestAnimationFrame(() => {
       const newScrollHeight = el.scrollHeight;
       const delta = newScrollHeight - prevScrollHeight;
       if (delta > 0) {
-        el.scrollTop += delta;
+        const nextScrollTop = prevScrollTop + delta;
+        el.scrollTop = nextScrollTop;
+        rowVirtualizer.scrollToOffset(prevOffset + delta);
       }
       loadingLockRef.current = false;
     });
-  }, [fetchPreviousPage, hasPreviousPage, isFetchingPreviousPage]);
+  }, [
+    fetchPreviousPage,
+    hasPreviousPage,
+    isFetchingPreviousPage,
+    rowVirtualizer,
+  ]);
 
   const onScroll = useCallback(() => {
     if (timeoutRef.current !== null) {
@@ -270,35 +275,39 @@ function ActualBox() {
     );
   }
 
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const totalHeight = rowVirtualizer.getTotalSize();
+
   return (
     <div
       ref={parentRef}
       className="h-full overflow-y-auto scrollbar-hide"
       onScroll={onScroll}
     >
-      <div
-        className="w-full relative"
-        style={{
-          height: `${rowVirtualizer.getTotalSize()}px`,
-        }}
-      >
-        {rowVirtualizer.getVirtualItems().map((virtualRow, index) => {
-          const msg: Message = messages[virtualRow.index];
-          if (!msg) return null;
+      <div className="min-h-full flex flex-col justify-end">
+        <div
+          className="w-full relative"
+          style={{
+            height: `${totalHeight}px`,
+          }}
+        >
+          {virtualItems.map((virtualRow, index) => {
+            const msg: Message = messages[virtualRow.index];
+            if (!msg) return null;
 
-          return (
-            <div
-              key={index}
-              data-index={virtualRow.index}
-              className="absolute left-0 right-0 px-3 py-2"
-              style={{
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              <MessageGroup data={msg} />
-            </div>
-          );
-        })}
+            return (
+              <div
+                key={`${virtualRow.key}-${index}`}
+                className="absolute left-0 right-0 px-3 py-2"
+                style={{
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <MessageGroup data={msg} />
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

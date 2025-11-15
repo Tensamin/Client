@@ -25,7 +25,7 @@ export default function Page() {
   const { setTheme } = useTheme();
 
   useEffect(() => {
-    setTheme(data.colorScheme as string);
+    setTheme(data.colorScheme as string || "system");
   }, [data.colorScheme]);
 
   return (
