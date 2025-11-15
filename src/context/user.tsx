@@ -87,8 +87,7 @@ export function UserProvider({
   const { ownUuid, get_shared_secret, privateKey } = useCryptoContext();
   const { send, isReady, lastMessage, initialUserState } = useSocketContext();
   const { page, pageData } = usePageContext();
-
-  const [currentReceiverUuid, setCurrentReceiverUuid] = useState<string>("0");
+  const currentReceiverUuid = page === "chat" ? pageData || "0" : "0";
   const [currentReceiverSharedSecret, setCurrentReceiverSharedSecret] =
     useState<string>("0");
   const [conversations, setConversationsState] = useState<Conversation[]>(
@@ -239,29 +238,52 @@ export function UserProvider({
   }, [send, translate, setConversationsAndSync]);
 
   useEffect(() => {
-    if (page === "chat" && pageData !== currentReceiverUuid) {
-      // Reset Receiver
-      setCurrentReceiverUuid(pageData);
-      get(pageData).then((otherUser) => {
-        get(ownUuid).then((ownUser) => {
-          get_shared_secret(
-            privateKey,
-            ownUser.public_key,
-            otherUser.public_key
-          ).then((sharedSecret) => {
-            if (!sharedSecret.success) {
-              toast.error(translate(sharedSecret.message));
-              return;
-            }
-            setCurrentReceiverSharedSecret(sharedSecret.message);
-          });
-        });
-      });
-      setFailedMessagesAmount(0);
+    setFailedMessagesAmount(0);
+
+    if (currentReceiverUuid === "0") {
+      setCurrentReceiverSharedSecret("0");
+      return;
     }
+
+    let cancelled = false;
+
+    const resolveSharedSecret = async () => {
+      try {
+        const [otherUser, ownUser] = await Promise.all([
+          get(currentReceiverUuid, false),
+          get(ownUuid, false),
+        ]);
+
+        const sharedSecret = await get_shared_secret(
+          privateKey,
+          ownUser.public_key,
+          otherUser.public_key
+        );
+
+        if (!sharedSecret.success) {
+          toast.error(translate(sharedSecret.message));
+          if (!cancelled) {
+            setCurrentReceiverSharedSecret("0");
+          }
+          return;
+        }
+
+        if (!cancelled) {
+          setCurrentReceiverSharedSecret(sharedSecret.message);
+        }
+      } catch {
+        if (!cancelled) {
+          setCurrentReceiverSharedSecret("0");
+        }
+      }
+    };
+
+    void resolveSharedSecret();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
-    page,
-    pageData,
     currentReceiverUuid,
     get,
     get_shared_secret,

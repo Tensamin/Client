@@ -23,7 +23,7 @@ import CallPage from "@/page/call";
 
 export default function Page() {
   const { ownUuid } = useCryptoContext();
-  const { page } = usePageContext();
+  const { page, pageInstance } = usePageContext();
   const { data } = useStorageContext();
   const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
     "CONVERSATIONS"
@@ -65,10 +65,10 @@ export default function Page() {
         <Navbar />
         <div className="flex-1 bg-background rounded-tl-xl border overflow-auto p-2">
           {data.disableViewTransitions ? (
-            <PageSwitch page={page} />
+            <PageSwitch page={page} instance={pageInstance} />
           ) : (
             <ViewTransition name="page-vt">
-              <PageSwitch page={page} />
+              <PageSwitch page={page} instance={pageInstance} />
             </ViewTransition>
           )}
         </div>
@@ -144,13 +144,13 @@ function SidebarListSwitcher({
   );
 }
 
-function PageSwitch({ page }: { page: string }) {
+function PageSwitch({ page, instance }: { page: string; instance: number }) {
   return (
     <>
-      {page === "home" && <HomePage />}
-      {page === "settings" && <SettingsPage />}
-      {page === "chat" && <ChatPage />}
-      {page === "call" && <CallPage />}
+      {page === "home" && <HomePage key={`home-${instance}`} />}
+      {page === "settings" && <SettingsPage key={`settings-${instance}`} />}
+      {page === "chat" && <ChatPage key={`chat-${instance}`} />}
+      {page === "call" && <CallPage key={`call-${instance}`} />}
     </>
   );
 }

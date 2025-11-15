@@ -22,6 +22,7 @@ import {
 // Types
 import { ErrorType, Message, User, systemUser } from "@/lib/types";
 import { UserAvatar } from "@/components/modals/raw";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Main
 export function MessageGroup({ data }: { data: Message }) {
@@ -43,6 +44,7 @@ function FinalMessage({ message: data }: { message: Message }) {
     setFailedMessagesAmount,
   } = useUserContext();
   const [content, setContent] = useState<string>("");
+  const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
   const cachedSender = useMemo(() => {
     if (data.sender === "SYSTEM") return systemUser;
     if (!data.sender) return null;
@@ -55,34 +57,62 @@ function FinalMessage({ message: data }: { message: Message }) {
   }, [cachedSender]);
 
   useEffect(() => {
-    (async () => {
-      if (data.content === "NO_MESSAGES_WITH_USER") {
-        setContent(translate("NO_MESSAGES_WITH_USER"));
-        setSender(systemUser);
-      } else {
-        try {
-          if (data.send_to_server) {
-            setContent(data.content);
-          } else {
-            decrypt(data.content, currentReceiverSharedSecret).then(
-              (sharedSecretData) => {
-                if (!sharedSecretData.success) {
-                  // @ts-expect-error Idk TypeScript is (still) dumb
-                  setFailedMessagesAmount((prev: number) => prev + 1);
-                  setContent(translate("ERROR_DECRYPTING_MESSAGE"));
-                  return;
-                }
-                setContent(sharedSecretData.message);
-              }
-            );
-          }
-        } catch (err: unknown) {
-          // @ts-expect-error Idk TypeScript is dumb
+    let cancelled = false;
+
+    const isEncryptedMessage =
+      !data.send_to_server &&
+      data.content !== "NO_MESSAGES_WITH_USER" &&
+      data.sender !== "SYSTEM";
+    setIsDecrypting(isEncryptedMessage);
+
+    if (data.content === "NO_MESSAGES_WITH_USER") {
+      setContent(translate("NO_MESSAGES_WITH_USER"));
+      setSender(systemUser);
+      setIsDecrypting(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (data.send_to_server) {
+      setContent(data.content);
+      setIsDecrypting(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const decryptMessage = async () => {
+      try {
+        const sharedSecretData = await decrypt(
+          data.content,
+          currentReceiverSharedSecret
+        );
+        if (cancelled) return;
+        if (!sharedSecretData.success) {
+          // @ts-expect-error Idk TypeScript is (still) dumb
           setFailedMessagesAmount((prev: number) => prev + 1);
-          setContent((err as ErrorType).message);
+          setContent(translate("ERROR_DECRYPTING_MESSAGE"));
+          return;
+        }
+        setContent(sharedSecretData.message);
+      } catch (err: unknown) {
+        if (cancelled) return;
+        // @ts-expect-error Idk TypeScript is dumb
+        setFailedMessagesAmount((prev: number) => prev + 1);
+        setContent((err as ErrorType).message);
+      } finally {
+        if (!cancelled) {
+          setIsDecrypting(false);
         }
       }
-    })();
+    };
+
+    void decryptMessage();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     data,
     translate,
@@ -138,7 +168,13 @@ function FinalMessage({ message: data }: { message: Message }) {
             {data.display !== false && (
               <span className="font-medium text-md">{sender?.display}</span>
             )}
-            <span className="text-sm">{content}</span>
+            <div className="text-sm min-h-4">
+              {isDecrypting ? (
+                <Skeleton className="h-4 w-24 rounded-md" />
+              ) : (
+                content
+              )}
+            </div>
           </div>
         </div>
       </ContextMenuTrigger>

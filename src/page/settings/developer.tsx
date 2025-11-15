@@ -82,7 +82,7 @@ function FitJson({
       recompute();
     });
     return () => cancelAnimationFrame(frame);
-  }, [recompute, text, min, max, step]);
+  }, [text, min, max, step]);
 
   useEffect(() => {
     const ro = new ResizeObserver(() => {
@@ -91,7 +91,7 @@ function FitJson({
     if (containerRef.current) ro.observe(containerRef.current);
     if (preRef.current) ro.observe(preRef.current);
     return () => ro.disconnect();
-  }, [recompute]);
+  }, []);
 
   return (
     <div

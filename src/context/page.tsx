@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -30,6 +31,7 @@ type PageContextType = {
   page: string;
   pageData: string;
   extraPageData: string;
+  pageInstance: number;
   setPage: (page: string, data?: string, extraData?: string) => void;
 };
 
@@ -45,20 +47,35 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
   const [page, setPageRaw] = useState("home");
   const [pageData, setPageData] = useState("");
   const [extraPageData, setExtraPageData] = useState("");
+  const [pageInstance, setPageInstance] = useState(0);
+  const lastPageKeyRef = useRef<string>("home:");
   const [, startTransition] = useTransition();
 
   const { bypass } = useStorageContext();
 
   const setPage = useCallback(
-    (page: string, data: string = "", extraData: string = "") => {
-      if (bypass && page === "error") return;
+    (nextPage: string, data: string = "", extraData: string = "") => {
+      if (bypass && nextPage === "error") return;
+
+      const isSameDestination =
+        nextPage === page && data === pageData && extraData === extraPageData;
+
+      if (isSameDestination) return;
+
+      const nextKey = `${nextPage}:${data}`;
+      const shouldIncrementInstance = nextKey !== lastPageKeyRef.current;
+
       startTransition(() => {
-        setPageRaw(page);
+        setPageRaw(nextPage);
         setPageData(data);
         setExtraPageData(extraData);
+        if (shouldIncrementInstance) {
+          lastPageKeyRef.current = nextKey;
+          setPageInstance((prev) => prev + 1);
+        }
       });
     },
-    [bypass]
+    [bypass, page, pageData, extraPageData]
   );
 
   useEffect(() => {
@@ -66,6 +83,8 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
       setPageRaw("home");
       setPageData("");
       setExtraPageData("");
+      lastPageKeyRef.current = "home:";
+      setPageInstance((prev) => prev + 1);
     }
   }, [bypass, page]);
 
@@ -73,6 +92,7 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
     page,
     pageData,
     extraPageData,
+    pageInstance,
     setPage,
   };
 

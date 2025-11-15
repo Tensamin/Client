@@ -70,7 +70,6 @@ export default function Page() {
 
   // Local state
   const [micTestActive, setMicTestActive] = useState(false);
-  const [voicePlaybackEnabled, setVoicePlaybackEnabled] = useState(false);
 
   const [inputDevices, setInputDevices] = useState<AudioDevice[]>([
     { deviceId: "default", label: "Default", kind: "audioinput" },
@@ -178,7 +177,6 @@ export default function Page() {
     if (!micTestActive) {
       try {
         setMicTestActive(true);
-        setVoicePlaybackEnabled(true);
 
         const constraints: MediaStreamConstraints = {
           audio: {
@@ -279,13 +277,11 @@ export default function Page() {
       } catch (error) {
         console.error("Error accessing microphone:", error);
         setMicTestActive(false);
-        setVoicePlaybackEnabled(false);
         // Could show an error toast here
       }
     } else {
       // Stop mic test
       setMicTestActive(false);
-      setVoicePlaybackEnabled(false);
       setAudioLevel(0);
 
       // Clean up audio resources
@@ -335,10 +331,6 @@ export default function Page() {
     };
   }, []);
 
-  const handleRetryPermission = () => {
-    enumerateDevices();
-  };
-
   // Selected devices should always be valid
   useEffect(() => {
     if (!isLoadingDevices) {
@@ -368,7 +360,6 @@ export default function Page() {
   useEffect(() => {
     if (micTestActive && prevInputDeviceRef.current !== inputDevice) {
       setMicTestActive(false);
-      setVoicePlaybackEnabled(false);
       setAudioLevel(0);
 
       if (animationFrameRef.current) {

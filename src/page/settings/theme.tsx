@@ -25,8 +25,8 @@ export default function Page() {
   const { setTheme } = useTheme();
 
   useEffect(() => {
-    setTheme(data.colorScheme as string || "system");
-  }, [data.colorScheme]);
+    setTheme((data.colorScheme as string) || "system");
+  }, [data.colorScheme, setTheme]);
 
   return (
     <div className="flex flex-col gap-5">
