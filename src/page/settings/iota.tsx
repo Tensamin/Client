@@ -46,7 +46,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -285,7 +284,7 @@ export default function Page() {
             <Checkbox
               id="loadPrivateKey"
               checked={(data.loadPrivateKey as boolean) ?? false}
-              onClick={(e) => {
+              onClick={() => {
                 if (data.loadPrivateKey as boolean) {
                   set("loadPrivateKey", false);
                 } else {

@@ -106,6 +106,7 @@ export function Box() {
     [messageGroups]
   );
 
+  // eslint-disable-next-line
   const rowVirtualizer = useVirtualizer({
     count: messageGroups.length,
     getScrollElement,
@@ -158,11 +159,7 @@ export function Box() {
     const el = parentRef.current;
     if (!el) return;
 
-    if (
-      isInitialLoadRef.current &&
-      isSuccess &&
-      messageGroups.length > 0
-    ) {
+    if (isInitialLoadRef.current && isSuccess && messageGroups.length > 0) {
       isInitialLoadRef.current = false;
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -298,6 +295,7 @@ export function Box() {
   if (isError) {
     return (
       <div className="flex flex-col gap-5 h-full items-center justify-center text-sm">
+        {/* eslint-disable-next-line */}
         <img
           //width={220}
           //height={220}

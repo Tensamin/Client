@@ -1,6 +1,10 @@
+// Package Imports
 import React from "react";
 import Link from "next/link";
 import type { Components } from "react-markdown";
+import * as Icon from "lucide-react";
+
+// Components
 import {
   Table,
   TableBody,
@@ -11,9 +15,8 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import * as Icon from "lucide-react";
-import { useStorageContext } from "@/context/storage";
 
+// Types
 type HProps = React.HTMLAttributes<HTMLHeadingElement>;
 type PProps = React.HTMLAttributes<HTMLParagraphElement>;
 type AProps = React.AnchorHTMLAttributes<HTMLAnchorElement>;
@@ -27,6 +30,7 @@ type ImgProps = React.ImgHTMLAttributes<HTMLImageElement>;
 type EmProps = React.HTMLAttributes<HTMLElement>;
 type StrongProps = React.HTMLAttributes<HTMLElement>;
 
+// Main
 export const H1 = ({ className, ...props }: HProps) => {
   return (
     <h1
@@ -145,6 +149,7 @@ export const Img = ({ className, alt, src, ...props }: ImgProps) => {
   }
 
   return (
+    // eslint-disable-next-line
     <img
       src={src}
       alt={alt ?? ""}
@@ -211,7 +216,6 @@ export const markdownComponents: Components = {
   strong: Strong,
   em: Em,
   code: ({ className, children }) => {
-    const { translate } = useStorageContext();
     const languageToken = className?.split(" ")[1]?.replace("language-", "");
     return (
       <div className={cn("flex flex-col p-1 rounded-lg border", className)}>
@@ -228,9 +232,7 @@ export const markdownComponents: Components = {
               {languageToken}
             </span>
           ) : (
-            <span className="text-xs text-muted-foreground">
-              {translate("MARKDOWN_CODE_FALLBACK_LABEL")}
-            </span>
+            <span className="text-xs text-muted-foreground">WEEWOO</span>
           )}
         </div>
         <code className="text-xs p-1 overflow-scroll scrollbar-hide">

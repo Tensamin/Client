@@ -175,7 +175,7 @@ export default function Page() {
     } catch {
       setEditError(translate("DEVELOPER_PAGE_EDIT_VALUE_INVALID_JSON"));
     }
-  }, [editValue, editingKey, set]);
+  }, [editValue, editingKey, set, translate]);
 
   const handleCancelEdit = useCallback(() => {
     setEditingKey(null);
@@ -220,7 +220,7 @@ export default function Page() {
     } catch {
       setAddError(translate("DEVELOPER_PAGE_NEW_ENTRY_INVALID_JSON"));
     }
-  }, [data, newKey, newValue, set]);
+  }, [data, newKey, newValue, set, translate]);
 
   return (
     <>

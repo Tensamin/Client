@@ -26,7 +26,7 @@ export default function Page() {
         }
       });
     }
-  }, [data.enableNotifications]);
+  }, [data.enableNotifications, set]);
 
   return (
     <div className="flex flex-col gap-3">

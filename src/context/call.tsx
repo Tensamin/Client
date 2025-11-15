@@ -70,25 +70,15 @@ export function CallProvider({
   children: React.ReactNode;
 }>) {
   const usersRef = useRef<Map<string, CallUser>>(new Map());
-
-  function exitCall() {
-    setShouldConnect(false);
-    usersRef.current.entries().forEach(([_, user]) => {
-      user.connection?.close();
-    });
-    usersRef.current.clear();
-  }
-
-  // Websocket Stuff
   const pendingRequests = useRef(new Map());
   const [state, setState] = useState<
     "CONNECTED" | "CONNECTING" | "CLOSED" | "FAILED"
   >("CLOSED");
   const [identified, setIdentified] = useState(false);
   const [shouldConnect, setShouldConnect] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [, setFailed] = useState(false);
 
-  const [callId, setCallId] = useState("019a6488-0086-7759-9bfc-9bda36d58e4f");
+  const [callId] = useState("019a6488-0086-7759-9bfc-9bda36d58e4f");
   const [ownPing, setOwnPing] = useState<number>(0);
 
   const {
@@ -97,6 +87,156 @@ export function CallProvider({
   } = useStorageContext();
   const { privateKeyHash, ownUuid } = useCryptoContext();
 
+  function exitCall() {
+    setShouldConnect(false);
+    usersRef.current.entries().forEach(([, user]) => {
+      user.connection?.close();
+    });
+    usersRef.current.clear();
+  }
+
+  // WebRTC Stuff
+  const { data } = useStorageContext();
+
+  const startConnection = useCallback(
+    (userId: string, isInitiator: boolean, connection: RTCPeerConnection) => {
+      console.log(userId);
+      if (userId === ownUuid) return;
+
+      connection.onicecandidate = (event) => {
+        if (event.candidate) {
+          // eslint-disable-next-line
+          send(
+            "webrtc_ice",
+            {
+              receiver_id: userId,
+              payload: event.candidate,
+            },
+            true
+          );
+        }
+      };
+
+      connection.onconnectionstatechange = () => {
+        switch (connection.connectionState) {
+          case "connecting":
+            const user = usersRef.current.get(userId);
+            if (user) user.active = false;
+            break;
+
+          case "disconnected":
+            usersRef.current.delete(userId);
+            break;
+        }
+      };
+
+      connection.ontrack = (event) => {
+        debugLog("CALL_CONTEXT", "CALL_CONTEXT_TRACK_RECEIVED", {
+          userId,
+          track: event.track.kind,
+        });
+        const user = usersRef.current.get(userId);
+        if (user) {
+          const existingStream = user.stream;
+          if (existingStream) {
+            existingStream.addTrack(event.track);
+            user.stream = existingStream;
+          } else {
+            const newStream = new MediaStream([event.track]);
+            user.stream = newStream;
+          }
+        }
+      };
+
+      function getLocalStream(
+        type: "VOICE" | "VIDEO" | "CAMERA"
+      ): Promise<MediaStream> {
+        const voiceConstraints: MediaStreamConstraints = {
+          audio: true,
+          video: false,
+        };
+
+        const videoConstraints: MediaStreamConstraints = {
+          audio: data.call_captureAudio as boolean,
+          video: {
+            width: data.call_videoWidth as number,
+            height: data.call_videoHeight as number,
+            frameRate: data.call_videoFramerate as number,
+          },
+        };
+
+        const cameraConstraints: MediaStreamConstraints = {
+          audio: false,
+          video: {
+            width: data.call_videoWidth as number,
+            height: data.call_videoHeight as number,
+            frameRate: data.call_videoFramerate as number,
+          },
+        };
+
+        switch (type) {
+          case "VOICE":
+            return navigator.mediaDevices.getUserMedia(voiceConstraints);
+          case "VIDEO":
+            return navigator.mediaDevices.getDisplayMedia(videoConstraints);
+          case "CAMERA":
+            return navigator.mediaDevices.getUserMedia(cameraConstraints);
+          default:
+            return navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: false,
+            });
+        }
+      }
+
+      const addLocalTracks = async () => {
+        try {
+          const localStream = await getLocalStream("VOICE");
+          localStream.getTracks().forEach((track) => {
+            connection.addTrack(track, localStream);
+          });
+        } catch (error) {
+          debugLog(
+            "CALL_CONTEXT",
+            "ERROR_CALL_CONTEXT_LOCAL_STREAM_FAILED",
+            error
+          );
+        }
+      };
+
+      if (isInitiator) {
+        connection.onnegotiationneeded = async () => {
+          const offer = await connection.createOffer();
+          await connection.setLocalDescription(offer);
+          debugLog("CALL_CONTEXT", "CALL_CONTEXT_SDP_SEND", {
+            variant: "offer",
+            receiverId: userId,
+          });
+          send(
+            "webrtc_sdp",
+            {
+              receiver_id: userId,
+              payload: connection.localDescription!,
+            },
+            true
+          );
+        };
+      }
+
+      void addLocalTracks();
+      return connection;
+    },
+    [
+      ownUuid,
+      debugLog,
+      data.call_captureAudio,
+      data.call_videoWidth,
+      data.call_videoHeight,
+      data.call_videoFramerate,
+    ]
+  );
+
+  // Websocket Stuff
   const handleMessage = useCallback(
     async (message: MessageEvent) => {
       let parsedMessage: AdvancedSuccessMessage = {
@@ -243,7 +383,7 @@ export function CallProvider({
         debugLog("CALL_CONTEXT", "ERROR_CALL_CONTEXT_UNKNOWN", err);
       }
     },
-    [debugLog]
+    [debugLog, data.call_onlyAllowRelays, ownUuid, startConnection]
   );
 
   const { sendMessage: sendRaw, readyState } = useWebSocket(
@@ -264,7 +404,11 @@ export function CallProvider({
     }
   );
 
-  const send = useCallback(
+  const send: (
+    requestType: string,
+    data?: AdvancedSuccessMessageData,
+    noResponse?: boolean
+  ) => Promise<AdvancedSuccessMessage> = useCallback(
     async (
       requestType: string,
       data: AdvancedSuccessMessageData = {},
@@ -412,6 +556,9 @@ export function CallProvider({
     ownUuid,
     debugLog,
     send,
+    callId,
+    call_onlyAllowRelays,
+    startConnection,
   ]);
 
   useEffect(() => {
@@ -425,140 +572,6 @@ export function CallProvider({
       clearInterval(interval);
     };
   }, [state]);
-
-  // WebRTC Stuff
-  const { data } = useStorageContext();
-
-  function startConnection(
-    userId: string,
-    isInitiator: boolean,
-    connection: RTCPeerConnection
-  ) {
-    console.log(userId);
-    if (userId === ownUuid) return;
-
-    connection.onicecandidate = (event) => {
-      if (event.candidate) {
-        send(
-          "webrtc_ice",
-          {
-            receiver_id: userId,
-            payload: event.candidate,
-          },
-          true
-        );
-      }
-    };
-
-    connection.onconnectionstatechange = () => {
-      switch (connection.connectionState) {
-        case "connecting":
-          const user = usersRef.current.get(userId);
-          if (user) user.active = false;
-          break;
-
-        case "disconnected":
-          usersRef.current.delete(userId);
-          break;
-      }
-    };
-
-    connection.ontrack = (event) => {
-      debugLog("CALL_CONTEXT", "CALL_CONTEXT_TRACK_RECEIVED", {
-        userId,
-        track: event.track.kind,
-      });
-      const user = usersRef.current.get(userId);
-      if (user) {
-        const existingStream = user.stream;
-        if (existingStream) {
-          existingStream.addTrack(event.track);
-          user.stream = existingStream;
-        } else {
-          const newStream = new MediaStream([event.track]);
-          user.stream = newStream;
-        }
-      }
-    };
-
-    const addLocalTracks = async () => {
-      try {
-        const localStream = await getLocalStream("VOICE");
-        localStream.getTracks().forEach((track) => {
-          connection.addTrack(track, localStream);
-        });
-      } catch (error) {
-        debugLog(
-          "CALL_CONTEXT",
-          "ERROR_CALL_CONTEXT_LOCAL_STREAM_FAILED",
-          error
-        );
-      }
-    };
-
-    if (isInitiator) {
-      connection.onnegotiationneeded = async () => {
-        const offer = await connection.createOffer();
-        await connection.setLocalDescription(offer);
-        debugLog("CALL_CONTEXT", "CALL_CONTEXT_SDP_SEND", {
-          variant: "offer",
-          receiverId: userId,
-        });
-        send(
-          "webrtc_sdp",
-          {
-            receiver_id: userId,
-            payload: connection.localDescription!,
-          },
-          true
-        );
-      };
-    }
-
-    void addLocalTracks();
-    return connection;
-  }
-
-  function getLocalStream(
-    type: "VOICE" | "VIDEO" | "CAMERA"
-  ): Promise<MediaStream> {
-    const voiceConstraints: MediaStreamConstraints = {
-      audio: true,
-      video: false,
-    };
-
-    const videoConstraints: MediaStreamConstraints = {
-      audio: data.call_captureAudio as boolean,
-      video: {
-        width: data.call_videoWidth as number,
-        height: data.call_videoHeight as number,
-        frameRate: data.call_videoFramerate as number,
-      },
-    };
-
-    const cameraConstraints: MediaStreamConstraints = {
-      audio: false,
-      video: {
-        width: data.call_videoWidth as number,
-        height: data.call_videoHeight as number,
-        frameRate: data.call_videoFramerate as number,
-      },
-    };
-
-    switch (type) {
-      case "VOICE":
-        return navigator.mediaDevices.getUserMedia(voiceConstraints);
-      case "VIDEO":
-        return navigator.mediaDevices.getDisplayMedia(videoConstraints);
-      case "CAMERA":
-        return navigator.mediaDevices.getUserMedia(cameraConstraints);
-      default:
-        return navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: false,
-        });
-    }
-  }
 
   return (
     <CallContext.Provider

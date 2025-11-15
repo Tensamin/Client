@@ -40,6 +40,13 @@ export type BasicSuccessMessage = {
   message: string;
 };
 
+export type JWK = {
+  kty: string;
+  crv: string;
+  x?: string;
+  d?: string;
+};
+
 export type UserState =
   | "NONE"
   | "ONLINE"
@@ -74,7 +81,12 @@ export type AdvancedSuccessMessageData = {
   call_state?: string | null;
   receiver?: string | null;
   settings_name?: string | null;
-  payload?: RTCIceCandidate | RTCSessionDescriptionInit | StoredSettings | string | null;
+  payload?:
+    | RTCIceCandidate
+    | RTCSessionDescriptionInit
+    | StoredSettings
+    | string
+    | null;
   about?: {
     [key: string]: {
       state: string;

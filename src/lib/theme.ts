@@ -40,6 +40,18 @@ const VARS = [
 
 type VarName = (typeof VARS)[number];
 type ThemeMap = Record<VarName, string>;
+const CHART_VARS = [
+  "--chart-1",
+  "--chart-2",
+  "--chart-3",
+  "--chart-4",
+  "--chart-5",
+] as const;
+type ChartVar = (typeof CHART_VARS)[number];
+type ChartMap = Record<ChartVar, string>;
+
+const isVarName = (value: string): value is VarName =>
+  (VARS as readonly string[]).includes(value);
 
 const clamp = (x: number, min: number, max: number) =>
   Math.min(Math.max(x, min), max);
@@ -232,10 +244,10 @@ const readThemeFromCSS = (scheme: Scheme): Partial<ThemeMap> => {
       ) {
         const style = rule.style;
         for (let i = 0; i < style.length; i++) {
-          const prop = style[i] as VarName | string;
-          if ((VARS as readonly string[]).includes(prop)) {
+          const prop = style[i];
+          if (isVarName(prop)) {
             const val = style.getPropertyValue(prop).trim();
-            if (val) (result as any)[prop] = val;
+            if (val) result[prop] = val;
           }
         }
       }
@@ -249,14 +261,7 @@ const formatOut = (scheme: Scheme, lch: LCH) =>
   scheme === "light" ? oklchToString(lch) : oklchToHex(lch);
 
 // Build chart colors around the brand hue
-const buildCharts = (
-  base: LCH,
-  scheme: Scheme,
-  tone: Tone
-): Record<
-  "--chart-1" | "--chart-2" | "--chart-3" | "--chart-4" | "--chart-5",
-  string
-> => {
+const buildCharts = (base: LCH, scheme: Scheme, tone: Tone): ChartMap => {
   const offsets = [0, 60, 200, 280, 330];
   const lTargets =
     scheme === "light"
@@ -268,15 +273,15 @@ const buildCharts = (
       : [0.72, 0.76, 0.82, 0.74, 0.7];
 
   const cMul = tone === "hard" ? 1.1 : 0.95;
-  const out: any = {};
-  offsets.forEach((off, i) => {
+  const out = CHART_VARS.reduce<ChartMap>((acc, key, i) => {
     const lch: LCH = {
       l: lTargets[i],
       c: clamp(base.c * cMul, 0.12, 0.28),
-      h: rotateHue(base.h, off),
+      h: rotateHue(base.h, offsets[i] ?? 0),
     };
-    out[`--chart-${i + 1}`] = formatOut(scheme, toGamut(lch));
-  });
+    acc[key] = formatOut(scheme, toGamut(lch));
+    return acc;
+  }, {} as ChartMap);
   return out;
 };
 
@@ -492,6 +497,6 @@ export function generateColors(
     ...charts,
   };
 
-  const merged: ThemeMap = { ...(baseline as ThemeMap), ...(overrides as any) };
+  const merged: ThemeMap = { ...(baseline as ThemeMap), ...overrides };
   return merged;
 }

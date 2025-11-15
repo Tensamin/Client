@@ -79,9 +79,9 @@ export function StorageProvider({
   const [ready, setReady] = useState(false);
   const [isTauri, setIsTauri] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
-  const [themeTint, setRawThemeTint] = useState<string | null>(null);
+  const [, setRawThemeTint] = useState<string | null>(null);
   const [themeCSS, setRawThemeCSS] = useState<string | null>(null);
-  const [themeTintType, setRawThemeTintType] = useState<string | null>(null);
+  const [, setRawThemeTintType] = useState<string | null>(null);
   const [language, setLanguageState] = useState<string | null>(null);
   const [languages, setLanguagesState] = useState<{
     en_int: Language;
@@ -92,9 +92,6 @@ export function StorageProvider({
 
       // General
       GENERAL_CLOSE: "Close",
-
-      // Markdown
-      MARKDOWN_CODE_FALLBACK_LABEL: "Copy code",
 
       // Sidebar
       COMMUNITIES: "Communities",

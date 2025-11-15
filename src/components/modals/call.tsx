@@ -14,11 +14,8 @@ import { UserAvatar } from "@/components/modals/raw";
 // Main
 export function LargeModal({
   title,
-  description,
   icon,
   loading,
-  onClick,
-  state,
 }: Readonly<{
   title: string;
   description: string;
@@ -62,11 +59,8 @@ export function LargeModal({
 
 export function MediumModal({
   title,
-  description,
   icon,
   loading,
-  onClick,
-  state,
 }: Readonly<{
   title: string;
   description: string;
