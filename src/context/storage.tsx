@@ -328,7 +328,8 @@ export function StorageProvider({
       SETTINGS_AUDIO_NS_DESCRIPTION:
         "You can suppress background noise in your calls while using Tensamin. Higher quality methods use more CPU but if your computer was made in the last decade and isn't a literal potato or toaster, you should be fine though.",
       SETTINGS_AUDIO_NS_DISABLED: "Disabled",
-      SETTINGS_AUDIO_NS_BUILTIN: "Built-in (You don't want to use this, trust me)",
+      SETTINGS_AUDIO_NS_BUILTIN:
+        "Built-in (You don't want to use this, trust me)",
       SETTINGS_AUDIO_NS_SPEEX: "Speex (lower quality, lower CPU usage)",
       SETTINGS_AUDIO_NS_RNNOISE: "RNNoise (higher quality, higher CPU usage)",
       SETTINGS_AUDIO_NS_NOT_SUPPORTED:
