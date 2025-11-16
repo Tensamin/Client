@@ -26,7 +26,7 @@ import {
   audioService,
   type NoiseSuppressionAlgorithm,
 } from "@/lib/audioService";
-import { call_token } from "@/lib/endpoints";
+import { call_token, call } from "@/lib/endpoints";
 
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
@@ -80,7 +80,7 @@ export function CallProvider({
   const [state, setState] = useState<
     "CONNECTED" | "CONNECTING" | "CLOSED" | "FAILED"
   >("CLOSED");
-  const [shouldConnect, setShouldConnect] = useState(false);
+  const [shouldConnect, setShouldConnectState] = useState(false);
   const [ownPing, setOwnPing] = useState<number>(0);
   const [callId] = useState("019a6488-0086-7759-9bfc-9bda36d58e4f");
 
@@ -97,24 +97,60 @@ export function CallProvider({
   const { debugLog, data } = useStorageContext();
   const { ownUuid, privateKeyHash } = useCryptoContext();
 
-  const detachRoomListeners = useCallback((room?: Room | null) => {
-    const currentRoom = room ?? roomRef.current;
-    if (!currentRoom) return;
-
-    Object.entries(roomHandlersRef.current).forEach(([event, handler]) => {
-      if (handler) {
-        currentRoom.off(
-          event as RoomEvent,
-          handler as (...args: any[]) => void
-        );
+  const logVerbose = useCallback(
+    (event: string, details?: Record<string, unknown>) => {
+      if (typeof details === "undefined") {
+        debugLog("CALL_CONTEXT_VERBOSE", event);
+        return;
       }
-    });
+      debugLog("CALL_CONTEXT_VERBOSE", event, details);
+    },
+    [debugLog]
+  );
 
-    roomHandlersRef.current = {};
-  }, []);
+  const setShouldConnect = useCallback(
+    (value: boolean) => {
+      logVerbose("SET_SHOULD_CONNECT_REQUEST", { value });
+      setShouldConnectState(value);
+    },
+    [logVerbose]
+  );
+
+  useEffect(() => {
+    logVerbose("CALL_STATE_CHANGED", { state });
+  }, [state, logVerbose]);
+
+  const detachRoomListeners = useCallback(
+    (room?: Room | null) => {
+      const currentRoom = room ?? roomRef.current;
+      logVerbose("DETACH_ROOM_LISTENERS", {
+        providedRoom: Boolean(room),
+        hasRoom: Boolean(currentRoom),
+        handlerCount: Object.keys(roomHandlersRef.current ?? {}).length,
+      });
+      if (!currentRoom) return;
+
+      Object.entries(roomHandlersRef.current).forEach(([event, handler]) => {
+        if (handler) {
+          currentRoom.off(
+            event as RoomEvent,
+            handler as (...args: any[]) => void
+          );
+        }
+      });
+
+      roomHandlersRef.current = {};
+    },
+    [logVerbose]
+  );
 
   const cleanupRoom = useCallback(async () => {
     const activeRoom = roomRef.current;
+    logVerbose("CLEANUP_ROOM_START", {
+      hasActiveRoom: Boolean(activeRoom),
+      hasLocalPublication: Boolean(localPublicationRef.current?.track),
+      hasLocalStream: Boolean(localStreamRef.current),
+    });
     roomRef.current = null;
 
     detachRoomListeners(activeRoom);
@@ -125,6 +161,9 @@ export function CallProvider({
           localPublicationRef.current.track,
           true
         );
+        logVerbose("CLEANUP_ROOM_UNPUBLISHED_LOCAL_TRACK", {
+          trackSid: localPublicationRef.current.track.sid,
+        });
       } catch (error) {
         debugLog("CALL_CONTEXT", "ERROR_CALL_CONTEXT_UNPUBLISH", error);
       }
@@ -135,6 +174,9 @@ export function CallProvider({
     if (activeRoom) {
       try {
         await activeRoom.disconnect(true);
+        logVerbose("CLEANUP_ROOM_DISCONNECTED", {
+          identity: activeRoom.localParticipant.identity,
+        });
       } catch (error) {
         debugLog("CALL_CONTEXT", "ERROR_CALL_CONTEXT_DISCONNECT", error);
       }
@@ -143,21 +185,41 @@ export function CallProvider({
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;
+      logVerbose("CLEANUP_ROOM_STOPPED_LOCAL_STREAM");
     }
 
     audioService.cleanup();
     usersRef.current.clear();
     bumpUsersVersion();
-  }, [detachRoomListeners, bumpUsersVersion, debugLog]);
+    logVerbose("CLEANUP_ROOM_FINISHED");
+  }, [detachRoomListeners, bumpUsersVersion, debugLog, logVerbose]);
 
   const exitCall = useCallback(() => {
+    logVerbose("EXIT_CALL_REQUESTED");
     setShouldConnect(false);
+  }, [logVerbose, setShouldConnect]);
+
+  const normalizeSignalUrl = useCallback((rawUrl?: string | null) => {
+    if (!rawUrl) return null;
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return null;
+    if (trimmed.startsWith("ws://") || trimmed.startsWith("wss://")) {
+      return trimmed;
+    }
+    const sanitized = trimmed.replace(/^wss?:\/\//, "").replace(/^\/*/, "");
+    return `wss://${sanitized}`;
   }, []);
 
   const requestLiveKitCredentials = useCallback(async () => {
     if (!ownUuid || !privateKeyHash) {
       throw new Error("CALL_CONTEXT_MISSING_AUTH");
     }
+
+    logVerbose("REQUEST_LIVEKIT_TOKEN_START", {
+      callId,
+      hasOwnUuid: Boolean(ownUuid),
+      hasPrivateKeyHash: Boolean(privateKeyHash),
+    });
 
     const response = await fetch(call_token, {
       method: "POST",
@@ -172,41 +234,62 @@ export function CallProvider({
       }),
     });
 
-    let payload: Record<string, unknown> = {};
+    logVerbose("REQUEST_LIVEKIT_TOKEN_RESPONSE", {
+      status: response.status,
+      ok: response.ok,
+    });
+
+    let token: string;
 
     try {
-      payload = ((await response.json()) as AdvancedSuccessMessage)
-        .data as Record<string, unknown>;
+      token = ((await response.json()) as AdvancedSuccessMessage).data
+        .token as string;
     } catch (error) {
       throw new Error("CALL_CONTEXT_INVALID_LIVEKIT_RESPONSE");
     }
 
     if (!response.ok) {
-      const message =
-        (payload.message as string) ??
-        (payload.error as string) ??
-        "CALL_LIVEKIT_TOKEN_FAILED";
-      throw new Error(message);
+      throw new Error("CALL_LIVEKIT_TOKEN_FAILED");
     }
 
-    const token =
-      (payload.token as string) ??
-      (payload.access_token as string) ??
-      (payload.payload as string) ??
-      "";
-    const serverUrl = (payload.server_url as string) ?? LIVEKIT_SIGNAL_URL;
+    const storageOverride = normalizeSignalUrl(
+      (data.call_signalUrl as string | null | undefined) ?? null
+    );
+
+    const serverUrl =
+      normalizeSignalUrl(process.env.NEXT_PUBLIC_LIVEKIT_URL ?? null) ??
+      storageOverride ??
+      `wss://${call}`;
 
     if (!token) {
       throw new Error("CALL_CONTEXT_MISSING_LIVEKIT_TOKEN");
     }
 
+    logVerbose("REQUEST_LIVEKIT_TOKEN_SUCCESS", {
+      serverUrl,
+    });
+
     return { token, serverUrl };
-  }, [callId, ownUuid, privateKeyHash]);
+  }, [
+    callId,
+    ownUuid,
+    privateKeyHash,
+    logVerbose,
+    normalizeSignalUrl,
+    data.call_signalUrl,
+  ]);
 
   const addParticipant = useCallback(
     (participant: RemoteParticipant) => {
       const identity = participant.identity;
-      if (!identity || identity === ownUuid) return;
+      if (!identity) {
+        logVerbose("ADD_PARTICIPANT_SKIPPED_NO_ID");
+        return;
+      }
+      if (identity === ownUuid) {
+        logVerbose("ADD_PARTICIPANT_SKIPPED_SELF", { identity });
+        return;
+      }
 
       const existing = usersRef.current.get(identity);
       usersRef.current.set(identity, {
@@ -214,25 +297,42 @@ export function CallProvider({
         active: existing?.active ?? false,
         stream: existing?.stream,
       });
+      logVerbose("ADD_PARTICIPANT_UPDATED", {
+        identity,
+        previouslyKnown: Boolean(existing),
+      });
       bumpUsersVersion();
     },
-    [ownUuid, bumpUsersVersion]
+    [ownUuid, bumpUsersVersion, logVerbose]
   );
 
   const removeParticipant = useCallback(
     (identity?: string) => {
-      if (!identity) return;
-      if (usersRef.current.delete(identity)) {
+      if (!identity) {
+        logVerbose("REMOVE_PARTICIPANT_SKIPPED_NO_ID");
+        return;
+      }
+
+      const removed = usersRef.current.delete(identity);
+      logVerbose("REMOVE_PARTICIPANT_RESULT", { identity, removed });
+      if (removed) {
         bumpUsersVersion();
       }
     },
-    [bumpUsersVersion]
+    [bumpUsersVersion, logVerbose]
   );
 
   const updateParticipantStream = useCallback(
     (participant: RemoteParticipant, track?: RemoteTrack) => {
       const identity = participant.identity;
-      if (!identity || identity === ownUuid) return;
+      if (!identity) {
+        logVerbose("UPDATE_PARTICIPANT_STREAM_SKIPPED_NO_ID");
+        return;
+      }
+      if (identity === ownUuid) {
+        logVerbose("UPDATE_PARTICIPANT_STREAM_SKIPPED_SELF");
+        return;
+      }
 
       const previous = usersRef.current.get(identity);
 
@@ -243,6 +343,7 @@ export function CallProvider({
             active: false,
           });
           bumpUsersVersion();
+          logVerbose("UPDATE_PARTICIPANT_STREAM_REMOVED", { identity });
         }
         return;
       }
@@ -254,8 +355,12 @@ export function CallProvider({
         stream,
       });
       bumpUsersVersion();
+      logVerbose("UPDATE_PARTICIPANT_STREAM_ATTACHED", {
+        identity,
+        trackSid: track.sid,
+      });
     },
-    [ownUuid, bumpUsersVersion]
+    [ownUuid, bumpUsersVersion, logVerbose]
   );
 
   const markActiveSpeakers = useCallback(
@@ -267,6 +372,11 @@ export function CallProvider({
           .filter((identity): identity is string => Boolean(identity))
       );
 
+      logVerbose("ACTIVE_SPEAKERS_UPDATE", {
+        totalSpeakers: speakers.length,
+        activeRemoteCount: activeIdentities.size,
+      });
+
       let changed = false;
       usersRef.current.forEach((user, identity) => {
         const isActive = activeIdentities.has(identity);
@@ -276,74 +386,155 @@ export function CallProvider({
         }
       });
 
-      if (changed) bumpUsersVersion();
+      if (changed) {
+        bumpUsersVersion();
+        logVerbose("ACTIVE_SPEAKERS_STATE_CHANGED");
+      }
     },
-    [bumpUsersVersion]
+    [bumpUsersVersion, logVerbose]
   );
 
   const getLocalStream = useCallback(
     async (type: "VOICE" | "VIDEO" | "CAMERA") => {
-      const voiceConstraintsNS: MediaStreamConstraints = {
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-          sampleRate: 48000,
-          channelCount: (data.call_channelCount as number) || 2,
-        },
+      logVerbose("GET_LOCAL_STREAM_START", {
+        type,
+        nsState: data.nsState,
+        nsSupported: noiseSuppressionSupported,
+      });
+
+      const preferredChannels =
+        typeof data.call_channelCount === "number" && data.call_channelCount > 0
+          ? (data.call_channelCount as number)
+          : 2;
+      const preferredSampleRate =
+        typeof data.call_sampleRate === "number" && data.call_sampleRate > 0
+          ? (data.call_sampleRate as number)
+          : 48000;
+      const preferredInputDevice =
+        typeof data.inputDevice === "string" ? (data.inputDevice as string) : undefined;
+
+      const buildVoiceConstraints = (
+        builtInProcessing: boolean,
+        useExactDevice = false
+      ): MediaStreamConstraints => {
+        const audioTrack: MediaTrackConstraints = {
+          echoCancellation: builtInProcessing,
+          noiseSuppression: builtInProcessing,
+          autoGainControl: builtInProcessing,
+          sampleRate: preferredSampleRate
+            ? ({ ideal: preferredSampleRate } as ConstrainDouble)
+            : undefined,
+          channelCount: preferredChannels
+            ? ({ ideal: preferredChannels, min: 1 } as ConstrainULong)
+            : undefined,
+        };
+
+        if (!builtInProcessing) {
+          audioTrack.echoCancellation = false;
+          audioTrack.noiseSuppression = false;
+          audioTrack.autoGainControl = false;
+        }
+
+        if (preferredInputDevice && preferredInputDevice !== "default") {
+          audioTrack.deviceId = useExactDevice
+            ? ({ exact: preferredInputDevice } as ConstrainDOMString)
+            : ({ ideal: preferredInputDevice } as ConstrainDOMString);
+        }
+
+        return {
+          audio: audioTrack,
+          video: false,
+        };
+      };
+
+      const relaxedAudioFallback: MediaStreamConstraints = {
+        audio: true,
         video: false,
       };
 
-      const voiceConstraintsBuiltIn: MediaStreamConstraints = {
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000,
-          channelCount: (data.call_channelCount as number) || 2,
-        },
-        video: false,
+      const tryAcquireStream = async (
+        attempts: MediaStreamConstraints[],
+        label: string
+      ): Promise<MediaStream> => {
+        let lastError: unknown;
+        for (let i = 0; i < attempts.length; i++) {
+          try {
+            const attempt = attempts[i];
+            const stream = await navigator.mediaDevices.getUserMedia(attempt);
+            logVerbose("GET_LOCAL_STREAM_ATTEMPT_SUCCESS", {
+              type,
+              attemptLabel: label,
+              attemptIndex: i,
+            });
+            return stream;
+          } catch (error) {
+            lastError = error;
+            logVerbose("GET_LOCAL_STREAM_ATTEMPT_FAILED", {
+              type,
+              attemptLabel: label,
+              attemptIndex: i,
+              errorName: error instanceof DOMException ? error.name : "UNKNOWN",
+            });
+          }
+        }
+        throw lastError ?? new Error("CALL_CONTEXT_MEDIA_ACQUISITION_FAILED");
       };
 
-      const videoConstraints: MediaStreamConstraints = {
-        audio: data.call_captureAudio as boolean,
-        video: {
-          width: data.call_videoWidth as number,
-          height: data.call_videoHeight as number,
-          frameRate: data.call_videoFramerate as number,
-        },
+      const videoConstraints: MediaTrackConstraints = {
+        width:
+          typeof data.call_videoWidth === "number"
+            ? ({ ideal: data.call_videoWidth as number } as ConstrainULong)
+            : undefined,
+        height:
+          typeof data.call_videoHeight === "number"
+            ? ({ ideal: data.call_videoHeight as number } as ConstrainULong)
+            : undefined,
+        frameRate:
+          typeof data.call_videoFramerate === "number"
+            ? ({ ideal: data.call_videoFramerate as number } as ConstrainDouble)
+            : undefined,
+      };
+
+      const displayMediaConstraints = {
+        audio: Boolean(data.call_captureAudio),
+        video: videoConstraints,
       };
 
       const cameraConstraints: MediaStreamConstraints = {
         audio: false,
-        video: {
-          width: data.call_videoWidth as number,
-          height: data.call_videoHeight as number,
-          frameRate: data.call_videoFramerate as number,
-        },
+        video: videoConstraints,
       };
 
       switch (type) {
         case "VOICE": {
-          const nsState = data.nsState as number;
-          let constraints: MediaStreamConstraints;
+          const nsState = (data.nsState as number) ?? 0;
+          const builtIn = nsState === 1;
 
-          switch (nsState) {
-            case 1:
-              constraints = voiceConstraintsBuiltIn;
-              break;
-            case 2:
-            case 3:
-              constraints = voiceConstraintsNS;
-              break;
-            default:
-              constraints = voiceConstraintsNS;
-              break;
+          logVerbose("GET_LOCAL_STREAM_VOICE_CONSTRAINTS", {
+            nsState,
+            builtIn,
+            preferredChannels,
+            preferredSampleRate,
+            preferredInputDevice,
+          });
+
+          const constraintAttempts: MediaStreamConstraints[] = [];
+          if (preferredInputDevice && preferredInputDevice !== "default") {
+            constraintAttempts.push(buildVoiceConstraints(builtIn, true));
           }
+          constraintAttempts.push(buildVoiceConstraints(builtIn));
+          constraintAttempts.push(relaxedAudioFallback);
 
-          const rawStream = await navigator.mediaDevices.getUserMedia(
-            constraints
+          const rawStream = await tryAcquireStream(
+            constraintAttempts,
+            builtIn ? "builtin" : "webaudio"
           );
+
+          logVerbose("GET_LOCAL_STREAM_ACQUIRED", {
+            type,
+            audioTracks: rawStream.getAudioTracks().length,
+            videoTracks: rawStream.getVideoTracks().length,
+          });
 
           if (
             nsState &&
@@ -359,36 +550,81 @@ export function CallProvider({
                 rawStream,
                 {
                   algorithm,
-                  maxChannels: (data.call_channelCount as number) || 2,
+                  maxChannels: preferredChannels || 2,
                 }
               );
+
+              logVerbose("GET_LOCAL_STREAM_NOISE_SUPPRESSION_APPLIED", {
+                algorithm,
+              });
 
               return processedStream;
             } catch (error) {
               debugLog("CALL_CONTEXT", "ERROR_NOISE_SUPPRESSION_FAILED", error);
+              logVerbose("GET_LOCAL_STREAM_NOISE_SUPPRESSION_FAILED");
               return rawStream;
             }
           }
 
           return rawStream;
         }
-        case "VIDEO":
-          return navigator.mediaDevices.getDisplayMedia(videoConstraints);
-        case "CAMERA":
-          return navigator.mediaDevices.getUserMedia(cameraConstraints);
-        default:
-          return navigator.mediaDevices.getUserMedia({
+        case "VIDEO": {
+          try {
+            const stream = await navigator.mediaDevices.getDisplayMedia(
+              displayMediaConstraints
+            );
+            logVerbose("GET_LOCAL_STREAM_ACQUIRED", {
+              type,
+              audioTracks: stream.getAudioTracks().length,
+              videoTracks: stream.getVideoTracks().length,
+            });
+            return stream;
+          } catch (error) {
+            logVerbose("GET_LOCAL_STREAM_DISPLAY_FAILED", {
+              errorName: error instanceof DOMException ? error.name : "UNKNOWN",
+            });
+            throw error;
+          }
+        }
+        case "CAMERA": {
+          const stream = await navigator.mediaDevices.getUserMedia(
+            cameraConstraints
+          );
+          logVerbose("GET_LOCAL_STREAM_ACQUIRED", {
+            type,
+            audioTracks: stream.getAudioTracks().length,
+            videoTracks: stream.getVideoTracks().length,
+          });
+          return stream;
+        }
+        default: {
+          const stream = await navigator.mediaDevices.getUserMedia({
             audio: false,
             video: false,
           });
+          logVerbose("GET_LOCAL_STREAM_ACQUIRED", {
+            type,
+            audioTracks: stream.getAudioTracks().length,
+            videoTracks: stream.getVideoTracks().length,
+          });
+          return stream;
+        }
       }
     },
-    [data, noiseSuppressionSupported, debugLog]
+    [
+      data,
+      noiseSuppressionSupported,
+      debugLog,
+      logVerbose,
+    ]
   );
 
   const publishLocalAudio = useCallback(
     async (room: Room) => {
       if (localPublicationRef.current?.track) {
+        logVerbose("PUBLISH_LOCAL_AUDIO_UNPUBLISH_PREVIOUS", {
+          trackSid: localPublicationRef.current.track.sid,
+        });
         try {
           await room.localParticipant.unpublishTrack(
             localPublicationRef.current.track,
@@ -403,8 +639,10 @@ export function CallProvider({
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((track) => track.stop());
         localStreamRef.current = null;
+        logVerbose("PUBLISH_LOCAL_AUDIO_CLEARED_PREVIOUS_STREAM");
       }
 
+      logVerbose("PUBLISH_LOCAL_AUDIO_REQUEST_STREAM");
       const stream = await getLocalStream("VOICE");
       localStreamRef.current = stream;
       const [audioTrack] = stream.getAudioTracks();
@@ -417,15 +655,25 @@ export function CallProvider({
       });
 
       localPublicationRef.current = publication;
+      logVerbose("PUBLISH_LOCAL_AUDIO_PUBLISHED", {
+        trackSid: publication.trackSid,
+      });
     },
-    [debugLog, getLocalStream]
+    [debugLog, getLocalStream, logVerbose]
   );
 
   const attachRoomListeners = useCallback(
     (room: Room) => {
       detachRoomListeners(room);
+      logVerbose("ATTACH_ROOM_LISTENERS", {
+        roomName: room.name,
+        localParticipant: room.localParticipant.identity,
+      });
 
       const handleParticipantConnected = (participant: RemoteParticipant) => {
+        logVerbose("EVENT_PARTICIPANT_CONNECTED", {
+          identity: participant.identity,
+        });
         addParticipant(participant);
         participant.audioTrackPublications.forEach((publication) => {
           if (publication.track) {
@@ -437,6 +685,9 @@ export function CallProvider({
       const handleParticipantDisconnected = (
         participant: RemoteParticipant
       ) => {
+        logVerbose("EVENT_PARTICIPANT_DISCONNECTED", {
+          identity: participant.identity,
+        });
         removeParticipant(participant.identity);
       };
 
@@ -445,6 +696,10 @@ export function CallProvider({
         _publication: RemoteTrackPublication,
         participant: RemoteParticipant
       ) => {
+        logVerbose("EVENT_TRACK_SUBSCRIBED", {
+          identity: participant.identity,
+          kind: track.kind,
+        });
         if (track.kind === Track.Kind.Audio) {
           updateParticipantStream(participant, track);
         }
@@ -455,12 +710,17 @@ export function CallProvider({
         _publication: RemoteTrackPublication,
         participant: RemoteParticipant
       ) => {
+        logVerbose("EVENT_TRACK_UNSUBSCRIBED", {
+          identity: participant.identity,
+          kind: track.kind,
+        });
         if (track.kind === Track.Kind.Audio) {
           updateParticipantStream(participant);
         }
       };
 
       const handleConnectionStateChanged = (nextState: ConnectionState) => {
+        logVerbose("EVENT_CONNECTION_STATE_CHANGED", { nextState });
         switch (nextState) {
           case ConnectionState.Connected:
             setState("CONNECTED");
@@ -476,8 +736,24 @@ export function CallProvider({
       };
 
       const handleDisconnected = () => {
+        logVerbose("EVENT_ROOM_DISCONNECTED");
         setState("CLOSED");
         setShouldConnect(false);
+      };
+
+      const handleReconnecting = () => {
+        logVerbose("EVENT_ROOM_RECONNECTING");
+        setState("CONNECTING");
+      };
+
+      const handleSignalReconnecting = () => {
+        logVerbose("EVENT_ROOM_SIGNAL_RECONNECTING");
+        setState("CONNECTING");
+      };
+
+      const handleReconnected = () => {
+        logVerbose("EVENT_ROOM_RECONNECTED");
+        setState("CONNECTED");
       };
 
       const handlers: RoomHandlerMap = {
@@ -487,9 +763,9 @@ export function CallProvider({
         [RoomEvent.TrackUnsubscribed]: handleTrackUnsubscribed,
         [RoomEvent.ActiveSpeakersChanged]: markActiveSpeakers,
         [RoomEvent.ConnectionStateChanged]: handleConnectionStateChanged,
-        [RoomEvent.Reconnecting]: () => setState("CONNECTING"),
-        [RoomEvent.SignalReconnecting]: () => setState("CONNECTING"),
-        [RoomEvent.Reconnected]: () => setState("CONNECTED"),
+        [RoomEvent.Reconnecting]: handleReconnecting,
+        [RoomEvent.SignalReconnecting]: handleSignalReconnecting,
+        [RoomEvent.Reconnected]: handleReconnected,
         [RoomEvent.Disconnected]: handleDisconnected,
       };
 
@@ -507,11 +783,17 @@ export function CallProvider({
       markActiveSpeakers,
       removeParticipant,
       updateParticipantStream,
+      logVerbose,
+      setShouldConnect,
+      setState,
     ]
   );
 
   const seedParticipants = useCallback(
     (room: Room) => {
+      logVerbose("SEED_PARTICIPANTS", {
+        count: room.remoteParticipants.size,
+      });
       room.remoteParticipants.forEach((participant) => {
         addParticipant(participant);
         participant.audioTrackPublications.forEach((publication) => {
@@ -521,26 +803,37 @@ export function CallProvider({
         });
       });
     },
-    [addParticipant, updateParticipantStream]
+    [addParticipant, updateParticipantStream, logVerbose]
   );
 
   useEffect(() => {
+    logVerbose("SHOULD_CONNECT_CHANGED", { shouldConnect });
     if (shouldConnect) return;
     setOwnPing(0);
     setState("CLOSED");
     void cleanupRoom();
-  }, [shouldConnect, cleanupRoom]);
+  }, [shouldConnect, cleanupRoom, logVerbose]);
 
   useEffect(() => {
-    if (!shouldConnect || roomRef.current) return;
+    logVerbose("CONNECT_EFFECT_TRIGGER", {
+      shouldConnect,
+      hasRoom: Boolean(roomRef.current),
+    });
+    if (!shouldConnect || roomRef.current) {
+      return;
+    }
 
     let cancelled = false;
 
     const connectToRoom = async () => {
+      logVerbose("CONNECT_TO_ROOM_START");
       setState("CONNECTING");
       try {
         const { token, serverUrl } = await requestLiveKitCredentials();
         if (cancelled) return;
+        logVerbose("CONNECT_TO_ROOM_CREDENTIALS_RECEIVED", {
+          serverUrl,
+        });
 
         const room = new Room({
           adaptiveStream: true,
@@ -558,6 +851,10 @@ export function CallProvider({
             iceTransportPolicy: data.call_onlyAllowRelays ? "relay" : undefined,
           },
         });
+        logVerbose("CONNECT_TO_ROOM_CONNECTED", {
+          roomName: room.name,
+          participantId: room.localParticipant.identity,
+        });
 
         if (cancelled) {
           await cleanupRoom();
@@ -565,7 +862,11 @@ export function CallProvider({
         }
 
         seedParticipants(room);
+        logVerbose("CONNECT_TO_ROOM_SEEDED_PARTICIPANTS", {
+          participantCount: room.remoteParticipants.size,
+        });
         await publishLocalAudio(room);
+        logVerbose("CONNECT_TO_ROOM_PUBLISHED_LOCAL_AUDIO");
 
         if (cancelled) {
           await cleanupRoom();
@@ -573,9 +874,11 @@ export function CallProvider({
         }
 
         setState("CONNECTED");
+        logVerbose("CONNECT_TO_ROOM_SUCCESS");
       } catch (error) {
         if (cancelled) return;
         debugLog("CALL_CONTEXT", "ERROR_CALL_CONTEXT_CONNECT", error);
+        logVerbose("CONNECT_TO_ROOM_FAILED");
         setState("FAILED");
         setShouldConnect(false);
         await cleanupRoom();
@@ -586,6 +889,7 @@ export function CallProvider({
 
     return () => {
       cancelled = true;
+      logVerbose("CONNECT_TO_ROOM_CANCELLED");
     };
   }, [
     shouldConnect,
@@ -596,6 +900,7 @@ export function CallProvider({
     cleanupRoom,
     data.call_onlyAllowRelays,
     debugLog,
+    logVerbose,
   ]);
 
   useEffect(() => {
@@ -607,7 +912,10 @@ export function CallProvider({
       const pcManager = roomRef.current?.engine.pcManager;
       const transport = pcManager?.publisher ?? pcManager?.subscriber;
 
-      if (!transport) return;
+      if (!transport) {
+        logVerbose("PING_TRANSPORT_UNAVAILABLE");
+        return;
+      }
 
       try {
         const stats = await transport.getStats();
@@ -620,6 +928,9 @@ export function CallProvider({
               candidate.nominated
             ) {
               setOwnPing(Math.round(candidate.currentRoundTripTime * 1000));
+              logVerbose("PING_UPDATED", {
+                ping: Math.round(candidate.currentRoundTripTime * 1000),
+              });
             }
           }
         });
@@ -635,26 +946,38 @@ export function CallProvider({
       cancelled = true;
       clearInterval(interval);
     };
-  }, [state, debugLog]);
+  }, [state, debugLog, logVerbose]);
 
   const enableNoiseSuppression = useCallback(
     (algorithm?: NoiseSuppressionAlgorithm) => {
+      logVerbose("NOISE_SUPPRESSION_ENABLE_REQUEST", {
+        algorithm,
+        supported: noiseSuppressionSupported,
+      });
       if (noiseSuppressionSupported) {
         setNoiseSuppressionEnabled(true);
         if (algorithm) {
           setNoiseSuppressionAlgorithm(algorithm);
         }
+        logVerbose("NOISE_SUPPRESSION_ENABLED", {
+          algorithm: algorithm ?? noiseSuppressionAlgorithm,
+        });
       }
     },
-    [noiseSuppressionSupported]
+    [noiseSuppressionSupported, logVerbose, noiseSuppressionAlgorithm]
   );
 
   const disableNoiseSuppression = useCallback(() => {
+    logVerbose("NOISE_SUPPRESSION_DISABLE_REQUEST");
     setNoiseSuppressionEnabled(false);
     audioService.cleanup();
-  }, []);
+    logVerbose("NOISE_SUPPRESSION_DISABLED");
+  }, [logVerbose]);
 
   const toggleNoiseSuppression = useCallback(() => {
+    logVerbose("NOISE_SUPPRESSION_TOGGLE", {
+      currentlyEnabled: noiseSuppressionEnabled,
+    });
     if (noiseSuppressionEnabled) {
       disableNoiseSuppression();
     } else {
@@ -664,6 +987,7 @@ export function CallProvider({
     noiseSuppressionEnabled,
     enableNoiseSuppression,
     disableNoiseSuppression,
+    logVerbose,
   ]);
 
   return (

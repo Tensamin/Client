@@ -12,6 +12,7 @@ export const tos = "https://docs.tensamin.net/legal/terms-of-service";
 export const pp = "https://docs.tensamin.net/legal/privacy-policy";
 
 export const client_wss = "wss://app.tensamin.net/ws/client/";
+export const call = "call.tensamin.net";
 
 export const sound_call = "/sounds/call.wav";
 export const sound_message = "/sounds/message.wav";
