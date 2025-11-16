@@ -40,6 +40,18 @@ const VARS = [
 
 type VarName = (typeof VARS)[number];
 type ThemeMap = Record<VarName, string>;
+const CHART_VARS = [
+  "--chart-1",
+  "--chart-2",
+  "--chart-3",
+  "--chart-4",
+  "--chart-5",
+] as const;
+type ChartVar = (typeof CHART_VARS)[number];
+type ChartMap = Record<ChartVar, string>;
+
+const isVarName = (value: string): value is VarName =>
+  (VARS as readonly string[]).includes(value);
 
 const clamp = (x: number, min: number, max: number) =>
   Math.min(Math.max(x, min), max);
@@ -232,10 +244,10 @@ const readThemeFromCSS = (scheme: Scheme): Partial<ThemeMap> => {
       ) {
         const style = rule.style;
         for (let i = 0; i < style.length; i++) {
-          const prop = style[i] as VarName | string;
-          if ((VARS as readonly string[]).includes(prop)) {
+          const prop = style[i];
+          if (isVarName(prop)) {
             const val = style.getPropertyValue(prop).trim();
-            if (val) (result as any)[prop] = val;
+            if (val) result[prop] = val;
           }
         }
       }
@@ -249,14 +261,7 @@ const formatOut = (scheme: Scheme, lch: LCH) =>
   scheme === "light" ? oklchToString(lch) : oklchToHex(lch);
 
 // Build chart colors around the brand hue
-const buildCharts = (
-  base: LCH,
-  scheme: Scheme,
-  tone: Tone
-): Record<
-  "--chart-1" | "--chart-2" | "--chart-3" | "--chart-4" | "--chart-5",
-  string
-> => {
+const buildCharts = (base: LCH, scheme: Scheme, tone: Tone): ChartMap => {
   const offsets = [0, 60, 200, 280, 330];
   const lTargets =
     scheme === "light"
@@ -268,15 +273,15 @@ const buildCharts = (
       : [0.72, 0.76, 0.82, 0.74, 0.7];
 
   const cMul = tone === "hard" ? 1.1 : 0.95;
-  const out: any = {};
-  offsets.forEach((off, i) => {
+  const out = CHART_VARS.reduce<ChartMap>((acc, key, i) => {
     const lch: LCH = {
       l: lTargets[i],
       c: clamp(base.c * cMul, 0.12, 0.28),
-      h: rotateHue(base.h, off),
+      h: rotateHue(base.h, offsets[i] ?? 0),
     };
-    out[`--chart-${i + 1}`] = formatOut(scheme, toGamut(lch));
-  });
+    acc[key] = formatOut(scheme, toGamut(lch));
+    return acc;
+  }, {} as ChartMap);
   return out;
 };
 
@@ -344,13 +349,18 @@ export function generateColors(
     schemeIsLight ? 0.03 : 0.08
   );
   const subtlerChroma = clamp(neutralChroma * 0.5, 0.006, 0.026);
-  const borderChroma = clamp(neutralChroma * 0.4, 0.006, 0.028);
+  const borderChroma = clamp(
+    neutralChroma * (schemeIsLight ? 0.65 : 0.55),
+    schemeIsLight ? 0.01 : 0.024,
+    schemeIsLight ? 0.052 : 0.09
+  );
   const sidebarChroma = clamp(neutralChroma * 1.05, 0.014, 0.07);
   const inputChroma = clamp(
     borderChroma * (schemeIsLight ? 3 : 1.8),
     schemeIsLight ? 0.02 : 0.04,
     schemeIsLight ? 0.06 : 0.09
   );
+  const borderHue = rotateHue(baseLch.h, toneIsHard ? -10 : -6);
 
   const surfaceLevels = schemeIsLight
     ? {
@@ -359,7 +369,7 @@ export function generateColors(
         popover: toneIsHard ? 0.988 : 0.995,
         secondary: toneIsHard ? 0.945 : 0.965,
         muted: toneIsHard ? 0.97 : 0.985,
-        border: toneIsHard ? 0.898 : 0.924,
+        border: toneIsHard ? 0.878 : 0.904,
         sidebar: toneIsHard ? 0.962 : 0.972,
         input: toneIsHard ? 0.88 : 0.902,
       }
@@ -369,7 +379,7 @@ export function generateColors(
         popover: toneIsHard ? 0.2 : 0.18,
         secondary: toneIsHard ? 0.3 : 0.27,
         muted: toneIsHard ? 0.25 : 0.22,
-        border: toneIsHard ? 0.32 : 0.28,
+        border: toneIsHard ? 0.3 : 0.26,
         sidebar: toneIsHard ? 0.13 : 0.11,
         input: toneIsHard ? 0.34 : 0.3,
       };
@@ -403,11 +413,19 @@ export function generateColors(
     c: subtlerChroma,
     h: neutralHue,
   });
-  const mutedFg = pickTextOn(muted);
+  const mutedForeground = toGamut({
+    l: clamp(muted.l + (schemeIsLight ? -0.4 : 0.3), 0, 1),
+    c: clamp(
+      muted.c * (toneIsHard ? 2 : 0.95),
+      schemeIsLight ? 0.012 : 0.04,
+      schemeIsLight ? 0.08 : 0.12
+    ),
+    h: muted.h,
+  });
   const border = toGamut({
     l: surfaceLevels.border,
     c: borderChroma,
-    h: neutralHue,
+    h: borderHue,
   });
   const input = toGamut({
     l: surfaceLevels.input,
@@ -455,7 +473,7 @@ export function generateColors(
       ? secondaryFg.oklch
       : secondaryFg.hex,
     "--muted": formatOut(colorScheme, muted),
-    "--muted-foreground": schemeIsLight ? mutedFg.oklch : mutedFg.hex,
+    "--muted-foreground": formatOut(colorScheme, mutedForeground),
     "--border": formatOut(colorScheme, border),
     "--input": formatOut(colorScheme, input),
     "--destructive": formatOut(colorScheme, destructive),
@@ -479,6 +497,6 @@ export function generateColors(
     ...charts,
   };
 
-  const merged: ThemeMap = { ...(baseline as ThemeMap), ...(overrides as any) };
+  const merged: ThemeMap = { ...(baseline as ThemeMap), ...overrides };
   return merged;
 }

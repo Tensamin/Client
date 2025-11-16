@@ -3,8 +3,9 @@
 // Package Imports
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Ring } from "ldrs/react";
+import { Ring, Hourglass } from "ldrs/react";
 import "ldrs/react/Ring.css";
+import "ldrs/react/Hourglass.css";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
@@ -119,6 +120,7 @@ export function RawLoading({
   return (
     <>
       <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10">
+        {/* eslint-disable-next-line*/}
         <img
           src={
             isError ? "/assets/images/logo.png" : "/assets/images/loading.gif"
@@ -166,5 +168,32 @@ export function LoadingIcon({ invert }: { invert?: boolean }) {
       speed="2"
       color={invert ? "var(--background)" : "var(--foreground)"}
     />
+  );
+}
+
+export function DelayedLoadingIcon({ invert }: { invert?: boolean }) {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShow(true);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <AnimatePresence mode="wait">
+      {show && (
+        <MotionDivWrapper fadeInFromTop>
+          <Hourglass
+            size="40"
+            bgOpacity="0.25"
+            speed="2"
+            color={invert ? "var(--background)" : "var(--foreground)"}
+          />
+        </MotionDivWrapper>
+      )}
+    </AnimatePresence>
   );
 }

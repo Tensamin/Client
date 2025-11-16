@@ -35,16 +35,16 @@ export type Messages = {
   previous: number;
 };
 
+export type BasicSuccessMessage = {
+  success: boolean;
+  message: string;
+};
+
 export type JWK = {
   kty: string;
   crv: string;
   x?: string;
   d?: string;
-};
-
-export type BasicSuccessMessage = {
-  success: boolean;
-  message: string;
 };
 
 export type UserState =
@@ -73,19 +73,32 @@ export type AdvancedSuccessMessageData = {
   user_state?: string | null;
   amount?: number | null;
   offset?: number | null;
+  settings?: string[] | null;
   user_status?: string | null;
   receiver_id?: string | null;
   sender_id?: string | null;
   call_id?: string | null;
   call_state?: string | null;
   receiver?: string | null;
-  payload?: RTCIceCandidate | RTCSessionDescriptionInit | null;
+  settings_name?: string | null;
+  payload?:
+    | RTCIceCandidate
+    | RTCSessionDescriptionInit
+    | StoredSettings
+    | string
+    | null;
   about?: {
     [key: string]: {
       state: string;
       streaming: boolean;
     };
   } | null;
+};
+
+export type Language = Record<string, string>;
+export type Value = string | boolean | number | object | Language | object[];
+export type StoredSettings = {
+  [key: string]: Value;
 };
 
 export type AdvancedSuccessMessage = {

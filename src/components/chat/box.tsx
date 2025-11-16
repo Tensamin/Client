@@ -6,8 +6,6 @@ import {
   InfiniteData,
 } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Ring } from "ldrs/react";
-import "ldrs/react/Ring.css";
 
 // Lib Imports
 import { InitialMessages } from "@/lib/utils";
@@ -19,6 +17,7 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import { MessageGroup as MessageGroupComponent } from "@/components/chat/message";
+import { DelayedLoadingIcon } from "@/components/loading";
 
 // Types
 import {
@@ -34,7 +33,8 @@ function flattenPages(
   data: InfiniteData<Messages, number> | undefined
 ): MessageGroupType[] {
   if (!data) return [];
-  return data.pages.flatMap((p) => p.messages);
+  const orderedPages = [...data.pages].reverse();
+  return orderedPages.flatMap((p) => p.messages);
 }
 
 type MessagesQueryKey = ["messages", "top-infinite", string];
@@ -46,10 +46,13 @@ const BOTTOM_DISTANCE_THRESHOLD = 8;
 export function Box() {
   const parentRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
-  const loadingLockRef = useRef(false);
-  const didInitialScrollRef = useRef(false);
-  const timeoutRef = useRef<number | null>(null);
   const nextIdRef = useRef(TOTAL_MESSAGES);
+  const isInitialLoadRef = useRef(true);
+  const scrollMetaRef = useRef<{
+    prevScrollHeight: number;
+    prevScrollTop: number;
+    prevOffset: number;
+  } | null>(null);
 
   const { translate } = useStorageContext();
   const { getMessages, addRealtimeMessageToBox, setAddRealtimeMessageToBox } =
@@ -66,9 +69,10 @@ export function Box() {
     data,
     isLoading,
     isError,
-    fetchPreviousPage,
-    isFetchingPreviousPage,
-    hasPreviousPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    hasNextPage,
+    isSuccess,
   } = useInfiniteQuery<
     Messages,
     Error,
@@ -80,14 +84,14 @@ export function Box() {
     initialPageParam: 0,
     queryFn: async ({ pageParam }) =>
       await getMessages(pageParam, InitialMessages),
-    getNextPageParam: (data: Messages) => {
-      if (data.messages.length === 0) return undefined;
-      return data.previous;
+    getNextPageParam: (lastPage: Messages) => {
+      if (lastPage.messages.length === 0) return undefined;
+      return lastPage.next;
     },
-    getPreviousPageParam: (data: Messages) => data.next,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     enabled: shouldLoadMessages,
+    refetchOnWindowFocus: false,
   });
   const messageGroups = useMemo(() => flattenPages(data), [data]);
 
@@ -102,6 +106,7 @@ export function Box() {
     [messageGroups]
   );
 
+  // eslint-disable-next-line
   const rowVirtualizer = useVirtualizer({
     count: messageGroups.length,
     getScrollElement,
@@ -124,79 +129,66 @@ export function Box() {
     return distance <= BOTTOM_DISTANCE_THRESHOLD + 2;
   }, []);
 
-  const maybeLoadOlder = useCallback(async () => {
-    if (loadingLockRef.current || !hasPreviousPage || isFetchingPreviousPage) {
-      return;
+  const loadMore = useCallback(async () => {
+    if (isFetchingNextPage || !hasNextPage || !parentRef.current) return;
+
+    const el = parentRef.current;
+    scrollMetaRef.current = {
+      prevScrollHeight: el.scrollHeight,
+      prevScrollTop: el.scrollTop,
+      prevOffset: rowVirtualizer.scrollOffset ?? el.scrollTop,
+    };
+
+    try {
+      await fetchNextPage();
+    } catch (error) {
+      scrollMetaRef.current = null;
+      throw error;
     }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, rowVirtualizer]);
+
+  const onScroll = useCallback(() => {
+    const el = parentRef.current;
+    if (!el) return;
+    if (el.scrollTop <= SCROLL_THRESHOLD) {
+      void loadMore();
+    }
+  }, [loadMore]);
+
+  useEffect(() => {
     const el = parentRef.current;
     if (!el) return;
 
-    if (el.scrollTop > SCROLL_THRESHOLD) return;
-
-    loadingLockRef.current = true;
-
-    const prevScrollHeight = el.scrollHeight;
-    const prevScrollTop = el.scrollTop;
-    const prevOffset = rowVirtualizer.scrollOffset ?? prevScrollTop;
-
-    try {
-      await fetchPreviousPage();
-    } catch (error) {
-      loadingLockRef.current = false;
-      throw error;
-    }
-
-    requestAnimationFrame(() => {
-      const newScrollHeight = el.scrollHeight;
-      const delta = newScrollHeight - prevScrollHeight;
-      if (delta > 0) {
-        const nextScrollTop = prevScrollTop + delta;
-        el.scrollTop = nextScrollTop;
-        rowVirtualizer.scrollToOffset(prevOffset + delta);
-      }
-      loadingLockRef.current = false;
-    });
-  }, [
-    fetchPreviousPage,
-    hasPreviousPage,
-    isFetchingPreviousPage,
-    rowVirtualizer,
-  ]);
-
-  const onScroll = useCallback(() => {
-    if (timeoutRef.current !== null) {
-      window.clearTimeout(timeoutRef.current);
-    }
-    timeoutRef.current = window.setTimeout(() => {
-      void maybeLoadOlder();
-      timeoutRef.current = null;
-    }, 16);
-  }, [maybeLoadOlder]);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current !== null) {
-        window.clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (data && messageGroups.length > 0 && !didInitialScrollRef.current) {
-      didInitialScrollRef.current = true;
+    if (isInitialLoadRef.current && isSuccess && messageGroups.length > 0) {
+      isInitialLoadRef.current = false;
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           rowVirtualizer.scrollToIndex(messageGroups.length - 1, {
             align: "end",
           });
+          const scrollEl = parentRef.current;
+          if (scrollEl) {
+            scrollEl.scrollTop = scrollEl.scrollHeight;
+          }
         });
       });
+      return;
     }
-  }, [data, messageGroups.length, rowVirtualizer]);
+
+    const meta = scrollMetaRef.current;
+    if (meta) {
+      const newScrollHeight = el.scrollHeight;
+      const delta = newScrollHeight - meta.prevScrollHeight;
+      const nextScrollTop = meta.prevScrollTop + delta;
+      el.scrollTop = nextScrollTop;
+      rowVirtualizer.scrollToOffset(meta.prevOffset + delta);
+      scrollMetaRef.current = null;
+    }
+  }, [isSuccess, messageGroups.length, rowVirtualizer]);
 
   useEffect(() => {
-    didInitialScrollRef.current = false;
-    loadingLockRef.current = false;
+    isInitialLoadRef.current = true;
+    scrollMetaRef.current = null;
   }, [currentReceiverUuid]);
 
   const handleRealtimeMessage = useEffectEvent((newMsg: Message) => {
@@ -295,13 +287,7 @@ export function Box() {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center text-sm">
-        <Ring
-          size="30"
-          stroke="4"
-          bgOpacity="0"
-          speed="2"
-          color="var(--foreground)"
-        />
+        <DelayedLoadingIcon />
       </div>
     );
   }
@@ -309,6 +295,7 @@ export function Box() {
   if (isError) {
     return (
       <div className="flex flex-col gap-5 h-full items-center justify-center text-sm">
+        {/* eslint-disable-next-line */}
         <img
           //width={220}
           //height={220}
@@ -339,6 +326,11 @@ export function Box() {
             height: `${totalHeight}px`,
           }}
         >
+          {isFetchingNextPage && (
+            <div className="absolute top-0 left-0 right-0 z-10 flex justify-center py-1 text-xs text-muted-foreground">
+              Loading...
+            </div>
+          )}
           {virtualItems.map((virtualRow, index) => {
             const msgGroup: MessageGroupType = messageGroups[virtualRow.index];
             if (!msgGroup) return null;

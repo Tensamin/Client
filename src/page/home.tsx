@@ -131,7 +131,7 @@ export default function Page() {
           {translate("HOME_PAGE_ADD_COMMUNITY_LABEL")}
         </Button>
       </div>
-      <p>Homepage :)</p>
+      <p>{translate("HOME_PAGE_PLACEHOLDER_MESSAGE")}</p>
       <UserModal size="profile" uuid={ownUuid} />
       <Button
         disabled={state === "CONNECTED" || state === "CONNECTING"}
@@ -139,7 +139,7 @@ export default function Page() {
           setShouldConnect(true);
         }}
       >
-        Start Call
+        {translate("HOME_PAGE_START_CALL_BUTTON")}
       </Button>
       <div>
         {Array.from(users.entries()).map(([userId]) => {
@@ -147,7 +147,10 @@ export default function Page() {
           return (
             userId !== ownUuid && (
               <div className="flex items-center gap-2" key={userId}>
-                <Checkbox checked={user?.active} /> Active [{userId}]
+                <Checkbox checked={user?.active} />
+                <span>
+                  {translate("HOME_PAGE_ACTIVE_STATUS")} [{userId}]
+                </span>
               </div>
             )
           );

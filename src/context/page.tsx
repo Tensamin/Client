@@ -80,6 +80,7 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (bypass && page === "error") {
+      // es-lint-disable-next-line
       setPageRaw("home");
       setPageData("");
       setExtraPageData("");

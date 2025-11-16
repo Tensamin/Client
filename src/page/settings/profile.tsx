@@ -140,7 +140,7 @@ export default function Page() {
                 });
               }}
             >
-              Remove
+              {translate("PROFILE_PAGE_REMOVE_AVATAR")}
             </Button>
           </div>
           <Select
@@ -207,13 +207,13 @@ export default function Page() {
             });
           }}
           placeholder={translate("PROFILE_PAGE_ABOUT")}
-          className="resize-y h-35"
+          className="resize-none h-35"
           disabled={loading}
         />
         <p
           className={`text-xs ${form.about.length > 200 && "text-destructive"}`}
         >
-          {form.about.length}/200
+          {translate("PROFILE_PAGE_ABOUT_COUNT", `${form.about.length}/200`)}
         </p>
       </div>
 

@@ -26,7 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useStorageContext, Value } from "@/context/storage";
+import { useStorageContext } from "@/context/storage";
+import { Value } from "@/lib/types";
 
 function FitJson({
   sensitive,
@@ -162,7 +163,7 @@ export default function Page() {
   const handleSaveEdit = useCallback(() => {
     if (!editingKey) return;
     if (!editValue.trim()) {
-      setEditError("Value cannot be empty.");
+      setEditError(translate("DEVELOPER_PAGE_EDIT_VALUE_REQUIRED"));
       return;
     }
     try {
@@ -172,9 +173,9 @@ export default function Page() {
       setEditValue("");
       setEditError(null);
     } catch {
-      setEditError("Invalid JSON. Please correct and try again.");
+      setEditError(translate("DEVELOPER_PAGE_EDIT_VALUE_INVALID_JSON"));
     }
-  }, [editValue, editingKey, set]);
+  }, [editValue, editingKey, set, translate]);
 
   const handleCancelEdit = useCallback(() => {
     setEditingKey(null);
@@ -197,16 +198,16 @@ export default function Page() {
   const handleCreateEntry = useCallback(() => {
     const key = newKey.trim();
     if (!key) {
-      setAddError("Key is required.");
+      setAddError(translate("DEVELOPER_PAGE_NEW_ENTRY_KEY_REQUIRED"));
       return;
     }
     const existingKeys = new Set(Object.keys(data || {}));
     if (existingKeys.has(key)) {
-      setAddError("A key with this name already exists.");
+      setAddError(translate("DEVELOPER_PAGE_NEW_ENTRY_KEY_EXISTS"));
       return;
     }
     if (!newValue.trim()) {
-      setAddError("Value is required.");
+      setAddError(translate("DEVELOPER_PAGE_NEW_ENTRY_VALUE_REQUIRED"));
       return;
     }
     try {
@@ -217,9 +218,9 @@ export default function Page() {
       setNewValue("");
       setAddError(null);
     } catch {
-      setAddError("Invalid JSON for value. Please provide valid JSON.");
+      setAddError(translate("DEVELOPER_PAGE_NEW_ENTRY_INVALID_JSON"));
     }
-  }, [data, newKey, newValue, set]);
+  }, [data, newKey, newValue, set, translate]);
 
   return (
     <>
@@ -270,7 +271,9 @@ export default function Page() {
                                 setEditError(null);
                               }}
                               className="min-h-10 h-auto w-full max-w-[35vw] max-h-[50vh] overflow-x-auto font-mono text-xs leading-tight"
-                              placeholder='Enter JSON value (e.g. {"foo": "bar"})'
+                              placeholder={translate(
+                                "DEVELOPER_PAGE_EDIT_VALUE_PLACEHOLDER"
+                              )}
                             />
                             {editError && (
                               <span className="text-xs text-destructive">

@@ -21,7 +21,7 @@ import { useEffect } from "react";
 
 // Main
 export default function Page() {
-  const { data, set } = useStorageContext();
+  const { data, set, translate } = useStorageContext();
   const { setTheme } = useTheme();
 
   useEffect(() => {
@@ -41,7 +41,9 @@ export default function Page() {
         <div className="flex flex-col gap-4.5 w-50">
           {/* Theme Hex */}
           <div className="flex flex-col gap-1">
-            <Label htmlFor="themeHex">Color HEX</Label>
+            <Label htmlFor="themeHex">
+              {translate("SETTINGS_THEME_COLOR_HEX_LABEL")}
+            </Label>
             <Input
               id="themeHex"
               className="w-full"
@@ -52,19 +54,31 @@ export default function Page() {
 
           {/* Color Scheme */}
           <div className="flex flex-col gap-1">
-            <Label htmlFor="colorScheme">Color Scheme</Label>
+            <Label htmlFor="colorScheme">
+              {translate("SETTINGS_THEME_COLOR_SCHEME_LABEL")}
+            </Label>
             <Select
               value={data.colorScheme as string}
               onValueChange={(value) => set("colorScheme", value)}
             >
               <SelectTrigger id="colorScheme" className="w-full">
-                <SelectValue placeholder="System" />
+                <SelectValue
+                  placeholder={translate(
+                    "SETTINGS_THEME_COLOR_SCHEME_PLACEHOLDER"
+                  )}
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="light">Light</SelectItem>
-                  <SelectItem value="dark">Dark</SelectItem>
-                  <SelectItem value="system">System</SelectItem>
+                  <SelectItem value="light">
+                    {translate("SETTINGS_THEME_COLOR_SCHEME_OPTION_LIGHT")}
+                  </SelectItem>
+                  <SelectItem value="dark">
+                    {translate("SETTINGS_THEME_COLOR_SCHEME_OPTION_DARK")}
+                  </SelectItem>
+                  <SelectItem value="system">
+                    {translate("SETTINGS_THEME_COLOR_SCHEME_OPTION_SYSTEM")}
+                  </SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -72,18 +86,28 @@ export default function Page() {
 
           {/* Tint Type */}
           <div className="flex flex-col gap-1">
-            <Label htmlFor="tintType">Tint Type</Label>
+            <Label htmlFor="tintType">
+              {translate("SETTINGS_THEME_TINT_TYPE_LABEL")}
+            </Label>
             <Select
               value={data.tintType as string}
               onValueChange={(value) => set("tintType", value)}
             >
               <SelectTrigger id="tintType" className="w-full">
-                <SelectValue placeholder="None" />
+                <SelectValue
+                  placeholder={translate(
+                    "SETTINGS_THEME_TINT_TYPE_PLACEHOLDER"
+                  )}
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="hard">Hard</SelectItem>
-                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="hard">
+                    {translate("SETTINGS_THEME_TINT_TYPE_OPTION_HARD")}
+                  </SelectItem>
+                  <SelectItem value="light">
+                    {translate("SETTINGS_THEME_TINT_TYPE_OPTION_LIGHT")}
+                  </SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -96,7 +120,9 @@ export default function Page() {
           checked={data.disableViewTransitions as boolean}
           onCheckedChange={(value) => set("disableViewTransitions", value)}
         />
-        <Label htmlFor="disableViewTransitions">Disable View Transitions</Label>
+        <Label htmlFor="disableViewTransitions">
+          {translate("SETTINGS_THEME_DISABLE_VIEW_TRANSITIONS_LABEL")}
+        </Label>
       </div>
     </div>
   );

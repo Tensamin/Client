@@ -1,13 +1,8 @@
-// Package Imports
-import * as Icon from "lucide-react";
-
 // Lib Imports
 import { convertStringToInitials, getColorFor } from "@/lib/utils";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
-import { useCallContext } from "@/context/call";
-import { usePageContext } from "@/context/page";
 
 // Components
 import {

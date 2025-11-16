@@ -1,3 +1,6 @@
+import { useStorageContext } from "@/context/storage";
+
 export default function Page() {
-  return <div>Privacy Page</div>;
+  const { translate } = useStorageContext();
+  return <div>{translate("SETTINGS_PRIVACY_PLACEHOLDER")}</div>;
 }
