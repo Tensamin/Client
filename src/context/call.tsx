@@ -240,10 +240,10 @@ export function CallProvider({
                   variant: "answer",
                   receiverId: parsedMessage.data.sender_id,
                 });
-                void send("webrtc_sdp", {
+                send("webrtc_sdp", {
                   receiver_id: parsedMessage.data.sender_id,
                   payload: connection.localDescription!,
-                });
+                }, true);
               }
             }
             break;
