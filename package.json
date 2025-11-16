@@ -11,6 +11,8 @@
     "build:nix": "nix-shell -p pkg-config gtk3 pango atk glib gdk-pixbuf cairo --run 'bun run build:tauri' && nix build ."
   },
   "dependencies": {
+    "@livekit/components-react": "^2.9.16",
+    "@livekit/components-styles": "^1.2.0",
     "@monaco-editor/react": "^4.7.0",
     "@noble/curves": "^2.0.1",
     "@radix-ui/react-alert-dialog": "^1.1.15",

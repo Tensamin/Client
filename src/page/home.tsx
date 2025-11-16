@@ -1,11 +1,11 @@
 "use client";
 
 // Package Imports
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
-import { username_to_uuid } from "@/lib/endpoints";
+import { call, call_token, username_to_uuid } from "@/lib/endpoints";
 import { handleError } from "@/lib/utils";
 
 // Context Imports
@@ -13,6 +13,7 @@ import { useSocketContext } from "@/context/socket";
 import { useUserContext } from "@/context/user";
 import { useStorageContext } from "@/context/storage";
 import { useCallContext } from "@/context/call";
+import { useCryptoContext } from "@/context/crypto";
 
 // Components
 import { Input } from "@/components/ui/input";
@@ -30,13 +31,15 @@ import { LoadingIcon } from "@/components/loading";
 import { PageDiv } from "@/components/pageDiv";
 import { UserModal } from "@/components/modals/user";
 import { Checkbox } from "@/components/ui/checkbox";
+import { LiveKitRoom } from "@livekit/components-react";
 
 // Main
 export default function Page() {
   const { send } = useSocketContext();
   const { refetchConversations, ownUuid } = useUserContext();
   const { translate } = useStorageContext();
-  const { setShouldConnect, state, users } = useCallContext();
+  const { privateKeyHash } = useCryptoContext();
+  //const { participants, status, connect } = useCallContext();
 
   const [open, setOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
@@ -68,6 +71,8 @@ export default function Page() {
       setLoading(false);
     }
   }, [newUsername, refetchConversations, send, translate]);
+
+  const [token, setToken] = useState("");
 
   return (
     <PageDiv className="flex flex-col gap-4 h-full">
@@ -134,16 +139,17 @@ export default function Page() {
       <p>{translate("HOME_PAGE_PLACEHOLDER_MESSAGE")}</p>
       <UserModal size="profile" uuid={ownUuid} />
       <Button
-        disabled={state === "CONNECTED" || state === "CONNECTING"}
+        disabled={status === "CONNECTED" || status === "CONNECTING"}
         onClick={() => {
-          setShouldConnect(true);
+          //connect();
         }}
       >
         {translate("HOME_PAGE_START_CALL_BUTTON")}
       </Button>
       <div>
-        {Array.from(users.entries()).map(([userId]) => {
-          const user = users.get(userId);
+        {/*
+        {Array.from(participants.entries()).map(([userId]) => {
+          const user = participants.get(userId);
           return (
             userId !== ownUuid && (
               <div className="flex items-center gap-2" key={userId}>
@@ -155,6 +161,31 @@ export default function Page() {
             )
           );
         })}
+          */}
+      </div>
+      <Button
+        onClick={() => {
+          fetch(call_token, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              call_id: "test_call_123",
+              user_id: ownUuid,
+              private_key_hash: privateKeyHash,
+            }),
+          })
+            .then((data) => data.json())
+            .then((data) => {
+              setToken(data.data.token);
+            });
+        }}
+      >Fetch Token</Button>
+      <div>
+        {token !== "" && (
+          <LiveKitRoom serverUrl="wss://call.tensamin.net" token={token} />
+        )}
       </div>
     </PageDiv>
   );
