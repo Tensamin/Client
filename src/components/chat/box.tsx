@@ -33,26 +33,19 @@ function flattenPages(
   data: InfiniteData<Messages, number> | undefined
 ): MessageGroupType[] {
   if (!data) return [];
-  const orderedPages = [...data.pages].reverse();
-  return orderedPages.flatMap((p) => p.messages);
+  // data.pages is [latestPage, olderPage, oldestPage]
+  // We want [newestMessageGroup, ..., oldestMessageGroup]
+  return data.pages.flatMap((page) => [...page.messages].reverse());
 }
 
 type MessagesQueryKey = ["messages", "top-infinite", string];
 
-const TOTAL_MESSAGES = 500;
-const SCROLL_THRESHOLD = 48;
-const BOTTOM_DISTANCE_THRESHOLD = 8;
+const SCROLL_THRESHOLD = 100;
 
 export function Box() {
   const parentRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
-  const nextIdRef = useRef(TOTAL_MESSAGES);
-  const isInitialLoadRef = useRef(true);
-  const scrollMetaRef = useRef<{
-    prevScrollHeight: number;
-    prevScrollTop: number;
-    prevOffset: number;
-  } | null>(null);
+  const nextIdRef = useRef(0);
 
   const { translate } = useStorageContext();
   const { getMessages, addRealtimeMessageToBox, setAddRealtimeMessageToBox } =
@@ -72,7 +65,6 @@ export function Box() {
     fetchNextPage,
     isFetchingNextPage,
     hasNextPage,
-    isSuccess,
   } = useInfiniteQuery<
     Messages,
     Error,
@@ -93,109 +85,38 @@ export function Box() {
     enabled: shouldLoadMessages,
     refetchOnWindowFocus: false,
   });
+
   const messageGroups = useMemo(() => flattenPages(data), [data]);
 
-  const getScrollElement = useCallback(() => parentRef.current, []);
-  const estimateSize = useCallback(() => 64, []);
-  const getItemKey = useCallback(
-    (index: number) => {
-      const msg = messageGroups[index];
-      if (!msg) return `fallback-${index}`;
-      return msg.id || `${msg.sender}-${msg.timestamp}-${index}`;
-    },
-    [messageGroups]
-  );
-
-  // eslint-disable-next-line
   const rowVirtualizer = useVirtualizer({
     count: messageGroups.length,
-    getScrollElement,
-    estimateSize,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 100,
     overscan: 5,
-    getItemKey,
-    measureElement: (element, entry) => {
-      if (entry) return entry.contentRect.height;
-      return element.getBoundingClientRect().height;
+    getItemKey: (index) => {
+      const group = messageGroups[index];
+      return group.id || `${group.sender}-${group.timestamp}-${index}`;
     },
   });
-
-  const isPinnedToBottom = useCallback(() => {
-    const el = parentRef.current;
-    if (!el) return true;
-
-    const { scrollHeight, scrollTop, clientHeight } = el;
-    const distance = scrollHeight - scrollTop - clientHeight;
-
-    return distance <= BOTTOM_DISTANCE_THRESHOLD + 2;
-  }, []);
-
-  const loadMore = useCallback(async () => {
-    if (isFetchingNextPage || !hasNextPage || !parentRef.current) return;
-
-    const el = parentRef.current;
-    scrollMetaRef.current = {
-      prevScrollHeight: el.scrollHeight,
-      prevScrollTop: el.scrollTop,
-      prevOffset: rowVirtualizer.scrollOffset ?? el.scrollTop,
-    };
-
-    try {
-      await fetchNextPage();
-    } catch (error) {
-      scrollMetaRef.current = null;
-      throw error;
-    }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, rowVirtualizer]);
 
   const onScroll = useCallback(() => {
     const el = parentRef.current;
     if (!el) return;
-    if (el.scrollTop <= SCROLL_THRESHOLD) {
-      void loadMore();
+
+    const { scrollHeight, scrollTop, clientHeight } = el;
+    const distanceToTop = scrollHeight - scrollTop - clientHeight;
+
+    if (
+      distanceToTop <= SCROLL_THRESHOLD &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      void fetchNextPage();
     }
-  }, [loadMore]);
-
-  useEffect(() => {
-    const el = parentRef.current;
-    if (!el) return;
-
-    if (isInitialLoadRef.current && isSuccess && messageGroups.length > 0) {
-      isInitialLoadRef.current = false;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          rowVirtualizer.scrollToIndex(messageGroups.length - 1, {
-            align: "end",
-          });
-          const scrollEl = parentRef.current;
-          if (scrollEl) {
-            scrollEl.scrollTop = scrollEl.scrollHeight;
-          }
-        });
-      });
-      return;
-    }
-
-    const meta = scrollMetaRef.current;
-    if (meta) {
-      const newScrollHeight = el.scrollHeight;
-      const delta = newScrollHeight - meta.prevScrollHeight;
-      const nextScrollTop = meta.prevScrollTop + delta;
-      el.scrollTop = nextScrollTop;
-      rowVirtualizer.scrollToOffset(meta.prevOffset + delta);
-      scrollMetaRef.current = null;
-    }
-  }, [isSuccess, messageGroups.length, rowVirtualizer]);
-
-  useEffect(() => {
-    isInitialLoadRef.current = true;
-    scrollMetaRef.current = null;
-  }, [currentReceiverUuid]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleRealtimeMessage = useEffectEvent((newMsg: Message) => {
-    const wasPinned = isPinnedToBottom();
     nextIdRef.current += 1;
-
-    let newTotalLength = messageGroups.length;
 
     queryClient.setQueryData<InfiniteData<Messages, number>>(
       queryKey,
@@ -216,10 +137,9 @@ export function Box() {
           messages: [...page.messages],
         }));
 
-        let targetIndex = clonedPages.length - 1;
-        if (targetIndex < 0) {
+        let targetIndex = 0;
+        if (clonedPages.length === 0) {
           clonedPages.push({ messages: [], previous: 0, next: 0 });
-          targetIndex = 0;
         }
 
         const targetPage = { ...clonedPages[targetIndex] };
@@ -244,7 +164,7 @@ export function Box() {
           ];
         } else {
           const newGroup: MessageGroupType = {
-            id: `${newMsg.sender}-${newMsg.timestamp}-${nextIdRef.current}`,
+            id: `${newMsg.sender}-${newMsg.timestamp}-${nextIdRef.current}-rt`,
             sender: newMsg.sender,
             avatar: newMsg.avatar,
             display: newMsg.display,
@@ -256,26 +176,9 @@ export function Box() {
         }
 
         clonedPages[targetIndex] = targetPage;
-        newTotalLength = clonedPages.reduce(
-          (acc, page) => acc + page.messages.length,
-          0
-        );
-
         return { ...base, pages: clonedPages };
       }
     );
-
-    if (wasPinned && newTotalLength > 0) {
-      requestAnimationFrame(() => {
-        rowVirtualizer.scrollToIndex(newTotalLength - 1, { align: "end" });
-      });
-
-      setTimeout(() => {
-        requestAnimationFrame(() => {
-          rowVirtualizer.scrollToIndex(newTotalLength - 1, { align: "end" });
-        });
-      }, 16);
-    }
   });
 
   useEffect(() => {
@@ -310,46 +213,39 @@ export function Box() {
     );
   }
 
-  const virtualItems = rowVirtualizer.getVirtualItems();
-  const totalHeight = rowVirtualizer.getTotalSize();
-
   return (
     <div
       ref={parentRef}
-      className="h-full overflow-y-auto scrollbar-hide"
+      className="h-full w-full overflow-y-auto flex flex-col contain-strict"
+      style={{ transform: "scaleY(-1)" }}
       onScroll={onScroll}
     >
-      <div className="min-h-full flex flex-col justify-end">
-        <div
-          className="w-full relative"
-          style={{
-            height: `${totalHeight}px`,
-          }}
-        >
-          {isFetchingNextPage && (
-            <div className="absolute top-0 left-0 right-0 z-10 flex justify-center py-1 text-xs text-muted-foreground">
-              Loading...
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+          const messageGroup = messageGroups[virtualItem.index];
+          return (
+            <div
+              key={virtualItem.key}
+              data-index={virtualItem.index}
+              ref={rowVirtualizer.measureElement}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualItem.start}px) scaleY(-1)`,
+              }}
+            >
+              <MessageGroupComponent data={messageGroup} />
             </div>
-          )}
-          {virtualItems.map((virtualRow, index) => {
-            const msgGroup: MessageGroupType = messageGroups[virtualRow.index];
-            if (!msgGroup) return null;
-
-            return (
-              <div
-                ref={rowVirtualizer.measureElement}
-                key={`${virtualRow.key}-${index}-${msgGroup.messages.length}`}
-                data-index={virtualRow.index}
-                className="absolute left-0 right-0 pt-2"
-                style={{
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-              >
-                <MessageGroupComponent data={msgGroup} />
-              </div>
-            );
-          })}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
