@@ -2,7 +2,7 @@
 
 // Package Imports
 import { createContext, useContext, useState } from "react";
-import { LiveKitRoom } from "@livekit/components-react";
+import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import { useDisconnectButton } from "@livekit/components-react";
 
 // Main
@@ -52,6 +52,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         onConnected={() => setOuterState("CONNECTED")}
         onDisconnected={() => setOuterState("DISCONNECTED")}
       >
+        <RoomAudioRenderer />
         <SubCallProvider>{children}</SubCallProvider>
       </LiveKitRoom>
     </CallContext.Provider>
