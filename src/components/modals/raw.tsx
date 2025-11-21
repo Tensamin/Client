@@ -254,3 +254,43 @@ export function Profile({
     </Card>
   );
 }
+
+export function CallModal({
+  title,
+  icon,
+  loading,
+}: Readonly<{
+  title: string;
+  icon?: string;
+  loading: boolean;
+}>) {
+  return loading ? (
+    <Card className="relative w-full h-full bg-input/30">
+      <CardContent className="w-full h-full flex flex-col items-center justify-center">
+        <div className="w-full h-full flex justify-center items-center">
+          <UserAvatar title={title} size="jumbo" border loading />
+        </div>
+        <div className="absolute h-full w-full flex items-end justify-start p-4">
+          <Badge className="select-none">...</Badge>
+        </div>
+      </CardContent>
+    </Card>
+  ) : (
+    <Card className="relative w-full h-full bg-input/30">
+      <CardContent className="w-full h-full flex flex-col items-center justify-center">
+        <div className="w-full h-full flex justify-center items-center">
+          <UserAvatar
+            icon={icon}
+            title={title}
+            size="jumbo"
+            state={undefined}
+            border
+          />
+        </div>
+        <div className="absolute h-full w-full flex items-end justify-start p-4">
+          <Badge className="select-none">{title}</Badge>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

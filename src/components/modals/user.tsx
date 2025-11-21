@@ -15,7 +15,7 @@ export function UserModal({
   size,
 }: {
   uuid: string;
-  size: "big" | "medium" | "profile";
+  size: "big" | "medium" | "profile" | "call";
 }) {
   const { get, ownState, ownUuid, fetchedUsers } = useUserContext();
   const { setPage } = usePageContext();
@@ -61,6 +61,8 @@ export function UserModal({
           state={user.state || "NONE"}
         />
       );
+    case "call":
+      return <RawModal.CallModal key={uuid} {...props} />;
     default:
       return null;
   }

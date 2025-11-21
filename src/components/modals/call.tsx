@@ -19,7 +19,7 @@ export function CallUserModal() {
   console.log(metadata);
 
   return identity && identity !== "" ? (
-    <UserModal uuid={identity} size="big" />
+    <UserModal uuid={identity} size="call" />
   ) : identity !== "" ? (
     <p>Loading...</p>
   ) : (

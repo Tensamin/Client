@@ -2,11 +2,7 @@
 
 // Package Imports
 import { Track } from "livekit-client";
-import {
-  useTracks,
-  useParticipantTile,
-  ParticipantTile,
-} from "@livekit/components-react";
+import { useTracks, ParticipantTile } from "@livekit/components-react";
 
 // Components
 import { GridLayout } from "@livekit/components-react";
@@ -28,24 +24,14 @@ export default function Page() {
       <Card className="flex-1">
         <CardContent>
           <GridLayout tracks={tracks}>
-            <ParticipantTile>
-              <CallUserModalWrapper />
+            <ParticipantTile className="aspect-video">
+              <div className="w-full h-full flex items-center justify-center">
+                <CallUserModal />
+              </div>
             </ParticipantTile>
           </GridLayout>
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function CallUserModalWrapper() {
-  const { elementProps } = useParticipantTile({
-    htmlProps: {},
-  });
-
-  return (
-    <div {...elementProps}>
-      <CallUserModal />
     </div>
   );
 }
