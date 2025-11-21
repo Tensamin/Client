@@ -1,3 +1,6 @@
+// Package Imports
+import * as Icon from "lucide-react";
+
 // Lib Imports
 import { convertStringToInitials, getColorFor } from "@/lib/utils";
 
@@ -259,10 +262,14 @@ export function CallModal({
   title,
   icon,
   loading,
+  muted,
+  deafened,
 }: Readonly<{
   title: string;
   icon?: string;
   loading: boolean;
+  muted?: boolean;
+  deafened?: boolean;
 }>) {
   return loading ? (
     <Card className="relative w-full h-full bg-input/30">
@@ -287,8 +294,18 @@ export function CallModal({
             border
           />
         </div>
-        <div className="absolute h-full w-full flex items-end justify-start p-4">
-          <Badge className="select-none">{title}</Badge>
+        <div className="absolute h-full w-full flex items-end justify-start p-4 gap-2">
+          <Badge className="h-5.5 select-none">{title}</Badge>
+          {muted && (
+            <Badge className="h-5.5 select-none">
+              <Icon.MicOff />
+            </Badge>
+          )}
+          {deafened && (
+            <Badge className="h-5.5 select-none">
+              <Icon.HeadphoneOff />
+            </Badge>
+          )}
         </div>
       </CardContent>
     </Card>

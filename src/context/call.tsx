@@ -1,8 +1,12 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext, useState } from "react";
-import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
+import { createContext, useContext, useState, useEffect } from "react";
+import {
+  LiveKitRoom,
+  RoomAudioRenderer,
+  useLocalParticipant,
+} from "@livekit/components-react";
 import { useDisconnectButton } from "@livekit/components-react";
 
 // Main
@@ -33,6 +37,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   return (
     <CallContext.Provider
       value={{
+        shouldConnect,
         outerState,
         setToken,
         connect: () => {
@@ -62,6 +67,42 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 function SubCallProvider({ children }: { children: React.ReactNode }) {
   const { setOuterState, setShouldConnect, connect } = useCallContext();
   const { buttonProps } = useDisconnectButton({});
+  const { isMicrophoneEnabled, localParticipant } = useLocalParticipant();
+  const [isDeafened, setIsDeafened] = useState(false);
+
+  useEffect(() => {
+    const audioElements = document.querySelectorAll("audio");
+    audioElements.forEach((audio) => {
+      audio.muted = isDeafened;
+    });
+    if (localParticipant) {
+      localParticipant.setMetadata(JSON.stringify({ deafened: isDeafened }));
+    }
+  }, [isDeafened, localParticipant]);
+
+  const toggleMute = async () => {
+    if (localParticipant) {
+      const newState = !isMicrophoneEnabled;
+      await localParticipant.setMicrophoneEnabled(newState);
+      if (newState && isDeafened) {
+        setIsDeafened(false);
+      }
+    }
+  };
+
+  const toggleDeafen = async () => {
+    const newState = !isDeafened;
+    setIsDeafened(newState);
+    if (newState) {
+      if (isMicrophoneEnabled && localParticipant) {
+        await localParticipant.setMicrophoneEnabled(false);
+      }
+    } else {
+      if (!isMicrophoneEnabled && localParticipant) {
+        await localParticipant.setMicrophoneEnabled(true);
+      }
+    }
+  };
 
   return (
     <SubCallContext.Provider
@@ -72,6 +113,9 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           setShouldConnect(false);
         },
         connect: () => connect(),
+        toggleMute: () => toggleMute(),
+        isDeafened,
+        toggleDeafen,
       }}
     >
       {children}
@@ -80,6 +124,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 }
 
 type CallContextValue = {
+  shouldConnect: boolean;
   outerState: string;
   setToken: (input: string) => void;
   connect: () => void;
@@ -91,4 +136,7 @@ type CallContextValue = {
 type SubCallContextValue = {
   disconnect: () => void;
   connect: () => void;
+  toggleMute: () => void;
+  isDeafened: boolean;
+  toggleDeafen: () => void;
 };

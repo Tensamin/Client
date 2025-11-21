@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 import "highlight.js/styles/github-dark.css";
+import "@livekit/components-styles";
 
 // Context Imports
 import { StorageProvider } from "@/context/storage";
@@ -31,6 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
+        data-lk-theme="default"
         className={`antialiased max-h-screen overflow-hidden ${font.className}`}
       >
         <ThemeProvider

@@ -13,9 +13,11 @@ import { fallbackUser } from "@/lib/types";
 export function UserModal({
   uuid,
   size,
+  extraProps,
 }: {
   uuid: string;
   size: "big" | "medium" | "profile" | "call";
+  extraProps?: Record<string, unknown>;
 }) {
   const { get, ownState, ownUuid, fetchedUsers } = useUserContext();
   const { setPage } = usePageContext();
@@ -62,7 +64,7 @@ export function UserModal({
         />
       );
     case "call":
-      return <RawModal.CallModal key={uuid} {...props} />;
+      return <RawModal.CallModal key={uuid} {...props} {...extraProps} />;
     default:
       return null;
   }
