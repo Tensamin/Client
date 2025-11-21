@@ -23,7 +23,7 @@ export function Navbar() {
   const { setPage, page } = usePageContext();
   const { failedMessagesAmount, currentReceiverUuid, get } = useUserContext();
   const { translate } = useStorageContext();
-  const { state } = useCallContext();
+  const { outerState } = useCallContext();
   const [receiverUsername, setReceiverUsername] = useState("");
 
   useEffect(() => {
@@ -94,7 +94,7 @@ export function Navbar() {
             <Button
               className="h-9 w-9"
               variant="outline"
-              disabled={state === "CONNECTED" || state === "CONNECTING"}
+              disabled={outerState === "CONNECTED" || outerState === "CONNECTING"}
             >
               <Icon.Phone />
             </Button>

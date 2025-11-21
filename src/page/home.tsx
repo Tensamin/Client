@@ -1,11 +1,11 @@
 "use client";
 
 // Package Imports
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
-import { call, call_token, username_to_uuid } from "@/lib/endpoints";
+import { call_token, username_to_uuid } from "@/lib/endpoints";
 import { handleError } from "@/lib/utils";
 
 // Context Imports
@@ -30,8 +30,6 @@ import {
 import { LoadingIcon } from "@/components/loading";
 import { PageDiv } from "@/components/pageDiv";
 import { UserModal } from "@/components/modals/user";
-import { Checkbox } from "@/components/ui/checkbox";
-import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 
 // Main
 export default function Page() {

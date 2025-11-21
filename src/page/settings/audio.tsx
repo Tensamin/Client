@@ -28,9 +28,10 @@ interface AudioDevice {
 }
 
 export default function Page() {
-  const { data, set, translate } = useStorageContext();
-  const { noiseSuppressionSupported, getLocalStream } = useCallContext();
+  //const { data, set, translate } = useStorageContext();
+  //const { noiseSuppressionSupported, getLocalStream } = useCallContext();
 
+  /*
   // Set defaults in storage if missing
   useEffect(() => {
     if (!data.inputDevice) set("inputDevice", "default");
@@ -226,14 +227,14 @@ export default function Page() {
         // Configure analyzer before connecting
         analyserRef.current.fftSize = 2048;
         analyserRef.current.smoothingTimeConstant = 0.8;
-        /*
+        \/\*
 				console.log("Analyzer configuration:", {
 					fftSize: analyserRef.current.fftSize,
 					frequencyBinCount: analyserRef.current.frequencyBinCount,
 					smoothingTimeConstant: analyserRef.current.smoothingTimeConstant,
 					sampleRate: audioContextRef.current.sampleRate,
 				}); 
-				*/
+				\*\/
 
         if (useSharedContext && audioService.processing) {
           // Connect the analyzer
@@ -485,7 +486,6 @@ export default function Page() {
     }
     prevNsStateRef.current = nsState;
   }, [nsState, micTestActive]);
-
   return (
     <TooltipProvider delayDuration={100}>
       <div className="space-y-8 max-w-2xl">
@@ -725,4 +725,6 @@ export default function Page() {
       </div>
     </TooltipProvider>
   );
+*/
+  return <div />;
 }

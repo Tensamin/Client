@@ -38,8 +38,7 @@ export default function Page() {
   );
 }
 
-interface CustomParticipantTileProps {}
-function CallUserModalWrapper({}: CustomParticipantTileProps) {
+function CallUserModalWrapper() {
   const { elementProps } = useParticipantTile({
     htmlProps: {},
   });
