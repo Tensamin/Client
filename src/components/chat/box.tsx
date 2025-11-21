@@ -115,6 +115,23 @@ export function Box() {
     }
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
+  useEffect(() => {
+    const el = parentRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0) return;
+      e.preventDefault();
+      el.scrollTop -= e.deltaY;
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+    };
+  }, [isLoading]);
+
   const handleRealtimeMessage = useEffectEvent((newMsg: Message) => {
     nextIdRef.current += 1;
 
