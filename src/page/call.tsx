@@ -2,7 +2,11 @@
 
 // Package Imports
 import { Track } from "livekit-client";
-import { useTracks, useParticipantTile } from "@livekit/components-react";
+import {
+  useTracks,
+  useParticipantTile,
+  ParticipantTile,
+} from "@livekit/components-react";
 
 // Components
 import { GridLayout } from "@livekit/components-react";
@@ -24,7 +28,9 @@ export default function Page() {
       <Card className="flex-1">
         <CardContent>
           <GridLayout tracks={tracks}>
-            <CallUserModalWrapper />
+            <ParticipantTile>
+              <CallUserModalWrapper />
+            </ParticipantTile>
           </GridLayout>
         </CardContent>
       </Card>
