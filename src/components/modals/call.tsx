@@ -1,113 +1,44 @@
 // Package Imports
 import * as Icon from "lucide-react";
+import { useRoomInfo, useParticipantInfo } from "@livekit/components-react";
 
 // Context Imports
-import { useCallContext } from "@/context/call";
+import { useCallContext, useSubCallContext } from "@/context/call";
 import { usePageContext } from "@/context/page";
 import { useStorageContext } from "@/context/storage";
 
 // Components
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UserAvatar } from "@/components/modals/raw";
+import { UserModal } from "@/components/modals/user";
 
 // Main
-export function LargeModal({
-  title,
-  icon,
-  loading,
-}: Readonly<{
-  title: string;
-  description: string;
-  icon?: string;
-  loading: boolean;
-  onClick?: () => void;
-  state?: string;
-}>) {
-  return loading ? (
-    <div className="flex justify-center items-center gap-4">
-      <div className="flex flex-col gap-1">
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Mic />
-        </Button>
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Headphones />
-        </Button>
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Eye />
-        </Button>
-      </div>
-      <UserAvatar title={title} size="jumbo" border loading />
-    </div>
-  ) : (
-    <div className="flex justify-center items-center gap-4">
-      <div className="flex flex-col gap-1">
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Mic />
-        </Button>
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Headphones />
-        </Button>
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Eye />
-        </Button>
-      </div>
-      <UserAvatar title={title} size="jumbo" border icon={icon} />
-    </div>
-  );
-}
+export function CallUserModal() {
+  const { identity, metadata } = useParticipantInfo();
 
-export function MediumModal({
-  title,
-  icon,
-  loading,
-}: Readonly<{
-  title: string;
-  description: string;
-  icon?: string;
-  loading: boolean;
-  onClick?: () => void;
-  state?: string;
-}>) {
-  return loading ? (
-    <div className="flex justify-center items-center gap-4">
-      <div className="flex flex-col gap-1">
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Mic />
-        </Button>
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Headphones />
-        </Button>
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Eye />
-        </Button>
-      </div>
-      <UserAvatar title={title} size="extraLarge" border loading />
-    </div>
+  console.log(metadata);
+
+  return identity && identity !== "" ? (
+    <UserModal uuid={identity} size="big" />
+  ) : identity !== "" ? (
+    <p>Loading...</p>
   ) : (
-    <div className="flex justify-center items-center gap-4">
-      <div className="flex flex-col gap-1">
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Mic />
-        </Button>
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Headphones />
-        </Button>
-        <Button variant="outline" className="h-9 w-9">
-          <Icon.Eye />
-        </Button>
-      </div>
-      <UserAvatar title={title} size="extraLarge" border icon={icon} />
-    </div>
+    <p>Error</p>
   );
 }
 
 export function VoiceActions() {
-  const { state, exitCall } = useCallContext();
+  const { outerState } = useCallContext();
+  const { disconnect } = useSubCallContext();
+  const { name } = useRoomInfo();
   const { setPage } = usePageContext();
   const { translate } = useStorageContext();
 
-  return state === "CONNECTED" || state === "CONNECTING" ? (
+  return outerState === "CONNECTING" ? (
+    <div className="w-full flex justify-center h-30 items-center text-muted-foreground">
+      <p>Connecting...</p>
+    </div>
+  ) : name && outerState !== "DISCONNECTED" ? (
     <Card className="bg-input/30 rounded-xl border-input flex flex-col gap-2 justify-center items-center w-full p-2">
       <div className="w-full bg-green-500 h-2 rounded-full"></div>
       <div className="flex gap-2 w-full">
@@ -130,7 +61,7 @@ export function VoiceActions() {
         <Button
           variant="destructive"
           className="w-9.5"
-          onClick={() => exitCall()}
+          onClick={() => disconnect()}
         >
           <Icon.LogOut />
         </Button>

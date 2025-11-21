@@ -31,7 +31,7 @@ import { LoadingIcon } from "@/components/loading";
 import { PageDiv } from "@/components/pageDiv";
 import { UserModal } from "@/components/modals/user";
 import { Checkbox } from "@/components/ui/checkbox";
-import { LiveKitRoom } from "@livekit/components-react";
+import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 
 // Main
 export default function Page() {
@@ -39,7 +39,7 @@ export default function Page() {
   const { refetchConversations, ownUuid } = useUserContext();
   const { translate } = useStorageContext();
   const { privateKeyHash } = useCryptoContext();
-  //const { participants, status, connect } = useCallContext();
+  const { setToken, connect } = useCallContext();
 
   const [open, setOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
@@ -71,8 +71,6 @@ export default function Page() {
       setLoading(false);
     }
   }, [newUsername, refetchConversations, send, translate]);
-
-  const [token, setToken] = useState("");
 
   return (
     <PageDiv className="flex flex-col gap-4 h-full">
@@ -138,14 +136,6 @@ export default function Page() {
       </div>
       <p>{translate("HOME_PAGE_PLACEHOLDER_MESSAGE")}</p>
       <UserModal size="profile" uuid={ownUuid} />
-      <Button
-        disabled={status === "CONNECTED" || status === "CONNECTING"}
-        onClick={() => {
-          //connect();
-        }}
-      >
-        {translate("HOME_PAGE_START_CALL_BUTTON")}
-      </Button>
       <div>
         {/*
         {Array.from(participants.entries()).map(([userId]) => {
@@ -179,14 +169,12 @@ export default function Page() {
             .then((data) => data.json())
             .then((data) => {
               setToken(data.data.token);
+              connect();
             });
         }}
-      >Fetch Token</Button>
-      <div>
-        {token !== "" && (
-          <LiveKitRoom serverUrl="wss://call.tensamin.net" token={token} />
-        )}
-      </div>
+      >
+        Start Call
+      </Button>
     </PageDiv>
   );
 }
