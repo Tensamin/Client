@@ -14,12 +14,14 @@ source=("git+https://github.com/Tensamin/Frontend.git")
 sha256sums=('SKIP')
 
 pkgver() {
-	cd "Frontend"
+	cd "$srcdir/Frontend"
+	ls -al
+	git status
 	git describe --long --tags
 }
 
 build() {
-	cd "Frontend"
+	cd "$srcdir/Frontend"
 	bun install
 	bun run build
 	
@@ -29,7 +31,7 @@ build() {
 }
 
 package() {
-	cd "Frontend/desktop/out/tensamin-linux-x64"
+	cd "$srcdir/Frontend/desktop/out/tensamin-linux-x64"
 	
 	install -dm755 "${pkgdir}/usr/lib/tensamin"
 	cp -r . "${pkgdir}/usr/lib/tensamin/"
