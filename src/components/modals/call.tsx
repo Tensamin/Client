@@ -7,6 +7,7 @@ import {
   useConnectionState,
   useLocalParticipant,
   useParticipantContext,
+  useIsSpeaking,
 } from "@livekit/components-react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { useEffect, useState } from "react";
@@ -46,10 +47,10 @@ import {
 export function CallUserModal() {
   const { identity, metadata } = useParticipantInfo();
   const participant = useParticipantContext();
+  const isSpeaking = useIsSpeaking(participant);
 
   const [muted, setMuted] = useState(false);
   const [deafened, setDeafened] = useState(false);
-  const [screenShareMuted, setScreenShareMuted] = useState(false);
 
   useEffect(() => {
     if (metadata) {
@@ -75,6 +76,7 @@ export function CallUserModal() {
       extraProps={{
         muted,
         deafened,
+        speaking: isSpeaking,
       }}
     />
   ) : identity !== "" ? (

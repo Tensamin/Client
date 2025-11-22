@@ -24,7 +24,7 @@ export default function Page() {
       <Card className="flex-1">
         <CardContent>
           <GridLayout tracks={tracks}>
-            <ParticipantTile className="aspect-video relative">
+            <ParticipantTile disableSpeakingIndicator className="aspect-video relative border-0">
               <div className="w-full h-full flex items-center justify-center">
                 <CallUserModal />
               </div>

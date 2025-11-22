@@ -264,12 +264,14 @@ export function CallModal({
   loading,
   muted,
   deafened,
+  speaking,
 }: Readonly<{
   title: string;
   icon?: string;
   loading: boolean;
   muted?: boolean;
   deafened?: boolean;
+  speaking?: boolean;
 }>) {
   return loading ? (
     <Card className="relative w-full h-full bg-input/30">
@@ -283,7 +285,11 @@ export function CallModal({
       </CardContent>
     </Card>
   ) : (
-    <Card className="relative w-full h-full bg-input/30">
+    <Card
+      className={`relative w-full h-full bg-input/30 ${
+        speaking && "ring-2 ring-primary ring-inset"
+      }`}
+    >
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
         <div className="w-full h-full flex justify-center items-center">
           <UserAvatar
