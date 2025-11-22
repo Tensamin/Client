@@ -7,7 +7,7 @@ arch=('x86_64')
 url="https://tensamin.net"
 license=('custom')
 depends=('gtk3' 'nss' 'libxss' 'libxtst' 'xdg-utils' 'libappindicator-gtk3' 'libsecret')
-makedepends=('git' 'bun' 'nodejs' 'npm' 'python')
+makedepends=('git' 'npm')
 provides=('tensamin')
 conflicts=('tensamin' 'tensamin-bin')
 source=("git+https://github.com/Tensamin/Frontend.git")
@@ -15,12 +15,12 @@ sha256sums=('SKIP')
 
 pkgver() {
 	cd "$srcdir/Frontend"
-	ls -al
-	git status
-	git describe --long --tags
+	git rev-parse HEAD | cut -c1-6
 }
 
 build() {
+	sudo npm i -g bun
+
 	cd "$srcdir/Frontend"
 	bun install
 	bun run build

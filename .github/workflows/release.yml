@@ -10,17 +10,6 @@ permissions:
   contents: write
 
 jobs:
-  create-release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   build-electron-linux:
     needs: create-release
     if: ${{ always() && (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') }}
@@ -55,7 +44,6 @@ jobs:
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             desktop/out/make/**/*.deb
@@ -104,7 +92,6 @@ jobs:
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             desktop/out/make/**/*.deb
@@ -119,6 +106,7 @@ jobs:
   publish-aur-bin:
     needs: build-electron-linux
     runs-on: ubuntu-latest
+    name: Publish AUR Bin Package
     steps:
       - uses: actions/checkout@v4
 
@@ -137,6 +125,7 @@ jobs:
 
   publish-aur-git:
     runs-on: ubuntu-latest
+    name: Publish AUR Git Package
     steps:
       - uses: actions/checkout@v4
 
