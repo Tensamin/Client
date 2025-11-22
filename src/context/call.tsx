@@ -65,7 +65,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 }
 
 function SubCallProvider({ children }: { children: React.ReactNode }) {
-  const { setOuterState, setShouldConnect, connect } = useCallContext();
+  const { setOuterState, setShouldConnect, connect, shouldConnect } =
+    useCallContext();
   const { buttonProps } = useDisconnectButton({});
   const { isMicrophoneEnabled, localParticipant } = useLocalParticipant();
   const [isDeafened, setIsDeafened] = useState(false);
@@ -75,10 +76,10 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     audioElements.forEach((audio) => {
       audio.muted = isDeafened;
     });
-    if (localParticipant) {
+    if (localParticipant && shouldConnect) {
       localParticipant.setMetadata(JSON.stringify({ deafened: isDeafened }));
     }
-  }, [isDeafened, localParticipant]);
+  }, [isDeafened, localParticipant, shouldConnect]);
 
   const toggleMute = async () => {
     if (localParticipant) {
