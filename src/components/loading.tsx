@@ -1,8 +1,9 @@
 "use client";
 
 // Package Imports
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { AnimatePresence } from "framer-motion";
+import * as Icon from "lucide-react";
 import { Ring, Hourglass } from "ldrs/react";
 import "ldrs/react/Ring.css";
 import "ldrs/react/Hourglass.css";
@@ -121,15 +122,21 @@ export function RawLoading({
     <>
       <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10">
         {/* eslint-disable-next-line*/}
-        <img
-          src={
-            isError ? "/assets/images/logo.png" : "/assets/images/loading.gif"
-          }
-          //width={75}
-          //height={75}
-          alt="Tensamin"
-          className="w-75 h-75"
-        />
+        {isError ? (
+          <img
+            src="/assets/images/logo.png"
+            //width={75}
+            //height={75}
+            alt="Tensamin"
+            className="w-75 h-75"
+          />
+        ) : (
+          <Icon.Loader
+            role="status"
+            aria-label="Loading"
+            className="size-14 animate-spin text-foreground"
+          />
+        )}
         {(isError || debug) && typeof message !== "undefined" ? (
           <p className="text-2xl font-semibold text-foreground text-center">
             {message}

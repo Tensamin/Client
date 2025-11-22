@@ -241,7 +241,7 @@ export function VoiceActions() {
           </div>
         </PopoverContent>
       </Popover>
-      <div className="flex gap-2 w-full"></div>
+      {/*<div className="flex gap-2 w-full"></div>*/}
       <div className="flex gap-2 w-full">
         <MuteButton />
         <DeafButton />
