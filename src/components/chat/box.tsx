@@ -119,16 +119,53 @@ export function Box() {
     const el = parentRef.current;
     if (!el) return;
 
+    let targetScrollTop = el.scrollTop;
+    let rafId: number | null = null;
+
+    const update = () => {
+      const current = el.scrollTop;
+      const diff = targetScrollTop - current;
+
+      if (Math.abs(diff) < 0.5) {
+        el.scrollTop = targetScrollTop;
+        rafId = null;
+        return;
+      }
+
+      el.scrollTop = current + diff * 0.075;
+      rafId = requestAnimationFrame(update);
+    };
+
     const onWheel = (e: WheelEvent) => {
       if (e.deltaY === 0) return;
       e.preventDefault();
-      el.scrollTop -= e.deltaY;
+
+      if (rafId === null) {
+        targetScrollTop = el.scrollTop;
+      }
+
+      let delta = e.deltaY;
+      if (e.deltaMode === 1) {
+        delta *= 40;
+      } else if (e.deltaMode === 2) {
+        delta *= el.clientHeight;
+      }
+
+      targetScrollTop -= delta;
+
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      targetScrollTop = Math.max(0, Math.min(maxScroll, targetScrollTop));
+
+      if (rafId === null) {
+        rafId = requestAnimationFrame(update);
+      }
     };
 
     el.addEventListener("wheel", onWheel, { passive: false });
 
     return () => {
       el.removeEventListener("wheel", onWheel);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [isLoading]);
 
@@ -244,11 +281,11 @@ export function Box() {
           position: "relative",
         }}
       >
-        {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+        {rowVirtualizer.getVirtualItems().map((virtualItem, index) => {
           const messageGroup = messageGroups[virtualItem.index];
           return (
             <div
-              key={virtualItem.key}
+              key={index}
               data-index={virtualItem.index}
               ref={rowVirtualizer.measureElement}
               style={{
