@@ -57,6 +57,7 @@ export default function Page() {
                 ? e.key === "Enter" && e.shiftKey
                 : e.key === "Enter" && !e.shiftKey
             ) {
+              if (message.trim() === "") return;
               e.preventDefault();
               sendMessage({
                 send_to_server: true,
