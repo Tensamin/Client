@@ -24,6 +24,8 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Text } from "../markdown/text";
+import { VideoTrack } from "@livekit/components-react";
+import type { TrackReference } from "@livekit/components-core";
 
 // Main
 export function UserAvatar({
@@ -264,15 +266,17 @@ export function CallModal({
   loading,
   muted,
   deafened,
-  speaking,
+  screenShareTrackRef,
 }: Readonly<{
   title: string;
   icon?: string;
   loading: boolean;
   muted?: boolean;
   deafened?: boolean;
-  speaking?: boolean;
+  screenShareTrackRef?: TrackReference;
 }>) {
+  const isScreenShare = !!screenShareTrackRef;
+
   return loading ? (
     <Card className="relative w-full h-full bg-input/30">
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
@@ -285,23 +289,33 @@ export function CallModal({
       </CardContent>
     </Card>
   ) : (
-    <Card
-      className={`relative w-full h-full bg-input/30 ${
-        speaking && "ring-2 ring-primary ring-inset"
-      }`}
-    >
+    <Card className="relative w-full h-full bg-input/30">
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
-        <div className="w-full h-full flex justify-center items-center">
-          <UserAvatar
-            icon={icon}
-            title={title}
-            size="jumbo"
-            state={undefined}
-            border
-          />
-        </div>
-        <div className="absolute h-full w-full flex items-end justify-start p-4 gap-2">
-          <Badge className="h-5.5 select-none">{title}</Badge>
+        {isScreenShare && screenShareTrackRef ? (
+          <div className="absolute inset-0">
+            <VideoTrack
+              trackRef={screenShareTrackRef}
+              className="rounded-lg h-full w-full object-contain bg-black"
+            />
+          </div>
+        ) : (
+          <div className="w-full h-full flex justify-center items-center">
+            <UserAvatar
+              icon={icon}
+              title={title}
+              size="jumbo"
+              state={undefined}
+              border
+            />
+          </div>
+        )}
+        <div className="absolute h-full w-full flex items-end justify-start p-2 gap-2 pointer-events-none">
+          <Badge
+            variant="outline"
+            className="h-5.5 select-none bg-background/75 border-input"
+          >
+            {isScreenShare ? `${title}'s screen` : title}
+          </Badge>
           {muted && (
             <Badge className="h-5.5 select-none">
               <Icon.MicOff />

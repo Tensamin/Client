@@ -7,7 +7,7 @@ import {
   useConnectionState,
   useLocalParticipant,
   useParticipantContext,
-  useIsSpeaking,
+  useMaybeTrackRefContext,
 } from "@livekit/components-react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { useEffect, useState } from "react";
@@ -41,13 +41,21 @@ import {
   ConnectionQuality,
   ConnectionState,
   ParticipantEvent,
+  Track,
 } from "livekit-client";
+import { isTrackReference } from "@livekit/components-core";
 
 // Main
 export function CallUserModal() {
   const { identity, metadata } = useParticipantInfo();
   const participant = useParticipantContext();
-  const isSpeaking = useIsSpeaking(participant);
+  const trackRef = useMaybeTrackRefContext();
+  const screenShareTrackRef =
+    trackRef &&
+    isTrackReference(trackRef) &&
+    trackRef.source === Track.Source.ScreenShare
+      ? trackRef
+      : undefined;
 
   const [muted, setMuted] = useState(false);
   const [deafened, setDeafened] = useState(false);
@@ -60,14 +68,22 @@ export function CallUserModal() {
       } catch {}
     }
   }, [metadata]);
+  useEffect(() => {
+    if (!participant) {
+      return;
+    }
 
-  participant.on(ParticipantEvent.TrackMuted, () => {
-    setMuted(true);
-  });
+    const handleMuted = () => setMuted(true);
+    const handleUnmuted = () => setMuted(false);
 
-  participant.on(ParticipantEvent.TrackUnmuted, () => {
-    setMuted(false);
-  });
+    participant.on(ParticipantEvent.TrackMuted, handleMuted);
+    participant.on(ParticipantEvent.TrackUnmuted, handleUnmuted);
+
+    return () => {
+      participant.off(ParticipantEvent.TrackMuted, handleMuted);
+      participant.off(ParticipantEvent.TrackUnmuted, handleUnmuted);
+    };
+  }, [participant]);
 
   return identity && identity !== "" ? (
     <UserModal
@@ -76,7 +92,7 @@ export function CallUserModal() {
       extraProps={{
         muted,
         deafened,
-        speaking: isSpeaking,
+        screenShareTrackRef,
       }}
     />
   ) : identity !== "" ? (
@@ -134,7 +150,7 @@ export function VoiceActions() {
 
   const commonClassNames = "text-sm";
   return shouldConnect ? (
-    <Card className="bg-input/30 rounded-xl border-input flex flex-col gap-2 justify-center items-center w-full p-2">
+    <Card className="bg-input/30 rounded-lg border-input flex flex-col gap-2 justify-center items-center w-full p-2">
       <Popover>
         <PopoverTrigger asChild>
           <Button

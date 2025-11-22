@@ -77,7 +77,19 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       audio.muted = isDeafened;
     });
     if (localParticipant && shouldConnect) {
-      localParticipant.setMetadata(JSON.stringify({ deafened: isDeafened }));
+      localParticipant
+        .setMetadata(JSON.stringify({ deafened: isDeafened }))
+        .catch((error) => {
+          if (
+            error instanceof Error &&
+            error.message?.includes(
+              "Request to update local metadata timed out"
+            )
+          ) {
+            return;
+          }
+          throw error;
+        });
     }
   }, [isDeafened, localParticipant, shouldConnect]);
 
