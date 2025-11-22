@@ -35,10 +35,7 @@ export function Navbar() {
   }, [currentReceiverUuid, get]);
 
   return (
-    <div
-      data-tauri-drag-region
-      className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0 pr-2"
-    >
+    <div className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0 pr-2">
       {/* Static */}
       <Button
         className="h-9 w-9"
@@ -94,7 +91,9 @@ export function Navbar() {
             <Button
               className="h-9 w-9"
               variant="outline"
-              disabled={outerState === "CONNECTED" || outerState === "CONNECTING"}
+              disabled={
+                outerState === "CONNECTED" || outerState === "CONNECTING"
+              }
             >
               <Icon.Phone />
             </Button>

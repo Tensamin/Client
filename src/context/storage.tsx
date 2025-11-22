@@ -12,6 +12,7 @@ import {
 import { openDB, IDBPDatabase } from "idb";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import { contextBridge, ipcRenderer } from "electron";
 
 // Lib Imports
 import { handleError } from "@/lib/utils";
@@ -77,7 +78,7 @@ export function StorageProvider({
   });
   const [bypass, setBypass] = useState(false);
   const [ready, setReady] = useState(false);
-  const [isTauri, setIsTauri] = useState(false);
+  const [isElectron, setIsElectron] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
   const [, setRawThemeTint] = useState<string | null>(null);
   const [themeCSS, setRawThemeCSS] = useState<string | null>(null);
@@ -396,7 +397,20 @@ export function StorageProvider({
   const { resolvedTheme, systemTheme } = useTheme();
 
   useEffect(() => {
-    setIsTauri(typeof window !== "undefined" && "__TAURI__" in window);
+    const electronCheck = () => {
+      return (typeof window !== "undefined" &&
+        window.process &&
+        typeof window.process.versions === "object" &&
+        window.process.versions.electron) as boolean;
+    };
+
+    // @ts-expect-error
+    if (window.electronAPI && window.electronAPI.isElectron) {
+      // @ts-expect-error
+      setIsElectron(window.electronAPI.isElectron());
+    } else {
+      setIsElectron(electronCheck());
+    }
   }, []);
 
   const dbPromise = useMemo(() => createDBPromise(), []);
@@ -803,7 +817,7 @@ export function StorageProvider({
         setThemeTint,
         setThemeTintType,
         bypass,
-        isTauri,
+        isElectron,
         setBypass,
         addOfflineUser,
         setOfflineCommunities,
@@ -842,7 +856,7 @@ type StorageContextType = {
   setThemeTint: (tint: string) => void;
   setThemeTintType: (tintType: string) => void;
   bypass: boolean;
-  isTauri: boolean;
+  isElectron: boolean;
   setBypass: (bypass: boolean) => void;
   addOfflineUser: (user: User) => Promise<void>;
   setOfflineCommunities: (communities: Community[]) => void;
