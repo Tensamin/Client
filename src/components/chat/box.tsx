@@ -17,6 +17,7 @@ import { useUserContext } from "@/context/user";
 // Components
 import { MessageGroup as MessageGroupComponent } from "@/components/chat/message";
 import { DelayedLoadingIcon } from "@/components/loading";
+import { MessagesTop } from "@/components/chat/messagesTop";
 
 // Types
 import {
@@ -235,11 +236,17 @@ export function Box() {
       className="h-full w-full overflow-y-auto flex flex-col-reverse contain-strict"
       onScroll={onScroll}
     >
-      {messageGroups.map((messageGroup, index) => (
-        <div key={index}>
+      {messageGroups.map((messageGroup) => (
+        <div key={messageGroup.id}>
           <MessageGroupComponent data={messageGroup} />
         </div>
       ))}
+
+      {!hasNextPage && (
+        <div className="w-full flex justify-center">
+          <MessagesTop />
+        </div>
+      )}
 
       {isFetchingNextPage && (
         <div className="py-2 flex justify-center shrink-0">
