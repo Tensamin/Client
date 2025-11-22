@@ -3,7 +3,7 @@ name: Build and Release Electron App
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 jobs:
@@ -38,7 +38,7 @@ jobs:
 
       - name: Build Electron App
         working-directory: ./desktop
-        run: bun run build
+        run: bun run ${{ runner.os == 'Windows' && 'build:win' || 'build' }}
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
