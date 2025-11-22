@@ -462,8 +462,8 @@ export function generateColors(
 
   // Compose theme: keep neutrals from baseline, override brand-driven vars
   const overrides: Partial<ThemeMap> = {
-    "--background": formatOut(colorScheme, background),
-    "--foreground": schemeIsLight ? backgroundFg.oklch : backgroundFg.hex,
+    "--background": formatOut(colorScheme, sidebar),
+    "--foreground": schemeIsLight ? sidebarFg.oklch : sidebarFg.hex,
     "--card": formatOut(colorScheme, card),
     "--card-foreground": schemeIsLight ? cardFg.oklch : cardFg.hex,
     "--popover": formatOut(colorScheme, popover),
@@ -482,8 +482,8 @@ export function generateColors(
     "--ring": formatOut(colorScheme, ring),
     "--accent": formatOut(colorScheme, accent),
     "--accent-foreground": schemeIsLight ? accentFg.oklch : accentFg.hex,
-    "--sidebar": formatOut(colorScheme, sidebar),
-    "--sidebar-foreground": schemeIsLight ? sidebarFg.oklch : sidebarFg.hex,
+    "--sidebar": formatOut(colorScheme, background),
+    "--sidebar-foreground": schemeIsLight ? backgroundFg.oklch : backgroundFg.hex,
     "--sidebar-primary": formatOut(colorScheme, sidebarPrimary),
     "--sidebar-primary-foreground": schemeIsLight
       ? sidebarPrimaryFg.oklch

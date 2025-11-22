@@ -269,7 +269,7 @@ export function StorageProvider({
       SETTINGS_CSS_CUSTOM_CSS: "Custom CSS",
 
       // Theme Page
-      SETTINGS_THEME_COLOR_HEX_LABEL: "Theme color (hex)",
+      SETTINGS_THEME_COLOR_HEX_LABEL: "Theme color",
       SETTINGS_THEME_COLOR_SCHEME_LABEL: "Color scheme",
       SETTINGS_THEME_COLOR_SCHEME_PLACEHOLDER: "Select a color scheme",
       SETTINGS_THEME_COLOR_SCHEME_OPTION_LIGHT: "Light",
@@ -277,8 +277,8 @@ export function StorageProvider({
       SETTINGS_THEME_COLOR_SCHEME_OPTION_SYSTEM: "System",
       SETTINGS_THEME_TINT_TYPE_LABEL: "Tint type",
       SETTINGS_THEME_TINT_TYPE_PLACEHOLDER: "Select a tint style",
-      SETTINGS_THEME_TINT_TYPE_OPTION_HARD: "Hard",
-      SETTINGS_THEME_TINT_TYPE_OPTION_LIGHT: "Light",
+      SETTINGS_THEME_TINT_TYPE_OPTION_HARD: "Light", // yes, this is correct (i'll switch it at some point)
+      SETTINGS_THEME_TINT_TYPE_OPTION_LIGHT: "Dark", // vvv
       SETTINGS_THEME_DISABLE_VIEW_TRANSITIONS_LABEL: "Disable view transitions",
 
       // Socket Context

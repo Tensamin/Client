@@ -35,7 +35,12 @@ export default function Page() {
           <HexColorPicker
             className="border rounded-md"
             color={(data.themeHex as string) || "#000000"}
-            onChange={(value) => set("themeHex", value)}
+            onChange={(value) => {
+              if (typeof data.themeHex !== "string") {
+                set("tintType", "hard");
+              }
+              set("themeHex", value);
+            }}
           />
         </div>
         <div className="flex flex-col gap-4.5 w-50">
