@@ -31,5 +31,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [".next", "dist", "node_modules", "public", "tauri"]
+  "exclude": [".next", "dist", "node_modules", "public", "desktop"]
 }

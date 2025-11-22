@@ -2,13 +2,18 @@
   "name": "tensamin",
   "description": "True E2EE, decentralized messages. Open source and privacy first.",
   "version": "0.1.3",
+  "homepage": "https://tensamin.net",
+  "author": {
+    "name": "Methanium",
+    "url": "https://methanium.net",
+    "email": "admin@methanium.net"
+  },
+  "main": "src/electron.ts",
   "scripts": {
+    "lint": "eslint",
     "dev": "next dev",
     "build": "next telemetry disable && next build",
-    "lint": "eslint",
-    "dev:tauri": "tauri dev",
-    "build:tauri": "tauri build",
-    "build:nix": "nix-shell -p pkg-config gtk3 pango atk glib gdk-pixbuf cairo --run 'bun run build:tauri' && nix build ."
+    "build:electron": "cd desktop && bun run build && cd .."
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.16",
@@ -32,8 +37,6 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@sapphi-red/web-noise-suppressor": "^0.3.5",
     "@tanstack/react-query": "^5.90.5",
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2",
     "babel-plugin-react-compiler": "^1.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -72,7 +75,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@tailwindcss/postcss": "^4.1.16",
-    "@tauri-apps/cli": "^2",
     "@types/color": "^4.2.0",
     "@types/node": "^24.9.1",
     "@types/react": "^19.2.2",

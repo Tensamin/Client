@@ -6,8 +6,5 @@
 Version bumps need to happen in:
 
 - package.json
-- tauri/tauri.conf.json
-- tauri/Cargo.toml
-- flake.nix
 
 This project uses [LiveKit](https://livekit.io/), licensed under Apache 2.0

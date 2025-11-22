@@ -1,19 +1,17 @@
 # Dependencies
-/node_modules
-.pnpm-debug.log*
+/node_modules/
+/desktop/node_modules/
 
 # Build
 /dist/
 /.next/
 /out/
-/tauri/target/
-/tauri/gen/schemas
+/desktop/out/
+/desktop/build/
+/desktop/packageTest/
 
 # Environment
 .env*
 *.tsbuildinfo
 next-env.d.ts
 .env.sentry-build-plugin
-
-# Rust Analyzer
-/target/
