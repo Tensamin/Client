@@ -35,7 +35,6 @@ export function handleError(sender: string, message: string, error: unknown) {
   if (error) {
     msg = (error as Error).message;
   }
-  alert("REMOVE THIS ERROR");
   console.error(sender, message, msg);
 }
 
