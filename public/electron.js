@@ -1,12 +1,14 @@
 import { app, BrowserWindow } from "electron";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let mainWindow;
 
 const createWindow = () => {
-  const basePath = app.isPackaged ? process.resourcesPath : app.getAppPath();
-  const distPath = path.join(basePath, "build");
-  const preloadPath = path.join(distPath, "build/preload.js");
+  const preloadPath = path.join(__dirname, "preload.js");
 
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -18,7 +20,7 @@ const createWindow = () => {
     },
   });
 
-  mainWindow.loadFile(path.join(distPath, "index.html"));
+  mainWindow.loadFile(path.join(__dirname, "index.html"));
 
   mainWindow.on("closed", () => {
     mainWindow = null;

@@ -8,7 +8,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     appVersion: packageJson.version,
-    ignore: ["forge.config.ts", "bun.lock", "patch.nix"]
+    ignore: ["forge.config.ts", "bun.lock", "patch.nix", "aur"]
   },
   rebuildConfig: {},
   makers: [
