@@ -60,11 +60,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Update PKGBUILD version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          sed -i "s/^pkgver=.*/pkgver=$VERSION/" ./aur/bin/PKGBUILD
-
       - name: Publish AUR package
         uses: ulises-jeremias/github-actions-aur-publish@v1
         with:
@@ -74,7 +69,7 @@ jobs:
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Update AUR package
+          commit_message: Automated Update
           ssh_keyscan_types: ed25519
           update_pkgver: true
 
@@ -92,6 +87,6 @@ jobs:
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Update AUR package
+          commit_message: Automated Update
           ssh_keyscan_types: ed25519
           update_pkgver: true
