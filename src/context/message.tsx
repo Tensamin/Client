@@ -293,7 +293,7 @@ export function useNewUserNotification() {
           const showRealNotification = () => {
             const notification = new Notification(otherUser.display, {
               icon:
-                otherUser.avatar || "/assets/app/logo-192x192-notMaskable.png",
+                otherUser.avatar || "/assets/app/web-app-manifest-192x192.png",
               body: decrypted.message,
               silent: true,
             });

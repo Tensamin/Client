@@ -203,12 +203,6 @@ export type OfflineData = {
   storedCommunities: Community[];
 };
 
-declare global {
-  interface Window {
-    keyring?: {
-      get: (app: string, id?: string) => Promise<string | undefined>;
-    };
-  }
-}
-
-export {};
+export type UserAudioSettings = {
+  [key: string]: number;
+};

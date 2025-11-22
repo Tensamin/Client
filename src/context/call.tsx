@@ -6,8 +6,16 @@ import {
   LiveKitRoom,
   RoomAudioRenderer,
   useLocalParticipant,
+  useRoomContext,
+  useDisconnectButton,
 } from "@livekit/components-react";
-import { useDisconnectButton } from "@livekit/components-react";
+import { RoomEvent } from "livekit-client";
+
+// Context Imports
+import { useStorageContext } from "@/context/storage";
+
+// Types
+import { UserAudioSettings } from "@/lib/types";
 
 // Main
 const SubCallContext = createContext<SubCallContextValue | null>(null);
@@ -30,9 +38,18 @@ export function useSubCallContext() {
 }
 
 export function CallProvider({ children }: { children: React.ReactNode }) {
+  const { data, set } = useStorageContext();
+
   const [shouldConnect, setShouldConnect] = useState(false);
   const [token, setToken] = useState("");
   const [outerState, setOuterState] = useState("DISCONNECTED");
+
+  function setUserVolumes(userId: string, volume: number) {
+    set("call_userVolumes", {
+      ...(data.call_userVolumes as object),
+      [userId]: volume,
+    });
+  }
 
   return (
     <CallContext.Provider
@@ -44,6 +61,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           setOuterState("CONNECTING");
           setShouldConnect(true);
         },
+        setUserVolumes,
 
         setOuterState,
         setShouldConnect,
@@ -69,7 +87,16 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     useCallContext();
   const { buttonProps } = useDisconnectButton({});
   const { isMicrophoneEnabled, localParticipant } = useLocalParticipant();
+  const { data } = useStorageContext();
   const [isDeafened, setIsDeafened] = useState(false);
+  const storedUserVolumes = data.call_userVolumes as UserAudioSettings | null;
+
+  const room = useRoomContext();
+  room.on(RoomEvent.ParticipantConnected, (participant) => {
+    const storedVolume = storedUserVolumes?.[participant.identity];
+    if (!storedVolume) return;
+    participant.setVolume(storedVolume as number);
+  });
 
   useEffect(() => {
     const audioElements = document.querySelectorAll("audio");
@@ -141,6 +168,7 @@ type CallContextValue = {
   outerState: string;
   setToken: (input: string) => void;
   connect: () => void;
+  setUserVolumes: (userId: string, volume: number) => void;
 
   setOuterState: (input: string) => void;
   setShouldConnect: (input: boolean) => void;
