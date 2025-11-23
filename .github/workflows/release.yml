@@ -3,7 +3,7 @@ name: Build and Release Electron App
 on:
   push:
     tags:
-      - "v*"
+      - "v*.*.*"
   workflow_dispatch:
 
 permissions:
@@ -42,14 +42,15 @@ jobs:
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
+        if: github.ref_type == 'tag'
         with:
           files: |
-            desktop/out/make/**/*.deb
-            desktop/out/make/**/*.rpm
-            desktop/out/make/**/*.zip
-            desktop/out/make/**/*.exe
-            desktop/out/make/**/*.nupkg
-            desktop/out/make/**/*.dmg
+            desktop/out/**/*.deb
+            desktop/out/**/*.rpm
+            desktop/out/**/*.zip
+            desktop/out/**/*.exe
+            desktop/out/**/*.nupkg
+            desktop/out/**/*.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
