@@ -8,7 +8,9 @@ if (squirrelStartup) app.quit();
 
 // Update
 import { updateElectronApp } from "update-electron-app";
-updateElectronApp();
+if (process.platform !== "linux") {
+  updateElectronApp();
+}
 
 // Main
 const FILENAME = fileURLToPath(import.meta.url);
@@ -34,13 +36,13 @@ function createWindow() {
     height: 800,
     frame: false,
     webPreferences: {
-      preload: path.join(app.getAppPath(), "src", "preload.js"),
+      preload: path.join(app.getAppPath(), "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },
   });
 
-  mainWindow.loadURL("app://./index.html");
+  mainWindow.loadURL("app://./build/index.html");
 
   mainWindow.on("closed", () => {
     mainWindow = null;
