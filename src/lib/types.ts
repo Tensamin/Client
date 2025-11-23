@@ -147,8 +147,8 @@ export type ErrorType = {
 
 export type Conversation = {
   user_id: string;
+  call_id?: string;
   last_message_at: number;
-  call_active: boolean;
 };
 
 export type Community = {

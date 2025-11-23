@@ -13,10 +13,12 @@ import { fallbackUser } from "@/lib/types";
 export function UserModal({
   uuid,
   size,
+  callId,
   extraProps,
 }: {
   uuid: string;
   size: "big" | "medium" | "profile" | "call";
+  callId?: string;
   extraProps?: Record<string, unknown>;
 }) {
   const { get, ownState, ownUuid, fetchedUsers } = useUserContext();
@@ -47,6 +49,7 @@ export function UserModal({
       return (
         <RawModal.MediumModal
           key={uuid}
+          callId={callId}
           {...props}
           description={user.status || ""}
           onClick={() => {

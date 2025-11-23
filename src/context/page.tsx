@@ -117,11 +117,11 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
       <Toaster position="top-right" richColors expand />
       <CryptoProvider>
         <SocketProvider>
-          <CallProvider>
-            <UserProvider>
+          <UserProvider>
+            <CallProvider>
               <MessageProvider>{children}</MessageProvider>
-            </UserProvider>
-          </CallProvider>
+            </CallProvider>
+          </UserProvider>
         </SocketProvider>
       </CryptoProvider>
     </PageContext.Provider>

@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -11,19 +11,34 @@ import {
 } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
 import { v7 } from "uuid";
+import { toast } from "sonner";
+import * as Icon from "lucide-react";
 
 // Lib Imports
-import { call_token } from "@/lib/endpoints";
+import { call, call_token } from "@/lib/endpoints";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
 import { useCryptoContext } from "@/context/crypto";
 import { useSocketContext } from "@/context/socket";
+import { useUserContext } from "@/context/user";
+
+// Components
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 // Types
-import { UserAudioSettings } from "@/lib/types";
-import { toast } from "sonner";
-
+import { User, UserAudioSettings } from "@/lib/types";
+import { UserAvatar } from "@/components/modals/raw";
 // Main
 const SubCallContext = createContext<SubCallContextValue | null>(null);
 const CallContext = createContext<CallContextValue | null>(null);
@@ -46,6 +61,9 @@ export function useSubCallContext() {
 
 export function CallProvider({ children }: { children: React.ReactNode }) {
   const { data, set } = useStorageContext();
+  const { lastMessage, send } = useSocketContext();
+  const { get } = useUserContext();
+  const { ownUuid, privateKeyHash } = useCryptoContext();
 
   const [shouldConnect, setShouldConnect] = useState(false);
   const [token, setToken] = useState("");
@@ -58,22 +76,144 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
+  const [newCallWidgetOpen, setNewCallWidgetOpen] = useState(false);
+  const [newCallData, setNewCallData] = useState<{
+    call_id: string;
+    sender_id: string;
+  } | null>(null);
+  const [newCaller, setNewCaller] = useState<User | null>(null);
+  useEffect(() => {
+    if (lastMessage?.type === "new_call") {
+      if (!lastMessage.data.sender_id || !lastMessage.data.call_id) {
+        toast.error("Failed joining call");
+        return;
+      }
+      setNewCallData({
+        call_id: lastMessage.data.call_id,
+        sender_id: lastMessage.data.sender_id,
+      });
+      if (!lastMessage.data?.sender_id) return;
+      get(lastMessage.data.sender_id, false).then((user) => {
+        setNewCaller(user);
+        setNewCallWidgetOpen(true);
+      });
+    }
+  }, [lastMessage?.type]);
+
+  const connect = () => {
+    setOuterState("CONNECTING");
+    setShouldConnect(true);
+  };
+
+  const getCallToken = async (callId: string) => {
+    return fetch(call_token, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        call_id: callId,
+        user_id: ownUuid,
+        private_key_hash: privateKeyHash,
+      }),
+    })
+      .then((data) => data.json())
+      .then((data) => {
+        return data.data.token;
+      });
+  };
+
+  const callUser = async (uuid: string) => {
+    const callId = v7();
+    await getCallToken(callId).then((token) => {
+      setToken(token);
+      connect();
+      send("call_invite", {
+        receiver_id: uuid,
+        call_id: callId,
+      }).then((data) => {
+        if (data.type !== "error") {
+          toast.success("Call invitation sent.");
+        } else {
+          toast.error("Failed to send call invitation.");
+        }
+      });
+    });
+  };
+
   return (
     <CallContext.Provider
       value={{
+        getCallToken,
+        callUser,
         shouldConnect,
         outerState,
         setToken,
-        connect: () => {
-          setOuterState("CONNECTING");
-          setShouldConnect(true);
-        },
+        connect,
         setUserVolumes,
 
         setOuterState,
         setShouldConnect,
       }}
     >
+      {newCaller && (
+        <Dialog open={newCallWidgetOpen} onOpenChange={setNewCallWidgetOpen}>
+          <DialogContent
+            aria-describedby={undefined}
+            showCloseButton={false}
+            className="flex flex-col gap-12 w-75 justify-center items-center"
+          >
+            <div className="flex flex-col gap-5 justify-center items-center">
+              <UserAvatar
+                icon={newCaller.avatar}
+                title={newCaller.display}
+                size="gigantica"
+                border
+              />
+              <DialogTitle className="text-2xl">
+                {newCaller.display}
+              </DialogTitle>
+            </div>
+            <div className="flex gap-10">
+              <Button
+                className="w-12 h-12"
+                variant="outline"
+                onClick={() => setNewCallWidgetOpen(false)}
+              >
+                <Icon.PhoneOff />
+              </Button>
+              <Button
+                className="w-12 h-12"
+                onLoad={(el) => {
+                  // @ts-expect-error
+                  el.target.focus();
+                }}
+                onClick={() => {
+                  setNewCallWidgetOpen(false);
+                  if (!newCallData?.call_id) return;
+                  getCallToken(newCallData?.call_id).then((token) => {
+                    setToken(token);
+                    connect();
+                  });
+                }}
+              >
+                <Icon.PhoneForwarded />
+              </Button>
+            </div>
+            <audio
+              // MAKE THE SOUND LESS LOUD AND REMOVE ONPLAY!!!! (It's very buggy)
+              loop
+              hidden
+              autoPlay
+              onPlay={(el) => {
+                // @ts-expect-error
+                el.target.volume = 0.2;
+              }}
+              src="/assets/sounds/call.wav"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
       <LiveKitRoom
         token={token}
         serverUrl="wss://call.tensamin.net"
@@ -93,8 +233,6 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   const { setOuterState, setShouldConnect, connect, shouldConnect, setToken } =
     useCallContext();
   const { data } = useStorageContext();
-  const { send } = useSocketContext();
-  const { ownUuid, privateKeyHash } = useCryptoContext();
 
   const { buttonProps } = useDisconnectButton({});
   const { isMicrophoneEnabled, localParticipant } = useLocalParticipant();
@@ -155,40 +293,9 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const callUser = async (uuid: string) => {
-    const callId = v7();
-    fetch(call_token, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        call_id: callId,
-        user_id: ownUuid,
-        private_key_hash: privateKeyHash,
-      }),
-    })
-      .then((data) => data.json())
-      .then((data) => {
-        setToken(data.data.token);
-        connect();
-        send("call_invite", {
-          receiver_id: uuid,
-          call_id: callId,
-        }).then((data) => {
-          if (data.type !== "error") {
-            toast.success("Call invitation sent.");
-          } else {
-            toast.error("Failed to send call invitation.");
-          }
-        });
-      });
-  };
-
   return (
     <SubCallContext.Provider
       value={{
-        callUser,
         disconnect: () => {
           buttonProps.onClick();
           setOuterState("DISCONNECTED");
@@ -206,6 +313,8 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 }
 
 type CallContextValue = {
+  getCallToken: (callId: string) => Promise<string>;
+  callUser: (uuid: string) => void;
   shouldConnect: boolean;
   outerState: string;
   setToken: (input: string) => void;
@@ -217,7 +326,6 @@ type CallContextValue = {
 };
 
 type SubCallContextValue = {
-  callUser: (uuid: string) => void;
   disconnect: () => void;
   connect: () => void;
   toggleMute: () => void;

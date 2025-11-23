@@ -303,7 +303,6 @@ export function UserProvider({
         setConversationsAndSync([
           {
             user_id: "0",
-            call_active: false,
             last_message_at: 0,
           },
         ]);

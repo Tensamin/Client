@@ -1,11 +1,14 @@
 // Package Imports
 import * as Icon from "lucide-react";
+import { VideoTrack } from "@livekit/components-react";
+import type { TrackReference } from "@livekit/components-core";
 
 // Lib Imports
 import { convertStringToInitials, getColorFor } from "@/lib/utils";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
+import { useCallContext } from "@/context/call";
 
 // Components
 import {
@@ -23,9 +26,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
-import { Text } from "../markdown/text";
-import { VideoTrack } from "@livekit/components-react";
-import type { TrackReference } from "@livekit/components-core";
+import { Text } from "@/components/markdown/text";
 
 // Main
 export function UserAvatar({
@@ -40,7 +41,7 @@ export function UserAvatar({
   icon?: string;
   title: string;
   state?: string;
-  size: "small" | "medium" | "large" | "extraLarge" | "jumbo";
+  size: "small" | "medium" | "large" | "extraLarge" | "jumbo" | "gigantica";
   border: boolean;
   loading?: boolean;
   className?: string;
@@ -55,7 +56,7 @@ export function UserAvatar({
         size === "large" && "size-12"
       } ${size === "extraLarge" && "size-20"} ${
         size === "jumbo" && "size-30"
-      } rounded-full ${className}`}
+      } ${size === "gigantica" && "size-40"} rounded-full ${className}`}
     />
   ) : (
     <div
@@ -65,7 +66,7 @@ export function UserAvatar({
         size === "large" && "size-12"
       } ${size === "extraLarge" && "size-20"} ${
         size === "jumbo" && "size-30"
-      } rounded-full ${className}`}
+      } ${size === "gigantica" && "size-40"} rounded-full ${className}`}
     >
       <Avatar
         className={`${!border && "bg-transparent"} object-cover w-full h-full`}
@@ -73,11 +74,11 @@ export function UserAvatar({
       >
         {icon && <AvatarImage src={icon} />}
         <AvatarFallback
-          className={`${size === "extraLarge" && "text-3xl"} ${
-            size === "jumbo" && "text-2xl"
-          } ${size === "large" && "text-xl"} ${
-            size === "medium" && "text-sm"
-          } ${size === "small" && "text-xs"}`}
+          className={`${size === "extraLarge" && "text-2xl"} ${
+            size === "gigantica" && "text-4xl"
+          } ${size === "jumbo" && "text-3xl"} ${
+            size === "large" && "text-xl"
+          } ${size === "medium" && "text-sm"} ${size === "small" && "text-xs"}`}
         >
           {convertStringToInitials(title)}
         </AvatarFallback>
@@ -159,6 +160,7 @@ export function MediumModal({
   loading,
   onClick,
   state,
+  callId,
 }: Readonly<{
   title: string;
   description: string;
@@ -166,7 +168,9 @@ export function MediumModal({
   loading: boolean;
   onClick?: () => void;
   state?: string;
+  callId?: string;
 }>) {
+  const { getCallToken, setToken, connect } = useCallContext();
   return loading ? (
     <Button
       data-slot="card"
@@ -192,6 +196,19 @@ export function MediumModal({
           </p>
         )}
       </div>
+      {callId && (
+        <Button
+          className="w-8 h-8"
+          onClick={() => {
+            getCallToken(callId).then((token) => {
+              setToken(token);
+              connect();
+            });
+          }}
+        >
+          <Icon.Phone scale={80} />
+        </Button>
+      )}
     </Button>
   );
 }

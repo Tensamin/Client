@@ -19,12 +19,14 @@ import { Button } from "@/components/ui/button";
 import { WindowControls } from "@/components/windowControls";
 import { MotionDivWrapper } from "@/components/animation/presence";
 
+// Main
 export function Navbar() {
   const { setPage, page } = usePageContext();
-  const { failedMessagesAmount, currentReceiverUuid, get } = useUserContext();
+  const { failedMessagesAmount, currentReceiverUuid, get, conversations } =
+    useUserContext();
   const { translate } = useStorageContext();
-  const { outerState } = useCallContext();
-  const { callUser } = useSubCallContext();
+  const { outerState, callUser, getCallToken, connect, setToken } =
+    useCallContext();
   const [receiverUsername, setReceiverUsername] = useState("");
 
   useEffect(() => {
@@ -35,8 +37,13 @@ export function Navbar() {
     }
   }, [currentReceiverUuid, get]);
 
+  const currentUserAlreadyHasACall = conversations.find(
+    (conv) => conv.user_id === currentReceiverUuid && conv.call_id
+  );
+
   return (
     <div className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0 pr-2 electron-drag">
+      {/* Homepage Button */}
       <Button
         className="h-9 w-9"
         variant="outline"
@@ -46,6 +53,8 @@ export function Navbar() {
       >
         <Icon.Home />
       </Button>
+
+      {/* Settings Button */}
       <Button
         className="h-9 w-9"
         variant="outline"
@@ -56,15 +65,17 @@ export function Navbar() {
         <Icon.Settings />
       </Button>
 
-      {/* Dynamic */}
+      {/* Dynamic Elements */}
       <AnimatePresence key="navbar-dynamic-elements">
-        {/* Only when user is selected */}
+        {/* Username */}
         {page === "chat" && (
           <MotionDivWrapper fadeInFromTop key="receiver-username">
             <p>{receiverUsername}</p>
           </MotionDivWrapper>
         )}
         <div className="w-full" />
+
+        {/* Failed Messages */}
         {failedMessagesAmount > 0 && page === "chat" && (
           <MotionDivWrapper key="failed-messages">
             <HoverCard>
@@ -86,12 +97,23 @@ export function Navbar() {
             </HoverCard>
           </MotionDivWrapper>
         )}
+
+        {/* Call Button */}
         {page === "chat" && (
           <MotionDivWrapper key="call-button">
             <Button
               className="h-9 w-9"
-              variant="outline"
-              onClick={() => callUser(currentReceiverUuid)}
+              variant={!currentUserAlreadyHasACall?.call_id ? null : "outline"}
+              onClick={() => {
+                currentUserAlreadyHasACall?.call_id
+                  ? getCallToken(currentUserAlreadyHasACall.call_id).then(
+                      (token) => {
+                        setToken(token);
+                        connect();
+                      }
+                    )
+                  : callUser(currentReceiverUuid);
+              }}
               disabled={
                 outerState === "CONNECTED" || outerState === "CONNECTING"
               }

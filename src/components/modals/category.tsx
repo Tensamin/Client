@@ -42,8 +42,9 @@ export function Conversations() {
       {conversations.map((conversation) => (
         <UserModal
           key={conversation.user_id}
-          size="medium"
           uuid={conversation.user_id}
+          callId={conversation.call_id}
+          size="medium"
         />
       ))}
     </div>
