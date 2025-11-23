@@ -9,6 +9,10 @@
     "url": "https://methanium.net",
     "email": "admin@methanium.net"
   },
+  "repository": {
+    "url": "https://github.com/Tensamin/Frontend.git",
+    "type": "git"
+  },
   "main": "src/electron.ts",
   "scripts": {
     "lint": "eslint",

@@ -8,6 +8,10 @@
     "url": "https://methanium.net",
     "email": "admin@methanium.net"
   },
+  "repository": {
+    "url": "https://github.com/Tensamin/Frontend.git",
+    "type": "git"
+  },
   "license": "custom",
   "main": "build/electron.ts",
   "type": "module",
