@@ -47,7 +47,6 @@ jobs:
             desktop/out/**/*.deb
             desktop/out/**/*.rpm
             desktop/out/**/*.zip
-            desktop/out/**/*.AppImage
           if-no-files-found: warn
 
   build-electron-win-mac:
@@ -89,7 +88,7 @@ jobs:
           path: |
             desktop/out/**/*.zip
             desktop/out/**/*.exe
-            desktop/out/**/*.nupkg
+            desktop/out/**/*.msi
             desktop/out/**/*.dmg
           if-no-files-found: warn
 
