@@ -33,8 +33,7 @@ build() {
 
 package() {
 	cd "$srcdir/Frontend/desktop/out"
-	debfile=$(find "$PWD" -path '*zip/linux/x64/*.deb' -print -quit)
+	debfile=$(find "$PWD" -path 'make/deb/*/*.deb' -print -quit)
 	ar x "${debfile}"
-	bsdtar -xf "$debfile" -C "${pkgdir}/opt/${_pkgname}"
 	tar --zstd -xf data.tar.zst -C "${pkgdir}"
 }
