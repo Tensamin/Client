@@ -36,8 +36,7 @@ export function Navbar() {
   }, [currentReceiverUuid, get]);
 
   return (
-    <div className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0 pr-2">
-      {/* Static */}
+    <div className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0 pr-2 electron-drag">
       <Button
         className="h-9 w-9"
         variant="outline"

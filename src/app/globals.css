@@ -171,3 +171,9 @@
 ::view-transition-new(page-vt) {
   animation: enterAnimation 0.15s ease-out forwards;
 }
+
+@layer utilities {
+  .electron-drag {
+    -webkit-app-region: drag;
+  }
+}
