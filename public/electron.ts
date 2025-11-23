@@ -20,14 +20,12 @@ protocol.registerSchemesAsPrivileged([
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow() {
-  const preloadPath = path.join(DIRNAME, "preload.js");
-
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     frame: false,
     webPreferences: {
-      preload: preloadPath,
+      preload: path.join(app.getAppPath(), "build", "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },

@@ -397,19 +397,11 @@ export function StorageProvider({
   const { resolvedTheme, systemTheme } = useTheme();
 
   useEffect(() => {
-    const electronCheck = () => {
-      return (typeof window !== "undefined" &&
-        window.process &&
-        typeof window.process.versions === "object" &&
-        window.process.versions.electron) as boolean;
-    };
-
     // @ts-expect-error
-    if (window.electronAPI && window.electronAPI.isElectron) {
-      // @ts-expect-error
-      setIsElectron(window.electronAPI.isElectron());
+    if (window.electronAPI) {
+      setIsElectron(true);
     } else {
-      setIsElectron(electronCheck());
+      setIsElectron(false);
     }
   }, []);
 
