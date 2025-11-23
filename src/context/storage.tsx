@@ -107,7 +107,7 @@ export function StorageProvider({
       HOME_PAGE_ADD_CONVERSATION_INPUT_PLACEHOLDER: "Enter username...",
       HOME_PAGE_ADD_COMMUNITY_LABEL: "Add Community",
       ERROR_HOME_PAGE_ADD_CONVERSATION_FAILED: "Failed to add conversation",
-      HOME_PAGE_PLACEHOLDER_MESSAGE: "Homepage :)",
+      HOME_PAGE_PLACEHOLDER_MESSAGE: "WEEWOO HOMEPAGE!!! WEEWOO",
       HOME_PAGE_START_CALL_BUTTON: "Start Call",
       HOME_PAGE_ACTIVE_STATUS: "Active",
 

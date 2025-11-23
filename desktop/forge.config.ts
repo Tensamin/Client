@@ -29,7 +29,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     executableName: packageJson.name,
     appVersion: packageJson.version,
-    icon: "./assets/icon",
+    icon: "./assets/icon/icon",
     asar: true,
     ignore: ["forge.config.ts", "bun.lock", "patch.nix", "aur"],
   },
