@@ -6,6 +6,7 @@ import packageJson from "../package.json" assert { type: "json" };
 
 const config: ForgeConfig = {
   packagerConfig: {
+    executableName: packageJson.name,
     asar: true,
     appVersion: packageJson.version,
     ignore: ["forge.config.ts", "bun.lock", "patch.nix", "aur"],
@@ -13,7 +14,7 @@ const config: ForgeConfig = {
   rebuildConfig: {},
   makers: [
     {
-      platforms: ["darwin", "linux", "win"],
+      platforms: ["darwin", "linux", "win32"],
       name: "@electron-forge/maker-zip",
       config: {},
     },
@@ -23,7 +24,7 @@ const config: ForgeConfig = {
       config: {},
     },
     {
-      platforms: ["win"],
+      platforms: ["win32"],
       name: "@electron-forge/maker-wix",
       config: {
         language: 1033,
