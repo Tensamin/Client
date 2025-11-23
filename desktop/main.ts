@@ -1,4 +1,12 @@
-import { app, BrowserWindow, ipcMain, protocol, net } from "electron";
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  protocol,
+  net,
+  Notification,
+  shell,
+} from "electron";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -6,11 +14,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import squirrelStartup from "electron-squirrel-startup";
 if (squirrelStartup) app.quit();
 
-// Update
-import { updateElectronApp } from "update-electron-app";
-if (process.platform !== "linux") {
-  updateElectronApp();
-}
+import { autoUpdater } from "electron-updater";
 
 // Main
 const FILENAME = fileURLToPath(import.meta.url);
@@ -29,6 +33,49 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 let mainWindow: BrowserWindow | null = null;
+const RELEASES_URL = "https://github.com/Tensamin/Frontend/releases";
+
+function setupUpdateNotifications() {
+  if (process.platform === "linux") {
+    return;
+  }
+
+  autoUpdater.autoDownload = false;
+
+  autoUpdater.on("update-available", (info) => {
+    if (!Notification.isSupported()) {
+      return;
+    }
+
+    const versionLabel = info.version
+      ? `Tensamin v${info.version} is available.`
+      : "A new Tensamin update is available.";
+
+    const notification = new Notification({
+      title: "Update available",
+      body: `${versionLabel} Click to open the latest release.`,
+    });
+
+    const openReleases = () => {
+      shell.openExternal(RELEASES_URL).catch((error) => {
+        console.error("Failed to open releases page:", error);
+      });
+    };
+
+    notification.on("click", openReleases);
+    notification.on("action", openReleases);
+
+    notification.show();
+  });
+
+  autoUpdater.on("error", (error) => {
+    console.error("Auto-update error:", error);
+  });
+
+  autoUpdater.checkForUpdates().catch((error) => {
+    console.error("Failed to check for updates:", error);
+  });
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -58,6 +105,7 @@ app.whenReady().then(() => {
   });
 
   createWindow();
+  setupUpdateNotifications();
 });
 
 app.on("window-all-closed", () => {
