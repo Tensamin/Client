@@ -35,5 +35,5 @@ package() {
 	cd "$srcdir/Frontend/desktop/out"
 	debfile=$(find "$PWD" -path '*.deb' -print -quit)
 	ar x "${debfile}"
-	tar --zstd -xf data.tar.zst -C "${pkgdir}"
+	tar -xf data.tar.xz -C "${pkgdir}"
 }
