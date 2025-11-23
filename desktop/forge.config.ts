@@ -7,8 +7,9 @@ import packageJson from "../package.json" assert { type: "json" };
 const config: ForgeConfig = {
   packagerConfig: {
     executableName: packageJson.name,
-    asar: true,
     appVersion: packageJson.version,
+    icon: "./icon",
+    asar: true,
     ignore: ["forge.config.ts", "bun.lock", "patch.nix", "aur"],
   },
   rebuildConfig: {},
