@@ -47,6 +47,7 @@ const config: ForgeConfig = {
       title: packageJson.productName,
       noMsi: true,
     }),
+    /*
     new MakerNSIS({
       updater: {
         url: "https://updates.tensamin.net/desktop/win32/latest.yml",
@@ -55,6 +56,7 @@ const config: ForgeConfig = {
         updaterCacheDirName: "tensamin-updates",
       },
     }),
+    */
     new MakerDMG({
       name: packageJson.name,
       title: packageJson.productName,
