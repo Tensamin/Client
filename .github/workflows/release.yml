@@ -97,6 +97,8 @@ jobs:
     needs: [build-electron-linux, build-electron-win-mac]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -138,7 +140,8 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: Automated Update
           ssh_keyscan_types: ed25519
-          update_pkgver: true
+        env:
+          PKG_VERSION: ${{ needs.create-release.outputs.version }}
 
   publish-aur-git:
     runs-on: ubuntu-latest
