@@ -66,13 +66,12 @@ const config: ForgeConfig = {
     new PublisherGithub({
       repository: {
         name: "Frontend",
-        owner: "Methanium",
+        owner: "Tensamin",
       },
       authToken: process.env.GITHUB_TOKEN,
       draft: false,
       prerelease: false,
-      tagPrefix: "release/v",
-      generateReleaseNotes: true,
+      tagPrefix: "desktop-v",
       force: true,
     }),
   ],
