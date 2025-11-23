@@ -72,6 +72,7 @@ const config: ForgeConfig = {
       draft: false,
       prerelease: false,
       tagPrefix: "desktop-v",
+      generateReleaseNotes: true,
       force: true,
     }),
   ],
