@@ -2,55 +2,79 @@ import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import type { ForgeConfig } from "@electron-forge/shared-types";
 
+import MakerNSIS from "@felixrieseberg/electron-forge-maker-nsis";
+import { MakerSquirrel } from "@electron-forge/maker-squirrel";
+import { MakerDMG } from "@electron-forge/maker-dmg";
+import { MakerDeb, MakerDebConfig } from "@electron-forge/maker-deb";
+import { MakerRpm, MakerRpmConfig } from "@electron-forge/maker-rpm";
+
+import { PublisherGithub } from "@electron-forge/publisher-github";
+
 import packageJson from "../package.json" assert { type: "json" };
+
+const linuxPackageProps = {
+  options: {
+    name: packageJson.name,
+    genericName: "Chat Application",
+    version: packageJson.version,
+    description: packageJson.description,
+    categories: ["Network", "Office", "Utility"],
+    maintainer: packageJson.author.name,
+    homepage: packageJson.homepage,
+    mimeType: ["x-scheme-handler/tensamin"],
+  },
+} satisfies MakerDebConfig | MakerRpmConfig;
 
 const config: ForgeConfig = {
   packagerConfig: {
     executableName: packageJson.name,
     appVersion: packageJson.version,
-    icon: "./icon",
+    icon: "./assets/icon",
     asar: true,
     ignore: ["forge.config.ts", "bun.lock", "patch.nix", "aur"],
   },
   rebuildConfig: {},
   makers: [
-    {
-      platforms: ["darwin", "linux", "win32"],
-      name: "@electron-forge/maker-zip",
-      config: {},
-    },
-    {
-      platforms: ["darwin"],
-      name: "@electron-forge/maker-dmg",
-      config: {},
-    },
-    {
-      platforms: ["win32"],
-      name: "@electron-forge/maker-wix",
-      config: {
-        language: 1033,
-        manufacturer: packageJson.author.name,
+    new MakerSquirrel({
+      name: packageJson.name,
+      version: packageJson.version,
+      authors: packageJson.author.name,
+      description: packageJson.description,
+      setupExe: `${packageJson.productName} Setup (${packageJson.version}).exe`,
+      setupMsi: `${packageJson.productName} Setup (${packageJson.version}).msi`,
+      setupIcon: "./assets/icon/icon.ico",
+      //loadingGif: "./assets/loading.gif",
+      title: packageJson.productName,
+      noMsi: true,
+    }),
+    new MakerNSIS({
+      updater: {
+        url: "https://updates.tensamin.net/desktop/win32/latest.yml",
+        channel: "latest",
+        publisherName: packageJson.author.name,
+        updaterCacheDirName: "tensamin-updates",
       },
-    },
-    {
-      platforms: ["linux"],
-      name: "@electron-forge/maker-deb",
-      config: {
-        options: {
-          maintainer: packageJson.author.name,
-          homepage: packageJson.homepage,
-        },
+    }),
+    new MakerDMG({
+      name: packageJson.name,
+      title: packageJson.productName,
+    }),
+    new MakerDeb(linuxPackageProps),
+    new MakerRpm(linuxPackageProps),
+  ],
+  publishers: [
+    new PublisherGithub({
+      repository: {
+        name: "Frontend",
+        owner: "Methanium",
       },
-    },
-    {
-      platforms: ["linux"],
-      name: "@electron-forge/maker-rpm",
-      config: {
-        options: {
-          homepage: packageJson.homepage,
-        },
-      },
-    },
+      authToken: process.env.GITHUB_TOKEN,
+      draft: false,
+      prerelease: false,
+      tagPrefix: "release/v",
+      generateReleaseNotes: true,
+      force: true,
+    }),
   ],
   plugins: [
     new FusesPlugin({

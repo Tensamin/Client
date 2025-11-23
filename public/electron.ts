@@ -2,6 +2,9 @@ import { app, BrowserWindow, ipcMain, protocol, net } from "electron";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+// Handle squirrel
+if (require('electron-squirrel-startup')) app.quit();
+
 const FILENAME = fileURLToPath(import.meta.url);
 const DIRNAME = path.dirname(FILENAME);
 
