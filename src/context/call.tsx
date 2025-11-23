@@ -175,8 +175,6 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         send("call_invite", {
           receiver_id: uuid,
           call_id: callId,
-          call_secret: "",
-          call_secret_sha: "",
         }).then((data) => {
           if (data.type !== "error") {
             toast.success("Call invitation sent.");
