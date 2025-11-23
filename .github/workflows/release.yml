@@ -40,14 +40,15 @@ jobs:
         run: bun run build
 
       - name: Upload Artifacts
+        working-directory: ./desktop
         uses: actions/upload-artifact@v4
         with:
           name: linux-artifacts
           path: |
-            desktop/out/**/*.deb
-            desktop/out/**/*.rpm
-            desktop/out/**/*.zip
-            desktop/out/**/*.AppImage
+            out/**/*.deb
+            out/**/*.rpm
+            out/**/*.zip
+            out/**/*.AppImage
           if-no-files-found: warn
 
   build-electron-win-mac:
@@ -83,14 +84,15 @@ jobs:
         run: bun run ${{ runner.os == 'Windows' && 'build:win' || 'build' }}
 
       - name: Upload Artifacts
+        working-directory: ./desktop
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-artifacts
           path: |
-            desktop/out/make/**/*.zip
-            desktop/out/make/**/*.exe
-            desktop/out/make/**/*.nupkg
-            desktop/out/make/**/*.dmg
+            out/**/*.zip
+            out/**/*.exe
+            out/**/*.nupkg
+            out/**/*.dmg
           if-no-files-found: warn
 
   create-release:
@@ -115,6 +117,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          name: v${{ steps.version.outputs.VERSION }} Desktop App
           tag_name: v${{ steps.version.outputs.VERSION }}
           files: release-assets/**/*
         env:
