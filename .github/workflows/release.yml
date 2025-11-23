@@ -40,15 +40,14 @@ jobs:
         run: bun run build
 
       - name: Upload Artifacts
-        working-directory: ./desktop
         uses: actions/upload-artifact@v4
         with:
           name: linux-artifacts
           path: |
-            out/**/*.deb
-            out/**/*.rpm
-            out/**/*.zip
-            out/**/*.AppImage
+            desktop/out/**/*.deb
+            desktop/out/**/*.rpm
+            desktop/out/**/*.zip
+            desktop/out/**/*.AppImage
           if-no-files-found: warn
 
   build-electron-win-mac:
@@ -84,15 +83,14 @@ jobs:
         run: bun run ${{ runner.os == 'Windows' && 'build:win' || 'build' }}
 
       - name: Upload Artifacts
-        working-directory: ./desktop
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-artifacts
           path: |
-            out/**/*.zip
-            out/**/*.exe
-            out/**/*.nupkg
-            out/**/*.dmg
+            desktop/out/**/*.zip
+            desktop/out/**/*.exe
+            desktop/out/**/*.nupkg
+            desktop/out/**/*.dmg
           if-no-files-found: warn
 
   create-release:
