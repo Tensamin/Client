@@ -19,7 +19,7 @@
     "prep": "rm -rf build && mkdir build && cp -r ../dist/* ./build/ && cp main.ts build/ && cp preload.js build/",
     "build": "bun run prep && electron-forge publish",
     "build:git": "bun run prep && electron-forge make --targets @electron-forge/maker-deb",
-    "build:win": "powershell -NoLogo -NoProfile -Command \"New-Item -ItemType Directory -Force -Path build | Out-Null; Copy-Item ..\\dist\\* .\\build\\ -Recurse -Force; electron-forge publish\"",
+    "build:win": "powershell -NoLogo -NoProfile -Command \"New-Item -ItemType Directory -Force -Path build | Out-Null; Copy-Item ..\\dist\\* .\\build\\ -Recurse -Force; Copy-Item main.ts build\\; Copy-Item preload.js build\\; electron-forge publish\"",
     "nixPatch": "nix-shell patch.nix && ./out/tensamin-linux-x64/tensamin",
     "test": "bunx @electron/asar extract ./out/tensamin-linux-x64/resources/app.asar ./packageTest"
   },
