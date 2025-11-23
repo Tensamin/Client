@@ -1,4 +1,13 @@
 {
+  "name": "tensamin",
+  "productName": "Tensamin",
+  "version": "0.1.3",
+  "description": "True E2EE, decentralized messages. Open source and privacy first.",
+  "author": {
+    "name": "Methanium",
+    "url": "https://methanium.net",
+    "email": "admin@methanium.net"
+  },
   "main": "build/electron.ts",
   "type": "module",
   "scripts": {
