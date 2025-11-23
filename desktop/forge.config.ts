@@ -8,26 +8,46 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     appVersion: packageJson.version,
-    ignore: ["forge.config.ts", "bun.lock", "patch.nix", "aur"]
+    ignore: ["forge.config.ts", "bun.lock", "patch.nix", "aur"],
   },
   rebuildConfig: {},
   makers: [
     {
-      name: "@electron-forge/maker-squirrel",
-      config: {},
-    },
-    {
+      platforms: ["darwin", "linux", "win"],
       name: "@electron-forge/maker-zip",
       config: {},
-      platforms: ["darwin", "linux", "win"],
     },
     {
+      platforms: ["darwin"],
+      name: "@electron-forge/maker-dmg",
+      config: {},
+    },
+    {
+      platforms: ["win"],
+      name: "@electron-forge/maker-wix",
+      config: {
+        language: 1033,
+        manufacturer: packageJson.author.name,
+      },
+    },
+    {
+      platforms: ["linux"],
       name: "@electron-forge/maker-deb",
-      config: {},
+      config: {
+        options: {
+          maintainer: packageJson.author.name,
+          homepage: packageJson.homepage,
+        },
+      },
     },
     {
+      platforms: ["linux"],
       name: "@electron-forge/maker-rpm",
-      config: {},
+      config: {
+        options: {
+          homepage: packageJson.homepage,
+        },
+      },
     },
   ],
   plugins: [
