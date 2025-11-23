@@ -10,12 +10,19 @@ import {
   useDisconnectButton,
 } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
+import { v7 } from "uuid";
+
+// Lib Imports
+import { call_token } from "@/lib/endpoints";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
+import { useCryptoContext } from "@/context/crypto";
+import { useSocketContext } from "@/context/socket";
 
 // Types
 import { UserAudioSettings } from "@/lib/types";
+import { toast } from "sonner";
 
 // Main
 const SubCallContext = createContext<SubCallContextValue | null>(null);
@@ -83,11 +90,15 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 }
 
 function SubCallProvider({ children }: { children: React.ReactNode }) {
-  const { setOuterState, setShouldConnect, connect, shouldConnect } =
+  const { setOuterState, setShouldConnect, connect, shouldConnect, setToken } =
     useCallContext();
+  const { data } = useStorageContext();
+  const { send } = useSocketContext();
+  const { ownUuid, privateKeyHash } = useCryptoContext();
+
   const { buttonProps } = useDisconnectButton({});
   const { isMicrophoneEnabled, localParticipant } = useLocalParticipant();
-  const { data } = useStorageContext();
+
   const [isDeafened, setIsDeafened] = useState(false);
   const storedUserVolumes = data.call_userVolumes as UserAudioSettings | null;
 
@@ -144,9 +155,42 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const callUser = async (uuid: string) => {
+    const callId = v7();
+    fetch(call_token, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        call_id: callId,
+        user_id: ownUuid,
+        private_key_hash: privateKeyHash,
+      }),
+    })
+      .then((data) => data.json())
+      .then((data) => {
+        setToken(data.data.token);
+        connect();
+        send("call_invite", {
+          receiver_id: uuid,
+          call_id: callId,
+          call_secret: "",
+          call_secret_sha: "",
+        }).then((data) => {
+          if (data.type !== "error") {
+            toast.success("Call invitation sent.");
+          } else {
+            toast.error("Failed to send call invitation.");
+          }
+        });
+      });
+  };
+
   return (
     <SubCallContext.Provider
       value={{
+        callUser,
         disconnect: () => {
           buttonProps.onClick();
           setOuterState("DISCONNECTED");
@@ -175,6 +219,7 @@ type CallContextValue = {
 };
 
 type SubCallContextValue = {
+  callUser: (uuid: string) => void;
   disconnect: () => void;
   connect: () => void;
   toggleMute: () => void;

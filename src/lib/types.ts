@@ -82,6 +82,8 @@ export type AdvancedSuccessMessageData = {
   receiver?: string | null;
   settings_name?: string | null;
   token?: string | null;
+  call_secret?: string | null;
+  call_secret_sha?: string | null;
   payload?:
     | RTCIceCandidate
     | RTCSessionDescriptionInit
