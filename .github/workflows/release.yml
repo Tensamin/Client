@@ -11,9 +11,8 @@ permissions:
 
 jobs:
   build-electron-linux:
-    name: Build (Linux)
+    name: Build (ubuntu-latest)
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -40,19 +39,16 @@ jobs:
         working-directory: ./desktop
         run: bun run build
 
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
-        if: github.ref_type == 'tag'
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          files: |
+          name: linux-artifacts
+          path: |
             desktop/out/**/*.deb
             desktop/out/**/*.rpm
             desktop/out/**/*.zip
-            desktop/out/**/*.exe
-            desktop/out/**/*.nupkg
-            desktop/out/**/*.dmg
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            desktop/out/**/*.AppImage
+          if-no-files-found: warn
 
   build-electron-win-mac:
     name: Build (${{ matrix.os }})
@@ -60,7 +56,6 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, macos-latest]
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -87,24 +82,40 @@ jobs:
         working-directory: ./desktop
         run: bun run ${{ runner.os == 'Windows' && 'build:win' || 'build' }}
 
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
-        if: github.ref_type == 'tag'
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            desktop/out/make/**/*.deb
-            desktop/out/make/**/*.rpm
+          name: ${{ matrix.os }}-artifacts
+          path: |
             desktop/out/make/**/*.zip
             desktop/out/make/**/*.exe
             desktop/out/make/**/*.nupkg
             desktop/out/make/**/*.dmg
+          if-no-files-found: warn
+
+  create-release:
+    name: Create Release
+    needs: [build-electron-linux, build-electron-win-mac]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-assets/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-aur-bin:
-    needs: build-electron-linux
+    needs: create-release
     runs-on: ubuntu-latest
-    name: Publish AUR Bin Package
+    name: Publish (tensamin-bin)
     steps:
       - uses: actions/checkout@v4
 
@@ -123,7 +134,7 @@ jobs:
 
   publish-aur-git:
     runs-on: ubuntu-latest
-    name: Publish AUR Git Package
+    name: Publish (tensamin-git)
     steps:
       - uses: actions/checkout@v4
 
