@@ -3,8 +3,14 @@ import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 // Handle squirrel
-if (require('electron-squirrel-startup')) app.quit();
+import squirrelStartup from "electron-squirrel-startup";
+if (squirrelStartup) app.quit();
 
+// Update
+import { updateElectronApp } from "update-electron-app";
+updateElectronApp();
+
+// Main
 const FILENAME = fileURLToPath(import.meta.url);
 const DIRNAME = path.dirname(FILENAME);
 
@@ -28,7 +34,7 @@ function createWindow() {
     height: 800,
     frame: false,
     webPreferences: {
-      preload: path.join(app.getAppPath(), "build", "preload.js"),
+      preload: path.join(app.getAppPath(), "src", "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },
