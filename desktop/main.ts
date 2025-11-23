@@ -42,7 +42,7 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadURL("app://./build/index.html");
+  mainWindow.loadURL("app://./index.html");
 
   mainWindow.on("closed", () => {
     mainWindow = null;
