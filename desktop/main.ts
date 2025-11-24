@@ -91,6 +91,7 @@ function createWindow() {
     width: 1200,
     height: 800,
     frame: false,
+    icon: "app://./assets/app/web-app-manifest-512x512.png",
     webPreferences: {
       preload: path.join(app.getAppPath(), "preload.js"),
       nodeIntegration: false,
