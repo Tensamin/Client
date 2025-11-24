@@ -2,7 +2,6 @@ import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import type { ForgeConfig } from "@electron-forge/shared-types";
 
-import MakerNSIS from "@felixrieseberg/electron-forge-maker-nsis";
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerDMG } from "@electron-forge/maker-dmg";
 import { MakerDeb, MakerDebConfig } from "@electron-forge/maker-deb";
@@ -53,16 +52,6 @@ const config: ForgeConfig = {
       title: packageJson.productName,
       noMsi: true,
     }),
-    /*
-    new MakerNSIS({
-      updater: {
-        url: "https://updates.tensamin.net/desktop/win32/latest.yml",
-        channel: "latest",
-        publisherName: packageJson.author.name,
-        updaterCacheDirName: "tensamin-updates",
-      },
-    }),
-    */
     new MakerDMG({
       name: packageJson.name,
       title: packageJson.productName,
