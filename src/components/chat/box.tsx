@@ -125,7 +125,7 @@ export function Box() {
           messages: [...page.messages],
         }));
 
-        let targetIndex = 0;
+        const targetIndex = 0;
         if (clonedPages.length === 0) {
           clonedPages.push({ messages: [], previous: 0, next: 0 });
         }
@@ -195,7 +195,7 @@ export function Box() {
     if (messageGroups.length > 0 && !isLoading) {
       scrollToBottom();
     }
-  }, [currentReceiverUuid, isLoading]);
+  }, [currentReceiverUuid, isLoading, messageGroups.length]);
 
   // auto scroll down when new messages come and already at bottom
   useEffect(() => {

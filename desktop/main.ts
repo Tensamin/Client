@@ -2,13 +2,11 @@ import { app, BrowserWindow, ipcMain, protocol, net } from "electron";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-// Handle squirrel
 import squirrelStartup from "electron-squirrel-startup";
 if (squirrelStartup) app.quit();
 
 // why is commonjs like this?
-import pkg from "electron-updater";
-const { autoUpdater } = pkg;
+import electronUpdater from "electron-updater";
 import type { UpdateInfo } from "electron-updater";
 
 // Main
@@ -35,9 +33,8 @@ type UpdatePayload = {
   version: string | null;
   releaseName: string | null;
   releaseNotes: UpdateInfo["releaseNotes"] | null;
-  releaseDate: string | null;
+  releaseDate: number | null;
   url: string;
-  mock?: boolean;
 };
 
 function emitUpdateAvailable(payload: UpdatePayload) {
@@ -49,21 +46,23 @@ function emitUpdateAvailable(payload: UpdatePayload) {
 }
 
 function setupUpdateNotifications() {
+  if (process.env.NODE_ENV === "development") {
+    setTimeout(() => {
+      emitUpdateAvailable({
+        version: "v0.0.0",
+        releaseName: "Development Release",
+        releaseNotes: "Fake update payload rendered only in development.",
+        releaseDate: new Date().getTime(),
+        url: RELEASES_URL,
+      });
+    }, 5000);
+  }
+
   if (process.platform === "linux") {
     return;
   }
 
-  if (!app.isPackaged) {
-    emitUpdateAvailable({
-      version: "dev-template",
-      releaseName: "Development build",
-      releaseNotes: "Fake update payload rendered only in development.",
-      releaseDate: new Date().toISOString(),
-      url: RELEASES_URL,
-      mock: true,
-    });
-    return;
-  }
+  const { autoUpdater } = electronUpdater;
 
   autoUpdater.autoDownload = false;
 
@@ -72,7 +71,7 @@ function setupUpdateNotifications() {
       version: info.version ?? null,
       releaseName: info.releaseName ?? null,
       releaseNotes: info.releaseNotes ?? null,
-      releaseDate: info.releaseDate ?? null,
+      releaseDate: new Date(info.releaseDate).getTime() ?? null,
       url: RELEASES_URL,
     });
   });

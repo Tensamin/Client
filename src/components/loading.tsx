@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { useEffect, useState, memo } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import * as Icon from "lucide-react";
 import { Ring, Hourglass } from "ldrs/react";
@@ -121,8 +121,8 @@ export function RawLoading({
   return (
     <>
       <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10">
-        {/* eslint-disable-next-line*/}
         {isError ? (
+          // eslint-disable-next-line
           <img
             src="/assets/images/logo.png"
             //width={75}

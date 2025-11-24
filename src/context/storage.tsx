@@ -12,7 +12,6 @@ import {
 import { openDB, IDBPDatabase } from "idb";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
-import { contextBridge, ipcRenderer } from "electron";
 
 // Lib Imports
 import { handleError } from "@/lib/utils";
@@ -397,7 +396,7 @@ export function StorageProvider({
   const { resolvedTheme, systemTheme } = useTheme();
 
   useEffect(() => {
-    // @ts-expect-error
+    // @ts-expect-error ElectronAPI only available in Electron
     if (window.electronAPI) {
       setIsElectron(true);
     } else {

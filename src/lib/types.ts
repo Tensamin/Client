@@ -40,11 +40,12 @@ export type BasicSuccessMessage = {
   message: string;
 };
 
-export type JWK = {
-  kty: string;
-  crv: string;
-  x?: string;
-  d?: string;
+export type UpdatePayload = {
+  version: string | null;
+  releaseName: string | null;
+  releaseNotes: string | null;
+  releaseDate: number | null;
+  url: string;
 };
 
 export type UserState =

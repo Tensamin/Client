@@ -140,7 +140,7 @@ export function VoiceActions() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [localParticipant.engine.client.rtt]);
   const pingGraph = {
     ping: {
       label: "Ping",

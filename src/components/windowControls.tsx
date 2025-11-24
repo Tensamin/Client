@@ -12,25 +12,25 @@ export function WindowControls() {
   const { isElectron } = useStorageContext();
 
   const handleMinimize = () => {
-    // @ts-expect-error
+    // @ts-expect-error ElectronAPI only available in Electron
     if (window.electronAPI) {
-      // @ts-expect-error
+      // @ts-expect-error ElectronAPI only available in Electron
       window.electronAPI.minimize();
     }
   };
 
   const handleMaximize = () => {
-    // @ts-expect-error
+    // @ts-expect-error ElectronAPI only available in Electron
     if (window.electronAPI) {
-      // @ts-expect-error
+      // @ts-expect-error ElectronAPI only available in Electron
       window.electronAPI.maximize();
     }
   };
 
   const handleClose = () => {
-    // @ts-expect-error
+    // @ts-expect-error ElectronAPI only available in Electron
     if (window.electronAPI) {
-      // @ts-expect-error
+      // @ts-expect-error ElectronAPI only available in Electron
       window.electronAPI.close();
     }
   };

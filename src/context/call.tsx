@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import * as Icon from "lucide-react";
 
 // Lib Imports
-import { call, call_token } from "@/lib/endpoints";
+import { call_token } from "@/lib/endpoints";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
@@ -24,16 +24,7 @@ import { useSocketContext } from "@/context/socket";
 import { useUserContext } from "@/context/user";
 
 // Components
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 // Types
@@ -98,7 +89,12 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         setNewCallWidgetOpen(true);
       });
     }
-  }, [lastMessage?.type]);
+  }, [
+    lastMessage?.type,
+    get,
+    lastMessage?.data.call_id,
+    lastMessage?.data.sender_id,
+  ]);
 
   const connect = () => {
     setOuterState("CONNECTING");
@@ -185,7 +181,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
               <Button
                 className="w-12 h-12"
                 onLoad={(el) => {
-                  // @ts-expect-error
+                  // @ts-expect-error Types missing
                   el.target.focus();
                 }}
                 onClick={() => {
@@ -206,7 +202,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
               hidden
               autoPlay
               onPlay={(el) => {
-                // @ts-expect-error
+                // @ts-expect-error Types missing
                 el.target.volume = 0.2;
               }}
               src="/assets/sounds/call.wav"
@@ -230,7 +226,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 }
 
 function SubCallProvider({ children }: { children: React.ReactNode }) {
-  const { setOuterState, setShouldConnect, connect, shouldConnect, setToken } =
+  const { setOuterState, setShouldConnect, connect, shouldConnect } =
     useCallContext();
   const { data } = useStorageContext();
 

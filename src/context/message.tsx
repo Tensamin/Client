@@ -252,7 +252,8 @@ export function useNewUserNotification() {
           const playSound = async () => {
             try {
               const audioContext = new (window.AudioContext ||
-                (window as any).webkitAudioContext)();
+                // @ts-expect-error idk
+                window.webkitAudioContext)();
               const response = await fetch("/assets/sounds/message.wav");
               const arrayBuffer = await response.arrayBuffer();
               const audioBuffer = await audioContext.decodeAudioData(
@@ -328,6 +329,13 @@ export function useNewUserNotification() {
         }
       })();
     },
-    [decrypt, get, get_shared_secret, ownUuid, privateKey]
+    [
+      decrypt,
+      get,
+      get_shared_secret,
+      ownUuid,
+      privateKey,
+      data.enableNotifications,
+    ]
   );
 }

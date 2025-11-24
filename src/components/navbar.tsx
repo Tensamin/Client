@@ -7,7 +7,7 @@ import * as Icon from "lucide-react";
 import { usePageContext } from "@/context/page";
 import { useUserContext } from "@/context/user";
 import { useStorageContext } from "@/context/storage";
-import { useCallContext, useSubCallContext } from "@/context/call";
+import { useCallContext } from "@/context/call";
 
 // Components
 import {
@@ -105,14 +105,16 @@ export function Navbar() {
               className="h-9 w-9"
               variant={!currentUserAlreadyHasACall?.call_id ? null : "outline"}
               onClick={() => {
-                currentUserAlreadyHasACall?.call_id
-                  ? getCallToken(currentUserAlreadyHasACall.call_id).then(
-                      (token) => {
-                        setToken(token);
-                        connect();
-                      }
-                    )
-                  : callUser(currentReceiverUuid);
+                if (currentUserAlreadyHasACall?.call_id) {
+                  getCallToken(currentUserAlreadyHasACall.call_id).then(
+                    (token) => {
+                      setToken(token);
+                      connect();
+                    }
+                  );
+                } else {
+                  callUser(currentReceiverUuid);
+                }
               }}
               disabled={
                 outerState === "CONNECTED" || outerState === "CONNECTING"

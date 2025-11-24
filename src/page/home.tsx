@@ -193,8 +193,13 @@ function UpdateNotice() {
   const [update, setUpdate] = useState<UpdatePayload | null>(null);
 
   useEffect(() => {
-    // @ts-expect-error
-    const unsubscribe = window.electronAPI.onUpdateAvailable(setUpdate);
+    // @ts-expect-error ElectronAPI only available in Electron
+    const unsubscribe = window.electronAPI.onUpdateAvailable(
+      (update: UpdatePayload) => {
+        console.log("Update available:", update);
+        setUpdate(update);
+      }
+    );
     return unsubscribe;
   }, []);
 
