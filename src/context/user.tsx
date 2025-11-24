@@ -34,6 +34,7 @@ import { useStorageContext } from "@/context/storage";
 
 // Types
 type UserContextType = {
+  appUpdateInformation: UpdatePayload | null;
   get: (uuid: string, refetch: boolean) => Promise<User>;
   ownUuid: string;
   failedMessagesAmount: number;
@@ -51,6 +52,14 @@ type UserContextType = {
   fetchedUsers: Map<string, User>;
   ownState: UserState;
   setOwnState: (state: UserState) => void;
+};
+
+type UpdatePayload = {
+  version: string | null;
+  releaseName: string | null;
+  releaseNotes: string | string[] | null;
+  releaseDate: string | null;
+  url: string;
 };
 
 // Main
@@ -399,9 +408,37 @@ export function UserProvider({
     [updateFetchedUsers]
   );
 
+  // Electron Update Stuff
+  const [appUpdateInformation, setUpdate] = useState<UpdatePayload | null>(
+    null
+  );
+
+  useEffect(() => {
+    // @ts-expect-error ElectronAPI only available in Electron
+    const unsubscribe = window.electronAPI.onUpdateAvailable(
+      (update: UpdatePayload) => {
+        console.log("Update available:", update);
+        toast.info(translate("UPDATE_AVAILABLE"), {
+          duration: Infinity,
+          dismissible: true,
+          action: {
+            label: translate("DO_UPDATE"),
+            onClick: () => {
+              // @ts-expect-error ElectronAPI only available in Electron
+              window.electronAPI.doUpdate();
+            },
+          },
+        });
+        setUpdate(update);
+      }
+    );
+    return unsubscribe;
+  }, [page]);
+
   return (
     <UserContext.Provider
       value={{
+        appUpdateInformation,
         get,
         ownUuid,
         currentReceiverUuid,

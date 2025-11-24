@@ -110,6 +110,7 @@ export function RawLoading({
   debug,
   addClearButton,
   addBypassButton,
+  messageSize,
 }: {
   message: string;
   extra?: string;
@@ -117,6 +118,7 @@ export function RawLoading({
   debug: boolean;
   addClearButton?: boolean;
   addBypassButton?: boolean;
+  messageSize?: "small";
 }) {
   return (
     <>
@@ -138,7 +140,11 @@ export function RawLoading({
           />
         )}
         {(isError || debug) && typeof message !== "undefined" ? (
-          <p className="text-2xl font-semibold text-foreground text-center">
+          <p
+            className={`${
+              messageSize === "small" ? "text-lg" : "text-2xl"
+            } font-semibold text-foreground text-center`}
+          >
             {message}
           </p>
         ) : null}

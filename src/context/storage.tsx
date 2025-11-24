@@ -92,6 +92,8 @@ export function StorageProvider({
 
       // General
       GENERAL_CLOSE: "Close",
+      UPDATE_AVAILABLE: "There is an update available!",
+      DO_UPDATE: "Update",
 
       // Sidebar
       COMMUNITIES: "Communities",

@@ -31,19 +31,11 @@ import { LoadingIcon } from "@/components/loading";
 import { PageDiv } from "@/components/pageDiv";
 import { UserModal } from "@/components/modals/user";
 
-// Types
-type UpdatePayload = {
-  version: string | null;
-  releaseName: string | null;
-  releaseNotes: string | string[] | null;
-  releaseDate: string | null;
-  url: string;
-};
-
 // Main
 export default function Page() {
   const { send } = useSocketContext();
-  const { refetchConversations, ownUuid } = useUserContext();
+  const { refetchConversations, ownUuid, appUpdateInformation } =
+    useUserContext();
   const { translate } = useStorageContext();
   const { privateKeyHash } = useCryptoContext();
   const { setToken, connect } = useCallContext();
@@ -160,55 +152,9 @@ export default function Page() {
         })}
           */}
       </div>
-      <Button
-        onClick={() => {
-          fetch(call_token, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              call_id: "test_call_123",
-              user_id: ownUuid,
-              private_key_hash: privateKeyHash,
-            }),
-          })
-            .then((data) => data.json())
-            .then((data) => {
-              setToken(data.data.token);
-              connect();
-            });
-        }}
-      >
-        Start Call
-      </Button>
       <div className="mt-auto">
-        <UpdateNotice />
+        {appUpdateInformation && <p>{appUpdateInformation.releaseName}</p>}
       </div>
     </PageDiv>
-  );
-}
-
-function UpdateNotice() {
-  const [update, setUpdate] = useState<UpdatePayload | null>(null);
-
-  useEffect(() => {
-    // @ts-expect-error ElectronAPI only available in Electron
-    const unsubscribe = window.electronAPI.onUpdateAvailable(
-      (update: UpdatePayload) => {
-        console.log("Update available:", update);
-        setUpdate(update);
-      }
-    );
-    return unsubscribe;
-  }, []);
-
-  if (!update) return null;
-
-  return (
-    <div>
-      <p>{update.version ? `v${update.version} ready` : "Update available"}</p>
-      <button onClick={() => window.open(update.url)}>View release</button>
-    </div>
   );
 }
