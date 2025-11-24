@@ -42,7 +42,7 @@ export function Navbar() {
   );
 
   return (
-    <div className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0 pr-2 electron-drag">
+    <div className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0 pr-2">
       {/* Homepage Button */}
       <Button
         className="h-9 w-9"
@@ -73,7 +73,7 @@ export function Navbar() {
             <p>{receiverUsername}</p>
           </MotionDivWrapper>
         )}
-        <div className="w-full" />
+        <div className="w-full h-9 electron-drag" />
 
         {/* Failed Messages */}
         {failedMessagesAmount > 0 && page === "chat" && (

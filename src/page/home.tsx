@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
@@ -30,6 +30,15 @@ import {
 import { LoadingIcon } from "@/components/loading";
 import { PageDiv } from "@/components/pageDiv";
 import { UserModal } from "@/components/modals/user";
+
+// Types
+type UpdatePayload = {
+  version: string | null;
+  releaseName: string | null;
+  releaseNotes: string | string[] | null;
+  releaseDate: string | null;
+  url: string;
+};
 
 // Main
 export default function Page() {
@@ -173,6 +182,28 @@ export default function Page() {
       >
         Start Call
       </Button>
+      <div className="mt-auto">
+        <UpdateNotice />
+      </div>
     </PageDiv>
+  );
+}
+
+function UpdateNotice() {
+  const [update, setUpdate] = useState<UpdatePayload | null>(null);
+
+  useEffect(() => {
+    // @ts-expect-error
+    const unsubscribe = window.electronAPI.onUpdateAvailable(setUpdate);
+    return unsubscribe;
+  }, []);
+
+  if (!update) return null;
+
+  return (
+    <div>
+      <p>{update.version ? `v${update.version} ready` : "Update available"}</p>
+      <button onClick={() => window.open(update.url)}>View release</button>
+    </div>
   );
 }

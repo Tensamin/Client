@@ -1,12 +1,4 @@
-import {
-  app,
-  BrowserWindow,
-  ipcMain,
-  protocol,
-  net,
-  Notification,
-  shell,
-} from "electron";
+import { app, BrowserWindow, ipcMain, protocol, net } from "electron";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -14,7 +6,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import squirrelStartup from "electron-squirrel-startup";
 if (squirrelStartup) app.quit();
 
-import { autoUpdater } from "electron-updater";
+// why is commonjs like this?
+import pkg from "electron-updater";
+const { autoUpdater } = pkg;
+import type { UpdateInfo } from "electron-updater";
 
 // Main
 const FILENAME = fileURLToPath(import.meta.url);
@@ -34,45 +29,59 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow: BrowserWindow | null = null;
 const RELEASES_URL = "https://github.com/Tensamin/Frontend/releases";
+const UPDATE_AVAILABLE_CHANNEL = "app:update-available";
+
+type UpdatePayload = {
+  version: string | null;
+  releaseName: string | null;
+  releaseNotes: UpdateInfo["releaseNotes"] | null;
+  releaseDate: string | null;
+  url: string;
+  mock?: boolean;
+};
+
+function emitUpdateAvailable(payload: UpdatePayload) {
+  if (!mainWindow) {
+    return;
+  }
+
+  mainWindow.webContents.send(UPDATE_AVAILABLE_CHANNEL, payload);
+}
 
 function setupUpdateNotifications() {
   if (process.platform === "linux") {
     return;
   }
 
+  if (!app.isPackaged) {
+    emitUpdateAvailable({
+      version: "dev-template",
+      releaseName: "Development build",
+      releaseNotes: "Fake update payload rendered only in development.",
+      releaseDate: new Date().toISOString(),
+      url: RELEASES_URL,
+      mock: true,
+    });
+    return;
+  }
+
   autoUpdater.autoDownload = false;
 
-  autoUpdater.on("update-available", (info) => {
-    if (!Notification.isSupported()) {
-      return;
-    }
-
-    const versionLabel = info.version
-      ? `Tensamin v${info.version} is available.`
-      : "A new Tensamin update is available.";
-
-    const notification = new Notification({
-      title: "Update available",
-      body: `${versionLabel} Click to open the latest release.`,
+  autoUpdater.on("update-available", (info: UpdateInfo) => {
+    emitUpdateAvailable({
+      version: info.version ?? null,
+      releaseName: info.releaseName ?? null,
+      releaseNotes: info.releaseNotes ?? null,
+      releaseDate: info.releaseDate ?? null,
+      url: RELEASES_URL,
     });
-
-    const openReleases = () => {
-      shell.openExternal(RELEASES_URL).catch((error) => {
-        console.error("Failed to open releases page:", error);
-      });
-    };
-
-    notification.on("click", openReleases);
-    notification.on("action", openReleases);
-
-    notification.show();
   });
 
-  autoUpdater.on("error", (error) => {
+  autoUpdater.on("error", (error: Error) => {
     console.error("Auto-update error:", error);
   });
 
-  autoUpdater.checkForUpdates().catch((error) => {
+  autoUpdater.checkForUpdates().catch((error: Error) => {
     console.error("Failed to check for updates:", error);
   });
 }
@@ -89,7 +98,12 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadURL("app://./index.html");
+  const url =
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000"
+      : "app://./index.html";
+
+  mainWindow.loadURL(url);
 
   mainWindow.on("closed", () => {
     mainWindow = null;
