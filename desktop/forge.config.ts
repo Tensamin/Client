@@ -39,7 +39,6 @@ const config: ForgeConfig = {
       "aur",
       "main.ts",
       "preload.js",
-      "assets",
     ],
   },
   rebuildConfig: {},
