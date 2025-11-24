@@ -37,8 +37,6 @@ const config: ForgeConfig = {
       "bun.lock",
       "shell.nix",
       "aur",
-      "main.ts",
-      "preload.js",
     ],
   },
   rebuildConfig: {},
