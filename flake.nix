@@ -19,7 +19,6 @@
           inherit system;
           config.allowUnfree = true;
         };
-        #pkgs = nixpkgs.legacyPackages.${system};
       in
       {
         packages.default = pkgs.stdenv.mkDerivation rec {
@@ -48,6 +47,7 @@
             glib
             gtk3
             libappindicator-gtk3
+            libGL
             libdrm
             libxkbcommon
             mesa
@@ -78,10 +78,9 @@
 
             wrapProgram $out/bin/${pname} \
               --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath buildInputs}" \
-              --add-flags "--no-sandbox" \
+              --add-flags "--no-sandbox --disable-updates --enable-features=UseOzonePlatform --ozone-platform=wayland" \
               --run 'if [[ -n "$NIXOS_OZONE_WL" ]] && [[ -n "$WAYLAND_DISPLAY" ]]; then export NIXOS_OZONE_WL_FLAGS="$\{WAYLAND_FLAGS}"; fi' \
-              --add-flags "\$NIXOS_OZONE_WL_FLAGS" \
-              --add-flags "--disable-updates"
+              --add-flags "\$NIXOS_OZONE_WL_FLAGS"
 
             substituteInPlace $out/share/applications/${pname}.desktop \
               --replace "/opt/${pname}/${pname}" "$out/bin/${pname}" \

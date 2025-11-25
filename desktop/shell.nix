@@ -37,6 +37,7 @@
       gcc
       vips
       musl
+      libGL
     ];
-  runScript = "zsh & echo Run: `bun run dev`";
+  runScript = "bun run dev";
 }).env
