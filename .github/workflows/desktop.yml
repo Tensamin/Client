@@ -28,7 +28,7 @@ jobs:
           node-version: 20
 
       - name: Set up build process
-      - run: |
+        run: |
           bun install
           cd desktop && bun install
 
