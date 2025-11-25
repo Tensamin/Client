@@ -1,6 +1,7 @@
 // Package Imports
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
+import { v7 } from "uuid";
 import * as Icon from "lucide-react";
 
 // Context Imports
@@ -18,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { WindowControls } from "@/components/windowControls";
 import { MotionDivWrapper } from "@/components/animation/presence";
+import { CallButton } from "@/components/modals/raw";
 
 // Main
 export function Navbar() {
@@ -25,8 +27,7 @@ export function Navbar() {
   const { failedMessagesAmount, currentReceiverUuid, get, conversations } =
     useUserContext();
   const { translate } = useStorageContext();
-  const { outerState, callUser, getCallToken, connect, setToken } =
-    useCallContext();
+  const { outerState, getCallToken, connect, setToken } = useCallContext();
   const [receiverUsername, setReceiverUsername] = useState("");
 
   useEffect(() => {
@@ -38,7 +39,8 @@ export function Navbar() {
   }, [currentReceiverUuid, get]);
 
   const currentUserAlreadyHasACall = conversations.find(
-    (conv) => conv.user_id === currentReceiverUuid && conv.call_id
+    (conv) =>
+      conv.user_id === currentReceiverUuid && (conv.calls?.length ?? 0) > 0
   );
 
   return (
@@ -99,22 +101,24 @@ export function Navbar() {
         )}
 
         {/* Call Button */}
-        {page === "chat" && (
+        {page === "chat" && currentUserAlreadyHasACall ? (
+          <CallButton
+            calls={
+              conversations.find(
+                (conv) => conv?.user_id === currentReceiverUuid
+              )?.calls ?? []
+            }
+          />
+        ) : (
           <MotionDivWrapper key="call-button">
             <Button
               className="h-9 w-9"
-              variant={!currentUserAlreadyHasACall?.call_id ? null : "outline"}
+              variant="outline"
               onClick={() => {
-                if (currentUserAlreadyHasACall?.call_id) {
-                  getCallToken(currentUserAlreadyHasACall.call_id).then(
-                    (token) => {
-                      setToken(token);
-                      connect();
-                    }
-                  );
-                } else {
-                  callUser(currentReceiverUuid);
-                }
+                getCallToken(v7()).then((token) => {
+                  setToken(token);
+                  connect();
+                });
               }}
               disabled={
                 outerState === "CONNECTED" || outerState === "CONNECTING"

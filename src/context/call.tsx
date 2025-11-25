@@ -112,29 +112,10 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const callUser = async (uuid: string) => {
-    const callId = v7();
-    await getCallToken(callId).then((token) => {
-      setToken(token);
-      connect();
-      send("call_invite", {
-        receiver_id: uuid,
-        call_id: callId,
-      }).then((data) => {
-        if (data.type !== "error") {
-          toast.success("Call invitation sent.");
-        } else {
-          toast.error("Failed to send call invitation.");
-        }
-      });
-    });
-  };
-
   return (
     <CallContext.Provider
       value={{
         getCallToken,
-        callUser,
         shouldConnect,
         outerState,
         setToken,
@@ -303,7 +284,6 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
 type CallContextValue = {
   getCallToken: (callId: string) => Promise<string>;
-  callUser: (uuid: string) => void;
   shouldConnect: boolean;
   outerState: string;
   setToken: (input: string) => void;

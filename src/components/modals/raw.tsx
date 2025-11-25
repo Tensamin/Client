@@ -210,36 +210,7 @@ export function MediumModal({
           </p>
         )}
       </div>
-      {calls.length === 1 && (
-        <Popover>
-          <PopoverTrigger asChild></PopoverTrigger>
-          <PopoverContent>
-            <CallInteraction callId={calls[0]} />
-          </PopoverContent>
-        </Popover>
-      )}
-      {calls.length > 2 && (
-        <Select value="">
-          <SelectTrigger asChild>
-            <Button className="w-8 h-8">
-              <Icon.Phone scale={80} />
-              <Icon.ChevronDown scale={80} />
-            </Button>
-          </SelectTrigger>
-          <SelectContent>
-            {calls.map((callId) => (
-              <SelectItem key={callId} value={callId}>
-                <Popover>
-                  <PopoverTrigger>{callId}</PopoverTrigger>
-                  <PopoverContent>
-                    <CallInteraction callId={callId} />
-                  </PopoverContent>
-                </Popover>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
+      <CallButton calls={calls} />
     </Button>
   );
 }
@@ -397,5 +368,42 @@ export function CallInteraction({ callId }: { callId: string }) {
         Connect
       </Button>
     </div>
+  );
+}
+
+export function CallButton({ calls }: { calls: string[] }) {
+  return (
+    <>
+      {calls.length === 1 && (
+        <Popover>
+          <PopoverTrigger asChild></PopoverTrigger>
+          <PopoverContent>
+            <CallInteraction callId={calls[0]} />
+          </PopoverContent>
+        </Popover>
+      )}
+      {calls.length > 2 && (
+        <Select value="">
+          <SelectTrigger asChild>
+            <Button className="w-8 h-8">
+              <Icon.Phone scale={80} />
+              <Icon.ChevronDown scale={80} />
+            </Button>
+          </SelectTrigger>
+          <SelectContent>
+            {calls.map((callId) => (
+              <SelectItem key={callId} value={callId}>
+                <Popover>
+                  <PopoverTrigger>{callId}</PopoverTrigger>
+                  <PopoverContent>
+                    <CallInteraction callId={callId} />
+                  </PopoverContent>
+                </Popover>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+    </>
   );
 }
