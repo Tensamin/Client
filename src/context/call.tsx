@@ -74,7 +74,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   } | null>(null);
   const [newCaller, setNewCaller] = useState<User | null>(null);
   useEffect(() => {
-    if (lastMessage?.type === "new_call") {
+    if (lastMessage?.type === "call_invite") {
       if (!lastMessage.data.sender_id || !lastMessage.data.call_id) {
         toast.error("Failed joining call");
         return;
@@ -102,21 +102,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getCallToken = async (callId: string) => {
-    return fetch(call_token, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        call_id: callId,
-        user_id: ownUuid,
-        private_key_hash: privateKeyHash,
-      }),
-    })
-      .then((data) => data.json())
-      .then((data) => {
-        return data.data.token;
-      });
+    return send("call_token", {
+      call_id: callId,
+    }).then((data) => {
+      if (data.type !== "error") {
+        return data.data.call_token ?? "error";
+      }
+      return "error";
+    });
   };
 
   const callUser = async (uuid: string) => {

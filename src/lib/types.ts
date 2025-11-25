@@ -92,6 +92,7 @@ export type AdvancedSuccessMessageData = {
   token?: string | null;
   call_secret?: string | null;
   call_secret_sha?: string | null;
+  call_token?: string | null;
   payload?:
     | RTCIceCandidate
     | RTCSessionDescriptionInit
@@ -155,7 +156,7 @@ export type ErrorType = {
 
 export type Conversation = {
   user_id: string;
-  call_id?: string;
+  calls?: string[];
   last_message_at: number;
 };
 

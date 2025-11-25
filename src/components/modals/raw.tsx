@@ -27,6 +27,20 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Text } from "@/components/markdown/text";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // Main
 export function UserAvatar({
@@ -160,7 +174,7 @@ export function MediumModal({
   loading,
   onClick,
   state,
-  callId,
+  calls,
 }: Readonly<{
   title: string;
   description: string;
@@ -168,7 +182,7 @@ export function MediumModal({
   loading: boolean;
   onClick?: () => void;
   state?: string;
-  callId?: string;
+  calls: string[];
 }>) {
   const { getCallToken, setToken, connect } = useCallContext();
   return loading ? (
@@ -196,18 +210,35 @@ export function MediumModal({
           </p>
         )}
       </div>
-      {callId && (
-        <Button
-          className="w-8 h-8"
-          onClick={() => {
-            getCallToken(callId).then((token) => {
-              setToken(token);
-              connect();
-            });
-          }}
-        >
-          <Icon.Phone scale={80} />
-        </Button>
+      {calls.length === 1 && (
+        <Popover>
+          <PopoverTrigger asChild></PopoverTrigger>
+          <PopoverContent>
+            <CallInteraction callId={calls[0]} />
+          </PopoverContent>
+        </Popover>
+      )}
+      {calls.length > 2 && (
+        <Select value="">
+          <SelectTrigger asChild>
+            <Button className="w-8 h-8">
+              <Icon.Phone scale={80} />
+              <Icon.ChevronDown scale={80} />
+            </Button>
+          </SelectTrigger>
+          <SelectContent>
+            {calls.map((callId) => (
+              <SelectItem key={callId} value={callId}>
+                <Popover>
+                  <PopoverTrigger>{callId}</PopoverTrigger>
+                  <PopoverContent>
+                    <CallInteraction callId={callId} />
+                  </PopoverContent>
+                </Popover>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
     </Button>
   );
@@ -346,5 +377,25 @@ export function CallModal({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+export function CallInteraction({ callId }: { callId: string }) {
+  const { getCallToken, setToken, connect } = useCallContext();
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p>{callId}</p>
+      <Button
+        onClick={() => {
+          getCallToken(callId).then((token) => {
+            setToken(token);
+            connect();
+          });
+        }}
+      >
+        Connect
+      </Button>
+    </div>
   );
 }

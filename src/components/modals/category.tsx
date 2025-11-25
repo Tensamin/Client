@@ -19,6 +19,7 @@ export function Communities() {
       )}
       {communities.map((community) => (
         <Modal.MediumModal
+          calls={[]}
           key={community.community_address}
           title={community.community_title}
           description={community.community_address}
@@ -43,7 +44,7 @@ export function Conversations() {
         <UserModal
           key={conversation.user_id}
           uuid={conversation.user_id}
-          callId={conversation.call_id}
+          calls={conversation.calls}
           size="medium"
         />
       ))}

@@ -312,6 +312,7 @@ export function UserProvider({
         setConversationsAndSync([
           {
             user_id: "0",
+            calls: [],
             last_message_at: 0,
           },
         ]);
@@ -414,25 +415,29 @@ export function UserProvider({
   );
 
   useEffect(() => {
-    // @ts-expect-error ElectronAPI only available in Electron
-    const unsubscribe = window.electronAPI.onUpdateAvailable(
-      (update: UpdatePayload) => {
-        console.log("Update available:", update);
-        toast.info(translate("UPDATE_AVAILABLE"), {
-          duration: Infinity,
-          dismissible: true,
-          action: {
-            label: translate("DO_UPDATE"),
-            onClick: () => {
-              // @ts-expect-error ElectronAPI only available in Electron
-              window.electronAPI.doUpdate();
+    try {
+      // @ts-expect-error ElectronAPI only available in Electron
+      const unsubscribe = window.electronAPI.onUpdateAvailable(
+        (update: UpdatePayload) => {
+          console.log("Update available:", update);
+          toast.info(translate("UPDATE_AVAILABLE"), {
+            duration: Infinity,
+            dismissible: true,
+            action: {
+              label: translate("DO_UPDATE"),
+              onClick: () => {
+                // @ts-expect-error ElectronAPI only available in Electron
+                window.electronAPI.doUpdate();
+              },
             },
-          },
-        });
-        setUpdate(update);
-      }
-    );
-    return unsubscribe;
+          });
+          setUpdate(update);
+        }
+      );
+      return unsubscribe;
+    } catch (err) {
+      console.log("ElectronAPI Failed");
+    }
   }, [page]);
 
   return (
