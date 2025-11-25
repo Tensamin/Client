@@ -1,5 +1,5 @@
 // Package Imports
-import { app, BrowserWindow, ipcMain, protocol, net } from "electron";
+import { app, BrowserWindow, ipcMain, protocol, net, shell } from "electron";
 import type { ProgressInfo, UpdateInfo } from "electron-updater";
 import electronUpdater from "electron-updater";
 // @ts-expect-error Import shows an error when the preload.js is not open
@@ -31,13 +31,15 @@ const DIRNAME = path.dirname(FILENAME);
 const RELEASES_URL = "https://github.com/Tensamin/Frontend/releases";
 const UPDATE_AVAILABLE_CHANNEL = "app:update-available";
 const UPDATE_LOG_CHANNEL = "app:update-log";
-const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+const UPDATE_CHECK_INTERVAL_MS = 5000; // 5 seconds
+//const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 let mainWindow: BrowserWindow | null = null;
 let updateWindow: BrowserWindow | null = null;
 let autoUpdaterLogsRegistered = false;
 let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
 let pendingUpdate = false;
+let latestUpdatePayload: UpdatePayload | null = null;
 
 // Log history for replaying to new windows
 const logHistory: UpdateLogPayload[] = [];
@@ -61,11 +63,11 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 function emitUpdateAvailable(payload: UpdatePayload) {
-  if (!mainWindow) {
-    return;
-  }
+  latestUpdatePayload = payload;
 
-  mainWindow.webContents.send(UPDATE_AVAILABLE_CHANNEL, payload);
+  [mainWindow, updateWindow].forEach((windowInstance) => {
+    windowInstance?.webContents.send(UPDATE_AVAILABLE_CHANNEL, payload);
+  });
 }
 
 function emitUpdateLog(payload: UpdateLogPayload) {
@@ -238,17 +240,17 @@ async function setupUpdateNotifications() {
     });
   }
 
-  // Start hourly update checks
-  startBackgroundUpdateChecks();
-}
-
-function startBackgroundUpdateChecks() {
   if (updateCheckInterval) {
     clearInterval(updateCheckInterval);
   }
 
   updateCheckInterval = setInterval(async () => {
     if (process.env.NODE_ENV === "development") {
+      emitUpdateLog({
+        level: "info",
+        message: "Updates disabled in development mode",
+        timestamp: Date.now(),
+      });
       return;
     }
 
@@ -314,6 +316,12 @@ function createWindow() {
   mainWindow.webContents.on("did-finish-load", () => {
     if (mainWindow) {
       replayLogHistory(mainWindow);
+      if (latestUpdatePayload) {
+        mainWindow.webContents.send(
+          UPDATE_AVAILABLE_CHANNEL,
+          latestUpdatePayload
+        );
+      }
     }
   });
 
@@ -335,6 +343,13 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+});
+
+app.on("before-quit", () => {
+  if (updateCheckInterval) {
+    clearInterval(updateCheckInterval);
+    updateCheckInterval = null;
+  }
 });
 
 // IPC Handlers (Translation Layer)
@@ -362,22 +377,24 @@ ipcMain.handle("close-window", () => {
 
 ipcMain.handle("do-update", async () => {
   if (!mainWindow) {
-    emitUpdateLog({
+    const log = {
       level: "error",
       message: "Cannot update: main window not available",
       timestamp: Date.now(),
-    });
-    return;
+    } satisfies UpdateLogPayload;
+    emitUpdateLog(log);
+    return log;
   }
 
   if (process.platform === "linux") {
-    emitUpdateLog({
+    const log = {
       level: "info",
       message:
-        "On Linux, please download the update manually from the releases page",
+        "On linux, please use your package manager or download the update manually from the releases page",
       timestamp: Date.now(),
-    });
-    return;
+    } satisfies UpdateLogPayload;
+    emitUpdateLog(log);
+    return log;
   }
 
   emitUpdateLog({
@@ -415,4 +432,12 @@ ipcMain.handle("do-update", async () => {
     });
     throw error;
   }
+});
+
+ipcMain.handle("get-update-logs", async () => logHistory);
+
+ipcMain.handle("get-latest-update", async () => latestUpdatePayload);
+
+ipcMain.handle("open-link", async (_event, url: string) => {
+  shell.openExternal(url);
 });

@@ -55,6 +55,13 @@ export type UpdatePayload = {
   url: string;
 };
 
+export type UpdateLogPayload = {
+  level: "info" | "error";
+  message: string;
+  details?: Record<string, unknown>;
+  timestamp: number;
+};
+
 export type UserState =
   | "NONE"
   | "ONLINE"

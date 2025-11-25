@@ -23,6 +23,8 @@ import {
   User,
   UserState,
   StoredUser,
+  UpdateLogPayload,
+  UpdatePayload,
 } from "@/lib/types";
 import { getDisplayFromUsername } from "@/lib/utils";
 
@@ -52,14 +54,6 @@ type UserContextType = {
   fetchedUsers: Map<string, User>;
   ownState: UserState;
   setOwnState: (state: UserState) => void;
-};
-
-type UpdatePayload = {
-  version: string | null;
-  releaseName: string | null;
-  releaseNotes: string | string[] | null;
-  releaseDate: string | null;
-  url: string;
 };
 
 // Main
@@ -415,30 +409,70 @@ export function UserProvider({
   );
 
   useEffect(() => {
-    try {
-      // @ts-expect-error ElectronAPI only available in Electron
-      const unsubscribe = window.electronAPI.onUpdateAvailable(
-        (update: UpdatePayload) => {
-          console.log("Update available:", update);
-          toast.info(translate("UPDATE_AVAILABLE"), {
-            duration: Infinity,
-            dismissible: true,
-            action: {
-              label: translate("DO_UPDATE"),
-              onClick: () => {
-                // @ts-expect-error ElectronAPI only available in Electron
-                window.electronAPI.doUpdate();
-              },
-            },
-          });
-          setUpdate(update);
-        }
-      );
-      return unsubscribe;
-    } catch (err) {
-      console.log("ElectronAPI Failed");
+    if (typeof window === "undefined") {
+      return;
     }
-  }, [page]);
+
+    // @ts-expect-error ElectronAPI only available in Electron
+    const electronAPI = window.electronAPI;
+    if (!electronAPI) {
+      console.log("ElectronAPI not available");
+      return;
+    }
+
+    const handleUpdatePayload = (
+      update: UpdatePayload,
+      shouldToast: boolean
+    ) => {
+      if (shouldToast) {
+        toast.info(translate("UPDATE_AVAILABLE"), {
+          duration: Infinity,
+          dismissible: true,
+          action: {
+            label: translate("DO_UPDATE"),
+            onClick: () => {
+              electronAPI.doUpdate();
+            },
+          },
+        });
+      }
+
+      setUpdate(update);
+    };
+
+    const unsubscribeUpdate = electronAPI.onUpdateAvailable(
+      (update: UpdatePayload) => {
+        console.log("Update available:", update);
+        handleUpdatePayload(update, true);
+      }
+    );
+
+    const unsubscribeLogs = electronAPI.onUpdateLog?.(
+      (log: UpdateLogPayload) => {
+        debugLog("ELECTRON_APP", "ELECTRON_APP_UPDATE_LOG", log);
+      }
+    );
+
+    void (async () => {
+      try {
+        const [latestUpdate] = await Promise.all([
+          electronAPI.getLatestUpdate?.(),
+          electronAPI.getUpdateLogs?.(),
+        ]);
+
+        if (latestUpdate) {
+          handleUpdatePayload(latestUpdate, false);
+        }
+      } catch (error) {
+        console.warn("Failed to load update metadata", error);
+      }
+    })();
+
+    return () => {
+      unsubscribeUpdate?.();
+      unsubscribeLogs?.();
+    };
+  }, [translate]);
 
   return (
     <UserContext.Provider

@@ -111,6 +111,9 @@ export function StorageProvider({
       HOME_PAGE_PLACEHOLDER_MESSAGE: "WEEWOO HOMEPAGE!!! WEEWOO",
       HOME_PAGE_START_CALL_BUTTON: "Start Call",
       HOME_PAGE_ACTIVE_STATUS: "Active",
+      HOME_PAGE_UPDATE_AVAILABLE: "Update Available",
+      HOME_PAGE_UPDATE_NOW: "Update Now",
+      HOME_PAGE_UPDATE_LOGS_HEADING: "Latest update activity",
 
       // Login Page
       LOGIN_PAGE_TU_FILE_TITLE: "Login using .tu file",
