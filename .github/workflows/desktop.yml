@@ -16,6 +16,7 @@ jobs:
     steps:
       - name: Setup
         uses: actions/checkout@v4
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -37,14 +38,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  publish-aur-bin:
-    needs: build
-    runs-on: ubuntu-latest
-    name: Publish (tensamin-bin)
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Publish AUR package
+      # Linux only
+      - name: Publish AUR package (tensamin-bin)
+        if: matrix.os == 'ubuntu-latest'
         uses: ulises-jeremias/github-actions-aur-publish@v1
         with:
           pkgname: tensamin-bin
@@ -55,8 +51,39 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: Automated Update
           ssh_keyscan_types: ed25519
-        env:
-          PKG_VERSION: ${{ needs.create-release.outputs.version }}
+
+      - name: Install Nix (for Flake update)
+        if: matrix.os == 'ubuntu-latest'
+        uses: cachix/install-nix-action@v25
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run `nix-update`
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          NEW_VERSION=$(jq -r '.version' package.json)
+
+          nix run github:Mic92/nix-update -- \
+            --flake \
+            --version="$NEW_VERSION" \
+            default
+
+          if [[ -n $(git status --porcelain) ]]; then
+            git add .
+            git commit -m "chore: update to v$NEW_VERSION"
+          else
+            echo "No updates found."
+          fi
+
+      - name: Push Nix changes
+        if: matrix.os == 'ubuntu-latest' && success()
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
 
   publish-aur-git:
     runs-on: ubuntu-latest
@@ -75,42 +102,3 @@ jobs:
           commit_message: Automated Update
           ssh_keyscan_types: ed25519
           update_pkgver: true
-
-  update-flake:
-    needs: build
-    runs-on: ubuntu-latest
-    name: Publish (nix)
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v25
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Run `nix-update`
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          nix run github:Mic92/nix-update -- \
-            --flake \
-            --version=latest \
-            default
-
-          NEW_VERSION=$(nix eval --raw .#default.version)
-
-          if [[ -n $(git status --porcelain) ]]; then
-            git add .
-            git commit -m "chore: update to v$NEW_VERSION"
-          else
-            echo "No updates found."
-          fi
-
-      - name: Push changes
-        if: success()
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
