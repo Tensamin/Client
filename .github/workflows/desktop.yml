@@ -14,25 +14,28 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
     steps:
-      - name: Setup
+      - name: Set up repository
         uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
+      - name: Set up bun
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - uses: actions/setup-node@v4
+
+      - name: Set up nodejs
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install Dependencies
-        run: |
+      - name: Set up build process
+      - run: |
           bun install
           cd desktop && bun install
 
       - name: Build Frontend
         run: bun run build
 
-      - name: Build & Publish Electron App
+      - name: Build App
         working-directory: ./desktop
         run: bun run ${{ runner.os == 'Windows' && 'build:win' || 'build' }}
         env:
@@ -43,9 +46,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - name: Set up repository
+        uses: actions/checkout@v4
 
-      - name: Publish `tensamin-bin`
+      - name: Publish tensamin-bin
         uses: ulises-jeremias/github-actions-aur-publish@v1
         with:
           pkgname: tensamin-bin
@@ -57,7 +61,7 @@ jobs:
           commit_message: Automated Update
           ssh_keyscan_types: ed25519
 
-      - name: Install Nix
+      - name: Set up nix
         uses: cachix/install-nix-action@v25
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
@@ -90,12 +94,12 @@ jobs:
 
   publish-aur-git:
     runs-on: ubuntu-latest
-    name: Publish (tensamin-git)
-    needs: build
+    name: Publish (aur-git)
     steps:
-      - uses: actions/checkout@v4
+      - name: Set up repository
+        uses: actions/checkout@v4
 
-      - name: Publish AUR package
+      - name: Publish tensamin-git
         uses: ulises-jeremias/github-actions-aur-publish@v1
         with:
           pkgname: tensamin-git
