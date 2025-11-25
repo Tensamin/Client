@@ -2,6 +2,7 @@
 import { app, BrowserWindow, ipcMain, protocol, net } from "electron";
 import type { ProgressInfo, UpdateInfo } from "electron-updater";
 import electronUpdater from "electron-updater";
+// @ts-expect-error Import shows an error when the preload.js is not open
 import squirrelStartup from "electron-squirrel-startup";
 
 // Node Imports
@@ -268,7 +269,8 @@ function createWindow() {
 
   mainWindow.on("ready-to-show", () => {
     mainWindow?.show();
-    updateWindow?.close();
+
+    if (updateWindow) updateWindow?.close();
 
     if (process.env.NODE_ENV === "development") {
       emitUpdateAvailable({
@@ -287,6 +289,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  const args = process.argv.slice(2);
+
   protocol.handle("app", (request) => {
     const { pathname } = new URL(request.url);
     const filePath = path.join(DIRNAME, decodeURIComponent(pathname));
@@ -294,8 +298,12 @@ app.whenReady().then(() => {
     return net.fetch(pathToFileURL(filePath).toString());
   });
 
-  createUpdateWindow();
-  setupUpdateNotifications();
+  if (!args.includes("--disable-updates")) {
+    createUpdateWindow();
+    setupUpdateNotifications();
+    return;
+  }
+  createWindow();
 });
 
 app.on("window-all-closed", () => {

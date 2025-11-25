@@ -47,6 +47,7 @@
             expat
             glib
             gtk3
+            libappindicator-gtk3
             libdrm
             libxkbcommon
             mesa
@@ -64,22 +65,26 @@
           ];
 
           unpackPhase = ''
-            dpkg-deb -x $src .
+            dpkg-deb --fsys-tarfile $src | tar -x --no-same-permissions --no-same-owner
           '';
 
           installPhase = ''
             runHook preInstall
 
-            mkdir -p $out/bin $out/share/${pname} $out/share/applications $out/share/icons
+            mkdir -p $out
+            cp -r usr/* $out
 
-            cp -r usr/share/* $out/share/
-            cp -r usr/lib/${pname}/* $out/share/${pname}/
+            WAYLAND_FLAGS="--ozone-platform-hint=auto --enable-features=WaylandWindowDecorations --enable-wayland-ime=true"
 
-            makeWrapper $out/share/${pname}/${pname} $out/bin/${pname} \
-              --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath buildInputs} \
-              --add-flags "--no-sandbox" # Optional: Electron often needs this in Nix
+            wrapProgram $out/bin/${pname} \
+              --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath buildInputs}" \
+              --add-flags "--no-sandbox" \
+              --run 'if [[ -n "$NIXOS_OZONE_WL" ]] && [[ -n "$WAYLAND_DISPLAY" ]]; then export NIXOS_OZONE_WL_FLAGS="$\{WAYLAND_FLAGS}"; fi' \
+              --add-flags "\$NIXOS_OZONE_WL_FLAGS" \
+              --add-flags "--disable-updates"
 
             substituteInPlace $out/share/applications/${pname}.desktop \
+              --replace "/opt/${pname}/${pname}" "$out/bin/${pname}" \
               --replace "/usr/bin/${pname}" "$out/bin/${pname}"
 
             runHook postInstall
