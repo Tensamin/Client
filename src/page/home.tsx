@@ -153,7 +153,30 @@ export default function Page() {
           */}
       </div>
       <div className="mt-auto">
-        {appUpdateInformation && <p>{appUpdateInformation.releaseName}</p>}
+        {appUpdateInformation && (
+          <div className="flex items-center gap-4 p-4 rounded-lg bg-muted">
+            <div className="flex-1">
+              <p className="font-medium">
+                {translate("HOME_PAGE_UPDATE_AVAILABLE") || "Update Available"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {appUpdateInformation.releaseName}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                // @ts-expect-error ElectronAPI only available in Electron
+                if (window.electronAPI?.doUpdate) {
+                  // @ts-expect-error ElectronAPI only available in Electron
+                  window.electronAPI.doUpdate();
+                }
+              }}
+            >
+              {translate("HOME_PAGE_UPDATE_NOW") || "Update Now"}
+            </Button>
+          </div>
+        )}
       </div>
     </PageDiv>
   );

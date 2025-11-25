@@ -69,7 +69,6 @@ function emitUpdateAvailable(payload: UpdatePayload) {
 }
 
 function emitUpdateLog(payload: UpdateLogPayload) {
-  // Store in history for replaying to new windows
   logHistory.push(payload);
   if (logHistory.length > 100) {
     logHistory.shift();
@@ -200,8 +199,9 @@ function registerAutoUpdaterLogging() {
 }
 
 async function setupUpdateNotifications() {
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
+  const isLinux = process.platform === "linux";
+  autoUpdater.autoDownload = !isLinux;
+  autoUpdater.autoInstallOnAppQuit = !isLinux;
   registerAutoUpdaterLogging();
 
   const isDevelopment = process.env.NODE_ENV === "development";
@@ -218,14 +218,6 @@ async function setupUpdateNotifications() {
       message: "Development mode: simulating update check",
       timestamp: Date.now(),
     });
-    // In development, skip the actual update check and just open main window
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    emitUpdateLog({
-      level: "info",
-      message: "Starting application...",
-      timestamp: Date.now(),
-    });
-    createWindow();
     return;
   }
 
@@ -236,54 +228,7 @@ async function setupUpdateNotifications() {
       timestamp: Date.now(),
     });
 
-    const result = await autoUpdater.checkForUpdates();
-
-    if (result?.updateInfo) {
-      const currentVersion = app.getVersion();
-      const latestVersion = result.updateInfo.version;
-
-      if (currentVersion !== latestVersion) {
-        emitUpdateLog({
-          level: "info",
-          message: `Downloading update v${latestVersion}...`,
-          timestamp: Date.now(),
-        });
-        // autoDownload is true, so it will download automatically
-        // Wait for download to complete before opening main window
-        await new Promise<void>((resolve) => {
-          const onDownloaded = () => {
-            autoUpdater.off("update-downloaded", onDownloaded);
-            autoUpdater.off("error", onError);
-            resolve();
-          };
-          const onError = () => {
-            autoUpdater.off("update-downloaded", onDownloaded);
-            autoUpdater.off("error", onError);
-            resolve();
-          };
-          autoUpdater.on("update-downloaded", onDownloaded);
-          autoUpdater.on("error", onError);
-        });
-
-        // If update downloaded successfully, install and relaunch
-        if (pendingUpdate) {
-          emitUpdateLog({
-            level: "info",
-            message: "Installing update and restarting...",
-            timestamp: Date.now(),
-          });
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          autoUpdater.quitAndInstall(false, true);
-          return;
-        }
-      }
-    }
-
-    emitUpdateLog({
-      level: "info",
-      message: "Starting application...",
-      timestamp: Date.now(),
-    });
+    await autoUpdater.checkForUpdates();
   } catch (error) {
     emitUpdateLog({
       level: "error",
@@ -291,15 +236,7 @@ async function setupUpdateNotifications() {
       details: serializeErrorDetails(error),
       timestamp: Date.now(),
     });
-    emitUpdateLog({
-      level: "info",
-      message: "Starting application...",
-      timestamp: Date.now(),
-    });
   }
-
-  // Start the main window
-  createWindow();
 
   // Start hourly update checks
   startBackgroundUpdateChecks();
@@ -322,8 +259,6 @@ function startBackgroundUpdateChecks() {
     });
 
     try {
-      // This will automatically download if an update is available (autoDownload = true)
-      // and autoInstallOnAppQuit = true will install it when the app closes
       await autoUpdater.checkForUpdates();
     } catch (error) {
       emitUpdateLog({
@@ -334,39 +269,6 @@ function startBackgroundUpdateChecks() {
       });
     }
   }, UPDATE_CHECK_INTERVAL_MS);
-}
-
-function createUpdateWindow() {
-  updateWindow = new BrowserWindow({
-    width: 290,
-    height: 360,
-    resizable: false,
-    center: true,
-    frame: false,
-    icon: "app://./assets/app/web-app-manifest-512x512.png",
-    webPreferences: {
-      preload: path.join(app.getAppPath(), "preload.js"),
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
-
-  const url =
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:3000/update"
-      : "app://./update.html";
-
-  updateWindow.loadURL(url);
-
-  updateWindow.webContents.on("did-finish-load", () => {
-    if (updateWindow) {
-      replayLogHistory(updateWindow);
-    }
-  });
-
-  updateWindow.on("closed", () => {
-    updateWindow = null;
-  });
 }
 
 function createWindow() {
@@ -392,6 +294,7 @@ function createWindow() {
 
   mainWindow.on("ready-to-show", () => {
     mainWindow?.show();
+    setupUpdateNotifications();
 
     if (updateWindow) {
       updateWindow.close();
@@ -420,8 +323,6 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  const args = process.argv.slice(2);
-
   protocol.handle("app", (request) => {
     const { pathname } = new URL(request.url);
     const filePath = path.join(DIRNAME, decodeURIComponent(pathname));
@@ -429,12 +330,6 @@ app.whenReady().then(() => {
     return net.fetch(pathToFileURL(filePath).toString());
   });
 
-  console.log("Provided Arguments:", args, process.argv);
-  if (!args.includes("--disable-updates")) {
-    createUpdateWindow();
-    setupUpdateNotifications();
-    return;
-  }
   createWindow();
 });
 
@@ -470,6 +365,16 @@ ipcMain.handle("do-update", async () => {
     emitUpdateLog({
       level: "error",
       message: "Cannot update: main window not available",
+      timestamp: Date.now(),
+    });
+    return;
+  }
+
+  if (process.platform === "linux") {
+    emitUpdateLog({
+      level: "info",
+      message:
+        "On Linux, please download the update manually from the releases page",
       timestamp: Date.now(),
     });
     return;
