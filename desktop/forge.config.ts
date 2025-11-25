@@ -21,7 +21,7 @@ const linuxPackageProps = {
     maintainer: packageJson.author.name,
     homepage: packageJson.homepage,
     mimeType: ["x-scheme-handler/tensamin"],
-    icon: "./assets/icon/icon.png",
+    icon: "assets/icon/icon.png",
   },
 } satisfies MakerDebConfig | MakerRpmConfig;
 
@@ -47,8 +47,8 @@ const config: ForgeConfig = {
       description: packageJson.description,
       setupExe: `${packageJson.productName} Setup (${packageJson.version}).exe`,
       setupMsi: `${packageJson.productName} Setup (${packageJson.version}).msi`,
-      setupIcon: "./assets/installer.ico",
-      //loadingGif: "./assets/loading.gif",
+      setupIcon: "assets/installer.ico",
+      //loadingGif: "assets/loading.gif",
       title: packageJson.productName,
       noMsi: true,
     }),
