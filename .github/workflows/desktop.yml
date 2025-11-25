@@ -75,3 +75,31 @@ jobs:
           commit_message: Automated Update
           ssh_keyscan_types: ed25519
           update_pkgver: true
+
+  update-flake:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run nix-update
+        run: |
+          nix run github:Mic92/nix-update -- \
+            --flake \
+            --version=latest \
+            --commit \
+            --commit-msg "chore: update to v{new_version}" \
+            default
+
+      - name: Push changes
+        if: success()
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}

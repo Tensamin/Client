@@ -6,10 +6,20 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachSystem [ "x86_64-linux" ] (
+      system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        };
+        #pkgs = nixpkgs.legacyPackages.${system};
       in
       {
         packages.default = pkgs.stdenv.mkDerivation rec {
@@ -17,7 +27,7 @@
           version = "0.0.0"; # nix-update will manage this
 
           src = pkgs.fetchurl {
-            url = "https://github.com/username/repo/releases/download/v${version}/app_${version}_amd64.deb";
+            url = "https://github.com/Tensamin/Frontend/releases/download/desktop-v${version}/tensamin_${version}_amd64.deb";
             hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; # nix-update will manage this
           };
 
