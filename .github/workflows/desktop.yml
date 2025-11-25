@@ -79,6 +79,7 @@ jobs:
   update-flake:
     needs: build
     runs-on: ubuntu-latest
+    name: Publish (nix)
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -88,14 +89,24 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run nix-update
+      - name: Run `nix-update`
         run: |
+          git config user.name "GitHub Actions"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           nix run github:Mic92/nix-update -- \
             --flake \
             --version=latest \
-            --commit \
-            --commit-msg "chore: update to v{new_version}" \
             default
+
+          NEW_VERSION=$(nix eval --raw .#default.version)
+
+          if [[ -n $(git status --porcelain) ]]; then
+            git add .
+            git commit -m "chore: update to v$NEW_VERSION"
+          else
+            echo "No updates found."
+          fi
 
       - name: Push changes
         if: success()
