@@ -1,5 +1,12 @@
 // Package Imports
-import { useRef, useEffect, useMemo, useEffectEvent, useState } from "react";
+import {
+  useRef,
+  useEffect,
+  useMemo,
+  useEffectEvent,
+  useState,
+  useCallback,
+} from "react";
 import {
   useInfiniteQuery,
   useQueryClient,
@@ -42,6 +49,9 @@ export function Box() {
   const parentRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
   const nextIdRef = useRef(0);
+  const previousScrollHeightRef = useRef<number>(0);
+  const isLoadingOlderRef = useRef(false);
+  const initialLoadDoneRef = useRef(false);
 
   const { translate } = useStorageContext();
   const { getMessages, addRealtimeMessageToBox, setAddRealtimeMessageToBox } =
@@ -86,11 +96,36 @@ export function Box() {
 
   const topSentinelRef = useRef<HTMLDivElement>(null);
 
+  // Track the number of pages to detect when older messages are loaded
+  const pageCountRef = useRef(data?.pages.length ?? 0);
+
+  // Save scroll position before loading older messages
+  const handleFetchOlder = useCallback(() => {
+    if (parentRef.current) {
+      previousScrollHeightRef.current = parentRef.current.scrollHeight;
+      isLoadingOlderRef.current = true;
+    }
+    void fetchNextPage();
+  }, [fetchNextPage]);
+
+  // Reset isLoadingOlderRef after page count changes (older messages loaded)
+  useEffect(() => {
+    const currentPageCount = data?.pages.length ?? 0;
+    if (currentPageCount > pageCountRef.current) {
+      // Older messages were loaded, reset the flag after a small delay
+      // to ensure other effects have had a chance to see it
+      requestAnimationFrame(() => {
+        isLoadingOlderRef.current = false;
+      });
+    }
+    pageCountRef.current = currentPageCount;
+  }, [data?.pages.length]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          void fetchNextPage();
+          handleFetchOlder();
         }
       },
       { threshold: 0.1 }
@@ -101,7 +136,7 @@ export function Box() {
     }
 
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, handleFetchOlder]);
 
   const handleRealtimeMessage = useEffectEvent((newMsg: Message) => {
     nextIdRef.current += 1;
@@ -133,6 +168,16 @@ export function Box() {
         const targetPage = { ...clonedPages[targetIndex] };
         const lastGroup = targetPage.messages.at(-1);
         const lastGroupLastMessage = lastGroup?.messages.at(-1);
+
+        // Check for duplicate message (same sender, timestamp, and content)
+        if (
+          lastGroupLastMessage &&
+          lastGroupLastMessage.sender === newMsg.sender &&
+          lastGroupLastMessage.timestamp === newMsg.timestamp &&
+          lastGroupLastMessage.content === newMsg.content
+        ) {
+          return base; // Skip duplicate
+        }
 
         const shouldMerge =
           lastGroup &&
@@ -177,11 +222,11 @@ export function Box() {
 
   const [isAtBottom, setIsAtBottom] = useState(true);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     if (parentRef.current) {
       parentRef.current.scrollTop = parentRef.current.scrollHeight;
     }
-  };
+  }, []);
 
   const onScroll = () => {
     if (!parentRef.current) return;
@@ -190,19 +235,42 @@ export function Box() {
     setIsAtBottom(isBottom);
   };
 
-  // initally scroll to bottom
-  useEffect(() => {
-    if (messageGroups.length > 0 && !isLoading) {
-      scrollToBottom();
-    }
-  }, [currentReceiverUuid, isLoading, messageGroups.length]);
+  // Track the last message count to detect new messages vs older messages loaded
+  const lastMessageCountRef = useRef(0);
 
-  // auto scroll down when new messages come and already at bottom
+  // Reset state when switching conversations
   useEffect(() => {
-    if (isAtBottom) {
+    initialLoadDoneRef.current = false;
+    pageCountRef.current = 0;
+    isLoadingOlderRef.current = false;
+    previousScrollHeightRef.current = 0;
+    lastMessageCountRef.current = 0;
+  }, [currentReceiverUuid]);
+
+  // Initially scroll to bottom only on first load
+  useEffect(() => {
+    if (messageGroups.length > 0 && !isLoading && !initialLoadDoneRef.current) {
+      scrollToBottom();
+      initialLoadDoneRef.current = true;
+      lastMessageCountRef.current = messageGroups.length;
+    }
+  }, [isLoading, messageGroups.length, scrollToBottom]);
+
+  // Auto scroll down only when NEW messages arrive (not when loading older messages)
+  useEffect(() => {
+    if (!initialLoadDoneRef.current) return;
+    
+    const currentCount = messageGroups.length;
+    const prevCount = lastMessageCountRef.current;
+    
+    // Only scroll if we have more messages AND we're at the bottom
+    // AND we're NOT loading older messages (page count hasn't increased)
+    if (currentCount > prevCount && isAtBottom && !isLoadingOlderRef.current) {
       scrollToBottom();
     }
-  }, [messageGroups, isAtBottom]);
+    
+    lastMessageCountRef.current = currentCount;
+  }, [messageGroups.length, isAtBottom, scrollToBottom]);
 
   if (isLoading) {
     return (

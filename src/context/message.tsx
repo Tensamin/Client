@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { toast } from "sonner";
@@ -62,24 +63,30 @@ export function MessageProvider({
   const newUserNotification = useNewUserNotification();
   const [addRealtimeMessageToBox, setAddRealtimeMessageToBox] =
     useState<Message | null>(null);
+  const processedMessageRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (lastMessage && lastMessage.type === "message_live") {
-      if (lastMessage.data.sender_id === currentReceiverUuid) {
-        setAddRealtimeMessageToBox({
-          send_to_server: false,
-          sender: lastMessage.data.sender_id ?? "",
-          content: lastMessage.data.message ?? "",
-          timestamp: Number(lastMessage.data.send_time) ?? 0,
-          avatar: true,
-          display: true,
-        });
-      } else {
-        newUserNotification(
-          lastMessage.data.sender_id ?? "",
-          lastMessage.data.message ?? ""
-        );
-      }
+    if (!lastMessage || lastMessage.type !== "message_live") return;
+    
+    // Create a unique identifier for this message to prevent duplicates
+    const messageId = `${lastMessage.id}-${lastMessage.data.sender_id}-${lastMessage.data.send_time}`;
+    if (processedMessageRef.current === messageId) return;
+    processedMessageRef.current = messageId;
+
+    if (lastMessage.data.sender_id === currentReceiverUuid) {
+      setAddRealtimeMessageToBox({
+        send_to_server: false,
+        sender: lastMessage.data.sender_id ?? "",
+        content: lastMessage.data.message ?? "",
+        timestamp: Number(lastMessage.data.send_time) ?? 0,
+        avatar: true,
+        display: true,
+      });
+    } else {
+      newUserNotification(
+        lastMessage.data.sender_id ?? "",
+        lastMessage.data.message ?? ""
+      );
     }
   }, [currentReceiverUuid, lastMessage, newUserNotification]);
 
