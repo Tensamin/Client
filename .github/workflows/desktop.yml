@@ -71,6 +71,8 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          git pull -f
+
           NEW_VERSION=$(jq -r '.version' package.json)
 
           nix run github:Mic92/nix-update -- \
