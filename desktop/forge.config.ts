@@ -42,18 +42,22 @@ const config: ForgeConfig = {
       version: actPackageJson.version,
       authors: packageJson.author.name,
       description: packageJson.description,
-      setupExe: `${packageJson.productName} Setup (${actPackageJson.version}).exe`,
-      setupMsi: `${packageJson.productName} Setup (${actPackageJson.version}).msi`,
+      setupExe: `${packageJson.name}-win32-${actPackageJson.version}.exe`,
+      setupMsi: `${packageJson.productName}.msi`, // For homepage download link
       setupIcon: "assets/installer.ico",
       //loadingGif: "assets/loading.gif",
       title: packageJson.productName,
-      noMsi: true,
     }),
     new MakerDMG({
-      name: packageJson.name,
+      name: packageJson.productName, // For homepage download link
       title: packageJson.productName,
     }),
-    new MakerZIP({}, ["darwin"]),
+    new MakerZIP(
+      {
+        macUpdateManifestBaseUrl: undefined,
+      },
+      ["darwin"]
+    ),
     new MakerDeb(linuxPackageProps),
     new MakerRpm(linuxPackageProps),
   ],
