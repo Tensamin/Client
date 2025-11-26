@@ -8,6 +8,7 @@ import squirrelStartup from "electron-squirrel-startup";
 // Node Imports
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import * as fs from "node:fs";
 
 // Types
 type UpdatePayload = {
@@ -61,6 +62,46 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ]);
+
+function ensureAppUpdateYml() {
+  try {
+    const resourcesPath =
+      process.resourcesPath || app.getAppPath();
+
+    const yamlLines = [
+      "provider: generic",
+      `url: ${RELEASES_URL}`,
+      "useMultipleRangeRequest: false",
+      "channel: latest",
+      `updaterCacheDirName: ${JSON.stringify(app.getName())}`,
+    ];
+
+    const yaml = yamlLines.join("\n");
+
+    const updateFile = path.join(resourcesPath, "app-update.yml");
+    const devUpdateFile = path.join(resourcesPath, "dev-app-update.yml");
+    const checkFiles = [updateFile, devUpdateFile];
+
+    for (const filePath of checkFiles) {
+      if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, yaml, { encoding: "utf8" });
+        emitUpdateLog({
+          level: "info",
+          message: `Created missing update file: ${filePath}`,
+          timestamp: Date.now(),
+        });
+      }
+    }
+  } catch (error) {
+    emitUpdateLog({
+      level: "error",
+      message: `Failed to create app-update.yml: ${error instanceof Error ? error.message : String(error)
+        }`,
+      details: serializeErrorDetails(error),
+      timestamp: Date.now(),
+    });
+  }
+}
 
 function emitUpdateAvailable(payload: UpdatePayload) {
   latestUpdatePayload = payload;
@@ -331,6 +372,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  ensureAppUpdateYml();
   protocol.handle("app", (request) => {
     const { pathname } = new URL(request.url);
     const filePath = path.join(DIRNAME, decodeURIComponent(pathname));
