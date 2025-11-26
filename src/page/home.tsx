@@ -38,6 +38,7 @@ import {
   CardAction,
 } from "@/components/ui/card";
 import { Text } from "@/components/markdown/text";
+import { UpdatePayload } from "@/lib/types";
 
 // Main
 export default function Page() {
@@ -180,12 +181,15 @@ export default function Page() {
                     // @ts-expect-error ElectronAPI only available in Electron
                     if (window.electronAPI?.doUpdate) {
                       // @ts-expect-error ElectronAPI only available in Electron
-                      window.electronAPI.doUpdate().then((data) => {
-                        if (data.level === "info") {
+                      window.electronAPI
+                        .doUpdate()
+                        .then((data: { message: string }) => {
                           setUpdateLoading(false);
                           setExtraInfo(data.message);
-                        }
-                      });
+                        })
+                        .catch(() => {
+                          setUpdateLoading(false);
+                        });
                     }
                   }}
                 >

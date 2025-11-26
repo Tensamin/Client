@@ -4,18 +4,20 @@ import type { ForgeConfig } from "@electron-forge/shared-types";
 
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerDMG } from "@electron-forge/maker-dmg";
+import { MakerZIP } from "@electron-forge/maker-zip";
 import { MakerDeb, MakerDebConfig } from "@electron-forge/maker-deb";
 import { MakerRpm, MakerRpmConfig } from "@electron-forge/maker-rpm";
 
 import { PublisherGithub } from "@electron-forge/publisher-github";
 
 import packageJson from "../package.json" assert { type: "json" };
+import actPackageJson from "./package.json" assert { type: "json" };
 
 const linuxPackageProps = {
   options: {
     name: packageJson.name,
     genericName: "Chat Application",
-    version: packageJson.version,
+    version: actPackageJson.version,
     description: packageJson.description,
     categories: ["Network", "Office", "Utility"],
     maintainer: packageJson.author.name,
@@ -28,25 +30,20 @@ const linuxPackageProps = {
 const config: ForgeConfig = {
   packagerConfig: {
     executableName: packageJson.name,
-    appVersion: packageJson.version,
+    appVersion: actPackageJson.version,
     icon: "./assets/icon/icon",
     asar: true,
-    ignore: [
-      "forge.config.ts",
-      "bun.lock",
-      "shell.nix",
-      "aur",
-    ],
+    ignore: ["forge.config.ts", "bun.lock", "shell.nix", "aur"],
   },
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({
       name: packageJson.name,
-      version: packageJson.version,
+      version: actPackageJson.version,
       authors: packageJson.author.name,
       description: packageJson.description,
-      setupExe: `${packageJson.productName} Setup (${packageJson.version}).exe`,
-      setupMsi: `${packageJson.productName} Setup (${packageJson.version}).msi`,
+      setupExe: `${packageJson.productName} Setup (${actPackageJson.version}).exe`,
+      setupMsi: `${packageJson.productName} Setup (${actPackageJson.version}).msi`,
       setupIcon: "assets/installer.ico",
       //loadingGif: "assets/loading.gif",
       title: packageJson.productName,
@@ -56,6 +53,7 @@ const config: ForgeConfig = {
       name: packageJson.name,
       title: packageJson.productName,
     }),
+    new MakerZIP({}, ["darwin"]),
     new MakerDeb(linuxPackageProps),
     new MakerRpm(linuxPackageProps),
   ],

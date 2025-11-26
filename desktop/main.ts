@@ -1,13 +1,17 @@
 // Package Imports
-import { app, BrowserWindow, ipcMain, protocol, net, shell } from "electron";
-import updateElectronApp from "update-electron-app";
-// @ts-expect-error Import shows an error when the preload.js is not open
-import squirrelStartup from "electron-squirrel-startup";
-
-// Node Imports
+import {
+  app,
+  autoUpdater,
+  BrowserWindow,
+  ipcMain,
+  protocol,
+  net,
+  shell,
+} from "electron";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import * as fs from "node:fs";
+// @ts-expect-error Squirrel startup
+import squirrelStartup from "electron-squirrel-startup";
 
 // Types
 type UpdatePayload = {
@@ -25,80 +29,7 @@ type UpdateLogPayload = {
   timestamp: number;
 };
 
-// Main
-const FILENAME = fileURLToPath(import.meta.url);
-const DIRNAME = path.dirname(FILENAME);
-const RELEASES_URL = "https://github.com/Tensamin/Frontend/releases";
-const UPDATE_AVAILABLE_CHANNEL = "app:update-available";
-const UPDATE_LOG_CHANNEL = "app:update-log";
-const UPDATE_CHECK_INTERVAL_MS = 5000; // 5 seconds
-//const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
-
-let mainWindow: BrowserWindow | null = null;
-let updateWindow: BrowserWindow | null = null;
-let pendingUpdate = false;
-let latestUpdatePayload: UpdatePayload | null = null;
-
-// Log history for replaying to new windows
-const logHistory: UpdateLogPayload[] = [];
-
-// Squirrel Startup Handling
-if (squirrelStartup) app.quit();
-
-// Setup Electron Updater (replaced by update-electron-app)
-
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: "app",
-    privileges: {
-      standard: true,
-      secure: true,
-      supportFetchAPI: true,
-      corsEnabled: true,
-    },
-  },
-]);
-
-function ensureAppUpdateYml() {
-  try {
-    const resourcesPath =
-      process.resourcesPath || app.getAppPath();
-
-    const yamlLines = [
-      "provider: generic",
-      `url: ${RELEASES_URL}`,
-      "useMultipleRangeRequest: false",
-      "channel: latest",
-      `updaterCacheDirName: ${JSON.stringify(app.getName())}`,
-    ];
-
-    const yaml = yamlLines.join("\n");
-
-    const updateFile = path.join(resourcesPath, "app-update.yml");
-    const devUpdateFile = path.join(resourcesPath, "dev-app-update.yml");
-    const checkFiles = [updateFile, devUpdateFile];
-
-    for (const filePath of checkFiles) {
-      if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, yaml, { encoding: "utf8" });
-        emitUpdateLog({
-          level: "info",
-          message: `Created missing update file: ${filePath}`,
-          timestamp: Date.now(),
-        });
-      }
-    }
-  } catch (error) {
-    emitUpdateLog({
-      level: "error",
-      message: `Failed to create app-update.yml: ${error instanceof Error ? error.message : String(error)
-        }`,
-      details: serializeErrorDetails(error),
-      timestamp: Date.now(),
-    });
-  }
-}
-
+// Helper Functions
 function emitUpdateAvailable(payload: UpdatePayload) {
   latestUpdatePayload = payload;
 
@@ -108,28 +39,9 @@ function emitUpdateAvailable(payload: UpdatePayload) {
 }
 
 function emitUpdateLog(payload: UpdateLogPayload) {
-  logHistory.push(payload);
-  if (logHistory.length > 100) {
-    logHistory.shift();
-  }
-
   [mainWindow, updateWindow].forEach((windowInstance) => {
     windowInstance?.webContents.send(UPDATE_LOG_CHANNEL, payload);
   });
-}
-
-function replayLogHistory(window: BrowserWindow) {
-  logHistory.forEach((log) => {
-    window.webContents.send(UPDATE_LOG_CHANNEL, log);
-  });
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
 function serializeErrorDetails(error: unknown) {
@@ -144,23 +56,108 @@ function serializeErrorDetails(error: unknown) {
   return { message: String(error) };
 }
 
-function registerUpdateElectronApp() {
+// Main
+const FILENAME = fileURLToPath(import.meta.url);
+const DIRNAME = path.dirname(FILENAME);
+const RELEASES_URL = "https://github.com/Tensamin/Frontend/releases";
+const UPDATE_SERVER_HOST = "update.electronjs.org";
+const UPDATE_AVAILABLE_CHANNEL = "app:update-available";
+const UPDATE_LOG_CHANNEL = "app:update-log";
+const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+
+let mainWindow: BrowserWindow | null = null;
+let updateWindow: BrowserWindow | null = null;
+let latestUpdatePayload: UpdatePayload | null = null;
+let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
+let isUpdateDownloaded = false;
+
+// Squirrel Startup Handling
+if (squirrelStartup) app.quit();
+
+// Register custom protocol
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "app",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+    },
+  },
+]);
+
+function isAutoUpdateSupported(): boolean {
+  return process.platform === "darwin" || process.platform === "win32";
+}
+
+// Serup auto updater
+function setupAutoUpdater() {
+  if (!isAutoUpdateSupported()) {
+    console.log(
+      `Auto-updates not supported on ${process.platform}. Users will be directed to manual download.`
+    );
+    return;
+  }
+
   try {
-    updateElectronApp({
-      repo: "Tensamin/Frontend",
-      updateInterval: `${Math.max(5, Math.floor(UPDATE_CHECK_INTERVAL_MS / 1000))} seconds`,
-      logger: {
-        info: (msg: unknown) =>
-          emitUpdateLog({ level: "info", message: String(msg), timestamp: Date.now() }),
-        warn: (msg: unknown) =>
-          emitUpdateLog({ level: "info", message: String(msg), timestamp: Date.now() }),
-        error: (msg: unknown) =>
-          emitUpdateLog({ level: "error", message: String(msg), timestamp: Date.now() }),
-      },
+    const feedURL = `https://${UPDATE_SERVER_HOST}/Tensamin/Frontend/${process.platform}-${process.arch}/${app.getVersion()}`;
+    autoUpdater.setFeedURL({ url: feedURL });
+
+    // Error during update check or download
+    autoUpdater.on("error", (error) => {
+      console.error("Auto-updater error:", error.message);
+      emitUpdateLog({
+        level: "error",
+        message: `Update error: ${error.message}`,
+        details: serializeErrorDetails(error),
+        timestamp: Date.now(),
+      });
     });
 
-    emitUpdateLog({ level: "info", message: "Update service initialized", timestamp: Date.now() });
+    // Update available and downloading
+    autoUpdater.on("update-available", () => {
+      console.log("Update available, downloading...");
+    });
+
+    // No update available
+    autoUpdater.on("update-not-available", () => {
+      console.log("No update available.");
+    });
+
+    // Update downloaded and ready to install
+    autoUpdater.on(
+      "update-downloaded",
+      (event, releaseNotes, releaseName, releaseDate, updateURL) => {
+        isUpdateDownloaded = true;
+
+        const payload: UpdatePayload = {
+          version: releaseName || null,
+          releaseName: releaseName || null,
+          releaseNotes: releaseNotes || null,
+          releaseDate: releaseDate ? new Date(releaseDate).getTime() : null,
+          url: updateURL || RELEASES_URL,
+        };
+
+        // Emit update available
+        emitUpdateAvailable(payload);
+        emitUpdateLog({
+          level: "info",
+          message: `Update ${releaseName || "available"} downloaded and ready to install`,
+          timestamp: Date.now(),
+        });
+      }
+    );
+
+    // Check for updates immediately
+    autoUpdater.checkForUpdates();
+
+    // Set up periodic update checks
+    updateCheckInterval = setInterval(() => {
+      autoUpdater.checkForUpdates();
+    }, UPDATE_CHECK_INTERVAL_MS);
   } catch (error) {
+    console.error("Failed to setup auto-updater:", error);
     emitUpdateLog({
       level: "error",
       message: `Failed to initialize update service: ${error instanceof Error ? error.message : String(error)}`,
@@ -168,30 +165,6 @@ function registerUpdateElectronApp() {
       timestamp: Date.now(),
     });
   }
-}
-
-async function setupUpdateNotifications() {
-  const isLinux = process.platform === "linux";
-  registerUpdateElectronApp();
-
-  const isDevelopment = process.env.NODE_ENV === "development";
-
-  emitUpdateLog({
-    level: "info",
-    message: "Initializing update system...",
-    timestamp: Date.now(),
-  });
-
-  if (isDevelopment) {
-    emitUpdateLog({
-      level: "info",
-      message: "Development mode: simulating update check",
-      timestamp: Date.now(),
-    });
-    return;
-  }
-
-  emitUpdateLog({ level: "info", message: "Update integration active", timestamp: Date.now() });
 }
 
 function createWindow() {
@@ -217,26 +190,15 @@ function createWindow() {
 
   mainWindow.on("ready-to-show", () => {
     mainWindow?.show();
-    setupUpdateNotifications();
+    setupAutoUpdater();
 
     if (updateWindow) {
       updateWindow.close();
-    }
-
-    if (process.env.NODE_ENV === "development") {
-      emitUpdateAvailable({
-        version: "v0.0.0",
-        releaseName: "Development Release",
-        releaseNotes: "Fake update payload rendered only in development.",
-        releaseDate: new Date().getTime(),
-        url: RELEASES_URL,
-      });
     }
   });
 
   mainWindow.webContents.on("did-finish-load", () => {
     if (mainWindow) {
-      replayLogHistory(mainWindow);
       if (latestUpdatePayload) {
         mainWindow.webContents.send(
           UPDATE_AVAILABLE_CHANNEL,
@@ -252,7 +214,6 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  ensureAppUpdateYml();
   protocol.handle("app", (request) => {
     const { pathname } = new URL(request.url);
     const filePath = path.join(DIRNAME, decodeURIComponent(pathname));
@@ -268,7 +229,10 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
-  // No active interval to clear when using `update-electron-app`.
+  if (updateCheckInterval) {
+    clearInterval(updateCheckInterval);
+    updateCheckInterval = null;
+  }
 });
 
 // IPC Handlers (Translation Layer)
@@ -296,19 +260,48 @@ ipcMain.handle("close-window", () => {
 
 ipcMain.handle("do-update", async () => {
   if (!mainWindow) {
-    const log = {
+    const log: UpdateLogPayload = {
       level: "error",
       message: "Cannot update: main window not available",
       timestamp: Date.now(),
-    } satisfies UpdateLogPayload;
+    };
     emitUpdateLog(log);
     return log;
   }
-  emitUpdateLog({ level: "info", message: "Opening releases page for update...", timestamp: Date.now() });
-  shell.openExternal(RELEASES_URL);
-});
 
-ipcMain.handle("get-update-logs", async () => logHistory);
+  // If auto-update is supported and update is downloaded, quit and install
+  if (isAutoUpdateSupported() && isUpdateDownloaded) {
+    try {
+      autoUpdater.quitAndInstall();
+      return {
+        level: "info",
+        message: "Installing update...",
+        timestamp: Date.now(),
+      };
+    } catch (error) {
+      const log: UpdateLogPayload = {
+        level: "error",
+        message: `Failed to install update: ${error instanceof Error ? error.message : String(error)}`,
+        details: serializeErrorDetails(error),
+        timestamp: Date.now(),
+      };
+      emitUpdateLog(log);
+      return log;
+    }
+  }
+
+  // For Linux or if update not downloaded yet, open releases page
+  const log: UpdateLogPayload = {
+    level: "info",
+    message:
+      process.platform === "linux"
+        ? "Auto-updates not supported on Linux. Opening releases page..."
+        : "Update not ready. Opening releases page...",
+    timestamp: Date.now(),
+  };
+  shell.openExternal(RELEASES_URL);
+  return log;
+});
 
 ipcMain.handle("get-latest-update", async () => latestUpdatePayload);
 

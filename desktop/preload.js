@@ -8,7 +8,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
   maximize: () => ipcRenderer.invoke("maximize-window"),
   close: () => ipcRenderer.invoke("close-window"),
   openLink: (url) => ipcRenderer.invoke("open-link", url),
-  getUpdateLogs: () => ipcRenderer.invoke("get-update-logs"),
   getLatestUpdate: () => ipcRenderer.invoke("get-latest-update"),
   doUpdate: () => ipcRenderer.invoke("do-update"),
   onUpdateAvailable: (callback) => {

@@ -455,11 +455,7 @@ export function UserProvider({
 
     void (async () => {
       try {
-        const [latestUpdate] = await Promise.all([
-          electronAPI.getLatestUpdate?.(),
-          electronAPI.getUpdateLogs?.(),
-        ]);
-
+        const latestUpdate = await electronAPI.getLatestUpdate?.();
         if (latestUpdate) {
           handleUpdatePayload(latestUpdate, false);
         }
