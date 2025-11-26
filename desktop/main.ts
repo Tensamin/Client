@@ -1,7 +1,6 @@
 // Package Imports
 import { app, BrowserWindow, ipcMain, protocol, net, shell } from "electron";
-import type { ProgressInfo, UpdateInfo } from "electron-updater";
-import electronUpdater from "electron-updater";
+import updateElectronApp from "update-electron-app";
 // @ts-expect-error Import shows an error when the preload.js is not open
 import squirrelStartup from "electron-squirrel-startup";
 
@@ -14,7 +13,7 @@ import * as fs from "node:fs";
 type UpdatePayload = {
   version: string | null;
   releaseName: string | null;
-  releaseNotes: UpdateInfo["releaseNotes"] | null;
+  releaseNotes: unknown | null;
   releaseDate: number | null;
   url: string;
 };
@@ -37,8 +36,6 @@ const UPDATE_CHECK_INTERVAL_MS = 5000; // 5 seconds
 
 let mainWindow: BrowserWindow | null = null;
 let updateWindow: BrowserWindow | null = null;
-let autoUpdaterLogsRegistered = false;
-let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
 let pendingUpdate = false;
 let latestUpdatePayload: UpdatePayload | null = null;
 
@@ -48,8 +45,7 @@ const logHistory: UpdateLogPayload[] = [];
 // Squirrel Startup Handling
 if (squirrelStartup) app.quit();
 
-// Setup Electron Updater
-const { autoUpdater } = electronUpdater;
+// Setup Electron Updater (replaced by update-electron-app)
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -148,104 +144,35 @@ function serializeErrorDetails(error: unknown) {
   return { message: String(error) };
 }
 
-function registerAutoUpdaterLogging() {
-  if (autoUpdaterLogsRegistered) {
-    return;
-  }
-
-  autoUpdater.on("checking-for-update", () => {
-    emitUpdateLog({
-      level: "info",
-      message: "Checking for updates...",
-      timestamp: Date.now(),
-    });
-  });
-
-  autoUpdater.on("update-available", (info: UpdateInfo) => {
-    const releaseDate = info.releaseDate
-      ? new Date(info.releaseDate).getTime()
-      : null;
-
-    emitUpdateLog({
-      level: "info",
-      message: `Update v${info.version} available`,
-      details: {
-        version: info.version ?? null,
-        releaseName: info.releaseName ?? null,
-        releaseDate,
+function registerUpdateElectronApp() {
+  try {
+    updateElectronApp({
+      repo: "Tensamin/Frontend",
+      updateInterval: `${Math.max(5, Math.floor(UPDATE_CHECK_INTERVAL_MS / 1000))} seconds`,
+      logger: {
+        info: (msg: unknown) =>
+          emitUpdateLog({ level: "info", message: String(msg), timestamp: Date.now() }),
+        warn: (msg: unknown) =>
+          emitUpdateLog({ level: "info", message: String(msg), timestamp: Date.now() }),
+        error: (msg: unknown) =>
+          emitUpdateLog({ level: "error", message: String(msg), timestamp: Date.now() }),
       },
-      timestamp: Date.now(),
     });
 
-    emitUpdateAvailable({
-      version: info.version ?? null,
-      releaseName: info.releaseName ?? null,
-      releaseNotes: info.releaseNotes ?? null,
-      releaseDate,
-      url: RELEASES_URL,
-    });
-  });
-
-  autoUpdater.on("update-not-available", (info: UpdateInfo) => {
-    emitUpdateLog({
-      level: "info",
-      message: `App is up to date (v${info.version})`,
-      details: {
-        version: info.version ?? null,
-      },
-      timestamp: Date.now(),
-    });
-  });
-
-  autoUpdater.on("download-progress", (progress: ProgressInfo) => {
-    const percent = Math.round(progress.percent);
-    const transferred = formatBytes(progress.transferred);
-    const total = formatBytes(progress.total);
-    const speed = formatBytes(progress.bytesPerSecond);
-
-    emitUpdateLog({
-      level: "info",
-      message: `Downloading: ${percent}% (${transferred}/${total} @ ${speed}/s)`,
-      details: {
-        percent: progress.percent,
-        transferred: progress.transferred,
-        total: progress.total,
-        bytesPerSecond: progress.bytesPerSecond,
-      },
-      timestamp: Date.now(),
-    });
-  });
-
-  autoUpdater.on("update-downloaded", (info: UpdateInfo) => {
-    pendingUpdate = true;
-    emitUpdateLog({
-      level: "info",
-      message: `Update v${info.version} ready to install`,
-      details: {
-        version: info.version ?? null,
-        releaseName: info.releaseName ?? null,
-      },
-      timestamp: Date.now(),
-    });
-  });
-
-  autoUpdater.on("error", (error: Error) => {
+    emitUpdateLog({ level: "info", message: "Update service initialized", timestamp: Date.now() });
+  } catch (error) {
     emitUpdateLog({
       level: "error",
-      message: `Update error: ${error.message}`,
+      message: `Failed to initialize update service: ${error instanceof Error ? error.message : String(error)}`,
       details: serializeErrorDetails(error),
       timestamp: Date.now(),
     });
-  });
-
-  autoUpdaterLogsRegistered = true;
+  }
 }
 
 async function setupUpdateNotifications() {
   const isLinux = process.platform === "linux";
-  autoUpdater.autoDownload = !isLinux;
-  autoUpdater.autoInstallOnAppQuit = !isLinux;
-  registerAutoUpdaterLogging();
+  registerUpdateElectronApp();
 
   const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -264,54 +191,7 @@ async function setupUpdateNotifications() {
     return;
   }
 
-  try {
-    emitUpdateLog({
-      level: "info",
-      message: "Connecting to update server...",
-      timestamp: Date.now(),
-    });
-
-    await autoUpdater.checkForUpdates();
-  } catch (error) {
-    emitUpdateLog({
-      level: "error",
-      message: `Update check failed: ${error instanceof Error ? error.message : String(error)}`,
-      details: serializeErrorDetails(error),
-      timestamp: Date.now(),
-    });
-  }
-
-  if (updateCheckInterval) {
-    clearInterval(updateCheckInterval);
-  }
-
-  updateCheckInterval = setInterval(async () => {
-    if (process.env.NODE_ENV === "development") {
-      emitUpdateLog({
-        level: "info",
-        message: "Updates disabled in development mode",
-        timestamp: Date.now(),
-      });
-      return;
-    }
-
-    emitUpdateLog({
-      level: "info",
-      message: "Running scheduled update check...",
-      timestamp: Date.now(),
-    });
-
-    try {
-      await autoUpdater.checkForUpdates();
-    } catch (error) {
-      emitUpdateLog({
-        level: "error",
-        message: `Scheduled update check failed: ${error instanceof Error ? error.message : String(error)}`,
-        details: serializeErrorDetails(error),
-        timestamp: Date.now(),
-      });
-    }
-  }, UPDATE_CHECK_INTERVAL_MS);
+  emitUpdateLog({ level: "info", message: "Update integration active", timestamp: Date.now() });
 }
 
 function createWindow() {
@@ -388,10 +268,7 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
-  if (updateCheckInterval) {
-    clearInterval(updateCheckInterval);
-    updateCheckInterval = null;
-  }
+  // No active interval to clear when using `update-electron-app`.
 });
 
 // IPC Handlers (Translation Layer)
@@ -427,53 +304,8 @@ ipcMain.handle("do-update", async () => {
     emitUpdateLog(log);
     return log;
   }
-
-  if (process.platform === "linux") {
-    const log = {
-      level: "info",
-      message:
-        "On linux, please use your package manager or download the update manually from the releases page",
-      timestamp: Date.now(),
-    } satisfies UpdateLogPayload;
-    emitUpdateLog(log);
-    return log;
-  }
-
-  emitUpdateLog({
-    level: "info",
-    message: "Manual update requested...",
-    timestamp: Date.now(),
-  });
-
-  try {
-    if (pendingUpdate) {
-      emitUpdateLog({
-        level: "info",
-        message: "Installing update and restarting...",
-        timestamp: Date.now(),
-      });
-      autoUpdater.quitAndInstall(false, true);
-      return;
-    }
-
-    await autoUpdater.downloadUpdate();
-
-    emitUpdateLog({
-      level: "info",
-      message: "Download complete, restarting to install...",
-      timestamp: Date.now(),
-    });
-
-    autoUpdater.quitAndInstall(false, true);
-  } catch (error) {
-    emitUpdateLog({
-      level: "error",
-      message: `Update failed: ${error instanceof Error ? error.message : String(error)}`,
-      details: serializeErrorDetails(error),
-      timestamp: Date.now(),
-    });
-    throw error;
-  }
+  emitUpdateLog({ level: "info", message: "Opening releases page for update...", timestamp: Date.now() });
+  shell.openExternal(RELEASES_URL);
 });
 
 ipcMain.handle("get-update-logs", async () => logHistory);
