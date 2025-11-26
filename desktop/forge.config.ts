@@ -47,6 +47,7 @@ const config: ForgeConfig = {
       setupIcon: "assets/installer.ico",
       //loadingGif: "assets/loading.gif",
       title: packageJson.productName,
+      noMsi: false
     }),
     new MakerDMG({
       name: packageJson.productName, // For homepage download link
