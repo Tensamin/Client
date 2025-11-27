@@ -42,12 +42,11 @@ const config: ForgeConfig = {
       version: actPackageJson.version,
       authors: packageJson.author.name,
       description: packageJson.description,
-      setupExe: `${packageJson.name}-win32-${actPackageJson.version}.exe`,
-      setupMsi: `${packageJson.productName}.msi`, // For homepage download link
+      setupExe: `${packageJson.productName} Installer.exe`,
       setupIcon: "assets/installer.ico",
       //loadingGif: "assets/loading.gif",
       title: packageJson.productName,
-      noMsi: false
+      noMsi: true,
     }),
     new MakerDMG({
       name: packageJson.productName, // For homepage download link
