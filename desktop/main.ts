@@ -101,8 +101,11 @@ function setupAutoUpdater() {
   }
 
   try {
-    const feedURL = `https://${UPDATE_SERVER_HOST}/Tensamin/Frontend/${process.platform}-${process.arch}/${app.getVersion()}`;
-    autoUpdater.setFeedURL({ url: feedURL });
+    const server = "https://update.electronjs.org";
+    const feed = `${server}/Tensamin/Frontend/${process.platform}-${process.arch}/${app.getVersion()}`;
+    autoUpdater.setFeedURL({
+      url: feed,
+    });
 
     // Error during update check or download
     autoUpdater.on("error", (error) => {

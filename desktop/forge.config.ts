@@ -42,7 +42,7 @@ const config: ForgeConfig = {
       version: actPackageJson.version,
       authors: packageJson.author.name,
       description: packageJson.description,
-      setupExe: `${packageJson.productName} Installer.exe`,
+      setupExe: `${packageJson.productName}.exe`,
       setupIcon: "assets/installer.ico",
       //loadingGif: "assets/loading.gif",
       title: packageJson.productName,
@@ -52,12 +52,7 @@ const config: ForgeConfig = {
       name: packageJson.productName, // For homepage download link
       title: packageJson.productName,
     }),
-    new MakerZIP(
-      {
-        macUpdateManifestBaseUrl: undefined,
-      },
-      ["darwin"]
-    ),
+    new MakerZIP(),
     new MakerDeb(linuxPackageProps),
     new MakerRpm(linuxPackageProps),
   ],
@@ -70,7 +65,7 @@ const config: ForgeConfig = {
       authToken: process.env.GITHUB_TOKEN,
       draft: false,
       prerelease: false,
-      tagPrefix: "desktop-v",
+      tagPrefix: "v",
       generateReleaseNotes: true,
       force: true,
     }),
