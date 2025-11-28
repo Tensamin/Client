@@ -80,7 +80,6 @@ export function UserProvider({
   const prevLastMessageRef = useRef<unknown>(null);
 
   const {
-    translate,
     debugLog,
     offlineData,
     addOfflineUser,
@@ -235,10 +234,10 @@ export function UserProvider({
       if (data.type !== "error") {
         setConversationsAndSync(data.data.user_ids || []);
       } else {
-        toast.error(translate("ERROR_USER_CONTEXT_GET_CONVERSATIONS"));
+        toast.error("ERROR_USER_CONTEXT_GET_CONVERSATIONS");
       }
     });
-  }, [send, translate, setConversationsAndSync]);
+  }, [send, setConversationsAndSync]);
 
   useEffect(() => {
     setFailedMessagesAmount(0);
@@ -264,7 +263,7 @@ export function UserProvider({
         );
 
         if (!sharedSecret.success) {
-          toast.error(translate(sharedSecret.message));
+          toast.error("Failed to get shared secret for user.");
           if (!cancelled) {
             setCurrentReceiverSharedSecret("0");
           }
@@ -286,14 +285,7 @@ export function UserProvider({
     return () => {
       cancelled = true;
     };
-  }, [
-    currentReceiverUuid,
-    get,
-    get_shared_secret,
-    ownUuid,
-    privateKey,
-    translate,
-  ]);
+  }, [currentReceiverUuid, get, get_shared_secret, ownUuid, privateKey]);
 
   useEffect(() => {
     if (!isReady || chatsFetched) return;
@@ -310,10 +302,10 @@ export function UserProvider({
             last_message_at: 0,
           },
         ]);
-        toast.error(translate("ERROR_USER_CONTEXT_GET_CONVERSATIONS"));
+        toast.error("ERROR_USER_CONTEXT_GET_CONVERSATIONS");
       }
     });
-  }, [isReady, send, translate, setConversationsAndSync]);
+  }, [isReady, send, setConversationsAndSync]);
 
   useEffect(() => {
     if (!isReady || communitiesFetched) return;
@@ -326,14 +318,14 @@ export function UserProvider({
         setCommunitiesAndSync([
           {
             community_address: "error",
-            community_title: translate("ERROR_USER_CONTEXT_GET_COMMUNITIES"),
+            community_title: "ERROR_USER_CONTEXT_GET_COMMUNITIES",
             position: "0",
           },
         ]);
-        toast.error(translate("ERROR_USER_CONTEXT_GET_COMMUNITIES"));
+        toast.error("ERROR_USER_CONTEXT_GET_COMMUNITIES");
       }
     });
-  }, [isReady, send, translate, setCommunitiesAndSync]);
+  }, [isReady, send, setCommunitiesAndSync]);
 
   const handleSocketMessage = useEffectEvent(
     async (message: AdvancedSuccessMessage) => {
@@ -425,11 +417,11 @@ export function UserProvider({
       shouldToast: boolean
     ) => {
       if (shouldToast) {
-        toast.info(translate("UPDATE_AVAILABLE"), {
+        toast.info("There is an update available!", {
           duration: Infinity,
           dismissible: true,
           action: {
-            label: translate("DO_UPDATE"),
+            label: "Update",
             onClick: () => {
               electronAPI.doUpdate();
             },
@@ -468,7 +460,7 @@ export function UserProvider({
       unsubscribeUpdate?.();
       unsubscribeLogs?.();
     };
-  }, [translate]);
+  }, [debugLog]);
 
   return (
     <UserContext.Provider

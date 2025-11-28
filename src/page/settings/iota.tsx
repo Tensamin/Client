@@ -66,7 +66,7 @@ export default function Page() {
   const [tmpValue, setTmpValue] = useState("");
 
   const { send } = useSocketContext();
-  const { data, translate, set } = useStorageContext();
+  const { data, set } = useStorageContext();
 
   const loadRemoteSettings = useEffectEvent(() => {
     setLoading(true);
@@ -81,25 +81,27 @@ export default function Page() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-4">
-        <p>{translate("IOTA_PAGE_SYNC_SECTION_TITLE")}</p>
+        <p>{"Sync your settings with Iota"}</p>
         <div className="flex gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button disabled={loading || !value || value === ""}>
-                {translate("IOTA_PAGE_LOAD_BUTTON")}
+                {"Load"}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
-                  {translate("IOTA_PAGE_LOAD_SETTINGS_TITLE")}
+                  {"Are you sure you want to load this profile?"}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  {translate("IOTA_PAGE_LOAD_SETTINGS_DESCRIPTION")}
+                  {
+                    "This will replace your current settings! Make sure to save them first if you want to keep them."
+                  }
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
+                <AlertDialogCancel>{"Cancel"}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => {
                     toast.promise(
@@ -121,14 +123,14 @@ export default function Page() {
                         });
                       }),
                       {
-                        loading: translate("IOTA_PAGE_SETTINGS_LOADING"),
-                        success: translate("IOTA_PAGE_SETTINGS_LOAD_SUCCESS"),
-                        error: translate("IOTA_PAGE_SETTINGS_LOAD_FAILED"),
+                        loading: "Loading settings...",
+                        success: "Settings loaded",
+                        error: "Failed to load settings",
                       }
                     );
                   }}
                 >
-                  {translate("IOTA_PAGE_LOAD_BUTTON")}
+                  {"Load"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -144,12 +146,10 @@ export default function Page() {
                       ...data,
                       privateKey: "REDACTED",
                     } as StoredSettings),
-              }).then(() =>
-                toast.success(translate("IOTA_PAGE_SETTINGS_SAVED"))
-              );
+              }).then(() => toast.success("Settings saved"));
             }}
           >
-            {translate("IOTA_PAGE_SAVE_BUTTON")}
+            {"Save"}
           </Button>
           {loading ? (
             <Button
@@ -159,7 +159,7 @@ export default function Page() {
               aria-expanded={false}
               className="w-[200px] justify-between"
             >
-              {translate("IOTA_PAGE_PROFILES_LOADING")}
+              {"Loading profiles..."}
               <Icon.ChevronsUpDown className="opacity-50" />
             </Button>
           ) : (
@@ -171,22 +171,18 @@ export default function Page() {
                   aria-expanded={open}
                   className="w-[200px] justify-between"
                 >
-                  {value || translate("IOTA_PAGE_SELECT_PROFILE_PLACEHOLDER")}
+                  {value || "Select a profile"}
                   <Icon.ChevronsUpDown className="opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[200px] p-0">
                 <Command>
                   <CommandInput
-                    placeholder={translate(
-                      "IOTA_PAGE_SEARCH_PROFILE_PLACEHOLDER"
-                    )}
+                    placeholder={"Search profiles..."}
                     className="h-9"
                   />
                   <CommandList>
-                    <CommandEmpty>
-                      {translate("IOTA_PAGE_NO_PROFILE_FOUND")}
-                    </CommandEmpty>
+                    <CommandEmpty>{"No profiles found."}</CommandEmpty>
                     <CommandGroup>
                       {settings.map((setting) => (
                         <CommandItem
@@ -227,30 +223,24 @@ export default function Page() {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{translate("IOTA_PAGE_ADD_PROFILE_TOOLTIP")}</p>
+              <p>{"Create a new profile"}</p>
             </TooltipContent>
           </Tooltip>
           <Dialog open={newProfileOpen} onOpenChange={setNewProfileOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>
-                  {translate("IOTA_PAGE_ADD_PROFILE_TITLE")}
-                </DialogTitle>
+                <DialogTitle>{"Create profile"}</DialogTitle>
                 <DialogDescription>
-                  {translate("IOTA_PAGE_ADD_PROFILE_DESCRIPTION")}
+                  {"Name a profile so you can quickly load it later."}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="profileName">
-                    {translate("IOTA_PAGE_PROFILE_NAME_LABEL")}
-                  </Label>
+                  <Label htmlFor="profileName">{"Profile name"}</Label>
                   <Input
                     type="text"
                     id="profileName"
-                    placeholder={translate(
-                      "IOTA_PAGE_PROFILE_NAME_PLACEHOLDER"
-                    )}
+                    placeholder={"e.g. Profile 1"}
                     value={tmpValue}
                     onChange={(e) => setTmpValue(e.target.value)}
                   />
@@ -264,7 +254,7 @@ export default function Page() {
                     setNewProfileOpen(false);
                   }}
                 >
-                  {translate("CANCEL")}
+                  {"Cancel"}
                 </Button>
                 <Button
                   onClick={() => {
@@ -273,7 +263,7 @@ export default function Page() {
                     setNewProfileOpen(false);
                   }}
                 >
-                  {translate("IOTA_PAGE_ADD_PROFILE_BUTTON")}
+                  {"Add profile"}
                 </Button>
               </div>
             </DialogContent>
@@ -293,37 +283,35 @@ export default function Page() {
               }}
               //onCheckedChange={(value) => set("loadPrivateKey", value)}
             />
-            <Label htmlFor="loadPrivateKey">
-              {translate("IOTA_PAGE_INCLUDE_PRIVATE_KEY_LABEL")}
-            </Label>
+            <Label htmlFor="loadPrivateKey">{"Include private key"}</Label>
           </div>
           <div className="text-xs flex flex-col gap-1">
-            <p className="text-destructive">
-              {translate("IOTA_PAGE_INCLUDE_PRIVATE_KEY_WARNING_TITLE")}
-            </p>
+            <p className="text-destructive">{"This is not recommended!"}</p>
             <p className="text-muted-foreground w-120">
-              {translate("IOTA_PAGE_INCLUDE_PRIVATE_KEY_WARNING_DESCRIPTION")}
+              {
+                "Including your private key can act as a backup to restore your account and for quickly switching between accounts, but the securiy risks that come with it are significant. Only enable this option if you trust the Iota host."
+              }
             </p>
           </div>
           <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {translate("IOTA_PAGE_INCLUDE_PRIVATE_KEY_ALERT_TITLE")}
-                </AlertDialogTitle>
+                <AlertDialogTitle>{"Include private key?"}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  {translate("IOTA_PAGE_INCLUDE_PRIVATE_KEY_ALERT_DESCRIPTION")}
+                  {
+                    "Anyone with access to this profile can read your private key."
+                  }
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
+                <AlertDialogCancel>{"Cancel"}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => {
                     set("loadPrivateKey", true);
                     setDialogOpen(false);
                   }}
                 >
-                  {translate("IOTA_PAGE_INCLUDE_PRIVATE_KEY_ALERT_CONTINUE")}
+                  {"Continue"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

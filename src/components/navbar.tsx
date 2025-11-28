@@ -7,7 +7,6 @@ import * as Icon from "lucide-react";
 // Context Imports
 import { usePageContext } from "@/context/page";
 import { useUserContext } from "@/context/user";
-import { useStorageContext } from "@/context/storage";
 import { useCallContext } from "@/context/call";
 
 // Components
@@ -26,7 +25,6 @@ export function Navbar() {
   const { setPage, page } = usePageContext();
   const { failedMessagesAmount, currentReceiverUuid, get, conversations } =
     useUserContext();
-  const { translate } = useStorageContext();
   const { outerState, getCallToken, connect, setToken } = useCallContext();
   const [receiverUsername, setReceiverUsername] = useState("");
 
@@ -88,12 +86,9 @@ export function Navbar() {
               </HoverCardTrigger>
               <HoverCardContent className="w-full">
                 <div>
-                  {failedMessagesAmount +
-                    translate(
-                      failedMessagesAmount === 1
-                        ? "FAILED_MESSAGES_SINGLE"
-                        : "FAILED_MESSAGES_MULTIPLE"
-                    )}
+                  {failedMessagesAmount === 1
+                    ? "Failed to load 1 message"
+                    : `${failedMessagesAmount} messages failed to load`}
                 </div>
               </HoverCardContent>
             </HoverCard>

@@ -53,7 +53,7 @@ export function Box() {
   const isLoadingOlderRef = useRef(false);
   const initialLoadDoneRef = useRef(false);
 
-  const { translate } = useStorageContext();
+  useStorageContext();
   const { getMessages, addRealtimeMessageToBox, setAddRealtimeMessageToBox } =
     useMessageContext();
   const { currentReceiverUuid } = useUserContext();
@@ -259,16 +259,16 @@ export function Box() {
   // Auto scroll down only when NEW messages arrive (not when loading older messages)
   useEffect(() => {
     if (!initialLoadDoneRef.current) return;
-    
+
     const currentCount = messageGroups.length;
     const prevCount = lastMessageCountRef.current;
-    
+
     // Only scroll if we have more messages AND we're at the bottom
     // AND we're NOT loading older messages (page count hasn't increased)
     if (currentCount > prevCount && isAtBottom && !isLoadingOlderRef.current) {
       scrollToBottom();
     }
-    
+
     lastMessageCountRef.current = currentCount;
   }, [messageGroups.length, isAtBottom, scrollToBottom]);
 
@@ -288,12 +288,10 @@ export function Box() {
           //width={220}
           //height={220}
           src="/assets/images/megamind.png"
-          alt={translate("ERROR")}
+          alt={"Unknown Error"}
           className="w-55 h-55"
         />
-        <p className="text-xl">
-          {translate("ERROR_CONVERSATION_LOADING_FAILED")}
-        </p>
+        <p className="text-xl">{"No conversation?"}</p>
       </div>
     );
   }

@@ -67,7 +67,7 @@ export function MessageProvider({
 
   useEffect(() => {
     if (!lastMessage || lastMessage.type !== "message_live") return;
-    
+
     // Create a unique identifier for this message to prevent duplicates
     const messageId = `${lastMessage.id}-${lastMessage.data.sender_id}-${lastMessage.data.send_time}`;
     if (processedMessageRef.current === messageId) return;

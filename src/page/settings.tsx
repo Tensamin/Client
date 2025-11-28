@@ -31,62 +31,58 @@ import VideoPage from "@/page/settings/video";
 import SoundboardPage from "@/page/settings/soundboard";
 import NotificationsPage from "@/page/settings/notifications";
 import AccessabilityPage from "@/page/settings/accessability";
-import LanguagePage from "@/page/settings/language";
 import PremiumPage from "@/page/settings/premium";
 import DeveloperPage from "@/page/settings/developer";
 import { PageDiv } from "@/components/pageDiv";
 
 // Main
 export const Pages = [
-  "-account",
-  "iota",
-  "profile",
-  "privacy",
-  "-appearance",
-  "theme",
-  "css",
-  "layout",
-  "-general",
-  "audio",
-  "video",
-  "soundboard",
-  "notifications",
-  "accessability",
-  "language",
-  "premium",
-  "-advanced",
-  "developer",
+  "-Account",
+  "Iota",
+  "Profile",
+  "Privacy",
+  "-Appearance",
+  "Theme",
+  "CSS",
+  "Layout",
+  "-General",
+  "Audio",
+  "Video",
+  "Soundboard",
+  "Notifications",
+  "Accessability",
+  "Premium",
+  "-Advanced",
+  "Developer",
 ];
 
 function MainPage({ selected }: { selected: string }): React.JSX.Element {
   switch (selected) {
-    case "iota":
+    case "Iota":
       return <IotaPage />;
-    case "profile":
+    case "Profile":
       return <ProfilePage />;
-    case "privacy":
+    case "Privacy":
       return <PrivacyPage />;
-    case "theme":
+    case "Theme":
       return <ThemePage />;
-    case "css":
+    case "CSS":
       return <CssPage />;
-    case "layout":
+    case "Layout":
       return <LayoutPage />;
-    case "audio":
+    case "Audio":
       return <AudioPage />;
-    case "video":
+    case "Video":
       return <VideoPage />;
-    case "soundboard":
+    case "Soundboard":
       return <SoundboardPage />;
-    case "notifications":
+    case "Notifications":
       return <NotificationsPage />;
-    case "accessability":
+    case "Accessability":
       return <AccessabilityPage />;
-    case "language":
-      return <LanguagePage />;
-    case "premium":
+    case "Premium":
       return <PremiumPage />;
-    case "developer":
+    case "Developer":
       return <DeveloperPage />;
     default:
       return <div />;
@@ -102,7 +98,6 @@ function SettingsButton({
   selected?: string;
   setSelected?: (page: string) => void;
 }): React.JSX.Element {
-  const { translate } = useStorageContext();
   return (
     <Button
       className="w-full my-1"
@@ -112,14 +107,14 @@ function SettingsButton({
         setSelected(page);
       }}
     >
-      {translate("SETTINGS_PAGE_LABEL_" + page.toUpperCase())}
+      {page}
     </Button>
   );
 }
 
 export default function Page() {
   const { ownPing, iotaPing } = useSocketContext();
-  const { data, set, translate, clearAll } = useStorageContext();
+  const { data, set, clearAll } = useStorageContext();
   const { setPage } = usePageContext();
 
   const selected = data.lastSettingsMenu as string;
@@ -142,10 +137,7 @@ export default function Page() {
                     key={page}
                     className="select-none text-sm text-muted-foreground"
                   >
-                    {translate(
-                      "SETTINGS_PAGE_LABEL_" +
-                        page.toUpperCase().replace("-", "")
-                    )}
+                    {page.replaceAll("-", "")}
                   </div>
                 );
               return (
@@ -162,27 +154,28 @@ export default function Page() {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" className="w-full">
-                  {translate("SETTINGS_PAGE_LOGOUT_BUTTON_ACTION")}
+                  Logout
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
-                    {translate("SETTINGS_PAGE_LOGOUT_BUTTON_LABEL")}
+                    Are you sure you want to logout?
                   </AlertDialogTitle>
                   <AlertDialogDescription>
-                    {translate("SETTINGS_PAGE_LOGOUT_BUTTON_DESCRIPTION")}
+                    This will log you out of your account and delete all your
+                    settings.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => {
                       clearAll();
                       setPage("login");
                     }}
                   >
-                    {translate("SETTINGS_PAGE_LOGOUT_BUTTON_ACTION")}
+                    Logout
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -191,13 +184,12 @@ export default function Page() {
         </div>
         <div className="border-t mx-2">
           <div className="select-none text-sm text-muted-foreground pt-2">
-            {translate("SETTINGS_PAGE_LABEL_INFORMATION")}
+            Information
           </div>
           <div className="text-xs text-muted-foreground pt-1">
-            {/* Put ping numbers into the translate */}
-            <p>{translate("VERSION", packageJson.version)}</p>
-            <p>{translate("CLIENT_PING", ownPing + "ms")}</p>
-            <p>{translate("IOTA_PING", iotaPing + "ms")}</p>
+            <p>Version: v{packageJson.version}</p>
+            <p>Client Ping: {ownPing}ms</p>
+            <p>Iota Ping: {iotaPing}ms</p>
           </div>
         </div>
       </PageDiv>
@@ -209,7 +201,7 @@ export default function Page() {
                 key={page}
                 className="text-lg font-medium mb-4 leading-6 select-none"
               >
-                {translate("SETTINGS_PAGE_LABEL_" + page.toUpperCase())}
+                {page}
               </div>
             );
           return null;

@@ -45,7 +45,7 @@ type FormState = {
 const profileFormCache = new Map<string, FormState>();
 
 export default function Page() {
-  const { translate, debugLog } = useStorageContext();
+  const { debugLog } = useStorageContext();
   const { send } = useSocketContext();
   const { ownUuid, get, doCustomEdit, ownState, setOwnState } =
     useUserContext();
@@ -102,7 +102,7 @@ export default function Page() {
                   />
                 </div>
               </TooltipTrigger>
-              <TooltipContent>{translate("STATUS_" + ownState)}</TooltipContent>
+              <TooltipContent>{ownState}</TooltipContent>
             </Tooltip>
           )}
         </div>
@@ -140,7 +140,7 @@ export default function Page() {
                 });
               }}
             >
-              {translate("PROFILE_PAGE_REMOVE_AVATAR")}
+              Remove Avatar
             </Button>
           </div>
           <Select
@@ -148,15 +148,11 @@ export default function Page() {
             onValueChange={setOwnState}
             disabled={loading}
           >
-            <SelectTrigger className="w-full">
-              {translate("STATUS_" + ownState)}
-            </SelectTrigger>
+            <SelectTrigger className="w-full">{ownState}</SelectTrigger>
             <SelectContent>
-              <SelectItem value="ONLINE">
-                {translate("STATUS_ONLINE")}
-              </SelectItem>
-              <SelectItem value="IDLE">{translate("STATUS_IDLE")}</SelectItem>
-              <SelectItem value="DND">{translate("STATUS_DND")}</SelectItem>
+              <SelectItem value="ONLINE">ONLINE</SelectItem>
+              <SelectItem value="IDLE">IDLE</SelectItem>
+              <SelectItem value="DND">DND</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -206,21 +202,21 @@ export default function Page() {
               return next;
             });
           }}
-          placeholder={translate("PROFILE_PAGE_ABOUT")}
+          placeholder="Coffee enthusiast, cat lover, and part time superhero."
           className="resize-none h-35"
           disabled={loading}
         />
         <p
           className={`text-xs ${form.about.length > 200 && "text-destructive"}`}
         >
-          {translate("PROFILE_PAGE_ABOUT_COUNT", `${form.about.length}/200`)}
+          Characters: {form.about.length}/200
         </p>
       </div>
 
       <Button
         onClick={async () => {
           if (form.about.length > 200) {
-            toast.error(translate("ERROR_PROFILE_PAGE_UPDATE_FAILED"));
+            toast.error("Failed to update profile.");
             return;
           }
           setLoading(true);
@@ -248,10 +244,10 @@ export default function Page() {
 
             await send("client_changed", { user_state: ownState }, true);
 
-            toast.success(translate("PROFILE_PAGE_UPDATE_SUCCESS"));
+            toast.success("Profile updated successfully!");
           } catch (err: unknown) {
             debugLog("PROFILE_PAGE", "ERROR_PROFILE_PAGE_UPDATE_FAILED", err);
-            toast.error(translate("ERROR_PROFILE_PAGE_UPDATE_FAILED"));
+            toast.error("Failed to update profile.");
           } finally {
             setLoading(false);
           }
@@ -264,7 +260,7 @@ export default function Page() {
           form.status.length > 15
         }
       >
-        {loading ? <LoadingIcon invert /> : translate("SAVE")}
+        {loading ? <LoadingIcon invert /> : "Save"}
       </Button>
     </div>
   );

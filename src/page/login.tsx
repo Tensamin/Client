@@ -27,7 +27,7 @@ export default function Page() {
 
   const tuFileRef = React.useRef<HTMLInputElement>(null);
 
-  const { set, debugLog, translate, data } = useStorageContext();
+  const { set, debugLog, data } = useStorageContext();
   const { pageData } = usePageContext();
   debugLog("LOGIN_PAGE", "REASONE_FOR_LOGIN", pageData);
 
@@ -36,12 +36,12 @@ export default function Page() {
       set("uuid", uuid);
       set("privateKey", privateKey);
       if (uuid === "" || privateKey === "") {
-        toast.error(translate("ERROR_EMPTY_CREDENTIALS"));
+        toast.error("Empty Credentials Provided.");
       } else {
         //window.location.reload();
       }
     },
-    [set, translate]
+    [set]
   );
 
   useEffect(() => {
@@ -79,15 +79,15 @@ export default function Page() {
 
         const buf = Buffer.from(nextPrivateKey, "base64");
         if (buf.length !== 72)
-          toast.warning(translate("WARN_UNUSUAL_KEY_LENGTH"));
+          toast.warning("Your private key has an unusual length.");
         await login(uuid, nextPrivateKey);
       } catch {
-        toast.error(translate("ERROR_INVALID_TU_FILE"));
+        toast.error("Invalid .tu file provided.");
       } finally {
         setLoading(false);
       }
     },
-    [login, translate]
+    [login]
   );
 
   const handleDrop = useCallback(
@@ -110,15 +110,15 @@ export default function Page() {
 
         const buf = Buffer.from(nextPrivateKey, "base64");
         if (buf.length !== 72)
-          toast.warning(translate("WARN_UNUSUAL_KEY_LENGTH"));
+          toast.warning("Your private key has an unusual length.");
         await login(uuid, nextPrivateKey);
       } catch {
-        toast.error(translate("ERROR_INVALID_TU_FILE"));
+        toast.error("Invalid .tu file provided.");
       } finally {
         setLoading(false);
       }
     },
-    [login, translate]
+    [login]
   );
 
   const handleSubmit = useCallback(
@@ -141,11 +141,12 @@ export default function Page() {
         const uuid: string = uuidData.data.user_id;
 
         await login(uuid, privateKey);
-      } catch {
-        toast.error(translate("ERROR_LOGIN_UNKNOWN"));
+      } catch (err: unknown) {
+        toast.error("An unkown error occured.");
+        debugLog("LOGIN_PAGE", "LOGIN_ERROR", err);
       }
     },
-    [login, privateKey, translate]
+    [login, privateKey, debugLog]
   );
 
   return (
@@ -155,9 +156,9 @@ export default function Page() {
           <Card className="w-full md:w-100 gap-3">
             <CardHeader>
               <CardTitle className="select-none">
-                {translate("LOGIN_PAGE_TU_FILE_TITLE")}
+                Login using .tu file
                 <p className="text-xs text-muted-foreground/70 font-normal mt-2">
-                  {translate("LOGIN_PAGE_TU_FILE_RECOMMENDED")}
+                  Recommended
                 </p>
               </CardTitle>
             </CardHeader>
@@ -204,9 +205,7 @@ export default function Page() {
                     onDragLeave={() => setHover(false)}
                   />
                 )}
-                {hover
-                  ? translate("LOGIN_PAGE_TU_FILE_RELEASE")
-                  : translate("LOGIN_PAGE_TU_FILE_SELECT")}
+                {hover ? "Release to login" : "Select a .tu file"}
               </div>
             </CardContent>
           </Card>
@@ -214,7 +213,7 @@ export default function Page() {
           <Card className="transition-opacity duration-300 ease-in-out w-full md:w-100">
             <CardHeader>
               <CardTitle className="select-none">
-                {translate("LOGIN_PAGE_CREDENTIALS_TITLE")}
+                Login using credentials
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -224,32 +223,26 @@ export default function Page() {
                 autoComplete="on"
               >
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="username">
-                    {translate("LOGIN_PAGE_USERNAME_LABEL")}
-                  </Label>
+                  <Label htmlFor="username">Username</Label>
                   <Input
                     required
                     id="username"
                     type="text"
                     name="username"
                     autoComplete="username"
-                    placeholder={translate("LOGIN_PAGE_USERNAME_PLACEHOLDER")}
+                    placeholder="Enter a username..."
                     disabled={loading}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="password">
-                    {translate("LOGIN_PAGE_PRIVATE_KEY_LABEL")}
-                  </Label>
+                  <Label htmlFor="password">Private Key</Label>
                   <Input
                     required
                     id="password"
                     type="password"
                     name="password"
                     autoComplete="current-password"
-                    placeholder={translate(
-                      "LOGIN_PAGE_PRIVATE_KEY_PLACEHOLDER"
-                    )}
+                    placeholder="•••••••••••••••"
                     disabled={loading}
                     value={privateKey}
                     onChange={(e) => setPrivateKey(e.target.value)}
@@ -269,7 +262,7 @@ export default function Page() {
                       color="var(--background)"
                     />
                   ) : (
-                    translate("LOGIN_PAGE_SUBMIT_BUTTON")
+                    "Login"
                   )}
                 </Button>
               </form>
@@ -277,7 +270,7 @@ export default function Page() {
           </Card>
         </div>
         <div className="text-xs text-muted-foreground/75 w-full flex flex-col text-center">
-          <p>{translate("LOGIN_PAGE_TOS_NOTICE")}</p>
+          <p>By logging in you agree to our</p>
           <p>
             <a
               className="underline"
@@ -285,16 +278,16 @@ export default function Page() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {translate("LOGIN_PAGE_TERMS_LINK")}
+              Terms of Service
             </a>
-            {` ${translate("LOGIN_PAGE_AND")} `}
+            {" and "}
             <a
               className="underline"
               href={pp}
               target="_blank"
               rel="noopener noreferrer"
             >
-              {translate("LOGIN_PAGE_PRIVACY_LINK")}
+              Privacy Policy
             </a>
           </p>
         </div>

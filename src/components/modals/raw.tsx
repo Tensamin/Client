@@ -7,7 +7,6 @@ import type { TrackReference } from "@livekit/components-core";
 import { convertStringToInitials, getColorFor } from "@/lib/utils";
 
 // Context Imports
-import { useStorageContext } from "@/context/storage";
 import { useCallContext } from "@/context/call";
 
 // Components
@@ -30,11 +29,8 @@ import { Text } from "@/components/markdown/text";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import {
   Popover,
@@ -60,8 +56,6 @@ export function UserAvatar({
   loading?: boolean;
   className?: string;
 }) {
-  const { translate } = useStorageContext();
-
   return loading ? (
     <Skeleton
       className={`aspect-square select-none ${
@@ -116,7 +110,7 @@ export function UserAvatar({
               />
             </div>
           </TooltipTrigger>
-          <TooltipContent>{translate("STATUS_" + state)}</TooltipContent>
+          <TooltipContent>{state}</TooltipContent>
         </Tooltip>
       )}
     </div>
@@ -184,7 +178,6 @@ export function MediumModal({
   state?: string;
   calls: string[];
 }>) {
-  const { getCallToken, setToken, connect } = useCallContext();
   return loading ? (
     <Button
       data-slot="card"

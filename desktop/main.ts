@@ -32,16 +32,11 @@ type UpdateLogPayload = {
 // Helper Functions
 function emitUpdateAvailable(payload: UpdatePayload) {
   latestUpdatePayload = payload;
-
-  [mainWindow, updateWindow].forEach((windowInstance) => {
-    windowInstance?.webContents.send(UPDATE_AVAILABLE_CHANNEL, payload);
-  });
+  mainWindow?.webContents.send(UPDATE_AVAILABLE_CHANNEL, payload);
 }
 
 function emitUpdateLog(payload: UpdateLogPayload) {
-  [mainWindow, updateWindow].forEach((windowInstance) => {
-    windowInstance?.webContents.send(UPDATE_LOG_CHANNEL, payload);
-  });
+  mainWindow?.webContents.send(UPDATE_LOG_CHANNEL, payload);
 }
 
 function serializeErrorDetails(error: unknown) {
@@ -60,14 +55,12 @@ function serializeErrorDetails(error: unknown) {
 const FILENAME = fileURLToPath(import.meta.url);
 const DIRNAME = path.dirname(FILENAME);
 const RELEASES_URL = "https://github.com/Tensamin/Frontend/releases";
-const UPDATE_SERVER_HOST = "update.electronjs.org";
 const UPDATE_AVAILABLE_CHANNEL = "app:update-available";
 const UPDATE_LOG_CHANNEL = "app:update-log";
 const UPDATE_CHECK_INTERVAL_MS = 5 * 1000; // 5 seconds
 //const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 let mainWindow: BrowserWindow | null = null;
-let updateWindow: BrowserWindow | null = null;
 let latestUpdatePayload: UpdatePayload | null = null;
 let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
 let isUpdateDownloaded = false;
@@ -195,10 +188,6 @@ function createWindow() {
   mainWindow.on("ready-to-show", () => {
     mainWindow?.show();
     setupAutoUpdater();
-
-    if (updateWindow) {
-      updateWindow.close();
-    }
   });
 
   mainWindow.webContents.on("did-finish-load", () => {

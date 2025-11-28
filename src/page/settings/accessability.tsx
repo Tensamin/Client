@@ -5,7 +5,6 @@ import { useStorageContext } from "@/context/storage";
 export default function Page() {
   const {
     set,
-    translate,
     data: { reverseEnterInChats = false },
   } = useStorageContext();
 
@@ -16,9 +15,7 @@ export default function Page() {
         checked={reverseEnterInChats ? true : false}
         onCheckedChange={(value) => set("reverseEnterInChats", value)}
       />
-      <Label htmlFor="reverseEnterInChats">
-        {translate("SETTINGS_ACCESSABILITY_REVERSE_ENTER")}
-      </Label>
+      <Label htmlFor="reverseEnterInChats">Invert enter key behavior</Label>
     </div>
   );
 }

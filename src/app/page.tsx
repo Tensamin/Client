@@ -6,7 +6,6 @@ import { useState, useTransition, ViewTransition } from "react";
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
 import { usePageContext } from "@/context/page";
-import { useStorageContext } from "@/context/storage";
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,6 @@ import CallPage from "@/page/call";
 export default function Page() {
   const { ownUuid } = useCryptoContext();
   const { page, pageInstance } = usePageContext();
-  const { data } = useStorageContext();
   const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
     "CONVERSATIONS"
   );
@@ -35,42 +33,27 @@ export default function Page() {
         <UserModal key={ownUuid} uuid={ownUuid} size="big" />
         <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden mx-1 p-1">
           <div className="relative grid grid-cols-2 w-full gap-1">
-            {data.disableViewTransitions ? (
+            <ViewTransition>
               <SidebarListSwitcher
                 category={category}
                 setCategory={setCategory}
               />
-            ) : (
-              <ViewTransition>
-                <SidebarListSwitcher
-                  category={category}
-                  setCategory={setCategory}
-                />
-              </ViewTransition>
-            )}
+            </ViewTransition>
           </div>
         </div>
         <div className="scrollbar-hide flex-1">
-          {data.disableViewTransitions ? (
+          <ViewTransition>
             <SidebarList category={category} />
-          ) : (
-            <ViewTransition>
-              <SidebarList category={category} />
-            </ViewTransition>
-          )}
+          </ViewTransition>
         </div>
         <VoiceActions />
       </div>
       <div className="flex-1 h-full flex flex-col">
         <Navbar />
         <div className="flex-1 bg-background rounded-tl-xl border overflow-auto p-2">
-          {data.disableViewTransitions ? (
+          <ViewTransition name="page-vt">
             <PageSwitch page={page} instance={pageInstance} />
-          ) : (
-            <ViewTransition name="page-vt">
-              <PageSwitch page={page} instance={pageInstance} />
-            </ViewTransition>
-          )}
+          </ViewTransition>
         </div>
       </div>
     </div>
@@ -106,7 +89,6 @@ function SidebarListSwitcher({
     value: React.SetStateAction<"COMMUNITIES" | "CONVERSATIONS">
   ) => void;
 }) {
-  const { translate, data } = useStorageContext();
   const [, startTransition] = useTransition();
   return (
     <>
@@ -131,13 +113,13 @@ function SidebarListSwitcher({
             className="absolute inset-0 rounded-full bg-input/50 pointer-events-none border transition-opacity"
             style={{
               viewTransitionName:
-                category === cat && !data.disableViewTransitions
-                  ? "category-pill"
-                  : undefined,
+                category === cat ? "category-pill" : undefined,
               opacity: category === cat ? 1 : 0,
             }}
           />
-          <span className="relative z-10 text-sm flex">{translate(cat)}</span>
+          <span className="relative z-10 text-sm flex">
+            {cat === "COMMUNITIES" ? "Communities" : "Conversations"}
+          </span>
         </Button>
       ))}
     </>

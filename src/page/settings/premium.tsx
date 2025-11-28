@@ -5,12 +5,10 @@ import { useEffect, useState } from "react";
 
 // Context Imports
 import { useUserContext } from "@/context/user";
-import { useStorageContext } from "@/context/storage";
 
 // Main
 export default function Page() {
   const { get, ownUuid } = useUserContext();
-  const { translate } = useStorageContext();
   const [premiumInfo, setPremiumInfo] = useState<{
     level: string;
     expiresInDays: number;
@@ -43,17 +41,9 @@ export default function Page() {
 
   return (
     <div className="flex flex-col">
-      <p>
-        {translate("SETTINGS_PREMIUM_STATUS_LABEL")}{" "}
-        {translate(premiumInfo.level)}
-      </p>
+      <p>Status: {premiumInfo.level}</p>
       {premiumInfo.level !== "SETTINGS_PREMIUM_LEVEL_FREE" && (
-        <p>
-          {translate(
-            "SETTINGS_PREMIUM_REMAINING_DAYS",
-            String(premiumInfo.expiresInDays)
-          )}
-        </p>
+        <p>Days remaining: {premiumInfo.expiresInDays}</p>
       )}
     </div>
   );

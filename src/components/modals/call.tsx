@@ -107,7 +107,7 @@ export function VoiceActions() {
   const { disconnect } = useSubCallContext();
   const { name } = useRoomInfo();
   const { setPage } = usePageContext();
-  const { translate } = useStorageContext();
+  useStorageContext();
 
   // Connection Quality
   const { localParticipant } = useLocalParticipant();
@@ -252,7 +252,7 @@ export function VoiceActions() {
           className="flex justify-center flex-1"
           onClick={() => setPage("call")}
         >
-          <Icon.Expand /> {translate("VOICE_ACTIONS_EXPAND")}
+          <Icon.Expand /> {"Expand"}
         </Button>
         <Button
           variant="destructive"

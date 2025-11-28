@@ -114,7 +114,7 @@ function FitJson({
 }
 
 export default function Page() {
-  const { data, set, translate } = useStorageContext();
+  const { data, set } = useStorageContext();
 
   const entries = useMemo(
     () => Object.entries(data || {}).map(([key, value]) => ({ key, value })),
@@ -163,7 +163,7 @@ export default function Page() {
   const handleSaveEdit = useCallback(() => {
     if (!editingKey) return;
     if (!editValue.trim()) {
-      setEditError(translate("DEVELOPER_PAGE_EDIT_VALUE_REQUIRED"));
+      setEditError("Value is required.");
       return;
     }
     try {
@@ -173,9 +173,9 @@ export default function Page() {
       setEditValue("");
       setEditError(null);
     } catch {
-      setEditError(translate("DEVELOPER_PAGE_EDIT_VALUE_INVALID_JSON"));
+      setEditError("Value must be valid JSON (wrap strings in quotes).");
     }
-  }, [editValue, editingKey, set, translate]);
+  }, [editValue, editingKey, set]);
 
   const handleCancelEdit = useCallback(() => {
     setEditingKey(null);
@@ -198,16 +198,16 @@ export default function Page() {
   const handleCreateEntry = useCallback(() => {
     const key = newKey.trim();
     if (!key) {
-      setAddError(translate("DEVELOPER_PAGE_NEW_ENTRY_KEY_REQUIRED"));
+      setAddError("Key is required.");
       return;
     }
     const existingKeys = new Set(Object.keys(data || {}));
     if (existingKeys.has(key)) {
-      setAddError(translate("DEVELOPER_PAGE_NEW_ENTRY_KEY_EXISTS"));
+      setAddError("Key already exists.");
       return;
     }
     if (!newValue.trim()) {
-      setAddError(translate("DEVELOPER_PAGE_NEW_ENTRY_VALUE_REQUIRED"));
+      setAddError("Value is required.");
       return;
     }
     try {
@@ -218,9 +218,9 @@ export default function Page() {
       setNewValue("");
       setAddError(null);
     } catch {
-      setAddError(translate("DEVELOPER_PAGE_NEW_ENTRY_INVALID_JSON"));
+      setAddError("Value must be valid JSON (wrap strings in quotes).");
     }
-  }, [data, newKey, newValue, set, translate]);
+  }, [data, newKey, newValue, set]);
 
   return (
     <>
@@ -230,11 +230,11 @@ export default function Page() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={translate("DEVELOPER_PAGE_SEARCH_PLACEHOLDER")}
+              placeholder={"Search by key..."}
               className="min-w-0 flex-1 h-9 text-sm"
             />
             <Button size="sm" className="shrink-0" onClick={openAddDialog}>
-              {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_LABEL")}
+              {"New Entry"}
             </Button>
           </div>
         </div>
@@ -245,13 +245,13 @@ export default function Page() {
                 <thead className="bg-muted">
                   <tr className="border-b border-border">
                     <th className="px-2 py-1.5 text-left font-medium align-middle">
-                      {translate("DEVELOPER_PAGE_TABLE_KEY")}
+                      {"Key"}
                     </th>
                     <th className="px-2 py-1.5 text-left font-medium align-middle">
-                      {translate("DEVELOPER_PAGE_TABLE_VALUE")}
+                      {"Value"}
                     </th>
                     <th className="min-w-36 px-2 py-1.5 text-right font-medium align-middle">
-                      {translate("DEVELOPER_PAGE_TABLE_ACTION")}
+                      {"Action"}
                     </th>
                   </tr>
                 </thead>
@@ -271,9 +271,7 @@ export default function Page() {
                                 setEditError(null);
                               }}
                               className="min-h-10 h-auto w-full max-w-[35vw] max-h-[50vh] overflow-x-auto font-mono text-xs leading-tight"
-                              placeholder={translate(
-                                "DEVELOPER_PAGE_EDIT_VALUE_PLACEHOLDER"
-                              )}
+                              placeholder={'{"enabled": true}'}
                             />
                             {editError && (
                               <span className="text-xs text-destructive">
@@ -296,7 +294,7 @@ export default function Page() {
                               onClick={handleSaveEdit}
                               className="w-full sm:w-auto"
                             >
-                              {translate("SAVE")}
+                              {"Save"}
                             </Button>
                             <Button
                               size="sm"
@@ -304,7 +302,7 @@ export default function Page() {
                               className="w-full sm:w-auto"
                               onClick={handleCancelEdit}
                             >
-                              {translate("CANCEL")}
+                              {"Cancel"}
                             </Button>
                           </div>
                         ) : (
@@ -314,7 +312,7 @@ export default function Page() {
                               className="w-full sm:w-auto"
                               onClick={() => handleEdit(entry.key, entry.value)}
                             >
-                              {translate("EDIT")}
+                              {"Edit"}
                             </Button>
                             <Button
                               size="sm"
@@ -322,7 +320,7 @@ export default function Page() {
                               className="w-full sm:w-auto"
                               onClick={() => handleDelete(entry.key)}
                             >
-                              {translate("DELETE")}
+                              {"Delete"}
                             </Button>
                           </div>
                         )}
@@ -334,9 +332,7 @@ export default function Page() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center rounded-lg border p-4 text-center bg-card">
-              <div className="text-sm font-medium">
-                {translate("DEVELOPER_PAGE_NO_ENTRIES")}
-              </div>
+              <div className="text-sm font-medium">{"No entries found."}</div>
             </div>
           )}
         </div>
@@ -349,18 +345,14 @@ export default function Page() {
       >
         <DialogContent className="sm:max-w-md p-4">
           <DialogHeader>
-            <DialogTitle>
-              {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_LABEL")}
-            </DialogTitle>
+            <DialogTitle>{"New Entry"}</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_DESCRIPTION")}
+              {"Add a new entry to the database."}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="newKey">
-                {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_KEY_LABEL")}
-              </Label>
+              <Label htmlFor="newKey">{"Key"}</Label>
               <Input
                 id="newKey"
                 value={newKey}
@@ -368,15 +360,13 @@ export default function Page() {
                   setNewKey(e.target.value);
                   setAddError(null);
                 }}
-                placeholder={translate(
-                  "DEVELOPER_PAGE_NEW_ENTREY_DIALOG_KEY_EXAMPLE"
-                )}
+                placeholder={"someKey"}
                 className="h-9 text-sm"
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="newValue">
-                {translate("DEVELOPER_PAGE_NEW_ENTREY_DIALOG_VALUE_LABEL")}
+                {"Value (Strings need to be in quotes)"}
               </Label>
               <Textarea
                 id="newValue"
@@ -386,9 +376,7 @@ export default function Page() {
                   setAddError(null);
                 }}
                 className="h-44 max-h-[50vh] w-full resize-none overflow-auto font-mono text-xs leading-tight"
-                placeholder={translate(
-                  "DEVELOPER_PAGE_NEW_ENTREY_DIALOG_VALUE_EXAMPLE"
-                )}
+                placeholder={'e.g. {"enabled": true} or 42 or "hello"'}
               />
               {addError && (
                 <span className="text-xs text-destructive">{addError}</span>
@@ -397,9 +385,9 @@ export default function Page() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeAddDialog}>
-              {translate("CANCEL")}
+              {"Cancel"}
             </Button>
-            <Button onClick={handleCreateEntry}>{translate("CREATE")}</Button>
+            <Button onClick={handleCreateEntry}>{"Create"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -411,16 +399,14 @@ export default function Page() {
       >
         <AlertDialogContent className="sm:max-w-md p-4">
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {translate("DEVELOPER_PAGE_DELETE_ENTRY_LABEL")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{"Delete Entry"}</AlertDialogTitle>
             <AlertDialogDescription>
-              {translate("DEVELOPER_PAGE_DELETE_ENTRY_DESCRIPTION")}
+              {"Are you sure you want to delete this entry?"}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <Button variant="outline" onClick={handleCancelDelete}>
-              {translate("CANCEL")}
+              {"Cancel"}
             </Button>
             <Button
               variant="destructive"
@@ -432,7 +418,7 @@ export default function Page() {
                 handleCancelDelete();
               }}
             >
-              {translate("DEVELOPER_PAGE_DELETE_ENTRY_LABEL")}
+              {"Delete Entry"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

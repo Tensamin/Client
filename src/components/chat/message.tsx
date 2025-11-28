@@ -8,7 +8,6 @@ import { toast } from "sonner";
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
 import { useUserContext } from "@/context/user";
-import { useStorageContext } from "@/context/storage";
 
 // Components
 import {
@@ -106,7 +105,6 @@ export function MessageGroup({ data }: { data: MessageGroupType }) {
 
 function FinalMessage({ message: data }: { message: Message }) {
   const { decrypt } = useCryptoContext();
-  const { translate } = useStorageContext();
   const { ownUuid, currentReceiverSharedSecret, setFailedMessagesAmount } =
     useUserContext();
   const [content, setContent] = useState<string>("");
@@ -122,7 +120,7 @@ function FinalMessage({ message: data }: { message: Message }) {
     setIsDecrypting(isEncryptedMessage);
 
     if (data.content === "NO_MESSAGES_WITH_USER") {
-      setContent(translate("NO_MESSAGES_WITH_USER"));
+      setContent("You have no messages with this user.");
       setIsDecrypting(false);
       return () => {
         cancelled = true;
@@ -147,7 +145,7 @@ function FinalMessage({ message: data }: { message: Message }) {
         if (!sharedSecretData.success) {
           // @ts-expect-error Idk TypeScript is (still) dumb
           setFailedMessagesAmount((prev: number) => prev + 1);
-          setContent(translate("ERROR_DECRYPTING_MESSAGE"));
+          setContent("Error decrypting message");
           return;
         }
         setContent(sharedSecretData.message);
@@ -168,13 +166,7 @@ function FinalMessage({ message: data }: { message: Message }) {
     return () => {
       cancelled = true;
     };
-  }, [
-    data,
-    translate,
-    currentReceiverSharedSecret,
-    decrypt,
-    setFailedMessagesAmount,
-  ]);
+  }, [data, currentReceiverSharedSecret, decrypt, setFailedMessagesAmount]);
 
   return (
     <ContextMenu>
@@ -192,21 +184,21 @@ function FinalMessage({ message: data }: { message: Message }) {
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(content);
-              toast.success(translate("COPY_MESSAGE_TO_CLIPBOARD"));
+              toast.success("Message copied to clipboard!");
             } catch {
-              toast.error(translate("ERROR_COPY_MESSAGE_TO_CLIPBOARD"));
+              toast.error("Failed to copy message to clipboard.");
             }
           }}
         >
-          <Icon.Clipboard /> {translate("CHAT_MESSAGE_COPY")}
+          <Icon.Clipboard /> {"Copy"}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem disabled>
-          <Icon.Reply /> {translate("CHAT_MESSAGE_REPLY")}
+          <Icon.Reply /> {"Reply"}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem disabled={data.sender !== ownUuid || true}>
-          <Icon.Trash /> {translate("DELETE")}
+          <Icon.Trash /> {"Delete"}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

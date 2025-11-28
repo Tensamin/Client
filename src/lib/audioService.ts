@@ -1,276 +1,276 @@
 import {
-	SpeexWorkletNode,
-	loadSpeex,
-	RnnoiseWorkletNode,
-	loadRnnoise,
-	NoiseGateWorkletNode,
+  SpeexWorkletNode,
+  loadSpeex,
+  RnnoiseWorkletNode,
+  loadRnnoise,
+  NoiseGateWorkletNode,
 } from "@sapphi-red/web-noise-suppressor";
 
 export type NoiseSuppressionAlgorithm = "speex" | "rnnoise" | "noisegate";
 
 interface NoiseSuppressionOptions {
-	algorithm: NoiseSuppressionAlgorithm;
-	maxChannels?: number;
-	sensitivity?: number; // For noisegate
+  algorithm: NoiseSuppressionAlgorithm;
+  maxChannels?: number;
+  sensitivity?: number; // For noisegate
 }
 
 class AudioService {
-	private static instance: AudioService;
-	private audioContext: AudioContext | null = null;
-	private wasmBinaries: Map<string, ArrayBuffer> = new Map();
-	private workletLoaded: Map<string, boolean> = new Map();
+  private static instance: AudioService;
+  private audioContext: AudioContext | null = null;
+  private wasmBinaries: Map<string, ArrayBuffer> = new Map();
+  private workletLoaded: Map<string, boolean> = new Map();
 
-	// Current noise suppression setup
-	private currentProcessor: AudioWorkletNode | null = null;
-	private sourceNode: MediaStreamAudioSourceNode | null = null;
-	private destinationNode: MediaStreamAudioDestinationNode | null = null;
-	private isProcessing: boolean = false;
+  // Current noise suppression setup
+  private currentProcessor: AudioWorkletNode | null = null;
+  private sourceNode: MediaStreamAudioSourceNode | null = null;
+  private destinationNode: MediaStreamAudioDestinationNode | null = null;
+  private isProcessing: boolean = false;
 
-	public static getInstance(): AudioService {
-		if (!AudioService.instance) {
-			AudioService.instance = new AudioService();
-		}
-		return AudioService.instance;
-	}
+  public static getInstance(): AudioService {
+    if (!AudioService.instance) {
+      AudioService.instance = new AudioService();
+    }
+    return AudioService.instance;
+  }
 
-	private constructor() {
-		// private constructor for singleton
-	}
+  private constructor() {
+    // private constructor for singleton
+  }
 
-	public getAudioContext(): AudioContext {
-		if (!this.audioContext) {
-			const AudioContextClass =
-				window.AudioContext ||
-				(window as unknown as { webkitAudioContext: typeof AudioContext })
-					.webkitAudioContext;
-			this.audioContext = new AudioContextClass();
-		}
-		return this.audioContext;
-	}
+  public getAudioContext(): AudioContext {
+    if (!this.audioContext) {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
+      this.audioContext = new AudioContextClass();
+    }
+    return this.audioContext;
+  }
 
-	private async loadWasmBinary(
-		algorithm: "speex" | "rnnoise",
-	): Promise<ArrayBuffer> {
-		const cached = this.wasmBinaries.get(algorithm);
-		if (cached) {
-			return cached;
-		}
+  private async loadWasmBinary(
+    algorithm: "speex" | "rnnoise"
+  ): Promise<ArrayBuffer> {
+    const cached = this.wasmBinaries.get(algorithm);
+    if (cached) {
+      return cached;
+    }
 
-		const wasmPath = `/audio/wasm/${algorithm}.wasm`;
-		const simdPath = `/audio/wasm/${algorithm}_simd.wasm`;
+    const wasmPath = `/audio/wasm/${algorithm}.wasm`;
+    const simdPath = `/audio/wasm/${algorithm}_simd.wasm`;
 
-		try {
-			let wasmBinary: ArrayBuffer;
+    try {
+      let wasmBinary: ArrayBuffer;
 
-			if (algorithm === "speex") {
-				wasmBinary = await loadSpeex({ url: wasmPath });
-			} else {
-				wasmBinary = await loadRnnoise({
-					url: wasmPath,
-					simdUrl: simdPath,
-				});
-			}
+      if (algorithm === "speex") {
+        wasmBinary = await loadSpeex({ url: wasmPath });
+      } else {
+        wasmBinary = await loadRnnoise({
+          url: wasmPath,
+          simdUrl: simdPath,
+        });
+      }
 
-			this.wasmBinaries.set(algorithm, wasmBinary);
-			return wasmBinary;
-		} catch (error) {
-			console.error("AudioService: Failed to load WASM for", algorithm, error);
-			throw new Error(`Failed to load ${algorithm} WASM: ${error}`);
-		}
-	}
+      this.wasmBinaries.set(algorithm, wasmBinary);
+      return wasmBinary;
+    } catch (error) {
+      console.error("AudioService: Failed to load WASM for", algorithm, error);
+      throw new Error(`Failed to load ${algorithm} WASM: ${error}`);
+    }
+  }
 
-	private async loadWorklet(
-		algorithm: NoiseSuppressionAlgorithm,
-	): Promise<void> {
-		if (this.workletLoaded.get(algorithm)) {
-			return;
-		}
+  private async loadWorklet(
+    algorithm: NoiseSuppressionAlgorithm
+  ): Promise<void> {
+    if (this.workletLoaded.get(algorithm)) {
+      return;
+    }
 
-		const ctx = this.getAudioContext();
-		const workletPath = `/audio/worklets/${algorithm}Worklet.js`;
+    const ctx = this.getAudioContext();
+    const workletPath = `/audio/worklets/${algorithm}Worklet.js`;
 
-		try {
-			await ctx.audioWorklet.addModule(workletPath);
-			this.workletLoaded.set(algorithm, true);
-		} catch (error) {
-			console.error(
-				"AudioService: Failed to load worklet for",
-				algorithm,
-				error,
-			);
-			throw new Error(`Failed to load ${algorithm} worklet: ${error}`);
-		}
-	}
+    try {
+      await ctx.audioWorklet.addModule(workletPath);
+      this.workletLoaded.set(algorithm, true);
+    } catch (error) {
+      console.error(
+        "AudioService: Failed to load worklet for",
+        algorithm,
+        error
+      );
+      throw new Error(`Failed to load ${algorithm} worklet: ${error}`);
+    }
+  }
 
-	public async createNoiseProcessor(
-		options: NoiseSuppressionOptions,
-	): Promise<AudioWorkletNode> {
-		const ctx = this.getAudioContext();
+  public async createNoiseProcessor(
+    options: NoiseSuppressionOptions
+  ): Promise<AudioWorkletNode> {
+    const ctx = this.getAudioContext();
 
-		// Load worklet first
-		await this.loadWorklet(options.algorithm);
+    // Load worklet first
+    await this.loadWorklet(options.algorithm);
 
-		switch (options.algorithm) {
-			case "speex": {
-				const wasmBinary = await this.loadWasmBinary("speex");
-				return new SpeexWorkletNode(ctx, {
-					wasmBinary,
-					maxChannels: options.maxChannels || 2,
-				});
-			}
+    switch (options.algorithm) {
+      case "speex": {
+        const wasmBinary = await this.loadWasmBinary("speex");
+        return new SpeexWorkletNode(ctx, {
+          wasmBinary,
+          maxChannels: options.maxChannels || 2,
+        });
+      }
 
-			case "rnnoise": {
-				const wasmBinary = await this.loadWasmBinary("rnnoise");
-				return new RnnoiseWorkletNode(ctx, {
-					wasmBinary,
-					maxChannels: options.maxChannels || 2,
-				});
-			}
+      case "rnnoise": {
+        const wasmBinary = await this.loadWasmBinary("rnnoise");
+        return new RnnoiseWorkletNode(ctx, {
+          wasmBinary,
+          maxChannels: options.maxChannels || 2,
+        });
+      }
 
-			case "noisegate": {
-				return new NoiseGateWorkletNode(ctx, {
-					openThreshold: options.sensitivity || -50,
-					holdMs: 100,
-					maxChannels: options.maxChannels || 2,
-				});
-			}
+      case "noisegate": {
+        return new NoiseGateWorkletNode(ctx, {
+          openThreshold: options.sensitivity || -50,
+          holdMs: 100,
+          maxChannels: options.maxChannels || 2,
+        });
+      }
 
-			default:
-				throw new Error(`Unsupported algorithm: ${options.algorithm}`);
-		}
-	}
+      default:
+        throw new Error(`Unsupported algorithm: ${options.algorithm}`);
+    }
+  }
 
-	public async processStream(
-		inputStream: MediaStream,
-		options: NoiseSuppressionOptions,
-	): Promise<MediaStream> {
-		// DEBUG: Check if stream is providing audio
-		// if (typeof DEBUG_ENABLED !== "undefined" && DEBUG_ENABLED) {
-		// 	const streamHasAudio = await AudioServiceDebug.checkStreamAudio(inputStream, this.getAudioContext());
-		// 	if (!streamHasAudio) {
-		// 		console.warn("AudioService: Input stream has no audio data!");
-		// 	}
-		// }
+  public async processStream(
+    inputStream: MediaStream,
+    options: NoiseSuppressionOptions
+  ): Promise<MediaStream> {
+    // DEBUG: Check if stream is providing audio
+    // if (typeof DEBUG_ENABLED !== "undefined" && DEBUG_ENABLED) {
+    // 	const streamHasAudio = await AudioServiceDebug.checkStreamAudio(inputStream, this.getAudioContext());
+    // 	if (!streamHasAudio) {
+    // 		console.warn("AudioService: Input stream has no audio data!");
+    // 	}
+    // }
 
-		// Clean up any existing processing
-		this.cleanup();
+    // Clean up any existing processing
+    this.cleanup();
 
-		const ctx = this.getAudioContext();
+    const ctx = this.getAudioContext();
 
-		try {
-			// DEBUG: Check the input stream state in detail
-			// if (typeof DEBUG_ENABLED !== "undefined" && DEBUG_ENABLED) {
-			// 	AudioServiceDebug.logInputStreamDetails(inputStream);
-			// 	AudioServiceDebug.testDirectStreamAudio(inputStream);
-			// }
+    try {
+      // DEBUG: Check the input stream state in detail
+      // if (typeof DEBUG_ENABLED !== "undefined" && DEBUG_ENABLED) {
+      // 	AudioServiceDebug.logInputStreamDetails(inputStream);
+      // 	AudioServiceDebug.testDirectStreamAudio(inputStream);
+      // }
 
-			this.sourceNode = ctx.createMediaStreamSource(inputStream);
-			this.destinationNode = ctx.createMediaStreamDestination();
+      this.sourceNode = ctx.createMediaStreamSource(inputStream);
+      this.destinationNode = ctx.createMediaStreamDestination();
 
-			// DEBUG: Check if the MediaStreamSource is actually producing audio
-			// if (typeof DEBUG_ENABLED !== "undefined" && DEBUG_ENABLED) {
-			// 	AudioServiceDebug.testMediaStreamSourceOutput(this.sourceNode, ctx);
-			// }
+      // DEBUG: Check if the MediaStreamSource is actually producing audio
+      // if (typeof DEBUG_ENABLED !== "undefined" && DEBUG_ENABLED) {
+      // 	AudioServiceDebug.testMediaStreamSourceOutput(this.sourceNode, ctx);
+      // }
 
-			this.currentProcessor = await this.createNoiseProcessor(options);
+      this.currentProcessor = await this.createNoiseProcessor(options);
 
-			// Connect the audio graph
-			this.sourceNode.connect(this.currentProcessor);
-			this.currentProcessor.connect(this.destinationNode);
+      // Connect the audio graph
+      this.sourceNode.connect(this.currentProcessor);
+      this.currentProcessor.connect(this.destinationNode);
 
-			// DEBUG: Monitor input to the processor
-			// if (typeof DEBUG_ENABLED !== "undefined" && DEBUG_ENABLED) {
-			// 	AudioServiceDebug.monitorInputToProcessor(this.sourceNode, ctx);
-			// }
+      // DEBUG: Monitor input to the processor
+      // if (typeof DEBUG_ENABLED !== "undefined" && DEBUG_ENABLED) {
+      // 	AudioServiceDebug.monitorInputToProcessor(this.sourceNode, ctx);
+      // }
 
-			this.isProcessing = true;
+      this.isProcessing = true;
 
-			// Return the processed stream
-			return this.destinationNode.stream;
-		} catch (error) {
-			console.error("AudioService: Failed to process stream:", error);
-			this.cleanup();
-			throw new Error(`Failed to process stream: ${error}`);
-		}
-	}
+      // Return the processed stream
+      return this.destinationNode.stream;
+    } catch (error) {
+      console.error("AudioService: Failed to process stream:", error);
+      this.cleanup();
+      throw new Error(`Failed to process stream: ${error}`);
+    }
+  }
 
-	public connectAnalyzer(analyzer: AnalyserNode): void {
-		if (this.currentProcessor && this.isProcessing) {
-			console.log("AudioService: Connecting analyzer to processed audio...");
-			console.log("AudioService: Processor details:", {
-				processorType: this.currentProcessor.constructor.name,
-				numberOfInputs: this.currentProcessor.numberOfInputs,
-				numberOfOutputs: this.currentProcessor.numberOfOutputs,
-				context: this.currentProcessor.context.state,
-			});
-			console.log("AudioService: Analyzer details:", {
-				fftSize: analyzer.fftSize,
-				frequencyBinCount: analyzer.frequencyBinCount,
-				sampleRate: analyzer.context.sampleRate,
-			});
+  public connectAnalyzer(analyzer: AnalyserNode): void {
+    if (this.currentProcessor && this.isProcessing) {
+      console.log("AudioService: Connecting analyzer to processed audio...");
+      console.log("AudioService: Processor details:", {
+        processorType: this.currentProcessor.constructor.name,
+        numberOfInputs: this.currentProcessor.numberOfInputs,
+        numberOfOutputs: this.currentProcessor.numberOfOutputs,
+        context: this.currentProcessor.context.state,
+      });
+      console.log("AudioService: Analyzer details:", {
+        fftSize: analyzer.fftSize,
+        frequencyBinCount: analyzer.frequencyBinCount,
+        sampleRate: analyzer.context.sampleRate,
+      });
 
-			// Connect analyzer to the processor output
-			this.currentProcessor.connect(analyzer);
-			console.log("AudioService: Analyzer connected successfully");
+      // Connect analyzer to the processor output
+      this.currentProcessor.connect(analyzer);
+      console.log("AudioService: Analyzer connected successfully");
 
-			// DEBUG: Monitor processor output
-			// if (typeof DEBUG_ENABLED !== "undefined" && DEBUG_ENABLED) {
-			// 	AudioServiceDebug.monitorProcessorOutput(this.currentProcessor);
-			// }
-		} else {
-			console.warn("AudioService: No active processor to connect analyzer to", {
-				processor: !!this.currentProcessor,
-				isProcessing: this.isProcessing,
-			});
-		}
-	}
+      // DEBUG: Monitor processor output
+      // if (typeof DEBUG_ENABLED !== "undefined" && DEBUG_ENABLED) {
+      // 	AudioServiceDebug.monitorProcessorOutput(this.currentProcessor);
+      // }
+    } else {
+      console.warn("AudioService: No active processor to connect analyzer to", {
+        processor: !!this.currentProcessor,
+        isProcessing: this.isProcessing,
+      });
+    }
+  }
 
-	public disconnectAnalyzer(analyzer: AnalyserNode): void {
-		if (this.currentProcessor) {
-			try {
-				this.currentProcessor.disconnect(analyzer);
-			} catch {
-				console.warn(
-					"AudioService: Analyzer was not connected or already disconnected",
-				);
-			}
-		}
-	}
+  public disconnectAnalyzer(analyzer: AnalyserNode): void {
+    if (this.currentProcessor) {
+      try {
+        this.currentProcessor.disconnect(analyzer);
+      } catch {
+        console.warn(
+          "AudioService: Analyzer was not connected or already disconnected"
+        );
+      }
+    }
+  }
 
-	public cleanup(): void {
-		if (this.sourceNode) {
-			this.sourceNode.disconnect();
-			this.sourceNode = null;
-		}
+  public cleanup(): void {
+    if (this.sourceNode) {
+      this.sourceNode.disconnect();
+      this.sourceNode = null;
+    }
 
-		if (this.currentProcessor) {
-			this.currentProcessor.disconnect();
-			this.currentProcessor = null;
-		}
+    if (this.currentProcessor) {
+      this.currentProcessor.disconnect();
+      this.currentProcessor = null;
+    }
 
-		if (this.destinationNode) {
-			this.destinationNode.disconnect();
-			this.destinationNode = null;
-		}
+    if (this.destinationNode) {
+      this.destinationNode.disconnect();
+      this.destinationNode = null;
+    }
 
-		this.isProcessing = false;
-	}
+    this.isProcessing = false;
+  }
 
-	public isSupported(): boolean {
-		try {
-			const AudioContextClass =
-				window.AudioContext ||
-				(window as unknown as { webkitAudioContext: typeof AudioContext })
-					.webkitAudioContext;
-			return !!AudioContextClass && "audioWorklet" in AudioContext.prototype;
-		} catch {
-			return false;
-		}
-	}
+  public isSupported(): boolean {
+    try {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
+      return !!AudioContextClass && "audioWorklet" in AudioContext.prototype;
+    } catch {
+      return false;
+    }
+  }
 
-	public get processing(): boolean {
-		return this.isProcessing;
-	}
+  public get processing(): boolean {
+    return this.isProcessing;
+  }
 }
 
 export const audioService = AudioService.getInstance();

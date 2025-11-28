@@ -18,7 +18,7 @@ import { PageDiv, PageTextarea } from "@/components/pageDiv";
 
 // Main
 export default function Page() {
-  const { data, translate } = useStorageContext();
+  const { data } = useStorageContext();
   const { sendMessage } = useMessageContext();
   const { ownUuid } = useUserContext();
   const [client] = React.useState(() => new QueryClient());
@@ -72,7 +72,7 @@ export default function Page() {
             }
           }}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder={translate("CHAT_PAGE_INPUT_PLACEHOLDER")}
+          placeholder="Type a message..."
           className="w-full overflow-hidden min-h-10 max-h-52 placeholder:select-none"
         />
       </div>

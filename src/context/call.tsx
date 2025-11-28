@@ -10,16 +10,11 @@ import {
   useDisconnectButton,
 } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
-import { v7 } from "uuid";
 import { toast } from "sonner";
 import * as Icon from "lucide-react";
 
-// Lib Imports
-import { call_token } from "@/lib/endpoints";
-
 // Context Imports
 import { useStorageContext } from "@/context/storage";
-import { useCryptoContext } from "@/context/crypto";
 import { useSocketContext } from "@/context/socket";
 import { useUserContext } from "@/context/user";
 
@@ -54,7 +49,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const { data, set } = useStorageContext();
   const { lastMessage, send } = useSocketContext();
   const { get } = useUserContext();
-  const { ownUuid, privateKeyHash } = useCryptoContext();
 
   const [shouldConnect, setShouldConnect] = useState(false);
   const [token, setToken] = useState("");

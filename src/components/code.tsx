@@ -19,7 +19,7 @@ export function CodeEditor({
   const [showDiscardButtonRerenderKey, setShowDiscardButtonRerenderKey] =
     useState(0);
   const showDiscardButton = text !== code;
-  const { translate } = useStorageContext();
+  useStorageContext();
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
 
@@ -118,10 +118,10 @@ export function CodeEditor({
               setCode(text);
             }}
           >
-            {translate("DISCARD")}
+            {"Discard"}
           </Button>
         )}
-        <Button onClick={() => onSubmit(code)}>{translate("SAVE")}</Button>
+        <Button onClick={() => onSubmit(code)}>{"Save"}</Button>
       </div>
     </div>
   );

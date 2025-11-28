@@ -483,7 +483,9 @@ export function generateColors(
     "--accent": formatOut(colorScheme, accent),
     "--accent-foreground": schemeIsLight ? accentFg.oklch : accentFg.hex,
     "--sidebar": formatOut(colorScheme, background),
-    "--sidebar-foreground": schemeIsLight ? backgroundFg.oklch : backgroundFg.hex,
+    "--sidebar-foreground": schemeIsLight
+      ? backgroundFg.oklch
+      : backgroundFg.hex,
     "--sidebar-primary": formatOut(colorScheme, sidebarPrimary),
     "--sidebar-primary-foreground": schemeIsLight
       ? sidebarPrimaryFg.oklch

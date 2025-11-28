@@ -38,14 +38,13 @@ import {
   CardAction,
 } from "@/components/ui/card";
 import { Text } from "@/components/markdown/text";
-import { UpdatePayload } from "@/lib/types";
 
 // Main
 export default function Page() {
   const { send } = useSocketContext();
   const { refetchConversations, ownUuid, appUpdateInformation } =
     useUserContext();
-  const { translate } = useStorageContext();
+  const { debugLog } = useStorageContext();
 
   const [open, setOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
@@ -58,7 +57,9 @@ export default function Page() {
         .then((res) => res.json())
         .then(async (data) => {
           if (data.type === "error") {
-            toast.error(translate("ERROR_HOME_PAGE_ADD_CONVERSATION_FAILED"));
+            toast.error(
+              "Failed to add conversation (the user probably does not exist)"
+            );
           } else {
             await send("add_chat", {
               user_id: data.data.user_id,
@@ -70,13 +71,14 @@ export default function Page() {
           }
         });
     } catch (err: unknown) {
-      toast.error(translate("ERROR_HOME_PAGE_ADD_CONVERSATION_FAILED"));
+      toast.error("Failed to add conversation");
+      debugLog("HOME_PAGE", "ADD_CONVERSATION_ERROR", err);
     } finally {
       setOpen(false);
       setNewUsername("");
       setLoading(false);
     }
-  }, [newUsername, refetchConversations, send, translate]);
+  }, [newUsername, refetchConversations, send, debugLog]);
 
   const [updateLoading, setUpdateLoading] = useState(false);
   const [extraInfo, setExtraInfo] = useState<string | null>(null);
@@ -86,17 +88,14 @@ export default function Page() {
       <div className="flex gap-2">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm">
-              {translate("HOME_PAGE_ADD_CONVERSATION_LABEL")}
-            </Button>
+            <Button size="sm">Add Conversation</Button>
           </DialogTrigger>
           <DialogContent showCloseButton={false}>
             <DialogHeader>
-              <DialogTitle>
-                {translate("HOME_PAGE_ADD_CONVERSATION_LABEL")}
-              </DialogTitle>
+              <DialogTitle>Add Conversation</DialogTitle>
               <DialogDescription>
-                {translate("HOME_PAGE_ADD_CONVERSATION_DESCRIPTION")}
+                Create a new conversation with a user by entering their
+                username.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -109,9 +108,7 @@ export default function Page() {
                       addConversation();
                     }
                   }}
-                  placeholder={translate(
-                    "HOME_PAGE_ADD_CONVERSATION_INPUT_PLACEHOLDER"
-                  )}
+                  placeholder="Enter a username..."
                   className="w-full"
                 />
                 <div className="flex gap-2">
@@ -121,18 +118,14 @@ export default function Page() {
                     variant="outline"
                     onClick={() => setOpen(false)}
                   >
-                    {translate("CANCEL")}
+                    Cancel
                   </Button>
                   <Button
                     size="sm"
                     onClick={addConversation}
                     disabled={!newUsername || loading}
                   >
-                    {loading ? (
-                      <LoadingIcon invert />
-                    ) : (
-                      translate("HOME_PAGE_ADD_CONVERSATION_LABEL")
-                    )}
+                    {loading ? <LoadingIcon invert /> : "Add"}
                   </Button>
                 </div>
               </div>
@@ -140,33 +133,15 @@ export default function Page() {
           </DialogContent>
         </Dialog>
         <Button size="sm" disabled>
-          {translate("HOME_PAGE_ADD_COMMUNITY_LABEL")}
+          Add Community
         </Button>
       </div>
-      <p>{translate("HOME_PAGE_PLACEHOLDER_MESSAGE")}</p>
       <UserModal size="profile" uuid={ownUuid} />
-      <div>
-        {/*
-        {Array.from(participants.entries()).map(([userId]) => {
-          const user = participants.get(userId);
-          return (
-            userId !== ownUuid && (
-              <div className="flex items-center gap-2" key={userId}>
-                <Checkbox checked={user?.active} />
-                <span>
-                  {translate("HOME_PAGE_ACTIVE_STATUS")} [{userId}]
-                </span>
-              </div>
-            )
-          );
-        })}
-          */}
-      </div>
       <div className="mt-auto">
         {appUpdateInformation && (
           <Card className="bg-muted/70">
             <CardHeader>
-              <CardTitle>{translate("HOME_PAGE_UPDATE_AVAILABLE")}</CardTitle>
+              <CardTitle>Update Available</CardTitle>
               <CardDescription>
                 {appUpdateInformation.releaseName} (
                 {appUpdateInformation.version})
@@ -193,11 +168,7 @@ export default function Page() {
                     }
                   }}
                 >
-                  {updateLoading ? (
-                    <LoadingIcon invert />
-                  ) : (
-                    translate("HOME_PAGE_UPDATE_NOW")
-                  )}
+                  {updateLoading ? <LoadingIcon invert /> : "Update Now"}
                 </Button>
                 <Button
                   onClick={() => {

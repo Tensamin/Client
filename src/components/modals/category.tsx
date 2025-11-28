@@ -9,12 +9,12 @@ import { UserModal } from "@/components/modals/user";
 // Main
 export function Communities() {
   const { communities } = useUserContext();
-  const { translate } = useStorageContext();
+  useStorageContext();
   return (
     <div className="flex flex-col gap-2 pb-3">
       {communities.length === 0 && (
         <div className="text-sm text-center text-muted-foreground">
-          {translate("CATEGORY_NO_COMMUNITIES")}
+          {"No communities"}
         </div>
       )}
       {communities.map((community) => (
@@ -32,12 +32,12 @@ export function Communities() {
 
 export function Conversations() {
   const { conversations } = useUserContext();
-  const { translate } = useStorageContext();
+  useStorageContext();
   return (
     <div className="flex flex-col gap-2 pb-3">
       {conversations.length === 0 && (
         <div className="text-sm text-center text-muted-foreground">
-          {translate("CATEGORY_NO_CONVERSATIONS")}
+          {"No conversations"}
         </div>
       )}
       {conversations.map((conversation) => (

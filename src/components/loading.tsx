@@ -28,33 +28,31 @@ import { MotionDivWrapper } from "@/components/animation/presence";
 
 // Main
 function ClearButton() {
-  const { translate, clearAll } = useStorageContext();
+  const { clearAll } = useStorageContext();
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline">
-          {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
-        </Button>
+        <Button variant="outline">{"Clear Storage"}</Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
-          </AlertDialogTitle>
+          <AlertDialogTitle>{"Clear Storage"}</AlertDialogTitle>
           <AlertDialogDescription>
-            {translate("RESCUE_CLEAR_STORAGE_BUTTON_DESCRIPTION")}
+            {
+              "This will clear all your settings and log you out of your account."
+            }
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <div className="w-full" />
-          <AlertDialogCancel>{translate("CANCEL")}</AlertDialogCancel>
+          <AlertDialogCancel>{"Cancel"}</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
               clearAll();
               window.location.reload();
             }}
           >
-            {translate("RESCUE_CLEAR_STORAGE_BUTTON_LABEL")}
+            {"Clear Storage"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -63,10 +61,10 @@ function ClearButton() {
 }
 
 function BypassButton() {
-  const { setBypass, bypass, translate } = useStorageContext();
+  const { setBypass, bypass } = useStorageContext();
   return (
     <Button variant="outline" onClick={() => setBypass(true)} disabled={bypass}>
-      {translate("RESCUE_BYPASS_BUTTON_LABEL")}
+      {"Bypass Screen"}
     </Button>
   );
 }
@@ -79,7 +77,7 @@ export function Loading({
   extra?: string;
 }) {
   const isError = (message?.split("_")[0] ?? "") === "ERROR";
-  const { data, translate } = useStorageContext();
+  const { data } = useStorageContext();
 
   const [showClearButton, setShowClearButton] = useState(false);
 
@@ -93,8 +91,8 @@ export function Loading({
 
   return (
     <RawLoading
-      message={translate(message as string) || "NO_MESSAGE"}
-      extra={translate(extra as string) || ""}
+      message={message || "No Message"}
+      extra={extra || ""}
       isError={isError}
       debug={(data?.debug as boolean) || false}
       addBypassButton={(data?.enableLockScreenBypass as boolean) || false}
