@@ -63,7 +63,8 @@ const RELEASES_URL = "https://github.com/Tensamin/Frontend/releases";
 const UPDATE_SERVER_HOST = "update.electronjs.org";
 const UPDATE_AVAILABLE_CHANNEL = "app:update-available";
 const UPDATE_LOG_CHANNEL = "app:update-log";
-const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+const UPDATE_CHECK_INTERVAL_MS = 5 * 1000; // 5 seconds
+//const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 let mainWindow: BrowserWindow | null = null;
 let updateWindow: BrowserWindow | null = null;
