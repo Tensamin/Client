@@ -26,9 +26,7 @@ import PrivacyPage from "@/page/settings/privacy";
 import ThemePage from "@/page/settings/theme";
 import CssPage from "@/page/settings/css";
 import LayoutPage from "@/page/settings/layout";
-import AudioPage from "@/page/settings/audio";
-import VideoPage from "@/page/settings/video";
-import SoundboardPage from "@/page/settings/soundboard";
+import CallsPage from "@/page/settings/calls";
 import NotificationsPage from "@/page/settings/notifications";
 import AccessabilityPage from "@/page/settings/accessability";
 import PremiumPage from "@/page/settings/premium";
@@ -47,9 +45,7 @@ export const Pages = [
   "CSS",
   "Layout",
   "-General",
-  "Audio",
-  "Video",
-  "Soundboard",
+  "Calls",
   "Notifications",
   "Accessability",
   "Premium",
@@ -71,12 +67,8 @@ function MainPage({ selected }: { selected: string }): React.JSX.Element {
       return <CssPage />;
     case "Layout":
       return <LayoutPage />;
-    case "Audio":
-      return <AudioPage />;
-    case "Video":
-      return <VideoPage />;
-    case "Soundboard":
-      return <SoundboardPage />;
+    case "Calls":
+      return <CallsPage />;
     case "Notifications":
       return <NotificationsPage />;
     case "Accessability":

@@ -37,8 +37,7 @@ export default function Page() {
   ];
 
   return (
-    <div className="flex flex-col">
-      <SettingsPageTitle text="Screen Share Settings" />
+    <>
       <div className="flex flex-col gap-3">
         {premiumSettings.map((option) => (
           <div key={option.key} className="flex flex-col gap-2">
@@ -63,6 +62,6 @@ export default function Page() {
       <p className="text-muted-foreground text-sm mt-5">
         This menu is a little wierd, it will get reworked in the future
       </p>
-    </div>
+    </>
   );
 }

@@ -168,13 +168,12 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         sampleRate: (data.call_sampleRate as number) ?? 48000,
         sampleSize: (data.call_sampleSize as number) ?? 16,
         deviceId: (data.call_inputDeviceID as string) ?? "default",
+        processor: audioService.getProcessor(),
       },
       audioOutput: {
         deviceId: (data.call_outputDeviceID as string) ?? "default",
       },
-      webAudioMix: {
-        audioContext: audioService.getAudioContext(),
-      },
+      webAudioMix: true,
       loggerName: "CALL_CONTEXT",
     });
     debugLog("CALL_XONTEXT", "ROOM_CREATED", roomRef.current);
@@ -362,7 +361,13 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     debugLog("SUB_CALL", "TOGGLE_MUTE_END", {
       isMicrophoneEnabled: !isMicrophoneEnabled,
     });
-  }, [microphoneToggle, localParticipant, isMicrophoneEnabled, isDeafened, debugLog]);
+  }, [
+    microphoneToggle,
+    localParticipant,
+    isMicrophoneEnabled,
+    isDeafened,
+    debugLog,
+  ]);
 
   // Toggle Deafen
   const toggleDeafen = useCallback(async () => {
@@ -457,7 +462,9 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       {
         event: RoomEvent.ConnectionQualityChanged,
         handler: (participant, quality) => {
-          const participantObj = participant as { identity?: string } | undefined;
+          const participantObj = participant as
+            | { identity?: string }
+            | undefined;
           debugLog("SUB_CALL", "EVENT_CONN_QUALITY", {
             participant: participantObj?.identity,
             quality,

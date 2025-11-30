@@ -184,10 +184,3 @@ function SwitchWithLabel({
     </div>
   );
 }
-
-/*
-
-deviceId: (data.call_outputDeviceID as string) ?? undefined,
-deviceId: (data.call_inputDeviceID as string) ?? undefined,
-
-*/

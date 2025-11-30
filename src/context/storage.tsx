@@ -18,14 +18,16 @@ function migrateNsState(nsState: unknown): number {
     return 2;
   }
 
-  // Valid values: 0 (off), 2 (speex), 3 (rnnoise), 4 (speedx + rnnoise)
+  // Valid values: 0 (off), 2 (speex), 3 (rnnoise)
   // Default to 0 if undefined or invalid
-  if (
-    currentNsState === 0 ||
-    currentNsState === 2 ||
-    currentNsState === 3 ||
-    currentNsState === 4
-  ) {
+  // Translation: keep allowed values, and map the legacy combined option (4)
+  // to RNNoise (3) now that the combined 'speedx + rnnoise' option was removed.
+  if (currentNsState === 4) {
+    console.log("Storage: Migrating nsState from 4 (speedx + rnnoise) to 3 (rnnoise)");
+    return 3;
+  }
+
+  if (currentNsState === 0 || currentNsState === 2 || currentNsState === 3) {
     return currentNsState;
   }
 

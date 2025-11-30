@@ -5,12 +5,10 @@ import {
   loadRnnoise,
   NoiseGateWorkletNode,
 } from "@sapphi-red/web-noise-suppressor";
+import type { TrackProcessor, Track } from "livekit-client";
+import type { AudioProcessorOptions } from "livekit-client";
 
-export type NoiseSuppressionAlgorithm =
-  | "speex"
-  | "rnnoise"
-  | "noisegate"
-  | "speedx_rnnoise";
+export type NoiseSuppressionAlgorithm = "speex" | "rnnoise" | "noisegate";
 
 interface NoiseSuppressionOptions {
   algorithm: NoiseSuppressionAlgorithm;
@@ -103,7 +101,9 @@ class AudioService {
         ? navigator.mediaDevices.getSupportedConstraints()
         : ({} as MediaTrackSupportedConstraints);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supportsVoiceIsolation = !!((getSupportedConstraints as any)?.voiceIsolation === true);
+    const supportsVoiceIsolation = !!(
+      (getSupportedConstraints as any)?.voiceIsolation === true
+    );
 
     switch (algorithm) {
       case "off":
@@ -116,14 +116,8 @@ class AudioService {
       case "speex":
       case "rnnoise":
       case "noisegate":
-      case "speedx_rnnoise":
-        return {
-          ...baseConstraints,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          ...(supportsVoiceIsolation ? { voiceIsolation: true } : {}),
-        };
+      // 'speedx_rnnoise' option removed — both rnnoise and speex continue
+      // to use the same recommended constraints when selected separately.
       default:
         return {
           ...baseConstraints,
@@ -180,14 +174,7 @@ class AudioService {
     options: NoiseSuppressionOptions
   ): Promise<AudioWorkletNode> {
     const ctx = this.getAudioContext();
-    // Ensure the required worklets are loaded. For combined algorithms, load
-    // the worklets for both RNNoise and Speex to support the chaining.
-    if (options.algorithm === "speedx_rnnoise") {
-      await this.loadWorklet("rnnoise");
-      await this.loadWorklet("speex");
-    } else {
-      await this.loadWorklet(options.algorithm);
-    }
+    await this.loadWorklet(options.algorithm);
 
     switch (options.algorithm) {
       case "speex": {
@@ -204,18 +191,8 @@ class AudioService {
           maxChannels: options.maxChannels || 2,
         });
       }
-      case "speedx_rnnoise": {
-        // Return RNNoise node here when requested as a single processor; the
-        // actual combined chain is handled by processStream which will create
-        // both nodes and chain them. Returning an RNNoise node here is a
-        // sensible fallback and allows callers that expect a single node to
-        // receive the first suppression node in the chain.
-        const wasmBinary = await this.loadWasmBinary("rnnoise");
-        return new RnnoiseWorkletNode(ctx, {
-          wasmBinary,
-          maxChannels: options.maxChannels || 2,
-        });
-      }
+      // Combined RNNoise + SpeedX removed — createNoiseProcessor only
+      // creates single processor instances for speex, rnnoise, and noisegate.
       case "noisegate": {
         return new NoiseGateWorkletNode(ctx, {
           openThreshold: options.sensitivity || -50,
@@ -278,8 +255,6 @@ class AudioService {
     this.cleanup();
     const ctx = this.getAudioContext();
 
-    // CRITICAL FIX: Ensure context is running.
-    // Without this, the worklets will be silent if autoplay policy blocked the context.
     if (ctx.state === "suspended") {
       await ctx.resume();
     }
@@ -288,42 +263,19 @@ class AudioService {
       this.sourceNode = ctx.createMediaStreamSource(inputStream);
       this.destinationNode = ctx.createMediaStreamDestination();
 
-      // Special handling for combined algorithms that require multiple
-      // processors chained. If we requested speedx_rnnoise, build the
-      // RNNoise -> Speex (SpeedX) chain. The createNoiseProcessor can be used
-      // to construct each processor individually.
-      if (options.algorithm === "speedx_rnnoise") {
-        const rnnoiseOptions = { algorithm: "rnnoise" as NoiseSuppressionAlgorithm, maxChannels: options.maxChannels };
-        const speexOptions = { algorithm: "speex" as NoiseSuppressionAlgorithm, maxChannels: options.maxChannels };
-        const rnNode = await this.createNoiseProcessor(rnnoiseOptions);
-        const spNode = await this.createNoiseProcessor(speexOptions);
-        this.currentProcessor = rnNode;
-        this.currentSecondProcessor = spNode;
-        // chain: source -> rnNode -> spNode -> (optional gate) -> destination
-        this.sourceNode.connect(this.currentProcessor);
-        this.currentProcessor.connect(this.currentSecondProcessor);
-        console.debug("AudioService: Created RNNoise -> SpeedX (Speex) processing chain.");
-        if (gateOptions) {
-          this.currentGateProcessor = await this.createAudioGate(gateOptions);
-          this.currentSecondProcessor.connect(this.currentGateProcessor);
-          this.currentGateProcessor.connect(this.destinationNode);
-        } else {
-          this.currentSecondProcessor.connect(this.destinationNode);
-        }
-      } else {
-        this.currentProcessor = await this.createNoiseProcessor(options);
-      }
+      // Create a single noise suppression processor instance (Speex / RNNoise
+      // / NoiseGate). The combined 'speedx_rnnoise' chain has been removed
+      // in favor of running algorithms individually.
+      this.currentProcessor = await this.createNoiseProcessor(options);
 
-      if (options.algorithm !== "speedx_rnnoise") {
-        if (gateOptions) {
-          this.currentGateProcessor = await this.createAudioGate(gateOptions);
-          this.sourceNode.connect(this.currentProcessor);
-          this.currentProcessor.connect(this.currentGateProcessor);
-          this.currentGateProcessor.connect(this.destinationNode);
-        } else {
-          this.sourceNode.connect(this.currentProcessor);
-          this.currentProcessor.connect(this.destinationNode);
-        }
+      if (gateOptions) {
+        this.currentGateProcessor = await this.createAudioGate(gateOptions);
+        this.sourceNode.connect(this.currentProcessor);
+        this.currentProcessor.connect(this.currentGateProcessor);
+        this.currentGateProcessor.connect(this.destinationNode);
+      } else {
+        this.sourceNode.connect(this.currentProcessor);
+        this.currentProcessor.connect(this.destinationNode);
       }
 
       this.isProcessing = true;
@@ -358,6 +310,87 @@ class AudioService {
       !!(window.AudioContext || (window as any).webkitAudioContext) &&
       !!window.AudioWorklet
     );
+  }
+
+  public getProcessor(): TrackProcessor<
+    Track.Kind.Audio,
+    AudioProcessorOptions
+  > {
+    const self = this;
+    let originalTrack: MediaStreamTrack | undefined = undefined;
+    let processedStream: MediaStream | undefined = undefined;
+
+    const setProcessedTrackFromStream = (stream?: MediaStream) => {
+      (processor as any).processedTrack = stream?.getAudioTracks()?.[0];
+      processedStream = stream;
+    };
+
+    const processor: TrackProcessor<Track.Kind.Audio, AudioProcessorOptions> = {
+      name: "tensamin-audio-processor",
+      processedTrack: undefined,
+
+      async init(opts) {
+        if (!opts || !opts.track)
+          throw new TypeError("Processor init requires options.track");
+        originalTrack = opts.track;
+        const inputStream = new MediaStream([originalTrack]);
+
+        const ctx = self.getAudioContext();
+        if (ctx.state === "suspended") await ctx.resume();
+
+        try {
+          const algorithm: any = self.isSupported() ? "rnnoise" : "noisegate";
+          const channelCount = Math.max(opts.kind === "audio" ? 1 : 1, 1);
+          const processed = await self.processStream(inputStream, {
+            algorithm,
+            maxChannels: channelCount,
+          });
+          setProcessedTrackFromStream(processed);
+        } catch (err) {
+          console.error("audioService.getProcessor.init failed", err);
+          setProcessedTrackFromStream(undefined);
+          throw err;
+        }
+      },
+
+      async restart(opts) {
+        if (!opts || !opts.track)
+          throw new TypeError("Processor restart requires options.track");
+        try {
+          processedStream?.getTracks().forEach((t) => t.stop());
+        } catch {}
+
+        originalTrack = opts.track as MediaStreamTrack;
+        const inputStream = new MediaStream([originalTrack]);
+
+        try {
+          const algorithm: any = self.isSupported() ? "rnnoise" : "noisegate";
+          const channelCount = 1;
+          const processed = await self.processStream(inputStream, {
+            algorithm,
+            maxChannels: channelCount,
+          });
+          setProcessedTrackFromStream(processed);
+        } catch (err) {
+          console.error("audioService.getProcessor.restart failed", err);
+          setProcessedTrackFromStream(undefined);
+          throw err;
+        }
+      },
+
+      // Cleanup
+      async destroy() {
+        try {
+          processedStream?.getTracks().forEach((t) => t.stop());
+        } catch {}
+        setProcessedTrackFromStream(undefined);
+        self.cleanup();
+      },
+
+      onPublish(_pub?: unknown) {},
+    } as TrackProcessor<Track.Kind.Audio, AudioProcessorOptions>;
+
+    return processor;
   }
 }
 
