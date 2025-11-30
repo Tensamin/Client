@@ -355,7 +355,7 @@ export function CallModal({
 }
 
 export function CallInteraction({ callId }: { callId: string }) {
-  const { getCallToken, setToken, connect } = useCallContext();
+  const { getCallToken, connect } = useCallContext();
 
   return (
     <div className="flex flex-col gap-3">
@@ -363,8 +363,7 @@ export function CallInteraction({ callId }: { callId: string }) {
       <Button
         onClick={() => {
           getCallToken(callId).then((token) => {
-            setToken(token);
-            connect();
+            connect(token);
           });
         }}
       >

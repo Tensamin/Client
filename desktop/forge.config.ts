@@ -76,10 +76,16 @@ const config: ForgeConfig = {
   hooks: {
     postMake: async (_, makeResults) => {
       const arch = process.env.ARCH || os.arch();
+      const excludePatterns = ["RELEASES"];
 
       for (const result of makeResults) {
         for (const i in result.artifacts) {
           const artifactPath = result.artifacts[i];
+          if (
+            excludePatterns.some((pattern) => artifactPath.includes(pattern))
+          ) {
+            continue;
+          }
           const dir = path.dirname(artifactPath);
           const ext = path.extname(artifactPath);
           const name = path.basename(artifactPath, ext);

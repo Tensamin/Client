@@ -71,15 +71,15 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [outerState, setOuterState] = useState("DISCONNECTED");
 
   // Connect function
-  const connect = useCallback(() => {
-    debugLog("CALL_PROVIDER", "CONNECTING");
-    if (!token || token === "error") {
-      toast.error("Missing call token");
-      return;
-    }
-    setOuterState("CONNECTING");
-    setShouldConnect(true);
-  }, [debugLog, token]);
+  const connect = useCallback(
+    (token: string) => {
+      debugLog("CALL_PROVIDER", "CONNECTING");
+      setOuterState("CONNECTING");
+      setToken(token);
+      setShouldConnect(true);
+    },
+    [debugLog, setToken]
+  );
 
   // Disconnect function
   const disconnect = useCallback(() => {
@@ -147,8 +147,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     setNewCallWidgetOpen(false);
     if (!newCallData?.call_id) return;
     getCallToken(newCallData.call_id).then((token) => {
-      setToken(token);
-      connect();
+      connect(token);
     });
   }, [newCallData, getCallToken, connect, debugLog]);
 
@@ -159,7 +158,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         getCallToken,
         shouldConnect,
         outerState,
-        setToken,
         connect,
         setOuterState,
         setShouldConnect,
@@ -235,7 +233,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
 // Sub Provider Component
 function SubCallProvider({ children }: { children: React.ReactNode }) {
-  const { connect, shouldConnect } = useCallContext();
+  const { shouldConnect } = useCallContext();
   const { data, debugLog } = useStorageContext();
 
   const room = useRoomContext();
@@ -439,7 +437,6 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   return (
     <SubCallContext.Provider
       value={{
-        connect: () => connect(),
         toggleMute,
         isDeafened,
         toggleDeafen,
@@ -457,15 +454,13 @@ type CallContextValue = {
   getCallToken: (callId: string) => Promise<string>;
   shouldConnect: boolean;
   outerState: string;
-  setToken: (input: string) => void;
-  connect: () => void;
+  connect: (token: string) => void;
   setOuterState: (input: string) => void;
   setShouldConnect: (input: boolean) => void;
   disconnect: () => void;
 };
 
 type SubCallContextValue = {
-  connect: () => void;
   toggleMute: () => void;
   isDeafened: boolean;
   toggleDeafen: () => void;

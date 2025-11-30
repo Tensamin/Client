@@ -25,7 +25,7 @@ export function Navbar() {
   const { setPage, page } = usePageContext();
   const { failedMessagesAmount, currentReceiverUuid, get, conversations } =
     useUserContext();
-  const { outerState, getCallToken, connect, setToken } = useCallContext();
+  const { outerState, getCallToken, connect } = useCallContext();
   const [receiverUsername, setReceiverUsername] = useState("");
 
   useEffect(() => {
@@ -113,8 +113,7 @@ export function Navbar() {
                   variant="outline"
                   onClick={() => {
                     getCallToken(v7()).then((token) => {
-                      setToken(token);
-                      connect();
+                      connect(token);
                     });
                   }}
                   disabled={
