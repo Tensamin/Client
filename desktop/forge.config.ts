@@ -3,6 +3,7 @@ import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import type { ForgeConfig } from "@electron-forge/shared-types";
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
 
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerDMG } from "@electron-forge/maker-dmg";
@@ -73,8 +74,8 @@ const config: ForgeConfig = {
     }),
   ],
   hooks: {
-    postMake: async (forgeConfig, makeResults) => {
-      const arch = process.env.ARCH || require("os").arch();
+    postMake: async (_, makeResults) => {
+      const arch = process.env.ARCH || os.arch();
 
       for (const result of makeResults) {
         for (const i in result.artifacts) {

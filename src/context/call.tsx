@@ -236,7 +236,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 // Sub Provider Component
 function SubCallProvider({ children }: { children: React.ReactNode }) {
   const { connect, shouldConnect } = useCallContext();
-  const { data, debugLog, set } = useStorageContext();
+  const { data, debugLog } = useStorageContext();
 
   const room = useRoomContext();
   const connectionState = useConnectionState();

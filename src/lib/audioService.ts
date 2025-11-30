@@ -5,7 +5,7 @@ import {
   loadRnnoise,
   NoiseGateWorkletNode,
 } from "@sapphi-red/web-noise-suppressor";
-import { TrackProcessor, Track, LocalAudioTrack } from "livekit-client";
+import { TrackProcessor, Track } from "livekit-client";
 import type { AudioProcessorOptions } from "livekit-client";
 
 export type NoiseSuppressionAlgorithm = "speex" | "rnnoise" | "noisegate";
@@ -234,12 +234,13 @@ class AudioService {
   public getProcessor(
     defaultNoiseOptions?: NoiseSuppressionOptions
   ): TrackProcessor<Track.Kind.Audio, AudioProcessorOptions> {
+    // eslint-disable-next-line
     const self = this;
     let originalTrack: MediaStreamTrack | undefined = undefined;
     let processedStream: MediaStream | undefined = undefined;
 
     const setProcessedTrackFromStream = (stream?: MediaStream) => {
-      (processor as any).processedTrack = stream?.getAudioTracks()?.[0];
+      processor.processedTrack = stream?.getAudioTracks()?.[0];
       processedStream = stream;
     };
 
@@ -258,20 +259,18 @@ class AudioService {
         if (ctx.state === "suspended") await ctx.resume();
 
         try {
-          const supplied =
-            (processor as any).noiseSuppressionOptions || defaultNoiseOptions;
           const algorithm =
-            supplied?.algorithm ??
+            defaultNoiseOptions?.algorithm ??
             (self.isSupported() ? "rnnoise" : "noisegate");
           const channelCount = Math.max(
             opts.kind === "audio" ? 1 : 1,
-            supplied?.maxChannels ?? 1
+            defaultNoiseOptions?.maxChannels ?? 1
           );
 
           const processed = await self.processStream(inputStream, {
             algorithm,
             maxChannels: channelCount,
-            sensitivity: supplied?.sensitivity,
+            sensitivity: defaultNoiseOptions?.sensitivity,
           });
           setProcessedTrackFromStream(processed);
         } catch (err) {
@@ -292,16 +291,13 @@ class AudioService {
         const inputStream = new MediaStream([originalTrack]);
 
         try {
-          const supplied =
-            (processor as any).noiseSuppressionOptions || defaultNoiseOptions;
           const algorithm =
-            supplied?.algorithm ??
+            defaultNoiseOptions?.algorithm ??
             (self.isSupported() ? "rnnoise" : "noisegate");
-          const channelCount = supplied?.maxChannels ?? 1;
           const processed = await self.processStream(inputStream, {
             algorithm,
-            maxChannels: channelCount,
-            sensitivity: supplied?.sensitivity,
+            maxChannels: defaultNoiseOptions?.maxChannels ?? 1,
+            sensitivity: defaultNoiseOptions?.sensitivity,
           });
           setProcessedTrackFromStream(processed);
         } catch (err) {
@@ -319,8 +315,6 @@ class AudioService {
         setProcessedTrackFromStream(undefined);
         self.cleanup();
       },
-
-      onPublish(_pub?: unknown) {},
     } as TrackProcessor<Track.Kind.Audio, AudioProcessorOptions>;
 
     return processor;
