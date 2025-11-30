@@ -6,7 +6,11 @@ import {
   NoiseGateWorkletNode,
 } from "@sapphi-red/web-noise-suppressor";
 
-export type NoiseSuppressionAlgorithm = "speex" | "rnnoise" | "noisegate";
+export type NoiseSuppressionAlgorithm =
+  | "speex"
+  | "rnnoise"
+  | "noisegate"
+  | "speedx_rnnoise";
 
 interface NoiseSuppressionOptions {
   algorithm: NoiseSuppressionAlgorithm;
@@ -39,6 +43,7 @@ class AudioService {
   // Current noise suppression setup
   private currentProcessor: AudioWorkletNode | null = null;
   private currentGateProcessor: AudioWorkletNode | null = null;
+  private currentSecondProcessor: AudioWorkletNode | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
   private destinationNode: MediaStreamAudioDestinationNode | null = null;
   private isProcessing: boolean = false;
@@ -111,6 +116,7 @@ class AudioService {
       case "speex":
       case "rnnoise":
       case "noisegate":
+      case "speedx_rnnoise":
         return {
           ...baseConstraints,
           echoCancellation: true,
@@ -174,7 +180,14 @@ class AudioService {
     options: NoiseSuppressionOptions
   ): Promise<AudioWorkletNode> {
     const ctx = this.getAudioContext();
-    await this.loadWorklet(options.algorithm);
+    // Ensure the required worklets are loaded. For combined algorithms, load
+    // the worklets for both RNNoise and Speex to support the chaining.
+    if (options.algorithm === "speedx_rnnoise") {
+      await this.loadWorklet("rnnoise");
+      await this.loadWorklet("speex");
+    } else {
+      await this.loadWorklet(options.algorithm);
+    }
 
     switch (options.algorithm) {
       case "speex": {
@@ -185,6 +198,18 @@ class AudioService {
         });
       }
       case "rnnoise": {
+        const wasmBinary = await this.loadWasmBinary("rnnoise");
+        return new RnnoiseWorkletNode(ctx, {
+          wasmBinary,
+          maxChannels: options.maxChannels || 2,
+        });
+      }
+      case "speedx_rnnoise": {
+        // Return RNNoise node here when requested as a single processor; the
+        // actual combined chain is handled by processStream which will create
+        // both nodes and chain them. Returning an RNNoise node here is a
+        // sensible fallback and allows callers that expect a single node to
+        // receive the first suppression node in the chain.
         const wasmBinary = await this.loadWasmBinary("rnnoise");
         return new RnnoiseWorkletNode(ctx, {
           wasmBinary,
@@ -263,16 +288,42 @@ class AudioService {
       this.sourceNode = ctx.createMediaStreamSource(inputStream);
       this.destinationNode = ctx.createMediaStreamDestination();
 
-      this.currentProcessor = await this.createNoiseProcessor(options);
-
-      if (gateOptions) {
-        this.currentGateProcessor = await this.createAudioGate(gateOptions);
+      // Special handling for combined algorithms that require multiple
+      // processors chained. If we requested speedx_rnnoise, build the
+      // RNNoise -> Speex (SpeedX) chain. The createNoiseProcessor can be used
+      // to construct each processor individually.
+      if (options.algorithm === "speedx_rnnoise") {
+        const rnnoiseOptions = { algorithm: "rnnoise" as any, maxChannels: options.maxChannels };
+        const speexOptions = { algorithm: "speex" as any, maxChannels: options.maxChannels };
+        const rnNode = await this.createNoiseProcessor(rnnoiseOptions);
+        const spNode = await this.createNoiseProcessor(speexOptions);
+        this.currentProcessor = rnNode;
+        this.currentSecondProcessor = spNode;
+        // chain: source -> rnNode -> spNode -> (optional gate) -> destination
         this.sourceNode.connect(this.currentProcessor);
-        this.currentProcessor.connect(this.currentGateProcessor);
-        this.currentGateProcessor.connect(this.destinationNode);
+        this.currentProcessor.connect(this.currentSecondProcessor);
+        console.debug("AudioService: Created RNNoise -> SpeedX (Speex) processing chain.");
+        if (gateOptions) {
+          this.currentGateProcessor = await this.createAudioGate(gateOptions);
+          this.currentSecondProcessor.connect(this.currentGateProcessor);
+          this.currentGateProcessor.connect(this.destinationNode);
+        } else {
+          this.currentSecondProcessor.connect(this.destinationNode);
+        }
       } else {
-        this.sourceNode.connect(this.currentProcessor);
-        this.currentProcessor.connect(this.destinationNode);
+        this.currentProcessor = await this.createNoiseProcessor(options);
+      }
+
+      if (options.algorithm !== "speedx_rnnoise") {
+        if (gateOptions) {
+          this.currentGateProcessor = await this.createAudioGate(gateOptions);
+          this.sourceNode.connect(this.currentProcessor);
+          this.currentProcessor.connect(this.currentGateProcessor);
+          this.currentGateProcessor.connect(this.destinationNode);
+        } else {
+          this.sourceNode.connect(this.currentProcessor);
+          this.currentProcessor.connect(this.destinationNode);
+        }
       }
 
       this.isProcessing = true;
@@ -289,6 +340,7 @@ class AudioService {
       this.sourceNode?.disconnect();
       this.currentProcessor?.disconnect();
       this.currentGateProcessor?.disconnect();
+      this.currentSecondProcessor?.disconnect();
       this.destinationNode?.disconnect();
     } catch (e) {
       // Ignore disconnect errors if nodes are already invalid
@@ -297,6 +349,7 @@ class AudioService {
     this.sourceNode = null;
     this.currentProcessor = null;
     this.currentGateProcessor = null;
+    this.currentSecondProcessor = null;
     this.destinationNode = null;
     this.isProcessing = false;
   }

@@ -115,7 +115,7 @@ export type AdvancedSuccessMessageData = {
 };
 
 export type Language = Record<string, string>;
-export type Value = string | boolean | number | object | Language | object[];
+export type Value = string | boolean | number | object | Language | object[] | null;
 export type StoredSettings = {
   [key: string]: Value;
 };

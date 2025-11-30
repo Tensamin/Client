@@ -33,6 +33,7 @@ import NotificationsPage from "@/page/settings/notifications";
 import AccessabilityPage from "@/page/settings/accessability";
 import PremiumPage from "@/page/settings/premium";
 import DeveloperPage from "@/page/settings/developer";
+import CreditsPage from "@/page/settings/credit";
 import { PageDiv } from "@/components/pageDiv";
 
 // Main
@@ -84,9 +85,17 @@ function MainPage({ selected }: { selected: string }): React.JSX.Element {
       return <PremiumPage />;
     case "Developer":
       return <DeveloperPage />;
+    case "Credits":
+      return <CreditsPage />;
     default:
       return <div />;
   }
+}
+
+export function SettingsPageTitle({ text }: { text: string }) {
+  return (
+    <div className="text-lg font-medium mb-4 leading-6 select-none">{text}</div>
+  );
 }
 
 function SettingsButton({
@@ -151,6 +160,12 @@ export default function Page() {
             })}
           </div>
           <div className="my-2">
+            <SettingsButton
+              key="Credits"
+              page="Credits"
+              selected={selected}
+              setSelected={setSelected}
+            />
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" className="w-full">
@@ -194,18 +209,11 @@ export default function Page() {
         </div>
       </PageDiv>
       <PageDiv className="flex-1 min-w-0 h-full flex flex-col p-3 overflow-hidden">
-        {Pages.map((page) => {
-          if (page === selected)
-            return (
-              <div
-                key={page}
-                className="text-lg font-medium mb-4 leading-6 select-none"
-              >
-                {page}
-              </div>
-            );
-          return null;
-        })}
+        {[...Pages, "Credits"].map((page) =>
+          page === selected ? (
+            <SettingsPageTitle key={page} text={page} />
+          ) : null
+        )}
         <div className="flex w-full h-full overflow-auto">
           <MainPage selected={selected} />
         </div>

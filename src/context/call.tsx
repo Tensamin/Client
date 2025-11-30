@@ -22,17 +22,14 @@ import {
   RoomEvent,
   Track,
   LocalAudioTrack,
-  createLocalAudioTrack,
   ConnectionState,
+  Room,
 } from "livekit-client";
 import { toast } from "sonner";
 import * as Icon from "lucide-react";
 
 // Lib Imports
-import {
-  audioService,
-  type NoiseSuppressionAlgorithm,
-} from "@/lib/audioService";
+import { audioService } from "@/lib/audioService";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
@@ -70,27 +67,21 @@ export function useSubCallContext() {
 // Main Provider Component
 export function CallProvider({ children }: { children: React.ReactNode }) {
   const { data, set, debugLog } = useStorageContext();
-  const dlog = (...args: any[]) => {
-    try {
-      // debugLog signature expects (section, label, payload?). We call with up to 3 args.
-      // Use typed indexes to appease TypeScript.
-      // @ts-ignore - ensure we don't crash if debugLog signature differs slightly
-      debugLog?.(args[0] as string, args[1] as string, args[2]);
-    } catch (err) {
-      // ignore
-    }
-    // ensure something visible in console
-    try {
-      // eslint-disable-next-line no-console
-      console.debug("CALL_PROVIDER", ...args);
-    } catch (err) {}
-  };
   const { lastMessage, send } = useSocketContext();
-  const { get } = useUserContext();
+  const { get, ownUserHasPremium } = useUserContext();
 
   const [shouldConnect, setShouldConnect] = useState(false);
   const [token, setToken] = useState("");
   const [outerState, setOuterState] = useState("DISCONNECTED");
+
+  // Disconnect function
+  const disconnect = useCallback(() => {
+    console.trace("Disconnect called");
+    debugLog("CALL_PROVIDER", "DISCONNECT_START");
+    setOuterState("DISCONNECTED");
+    setShouldConnect(false);
+    debugLog("CALL_PROVIDER", "DISCONNECT_END");
+  }, []);
 
   // User volume management
   const setUserVolumes = useCallback(
@@ -114,7 +105,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   // Handle incoming call invites
   useEffect(() => {
     if (lastMessage?.type === "call_invite") {
-      dlog("CALL_PROVIDER", "INCOMING_INVITE", lastMessage?.data);
+      debugLog("CALL_PROVIDER", "INCOMING_INVITE", lastMessage?.data);
       if (!lastMessage.data.sender_id || !lastMessage.data.call_id) {
         toast.error("Failed joining call");
         return;
@@ -137,18 +128,18 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   ]);
 
   const connect = useCallback(() => {
-    dlog("CALL_PROVIDER", "CONNECT_INIT", { shouldConnect, token });
+    debugLog("CALL_PROVIDER", "CONNECT_INIT", { shouldConnect, token });
     setOuterState("CONNECTING");
     setShouldConnect(true);
   }, []);
 
   const getCallToken = useCallback(
     async (callId: string) => {
-      dlog("CALL_PROVIDER", "GET_CALL_TOKEN", { callId });
+      debugLog("CALL_PROVIDER", "GET_CALL_TOKEN", { callId });
       return send("call_token", {
         call_id: callId,
       }).then((data) => {
-        dlog("CALL_PROVIDER", "GET_CALL_TOKEN_RESULT", { callId, data });
+        debugLog("CALL_PROVIDER", "GET_CALL_TOKEN_RESULT", { callId, data });
         if (data.type !== "error") {
           return data.data.call_token ?? "error";
         }
@@ -159,7 +150,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   );
 
   const handleAcceptCall = useCallback(() => {
-    dlog("CALL_PROVIDER", "ACCEPT_CALL", { newCallData });
+    debugLog("CALL_PROVIDER", "ACCEPT_CALL", { newCallData });
     setNewCallWidgetOpen(false);
     if (!newCallData?.call_id) return;
     getCallToken(newCallData.call_id).then((token) => {
@@ -168,9 +159,48 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     });
   }, [newCallData, getCallToken, connect]);
 
+  // Custom room for audio processing
+  const roomRef = useRef<Room | null>(null);
+  if (!roomRef.current) {
+    roomRef.current = new Room({
+      dynacast: (data.call_enableDynacast as boolean) ?? true,
+      adaptiveStream: (data.call_enableAdaptiveStream as boolean) ?? true,
+      audioCaptureDefaults: {
+        echoCancellation: (data.call_enableEchoCancellation as boolean) ?? true,
+        noiseSuppression: (data.call_enableNoiseSuppression as boolean) ?? true,
+        autoGainControl: (data.call_enableAutoGainControl as boolean) ?? true,
+        voiceIsolation: (data.call_enabeVoiceIsolation as boolean) ?? true,
+        latency: (data.call_latency as number) ?? 0.02,
+        channelCount: (data.call_channelCount as number) || 2,
+        sampleRate: (data.call_sampleRate as number) ?? 48000,
+        sampleSize: (data.call_sampleSize as number) ?? 16,
+        deviceId: (data.call_inputDeviceID as string) ?? "default",
+      },
+      audioOutput: {
+        deviceId: (data.call_outputDeviceID as string) ?? "default",
+      },
+      webAudioMix: {
+        audioContext: audioService.getAudioContext(),
+      },
+      loggerName: "CALL_CONTEXT",
+    });
+    debugLog("CALL_XONTEXT", "ROOM_CREATED", roomRef.current);
+  }
+  const room = roomRef.current!;
+  useEffect(() => {
+    return () => {
+      try {
+        roomRef.current?.disconnect();
+      } finally {
+        roomRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <CallContext.Provider
       value={{
+        disconnect,
         getCallToken,
         shouldConnect,
         outerState,
@@ -179,6 +209,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         setUserVolumes,
         setOuterState,
         setShouldConnect,
+        room,
       }}
     >
       {/* Incoming Call Dialog */}
@@ -211,8 +242,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
               <Button
                 className="w-12 h-12"
                 onLoad={(el) => {
-                  // @ts-expect-error Types missing
-                  el.target.focus();
+                  el.target.dispatchEvent(new Event("play"));
                 }}
                 onClick={handleAcceptCall}
               >
@@ -233,19 +263,21 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         </Dialog>
       )}
 
-      {/* LiveKit Room - audio={false} because we manage our own audio track */}
       <LiveKitRoom
         token={token}
+        room={room}
         serverUrl="wss://call.tensamin.net"
         connect={shouldConnect}
-        audio={false}
-        video={false}
+        audio={true}
+        simulateParticipants={
+          (data.call_amountOfSimulatedParticipants as number) ?? 0
+        }
         onConnected={() => {
-          dlog("CALL_PROVIDER", "ROOM_CONNECTED", { token });
+          debugLog("CALL_PROVIDER", "ROOM_CONNECTED", { token });
           setOuterState("CONNECTED");
         }}
         onDisconnected={() => {
-          dlog("CALL_PROVIDER", "ROOM_DISCONNECTED");
+          debugLog("CALL_PROVIDER", "ROOM_DISCONNECTED");
           setOuterState("DISCONNECTED");
         }}
       >
@@ -256,36 +288,19 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Sub Provider Component - handles call functionality within room context
-// ... imports stay same ...
-
-// Sub Provider Component - handles call functionality within room context
+// Sub Provider Component
 function SubCallProvider({ children }: { children: React.ReactNode }) {
-  const { setOuterState, setShouldConnect, connect, shouldConnect } =
-    useCallContext();
+  const { connect, shouldConnect } = useCallContext();
   const { data, debugLog } = useStorageContext();
-  const dlog = (...args: any[]) => {
-    try {
-      // @ts-ignore
-      debugLog?.(args[0] as string, args[1] as string, args[2]);
-    } catch (err) {}
-    try {
-      // eslint-disable-next-line no-console
-      console.debug("SUB_CALL", ...args);
-    } catch (err) {}
-  };
 
   const room = useRoomContext();
   const connectionState = useConnectionState();
-  const { buttonProps: disconnectButtonProps } = useDisconnectButton({});
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant();
 
   const microphoneToggle = useTrackToggle({
     source: Track.Source.Microphone,
   });
 
-  const [noiseSuppressionSupported, setNoiseSuppressionSupported] =
-    useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
   const [audioTrackPublished, setAudioTrackPublished] = useState(false);
 
@@ -294,17 +309,14 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
   const storedUserVolumes = data.call_userVolumes as UserAudioSettings | null;
 
-  useEffect(() => {
-    setNoiseSuppressionSupported(audioService.isSupported());
-  }, []);
-
+  // Inital Volumes
   useEffect(() => {
     if (!room) return;
     const handleParticipantConnected = (participant: {
       identity: string;
       setVolume: (volume: number) => void;
     }) => {
-      dlog("SUB_CALL", "PARTICIPANT_CONNECTED", {
+      debugLog("SUB_CALL", "PARTICIPANT_CONNECTED", {
         identity: participant.identity,
         storedVolume: storedUserVolumes?.[participant.identity],
       });
@@ -319,239 +331,24 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     };
   }, [room, storedUserVolumes]);
 
+  // Mute audio tags on deafen
   useEffect(() => {
     const audioElements = document.querySelectorAll("audio");
     audioElements.forEach((audio) => {
       audio.muted = isDeafened;
     });
-    if (localParticipant && shouldConnect) {
-      dlog("SUB_CALL", "SET_LOCAL_METADATA", { deafened: isDeafened });
+    if (localParticipant && shouldConnect && connectionState === "connected") {
+      debugLog("SUB_CALL", "SET_LOCAL_METADATA", { deafened: isDeafened });
       localParticipant
         .setMetadata(JSON.stringify({ deafened: isDeafened }))
         .catch(() => {});
     }
   }, [isDeafened, localParticipant, shouldConnect]);
 
-  const getProcessedAudioStream =
-    useCallback(async (): Promise<MediaStream> => {
-      // Default to RNNoise for improved suppression when not explicitly set
-      const nsState = (data.nsState as number) ?? 3;
-      const channelCount = (data.call_channelCount as number) || 2;
-      const enableAudioGate = (data.enableAudioGate as boolean) ?? false;
-      const audioThreshold = (data.audioThreshold as number) ?? -40;
-
-      let algorithm: NoiseSuppressionAlgorithm | "off" = "off";
-      let needsCustomProcessing = false;
-
-      switch (nsState) {
-        case 0:
-          algorithm = "off";
-          break;
-        case 1:
-        case 2:
-          algorithm = "speex";
-          needsCustomProcessing = nsState >= 2;
-          break;
-        case 3:
-          algorithm = "rnnoise";
-          needsCustomProcessing = true;
-          break;
-        default:
-          algorithm = "off";
-      }
-
-      dlog("SUB_CALL", "GET_PROCESSED_AUDIO_STREAM_START", {
-        nsState,
-        channelCount,
-        enableAudioGate,
-        audioThreshold,
-        noiseSuppressionSupported,
-      });
-
-      // 1. Get constraints
-      const audioConstraints = audioService.getRecommendedConstraints(
-        algorithm,
-        channelCount
-      );
-
-      // Allow user override via storage: call_voiceIsolation
-      const userVoiceIsolationSetting =
-        (data.call_voiceIsolation as boolean) ?? true;
-      const requestedAudioConstraints = {
-        ...(audioConstraints as Record<string, unknown>),
-      } as Record<string, unknown>;
-      if (
-        !userVoiceIsolationSetting &&
-        "voiceIsolation" in requestedAudioConstraints
-      ) {
-        delete requestedAudioConstraints.voiceIsolation;
-      }
-
-      // Log if voiceIsolation is requested/available
-      dlog("SUB_CALL", "VOICE_ISOLATION_SUPPORT", {
-        requested:
-          requestedAudioConstraints &&
-          (requestedAudioConstraints as any).voiceIsolation === true,
-        supported: audioService.isVoiceIsolationSupported(),
-        userEnabled: userVoiceIsolationSetting,
-      });
-
-      dlog("SUB_CALL", "AUDIO_CONSTRAINTS", { audioConstraints });
-
-      // 2. Acquire raw stream
-      // We must stop previous tracks before requesting new ones to avoid device busy errors
-      if (rawStreamRef.current) {
-        rawStreamRef.current.getTracks().forEach((t) => t.stop());
-      }
-
-      const inputStream = await navigator.mediaDevices.getUserMedia({
-        audio: requestedAudioConstraints,
-        video: false,
-      });
-
-      dlog("SUB_CALL", "RAW_STREAM_ACQUIRED", {
-        audioTracks: inputStream.getAudioTracks().map((t) => t.getSettings()),
-        trackCount: inputStream.getAudioTracks().length,
-      });
-
-      rawStreamRef.current = inputStream;
-
-      // 3. Process stream if needed
-      if (
-        needsCustomProcessing &&
-        algorithm !== "off" &&
-        noiseSuppressionSupported
-      ) {
-        try {
-          const gateOptions = enableAudioGate
-            ? { threshold: audioThreshold, maxChannels: channelCount }
-            : undefined;
-
-          const processed = await audioService.processStream(
-            inputStream,
-            {
-              algorithm: algorithm as NoiseSuppressionAlgorithm,
-              maxChannels: channelCount,
-            },
-            gateOptions
-          );
-          dlog("SUB_CALL", "PROCESSED_STREAM_WITH_NS", {
-            originalTracks: inputStream
-              .getAudioTracks()
-              .map((t) => t.getSettings()),
-            processedTracks: processed
-              .getAudioTracks()
-              .map((t) => t.getSettings()),
-          });
-          return processed;
-        } catch (err) {
-          dlog("CALL_CONTEXT", "NS_ERROR", err);
-          return inputStream;
-        }
-      }
-
-      if (enableAudioGate && noiseSuppressionSupported) {
-        try {
-          const processedGate = await audioService.processStreamWithGate(
-            inputStream,
-            {
-              threshold: audioThreshold,
-              maxChannels: channelCount,
-            }
-          );
-          dlog("SUB_CALL", "PROCESSED_STREAM_WITH_GATE", {
-            originalTracks: inputStream
-              .getAudioTracks()
-              .map((t) => t.getSettings()),
-            processedTracks: processedGate
-              .getAudioTracks()
-              .map((t) => t.getSettings()),
-          });
-          return processedGate;
-        } catch (err) {
-          dlog("CALL_CONTEXT", "GATE_ERROR", err);
-          return inputStream;
-        }
-      }
-
-      dlog("SUB_CALL", "RETURN_RAW_STREAM", {
-        trackCount: inputStream.getAudioTracks().length,
-      });
-      return inputStream;
-    }, [
-      data.nsState,
-      data.call_channelCount,
-      data.enableAudioGate,
-      data.audioThreshold,
-      noiseSuppressionSupported,
-      debugLog,
-    ]);
-
-  // Publish audio track
-  useEffect(() => {
-    if (!localParticipant || !shouldConnect || audioTrackPublished) return;
-    if (connectionState !== ConnectionState.Connected) return;
-
-    let isMounted = true;
-
-    const publishAudioTrack = async () => {
-      try {
-        const processedStream = await getProcessedAudioStream();
-        if (!isMounted || !processedStream) return;
-
-        const audioTrack = processedStream.getAudioTracks()[0];
-        if (!audioTrack) return;
-
-        // CRITICAL FIX: Do NOT use createLocalAudioTrack here.
-        // createLocalAudioTrack attempts to open the microphone (again), but we already
-        // opened it in getProcessedAudioStream. Opening it twice causes errors on many OSs.
-        // Instead, wrap the existing processed track directly.
-        dlog("SUB_CALL", "PUBLISHING_TRACK_START", {
-          trackSettings: audioTrack.getSettings(),
-        });
-        const localAudioTrack = new LocalAudioTrack(audioTrack);
-
-        const pub = await localParticipant.publishTrack(localAudioTrack, {
-          name: "microphone",
-          source: Track.Source.Microphone,
-        });
-
-        dlog("SUB_CALL", "TRACK_PUBLISHED", {
-          name: "microphone",
-          publishedTrackTrackSid: pub?.trackSid ?? null,
-        });
-
-        if (isMounted) {
-          publishedTrackRef.current = localAudioTrack;
-          setAudioTrackPublished(true);
-        } else {
-          localAudioTrack.stop();
-        }
-      } catch (err) {
-        dlog("NOISE_SUPPRESSION", "NS_PUBLISH_ERROR", {
-          err,
-        });
-      }
-    };
-
-    publishAudioTrack();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    localParticipant,
-    shouldConnect,
-    connectionState,
-    audioTrackPublished,
-    getProcessedAudioStream,
-    debugLog,
-  ]);
-
   // Cleanup
   useEffect(() => {
     if (!shouldConnect) {
-      dlog("SUB_CALL", "CLEANUP_START", { audioTrackPublished });
+      debugLog("SUB_CALL", "CLEANUP_START", { audioTrackPublished });
       if (publishedTrackRef.current) {
         publishedTrackRef.current.stop();
         publishedTrackRef.current = null;
@@ -562,73 +359,13 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         rawStreamRef.current = null;
       }
       audioService.cleanup();
-      dlog("SUB_CALL", "CLEANUP_DONE");
+      debugLog("SUB_CALL", "CLEANUP_DONE");
     }
   }, [shouldConnect]);
 
-  // Republish on settings change
-  useEffect(() => {
-    if (!shouldConnect || !audioTrackPublished || !localParticipant) return;
-    if (connectionState !== ConnectionState.Connected) return;
-
-    let isMounted = true;
-
-    const republishTrack = async () => {
-      try {
-        dlog("SUB_CALL", "REPUBLISH_TRACK_START", {
-          nsState: data.nsState,
-          enableAudioGate: data.enableAudioGate,
-          audioThreshold: data.audioThreshold,
-        });
-        // 1. Unpublish & Stop existing
-        if (publishedTrackRef.current) {
-          await localParticipant.unpublishTrack(publishedTrackRef.current);
-          publishedTrackRef.current.stop();
-          publishedTrackRef.current = null;
-        }
-
-        audioService.cleanup();
-
-        // 2. Get new stream
-        const processedStream = await getProcessedAudioStream();
-        if (!processedStream || !isMounted) return;
-
-        const audioTrack = processedStream.getAudioTracks()[0];
-        if (!audioTrack) return;
-
-        // 3. Publish new
-        const localAudioTrack = new LocalAudioTrack(audioTrack);
-
-        const newPub = await localParticipant.publishTrack(localAudioTrack, {
-          name: "microphone",
-          source: Track.Source.Microphone,
-        });
-
-        if (isMounted) {
-          publishedTrackRef.current = localAudioTrack;
-        } else {
-          localAudioTrack.stop();
-        }
-        dlog("SUB_CALL", "REPUBLISH_TRACK_SUCCESS", {
-          publishedTrackTrackSid: newPub?.trackSid ?? null,
-        });
-      } catch (err) {
-        dlog("NOISE_SUPPRESSION", "NS_REPUBLISH_ERROR", { err });
-      }
-    };
-
-    const timeoutId = setTimeout(republishTrack, 500); // Increased debounce to 500ms for safety
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
-  }, [data.nsState, data.enableAudioGate, data.audioThreshold]);
-
-  // ... toggleMute, toggleDeafen, disconnect handlers remain the same ...
-  // (Assuming you have them from your original code, paste them here)
-
+  // Toggle Mute
   const toggleMute = useCallback(async () => {
-    dlog("SUB_CALL", "TOGGLE_MUTE_START", { isMicrophoneEnabled });
+    debugLog("SUB_CALL", "TOGGLE_MUTE_START", { isMicrophoneEnabled });
     if (microphoneToggle.toggle) {
       await microphoneToggle.toggle();
     } else if (localParticipant) {
@@ -638,13 +375,14 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     if (!isMicrophoneEnabled && isDeafened) {
       setIsDeafened(false);
     }
-    dlog("SUB_CALL", "TOGGLE_MUTE_END", {
+    debugLog("SUB_CALL", "TOGGLE_MUTE_END", {
       isMicrophoneEnabled: !isMicrophoneEnabled,
     });
   }, [microphoneToggle, localParticipant, isMicrophoneEnabled, isDeafened]);
 
+  // Toggle Deafen
   const toggleDeafen = useCallback(async () => {
-    dlog("SUB_CALL", "TOGGLE_DEAFEN_START", {
+    debugLog("SUB_CALL", "TOGGLE_DEAFEN_START", {
       isDeafened,
       isMicrophoneEnabled,
     });
@@ -655,29 +393,10 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     } else if (!newDeafenedState && !isMicrophoneEnabled) {
       if (localParticipant) await localParticipant.setMicrophoneEnabled(true);
     }
-    dlog("SUB_CALL", "TOGGLE_DEAFEN_END", { newDeafenedState });
+    debugLog("SUB_CALL", "TOGGLE_DEAFEN_END", { newDeafenedState });
   }, [isDeafened, isMicrophoneEnabled, localParticipant]);
 
-  const disconnect = useCallback(() => {
-    dlog("SUB_CALL", "DISCONNECT_START", { connectionState });
-    disconnectButtonProps.onClick();
-    setOuterState("DISCONNECTED");
-    setShouldConnect(false);
-    setAudioTrackPublished(false);
-
-    if (publishedTrackRef.current) {
-      publishedTrackRef.current.stop();
-      publishedTrackRef.current = null;
-    }
-    if (rawStreamRef.current) {
-      rawStreamRef.current.getTracks().forEach((t) => t.stop());
-      rawStreamRef.current = null;
-    }
-    audioService.cleanup();
-    dlog("SUB_CALL", "DISCONNECT_END");
-  }, [disconnectButtonProps, setOuterState, setShouldConnect]);
-
-  // Verbose event listeners for the room - many events for debugging only
+  // Room Event Subscriptions
   useEffect(() => {
     if (!room) return;
     const events: Array<{
@@ -687,21 +406,21 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       {
         event: RoomEvent.ParticipantConnected,
         handler: (p) =>
-          dlog?.("SUB_CALL", "EVENT_PARTICIPANT_CONNECTED", {
+          debugLog("SUB_CALL", "EVENT_PARTICIPANT_CONNECTED", {
             identity: p.identity,
           }),
       },
       {
         event: RoomEvent.ParticipantDisconnected,
         handler: (p) =>
-          dlog?.("SUB_CALL", "EVENT_PARTICIPANT_DISCONNECTED", {
+          debugLog("SUB_CALL", "EVENT_PARTICIPANT_DISCONNECTED", {
             identity: p.identity,
           }),
       },
       {
         event: RoomEvent.TrackPublished,
         handler: (p, tx) =>
-          dlog?.("SUB_CALL", "EVENT_TRACK_PUBLISHED", {
+          debugLog("SUB_CALL", "EVENT_TRACK_PUBLISHED", {
             participant: p?.identity,
             track: tx?.name,
           }),
@@ -709,7 +428,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       {
         event: RoomEvent.TrackUnpublished,
         handler: (p, tx) =>
-          dlog?.("SUB_CALL", "EVENT_TRACK_UNPUBLISHED", {
+          debugLog("SUB_CALL", "EVENT_TRACK_UNPUBLISHED", {
             participant: p?.identity,
             track: tx?.name,
           }),
@@ -717,7 +436,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       {
         event: RoomEvent.TrackMuted,
         handler: (p, tx) =>
-          dlog?.("SUB_CALL", "EVENT_TRACK_MUTED", {
+          debugLog("SUB_CALL", "EVENT_TRACK_MUTED", {
             participant: p?.identity,
             track: tx?.name,
           }),
@@ -725,7 +444,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       {
         event: RoomEvent.TrackUnmuted,
         handler: (p, tx) =>
-          dlog?.("SUB_CALL", "EVENT_TRACK_UNMUTED", {
+          debugLog("SUB_CALL", "EVENT_TRACK_UNMUTED", {
             participant: p?.identity,
             track: tx?.name,
           }),
@@ -733,12 +452,12 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       {
         event: RoomEvent.ActiveSpeakersChanged,
         handler: (speakers) =>
-          dlog?.("SUB_CALL", "EVENT_ACTIVE_SPEAKERS", { speakers }),
+          debugLog("SUB_CALL", "EVENT_ACTIVE_SPEAKERS", { speakers }),
       },
       {
         event: RoomEvent.ConnectionQualityChanged,
         handler: (participant, quality) =>
-          dlog?.("SUB_CALL", "EVENT_CONN_QUALITY", {
+          debugLog("SUB_CALL", "EVENT_CONN_QUALITY", {
             participant: participant?.identity,
             quality,
           }),
@@ -753,7 +472,6 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   return (
     <SubCallContext.Provider
       value={{
-        disconnect,
         connect: () => connect(),
         toggleMute,
         isDeafened,
@@ -777,10 +495,11 @@ type CallContextValue = {
   setUserVolumes: (userId: string, volume: number) => void;
   setOuterState: (input: string) => void;
   setShouldConnect: (input: boolean) => void;
+  room: Room;
+  disconnect: () => void;
 };
 
 type SubCallContextValue = {
-  disconnect: () => void;
   connect: () => void;
   toggleMute: () => void;
   isDeafened: boolean;
@@ -788,3 +507,17 @@ type SubCallContextValue = {
   isMuted: boolean;
   connectionState: ConnectionState;
 };
+
+/*
+
+  connect?: boolean;
+  options?: RoomOptions;
+  connectOptions?: RoomConnectOptions;
+  onConnected?: () => void;
+  onDisconnected?: (reason?: DisconnectReason) => void;
+  onError?: (error: Error) => void;
+  onMediaDeviceFailure?: (failure?: MediaDeviceFailure, kind?: MediaDeviceKind) => void;
+  onEncryptionError?: (error: Error) => void;
+  featureFlags?: FeatureFlags;
+
+*/

@@ -9,8 +9,10 @@ import {
   useIsSpeaking,
 } from "@livekit/components-react";
 import { isTrackReference } from "@livekit/components-core";
-import type { TrackReferenceOrPlaceholder } from "@livekit/components-core";
-import type { ParticipantClickEvent } from "@livekit/components-core";
+import type {
+  TrackReferenceOrPlaceholder,
+  ParticipantClickEvent,
+} from "@livekit/components-core";
 import * as Icon from "lucide-react";
 
 // Components

@@ -18,9 +18,14 @@ function migrateNsState(nsState: unknown): number {
     return 2;
   }
 
-  // Valid values: 0 (off), 2 (speex), 3 (rnnoise)
+  // Valid values: 0 (off), 2 (speex), 3 (rnnoise), 4 (speedx + rnnoise)
   // Default to 0 if undefined or invalid
-  if (currentNsState === 0 || currentNsState === 2 || currentNsState === 3) {
+  if (
+    currentNsState === 0 ||
+    currentNsState === 2 ||
+    currentNsState === 3 ||
+    currentNsState === 4
+  ) {
     return currentNsState;
   }
 
@@ -158,6 +163,13 @@ export function StorageProvider({
         loadedUserData.audioThreshold = -40;
         db.put("data", { key: "audioThreshold", value: -40 });
       }
+      if (loadedUserData.enableAudioGate === undefined) {
+        // Default the audio gate setting to enabled so users get quieter noise
+        // without needing to visit the audio settings UI.
+        console.log("Storage: Defaulting enableAudioGate to true");
+        loadedUserData.enableAudioGate = true;
+        db.put("data", { key: "enableAudioGate", value: true });
+      }
 
       setUserData(loadedUserData);
       offlineData.forEach((entry) => {
@@ -240,7 +252,6 @@ export function StorageProvider({
       if (!db) return;
       try {
         if (
-          value === false ||
           value === null ||
           typeof value === "undefined" ||
           value === ""

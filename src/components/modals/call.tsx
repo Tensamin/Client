@@ -106,8 +106,7 @@ export function CallUserModal({ hideBadges }: { hideBadges?: boolean } = {}) {
 }
 
 export function VoiceActions() {
-  const { shouldConnect } = useCallContext();
-  const { disconnect } = useSubCallContext();
+  const { shouldConnect, disconnect } = useCallContext();
   const { name } = useRoomInfo();
   const { setPage } = usePageContext();
   useStorageContext();

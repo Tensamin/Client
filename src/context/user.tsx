@@ -54,6 +54,9 @@ type UserContextType = {
   fetchedUsers: Map<string, User>;
   ownState: UserState;
   setOwnState: (state: UserState) => void;
+
+  ownUserData: User | null;
+  ownUserHasPremium: boolean;
 };
 
 // Main
@@ -101,6 +104,8 @@ export function UserProvider({
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
   const [reloadUsers, setReloadUsers] = useState<boolean>(false);
   const [ownState, setOwnState] = useState<UserState>(initialUserState);
+  const [ownUserHasPremium, setOwnUserHasPremium] = useState<boolean>(false);
+  const [ownUserData, setOwnUserData] = useState<User | null>(null);
 
   const setConversationsAndSync = useCallback(
     (next: Conversation[]) => {
@@ -228,6 +233,14 @@ export function UserProvider({
     },
     [debugLog, addOfflineUser, updateFetchedUsers]
   );
+
+  // Get own user
+  useEffect(() => {
+    get(ownUuid).then((user) => {
+      setOwnUserData(user);
+      setOwnUserHasPremium(user.sub_level > 0);
+    });
+  }, [ownUuid, get, setOwnUserData, setOwnUserHasPremium]);
 
   const refetchConversations = useCallback(async () => {
     await send("get_chats").then((data) => {
@@ -483,6 +496,9 @@ export function UserProvider({
         fetchedUsers,
         ownState,
         setOwnState,
+
+        ownUserData,
+        ownUserHasPremium,
       }}
     >
       {children}

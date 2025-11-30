@@ -412,7 +412,7 @@ export default function Page() {
               variant="destructive"
               onClick={() => {
                 if (keyToDelete) {
-                  set(keyToDelete, false);
+                  set(keyToDelete, null);
                   setEditingKey(null);
                 }
                 handleCancelDelete();
