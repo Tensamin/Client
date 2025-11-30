@@ -27,7 +27,7 @@
 
           src = pkgs.fetchurl {
             url = "https://github.com/Tensamin/Frontend/releases/download/v${version}/tensamin_${version}_amd64.deb";
-            hash = "sha256-17Q4aN+VqrLbJSe4bUWofz2mlUwIzZZC8XyVw/Z/Bho="; # nix-update will manage this
+            hash = "sha256-jcA5k+ApCjRQCcbHlvhw/C+JLRQ8rgUFYaOwG9hnG8w="; # nix-update will manage this
           };
 
           nativeBuildInputs = with pkgs; [
