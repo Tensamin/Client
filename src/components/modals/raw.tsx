@@ -4,7 +4,11 @@ import { VideoTrack } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-core";
 
 // Lib Imports
-import { convertStringToInitials, getColorFor } from "@/lib/utils";
+import {
+  convertStringToInitials,
+  formatRawMessage,
+  getColorFor,
+} from "@/lib/utils";
 
 // Context Imports
 import { useCallContext } from "@/context/call";
@@ -110,7 +114,7 @@ export function UserAvatar({
               />
             </div>
           </TooltipTrigger>
-          <TooltipContent>{state}</TooltipContent>
+          <TooltipContent>{formatRawMessage(state)}</TooltipContent>
         </Tooltip>
       )}
     </div>
@@ -327,22 +331,22 @@ export function CallModal({
         )}
         {!hideBadges && (
           <div className="absolute h-full w-full flex items-end justify-start p-2 gap-2 pointer-events-none z-30">
-          <Badge
-            variant="outline"
-            className="h-5.5 select-none bg-background/75 border-input"
-          >
-            {isScreenShare ? `${title}'s screen` : title}
-          </Badge>
-          {muted && (
-            <Badge className="h-5.5 select-none bg-background/75 border-input">
-              <Icon.MicOff color="var(--foreground)" />
+            <Badge
+              variant="outline"
+              className="h-5.5 select-none bg-background/75 border-input"
+            >
+              {isScreenShare ? `${title}'s screen` : title}
             </Badge>
-          )}
-          {deafened && (
-            <Badge className="h-5.5 select-none bg-background/75 border-input">
-              <Icon.HeadphoneOff color="var(--foreground)" />
-            </Badge>
-          )}
+            {muted && (
+              <Badge className="h-5.5 select-none bg-background/75 border-input">
+                <Icon.MicOff color="var(--foreground)" />
+              </Badge>
+            )}
+            {deafened && (
+              <Badge className="h-5.5 select-none bg-background/75 border-input">
+                <Icon.HeadphoneOff color="var(--foreground)" />
+              </Badge>
+            )}
           </div>
         )}
       </CardContent>

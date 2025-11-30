@@ -12,7 +12,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+          - os: windows-11-arm
+          - os: macos-13
+            arch: x64
+          - os: macos-latest
+            arch: arm64
+          - os: ubuntu-latest
+          - os: ubuntu-22.04-arm
     steps:
       - name: Set up repository
         uses: actions/checkout@v4

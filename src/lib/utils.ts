@@ -116,7 +116,16 @@ export function errorMessageToInfo(error: string) {
       return "Unable to connect to the Iota.";
     case "ERROR_NO_IOTA_EXTRA":
       return "Check your Iota's connectivity and ensure it's online. \n If the problem persists check for updates or restart your Iota.";
+    case "ERROR_INVALID_USER_ID":
+      return "Failed to parse user ID.";
+    case "ERROR_INVALID_USER_ID_EXTRA":
+      return "This is most likely an issue in your .tu file.";
     default:
       return error;
   }
+}
+
+export function formatRawMessage(input: string) {
+  const formatted = input.toLowerCase().replaceAll("_", " ");
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }

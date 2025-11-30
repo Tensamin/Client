@@ -5,7 +5,7 @@ import {
   loadRnnoise,
   NoiseGateWorkletNode,
 } from "@sapphi-red/web-noise-suppressor";
-import type { TrackProcessor, Track } from "livekit-client";
+import { TrackProcessor, Track, LocalAudioTrack } from "livekit-client";
 import type { AudioProcessorOptions } from "livekit-client";
 
 export type NoiseSuppressionAlgorithm = "speex" | "rnnoise" | "noisegate";
@@ -13,23 +13,12 @@ export type NoiseSuppressionAlgorithm = "speex" | "rnnoise" | "noisegate";
 interface NoiseSuppressionOptions {
   algorithm: NoiseSuppressionAlgorithm;
   maxChannels?: number;
-  sensitivity?: number; // For noisegate
+  sensitivity?: number;
 }
 
 interface AudioGateOptions {
-  threshold: number; // Threshold in dB (e.g., -50)
+  threshold: number;
   maxChannels?: number;
-}
-
-/**
- * Audio constraints for acquiring media streams.
- */
-export interface AudioConstraintsOptions {
-  echoCancellation: boolean;
-  noiseSuppression: boolean;
-  autoGainControl: boolean;
-  sampleRate?: number;
-  channelCount?: number;
 }
 
 class AudioService {
@@ -53,23 +42,6 @@ class AudioService {
     return AudioService.instance;
   }
 
-  /**
-   * Returns whether the UA supports the `voiceIsolation` constraint.
-   */
-  public isVoiceIsolationSupported(): boolean {
-    try {
-      const supported =
-        typeof navigator !== "undefined" &&
-        typeof navigator.mediaDevices?.getSupportedConstraints === "function"
-          ? navigator.mediaDevices.getSupportedConstraints()
-          : ({} as MediaTrackSupportedConstraints);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return !!((supported as any)?.voiceIsolation === true);
-    } catch {
-      return false;
-    }
-  }
-
   private constructor() {}
 
   public getAudioContext(): AudioContext {
@@ -78,55 +50,9 @@ class AudioService {
         window.AudioContext ||
         (window as unknown as { webkitAudioContext: typeof AudioContext })
           .webkitAudioContext;
-      // Do not hardcode sampleRate here, let the browser decide to match the hardware
       this.audioContext = new AudioContextClass();
     }
     return this.audioContext;
-  }
-
-  public getRecommendedConstraints(
-    algorithm: NoiseSuppressionAlgorithm | "off",
-    channelCount: number = 2
-  ): MediaTrackConstraints {
-    // REMOVED: sampleRate: 48000. Forcing this often causes glitches or failure
-    // if the OS/Browser cannot resample efficiently.
-    const baseConstraints = {
-      channelCount,
-    };
-
-    // detect support for the experimental voiceIsolation constraint
-    const getSupportedConstraints =
-      typeof navigator !== "undefined" &&
-      typeof navigator.mediaDevices?.getSupportedConstraints === "function"
-        ? navigator.mediaDevices.getSupportedConstraints()
-        : ({} as MediaTrackSupportedConstraints);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supportsVoiceIsolation = !!(
-      (getSupportedConstraints as any)?.voiceIsolation === true
-    );
-
-    switch (algorithm) {
-      case "off":
-        return {
-          ...baseConstraints,
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        };
-      case "speex":
-      case "rnnoise":
-      case "noisegate":
-      // 'speedx_rnnoise' option removed — both rnnoise and speex continue
-      // to use the same recommended constraints when selected separately.
-      default:
-        return {
-          ...baseConstraints,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          ...(supportsVoiceIsolation ? { voiceIsolation: true } : {}),
-        };
-    }
   }
 
   private async loadWasmBinary(
@@ -191,8 +117,6 @@ class AudioService {
           maxChannels: options.maxChannels || 2,
         });
       }
-      // Combined RNNoise + SpeedX removed — createNoiseProcessor only
-      // creates single processor instances for speex, rnnoise, and noisegate.
       case "noisegate": {
         return new NoiseGateWorkletNode(ctx, {
           openThreshold: options.sensitivity || -50,
@@ -225,7 +149,6 @@ class AudioService {
     this.cleanup();
     const ctx = this.getAudioContext();
 
-    // CRITICAL FIX: Ensure context is running
     if (ctx.state === "suspended") {
       await ctx.resume();
     }
@@ -262,10 +185,6 @@ class AudioService {
     try {
       this.sourceNode = ctx.createMediaStreamSource(inputStream);
       this.destinationNode = ctx.createMediaStreamDestination();
-
-      // Create a single noise suppression processor instance (Speex / RNNoise
-      // / NoiseGate). The combined 'speedx_rnnoise' chain has been removed
-      // in favor of running algorithms individually.
       this.currentProcessor = await this.createNoiseProcessor(options);
 
       if (gateOptions) {
@@ -312,10 +231,9 @@ class AudioService {
     );
   }
 
-  public getProcessor(): TrackProcessor<
-    Track.Kind.Audio,
-    AudioProcessorOptions
-  > {
+  public getProcessor(
+    defaultNoiseOptions?: NoiseSuppressionOptions
+  ): TrackProcessor<Track.Kind.Audio, AudioProcessorOptions> {
     const self = this;
     let originalTrack: MediaStreamTrack | undefined = undefined;
     let processedStream: MediaStream | undefined = undefined;
@@ -332,18 +250,28 @@ class AudioService {
       async init(opts) {
         if (!opts || !opts.track)
           throw new TypeError("Processor init requires options.track");
-        originalTrack = opts.track;
-        const inputStream = new MediaStream([originalTrack]);
 
+        originalTrack = opts.track;
+
+        const inputStream = new MediaStream([originalTrack]);
         const ctx = self.getAudioContext();
         if (ctx.state === "suspended") await ctx.resume();
 
         try {
-          const algorithm: any = self.isSupported() ? "rnnoise" : "noisegate";
-          const channelCount = Math.max(opts.kind === "audio" ? 1 : 1, 1);
+          const supplied =
+            (processor as any).noiseSuppressionOptions || defaultNoiseOptions;
+          const algorithm =
+            supplied?.algorithm ??
+            (self.isSupported() ? "rnnoise" : "noisegate");
+          const channelCount = Math.max(
+            opts.kind === "audio" ? 1 : 1,
+            supplied?.maxChannels ?? 1
+          );
+
           const processed = await self.processStream(inputStream, {
             algorithm,
             maxChannels: channelCount,
+            sensitivity: supplied?.sensitivity,
           });
           setProcessedTrackFromStream(processed);
         } catch (err) {
@@ -364,11 +292,16 @@ class AudioService {
         const inputStream = new MediaStream([originalTrack]);
 
         try {
-          const algorithm: any = self.isSupported() ? "rnnoise" : "noisegate";
-          const channelCount = 1;
+          const supplied =
+            (processor as any).noiseSuppressionOptions || defaultNoiseOptions;
+          const algorithm =
+            supplied?.algorithm ??
+            (self.isSupported() ? "rnnoise" : "noisegate");
+          const channelCount = supplied?.maxChannels ?? 1;
           const processed = await self.processStream(inputStream, {
             algorithm,
             maxChannels: channelCount,
+            sensitivity: supplied?.sensitivity,
           });
           setProcessedTrackFromStream(processed);
         } catch (err) {

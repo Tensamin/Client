@@ -1,6 +1,8 @@
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import type { ForgeConfig } from "@electron-forge/shared-types";
+import fs from "fs/promises";
+import path from "path";
 
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerDMG } from "@electron-forge/maker-dmg";
@@ -70,6 +72,26 @@ const config: ForgeConfig = {
       force: true,
     }),
   ],
+  hooks: {
+    postMake: async (forgeConfig, makeResults) => {
+      const arch = process.env.ARCH || require("os").arch();
+
+      for (const result of makeResults) {
+        for (const i in result.artifacts) {
+          const artifactPath = result.artifacts[i];
+          const dir = path.dirname(artifactPath);
+          const ext = path.extname(artifactPath);
+          const name = path.basename(artifactPath, ext);
+
+          const newName = `${name}-${arch}${ext}`;
+          const newPath = path.join(dir, newName);
+
+          await fs.rename(artifactPath, newPath);
+          result.artifacts[i] = newPath;
+        }
+      }
+    },
+  },
   plugins: [
     new FusesPlugin({
       version: FuseVersion.V1,

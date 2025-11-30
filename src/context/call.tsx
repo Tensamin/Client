@@ -7,22 +7,19 @@ import {
   useState,
   useEffect,
   useCallback,
-  useRef,
 } from "react";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
   useLocalParticipant,
   useRoomContext,
-  useTrackToggle,
   useConnectionState,
 } from "@livekit/components-react";
 import {
   RoomEvent,
-  Track,
   LocalAudioTrack,
   ConnectionState,
-  Room,
+  createLocalAudioTrack,
 } from "livekit-client";
 import { toast } from "sonner";
 import * as Icon from "lucide-react";
@@ -65,42 +62,41 @@ export function useSubCallContext() {
 
 // Main Provider Component
 export function CallProvider({ children }: { children: React.ReactNode }) {
-  const { data, set, debugLog } = useStorageContext();
+  const { data, debugLog } = useStorageContext();
   const { lastMessage, send } = useSocketContext();
-  const { get } = useUserContext();
+  const { get, currentReceiverUuid } = useUserContext();
 
   const [shouldConnect, setShouldConnect] = useState(false);
   const [token, setToken] = useState("");
   const [outerState, setOuterState] = useState("DISCONNECTED");
+
+  // Connect function
+  const connect = useCallback(() => {
+    debugLog("CALL_PROVIDER", "CONNECTING");
+    if (!token || token === "error") {
+      toast.error("Missing call token");
+      return;
+    }
+    setOuterState("CONNECTING");
+    setShouldConnect(true);
+  }, [debugLog, token]);
 
   // Disconnect function
   const disconnect = useCallback(() => {
     debugLog("CALL_PROVIDER", "DISCONNECT_START");
     setOuterState("DISCONNECTED");
     setShouldConnect(false);
+    setToken("");
     debugLog("CALL_PROVIDER", "DISCONNECT_END");
-  }, [debugLog]);
+  }, [debugLog, setToken]);
 
-  // User volume management
-  const setUserVolumes = useCallback(
-    (userId: string, volume: number) => {
-      set("call_userVolumes", {
-        ...(data.call_userVolumes as object),
-        [userId]: volume,
-      });
-    },
-    [data.call_userVolumes, set]
-  );
-
-  // Incoming call state
+  // Call invites
   const [newCallWidgetOpen, setNewCallWidgetOpen] = useState(false);
   const [newCallData, setNewCallData] = useState<{
     call_id: string;
     sender_id: string;
   } | null>(null);
   const [newCaller, setNewCaller] = useState<User | null>(null);
-
-  // Handle incoming call invites
   useEffect(() => {
     if (lastMessage?.type === "call_invite") {
       debugLog("CALL_PROVIDER", "INCOMING_INVITE", lastMessage?.data);
@@ -120,12 +116,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }
   }, [lastMessage, get, debugLog]);
 
-  const connect = useCallback(() => {
-    debugLog("CALL_PROVIDER", "CONNECT_INIT", { shouldConnect, token });
-    setOuterState("CONNECTING");
-    setShouldConnect(true);
-  }, [debugLog, shouldConnect, token]);
-
+  // Call tokens
   const getCallToken = useCallback(
     async (callId: string) => {
       debugLog("CALL_PROVIDER", "GET_CALL_TOKEN", { callId });
@@ -134,14 +125,23 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }).then((data) => {
         debugLog("CALL_PROVIDER", "GET_CALL_TOKEN_RESULT", { callId, data });
         if (data.type !== "error") {
+          send("call_invite", {
+            receiver_id: currentReceiverUuid,
+            call_id: callId,
+          }).then((data) => {
+            if (data.type !== "error") {
+              toast.success("Call invite sent successfully");
+            } else {
+              toast.error("Failed to send call invite");
+            }
+          });
           return data.data.call_token ?? "error";
         }
         return "error";
       });
     },
-    [send, debugLog]
+    [send, debugLog, currentReceiverUuid]
   );
-
   const handleAcceptCall = useCallback(() => {
     debugLog("CALL_PROVIDER", "ACCEPT_CALL", { newCallData });
     setNewCallWidgetOpen(false);
@@ -152,43 +152,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     });
   }, [newCallData, getCallToken, connect, debugLog]);
 
-  // Custom room for audio processing
-  const roomRef = useRef<Room | null>(null);
-  if (!roomRef.current) {
-    roomRef.current = new Room({
-      dynacast: (data.call_enableDynacast as boolean) ?? true,
-      adaptiveStream: (data.call_enableAdaptiveStream as boolean) ?? true,
-      audioCaptureDefaults: {
-        echoCancellation: (data.call_enableEchoCancellation as boolean) ?? true,
-        noiseSuppression: (data.call_enableNoiseSuppression as boolean) ?? true,
-        autoGainControl: (data.call_enableAutoGainControl as boolean) ?? true,
-        voiceIsolation: (data.call_enabeVoiceIsolation as boolean) ?? true,
-        latency: (data.call_latency as number) ?? 0.02,
-        channelCount: (data.call_channelCount as number) || 2,
-        sampleRate: (data.call_sampleRate as number) ?? 48000,
-        sampleSize: (data.call_sampleSize as number) ?? 16,
-        deviceId: (data.call_inputDeviceID as string) ?? "default",
-        processor: audioService.getProcessor(),
-      },
-      audioOutput: {
-        deviceId: (data.call_outputDeviceID as string) ?? "default",
-      },
-      webAudioMix: true,
-      loggerName: "CALL_CONTEXT",
-    });
-    debugLog("CALL_XONTEXT", "ROOM_CREATED", roomRef.current);
-  }
-  const room = roomRef.current!;
-  useEffect(() => {
-    return () => {
-      try {
-        roomRef.current?.disconnect();
-      } finally {
-        roomRef.current = null;
-      }
-    };
-  }, []);
-
   return (
     <CallContext.Provider
       value={{
@@ -198,10 +161,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         outerState,
         setToken,
         connect,
-        setUserVolumes,
         setOuterState,
         setShouldConnect,
-        room,
       }}
     >
       {/* Incoming Call Dialog */}
@@ -248,10 +209,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
       <LiveKitRoom
         token={token}
-        room={room}
         serverUrl="wss://call.tensamin.net"
         connect={shouldConnect}
-        audio={true}
+        audio={false}
+        video={false}
+        screen={false}
         simulateParticipants={
           (data.call_amountOfSimulatedParticipants as number) ?? 0
         }
@@ -274,35 +236,24 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 // Sub Provider Component
 function SubCallProvider({ children }: { children: React.ReactNode }) {
   const { connect, shouldConnect } = useCallContext();
-  const { data, debugLog } = useStorageContext();
+  const { data, debugLog, set } = useStorageContext();
 
   const room = useRoomContext();
   const connectionState = useConnectionState();
-  const { localParticipant, isMicrophoneEnabled } = useLocalParticipant();
+  const { localParticipant } = useLocalParticipant();
 
-  const microphoneToggle = useTrackToggle({
-    source: Track.Source.Microphone,
-  });
-
+  const [localTrack, setLocalTrack] = useState<LocalAudioTrack | null>(null);
   const [isDeafened, setIsDeafened] = useState(false);
-  const [audioTrackPublished, setAudioTrackPublished] = useState(false);
-
-  const publishedTrackRef = useRef<LocalAudioTrack | null>(null);
-  const rawStreamRef = useRef<MediaStream | null>(null);
 
   const storedUserVolumes = data.call_userVolumes as UserAudioSettings | null;
 
-  // Inital Volumes
+  // User Volume Management
   useEffect(() => {
     if (!room) return;
     const handleParticipantConnected = (participant: {
       identity: string;
       setVolume: (volume: number) => void;
     }) => {
-      debugLog("SUB_CALL", "PARTICIPANT_CONNECTED", {
-        identity: participant.identity,
-        storedVolume: storedUserVolumes?.[participant.identity],
-      });
       const storedVolume = storedUserVolumes?.[participant.identity];
       if (storedVolume) {
         participant.setVolume(storedVolume as number);
@@ -314,169 +265,176 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     };
   }, [room, storedUserVolumes, debugLog]);
 
-  // Mute audio tags on deafen
+  // Custom Audio Init for Noise Suppression
+  useEffect(() => {
+    let mounted = true;
+    let createdTrack: LocalAudioTrack | null = null;
+
+    const initAudio = async () => {
+      if (
+        connectionState === ConnectionState.Connected &&
+        shouldConnect &&
+        localParticipant &&
+        !localTrack
+      ) {
+        try {
+          createdTrack = await createLocalAudioTrack({
+            echoCancellation:
+              (data.call_enableEchoCancellation as boolean) ?? true,
+            noiseSuppression:
+              (data.call_enableNoiseSuppression as boolean) ?? true,
+            autoGainControl:
+              (data.call_enableAutoGainControl as boolean) ?? true,
+            deviceId: (data.call_inputDeviceID as string) ?? "default",
+            sampleRate: (data.call_sampleRate as number) ?? 48000,
+            channelCount: (data.call_channelCount as number) || 2,
+          });
+
+          if (!mounted) {
+            createdTrack.stop();
+            return;
+          }
+
+          const audioContext = audioService.getAudioContext();
+          createdTrack.setAudioContext(audioContext);
+
+          const processor = audioService.getProcessor({
+            algorithm: "rnnoise",
+            maxChannels: (data.call_channelCount as number) ?? 2,
+            sensitivity: (data.call_noiseSensitivity as number) ?? 0.5,
+          });
+          await createdTrack.setProcessor(processor);
+
+          await localParticipant.publishTrack(createdTrack);
+          setLocalTrack(createdTrack);
+        } catch (error) {
+          debugLog("SUB_CALL_CONTEXT", "INIT_AUDIO_ERROR", error);
+          toast.error("Failed to initialize microphone.");
+          if (createdTrack) createdTrack.stop();
+        }
+      }
+    };
+
+    initAudio();
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    connectionState,
+    shouldConnect,
+    localParticipant,
+    localTrack,
+    data,
+    debugLog,
+  ]);
+
+  // Deafen logic
   useEffect(() => {
     const audioElements = document.querySelectorAll("audio");
     audioElements.forEach((audio) => {
       audio.muted = isDeafened;
     });
     if (localParticipant && shouldConnect && connectionState === "connected") {
-      debugLog("SUB_CALL", "SET_LOCAL_METADATA", { deafened: isDeafened });
       localParticipant
         .setMetadata(JSON.stringify({ deafened: isDeafened }))
         .catch(() => {});
     }
   }, [isDeafened, localParticipant, shouldConnect, connectionState, debugLog]);
 
-  // Cleanup
-  useEffect(() => {
-    if (!shouldConnect) {
-      debugLog("SUB_CALL", "CLEANUP_START", { audioTrackPublished });
-      if (publishedTrackRef.current) {
-        publishedTrackRef.current.stop();
-        publishedTrackRef.current = null;
-      }
-      setAudioTrackPublished(false);
-      if (rawStreamRef.current) {
-        rawStreamRef.current.getTracks().forEach((t) => t.stop());
-        rawStreamRef.current = null;
-      }
-      audioService.cleanup();
-      debugLog("SUB_CALL", "CLEANUP_DONE");
-    }
-  }, [shouldConnect, audioTrackPublished, debugLog]);
-
   // Toggle Mute
   const toggleMute = useCallback(async () => {
-    debugLog("SUB_CALL", "TOGGLE_MUTE_START", { isMicrophoneEnabled });
-    if (microphoneToggle.toggle) {
-      await microphoneToggle.toggle();
-    } else if (localParticipant) {
-      const newState = !isMicrophoneEnabled;
-      await localParticipant.setMicrophoneEnabled(newState);
+    if (!localTrack) return;
+
+    debugLog("SUB_CALL", "TOGGLE_MUTE", { currentMuted: localTrack.isMuted });
+
+    if (localTrack.isMuted) {
+      await localTrack.unmute();
+    } else {
+      await localTrack.mute();
     }
-    if (!isMicrophoneEnabled && isDeafened) {
+
+    setLocalTrack(
+      Object.assign(
+        Object.create(Object.getPrototypeOf(localTrack)),
+        localTrack
+      )
+    );
+
+    if (localTrack.isMuted && isDeafened) {
       setIsDeafened(false);
     }
-    debugLog("SUB_CALL", "TOGGLE_MUTE_END", {
-      isMicrophoneEnabled: !isMicrophoneEnabled,
-    });
-  }, [
-    microphoneToggle,
-    localParticipant,
-    isMicrophoneEnabled,
-    isDeafened,
-    debugLog,
-  ]);
+  }, [localTrack, isDeafened, debugLog]);
 
   // Toggle Deafen
   const toggleDeafen = useCallback(async () => {
-    debugLog("SUB_CALL", "TOGGLE_DEAFEN_START", {
-      isDeafened,
-      isMicrophoneEnabled,
-    });
     const newDeafenedState = !isDeafened;
     setIsDeafened(newDeafenedState);
-    if (newDeafenedState && isMicrophoneEnabled) {
-      if (localParticipant) await localParticipant.setMicrophoneEnabled(false);
-    } else if (!newDeafenedState && !isMicrophoneEnabled) {
-      if (localParticipant) await localParticipant.setMicrophoneEnabled(true);
-    }
-    debugLog("SUB_CALL", "TOGGLE_DEAFEN_END", { newDeafenedState });
-  }, [isDeafened, isMicrophoneEnabled, localParticipant, debugLog]);
 
-  // Room Event Subscriptions
+    if (localTrack) {
+      if (newDeafenedState && !localTrack.isMuted) {
+        await localTrack.mute();
+      } else if (!newDeafenedState && localTrack.isMuted) {
+        await localTrack.unmute();
+      }
+
+      setLocalTrack(
+        Object.assign(
+          Object.create(Object.getPrototypeOf(localTrack)),
+          localTrack
+        )
+      );
+    }
+  }, [isDeafened, localTrack]);
+
+  // Cleanup
   useEffect(() => {
-    if (!room) return;
-    const events: Array<{
-      event: RoomEvent;
-      handler: (...args: unknown[]) => void;
-    }> = [
-      {
-        event: RoomEvent.ParticipantConnected,
-        handler: (p) => {
-          const participant = p as { identity?: string } | undefined;
-          debugLog("SUB_CALL", "EVENT_PARTICIPANT_CONNECTED", {
-            identity: participant?.identity,
-          });
-        },
-      },
-      {
-        event: RoomEvent.ParticipantDisconnected,
-        handler: (p) => {
-          const participant = p as { identity?: string } | undefined;
-          debugLog("SUB_CALL", "EVENT_PARTICIPANT_DISCONNECTED", {
-            identity: participant?.identity,
-          });
-        },
-      },
-      {
-        event: RoomEvent.TrackPublished,
-        handler: (p, tx) => {
-          const participant = p as { identity?: string } | undefined;
-          const trackPub = tx as { name?: string } | undefined;
-          debugLog("SUB_CALL", "EVENT_TRACK_PUBLISHED", {
-            participant: participant?.identity,
-            track: trackPub?.name,
-          });
-        },
-      },
-      {
-        event: RoomEvent.TrackUnpublished,
-        handler: (p, tx) => {
-          const participant = p as { identity?: string } | undefined;
-          const trackPub = tx as { name?: string } | undefined;
-          debugLog("SUB_CALL", "EVENT_TRACK_UNPUBLISHED", {
-            participant: participant?.identity,
-            track: trackPub?.name,
-          });
-        },
-      },
-      {
-        event: RoomEvent.TrackMuted,
-        handler: (p, tx) => {
-          const participant = p as { identity?: string } | undefined;
-          const trackPub = tx as { name?: string } | undefined;
-          debugLog("SUB_CALL", "EVENT_TRACK_MUTED", {
-            participant: participant?.identity,
-            track: trackPub?.name,
-          });
-        },
-      },
-      {
-        event: RoomEvent.TrackUnmuted,
-        handler: (p, tx) => {
-          const participant = p as { identity?: string } | undefined;
-          const trackPub = tx as { name?: string } | undefined;
-          debugLog("SUB_CALL", "EVENT_TRACK_UNMUTED", {
-            participant: participant?.identity,
-            track: trackPub?.name,
-          });
-        },
-      },
-      {
-        event: RoomEvent.ActiveSpeakersChanged,
-        handler: (speakers) =>
-          debugLog("SUB_CALL", "EVENT_ACTIVE_SPEAKERS", { speakers }),
-      },
-      {
-        event: RoomEvent.ConnectionQualityChanged,
-        handler: (participant, quality) => {
-          const participantObj = participant as
-            | { identity?: string }
-            | undefined;
-          debugLog("SUB_CALL", "EVENT_CONN_QUALITY", {
-            participant: participantObj?.identity,
-            quality,
-          });
-        },
-      },
-    ];
-    events.forEach(({ event, handler }) => room.on(event, handler));
+    if (!shouldConnect && localTrack) {
+      debugLog("SUB_CALL_CONTEXT", "CLEANUP_TRACK");
+      localTrack.stop();
+      setLocalTrack(null);
+      audioService.cleanup();
+    }
+  }, [shouldConnect, localTrack, debugLog]);
+
+  useEffect(() => {
+    if (!shouldConnect && localTrack) {
+      debugLog("SUB_CALL_CONTEXT", "CLEANUP_TRACK");
+      (async () => {
+        try {
+          if (localParticipant && localParticipant?.unpublishTrack) {
+            await localParticipant.unpublishTrack(localTrack);
+          }
+        } catch (err) {
+          debugLog("SUB_CALL_CONTEXT", "UNPUBLISH_ERROR", err);
+        }
+        try {
+          localTrack.stop();
+        } catch (err) {
+          debugLog("SUB_CALL_CONTEXT", "STOP_TRACK_ERROR", err);
+        }
+        setLocalTrack(null);
+        audioService.cleanup();
+      })();
+    }
+  }, [shouldConnect, localTrack, localParticipant, debugLog]);
+
+  useEffect(() => {
     return () => {
-      events.forEach(({ event, handler }) => room.off(event, handler));
+      if (localTrack) {
+        try {
+          if (localParticipant && localParticipant?.unpublishTrack) {
+            localParticipant.unpublishTrack(localTrack).catch(() => {});
+          }
+        } catch {}
+        try {
+          localTrack.stop();
+        } catch {}
+        audioService.cleanup();
+        setLocalTrack(null);
+      }
     };
-  }, [room, debugLog]);
+  }, [localParticipant, localTrack]);
 
   return (
     <SubCallContext.Provider
@@ -485,7 +443,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         toggleMute,
         isDeafened,
         toggleDeafen,
-        isMuted: !isMicrophoneEnabled,
+        isMuted: localTrack ? localTrack.isMuted : true,
         connectionState,
       }}
     >
@@ -501,10 +459,8 @@ type CallContextValue = {
   outerState: string;
   setToken: (input: string) => void;
   connect: () => void;
-  setUserVolumes: (userId: string, volume: number) => void;
   setOuterState: (input: string) => void;
   setShouldConnect: (input: boolean) => void;
-  room: Room;
   disconnect: () => void;
 };
 
