@@ -1,5 +1,32 @@
 "use client";
 
+/**
+ * Migration helper for noise suppression settings
+ * Converts legacy nsState values to new format:
+ * - Old nsState 1 (built-in only) → New nsState 2 (speex with built-in)
+ * This maintains the user's intent while using the improved implementation
+ */
+function migrateNsState(nsState: unknown): number {
+  const currentNsState = nsState as number | undefined;
+
+  // If nsState is 1 (legacy built-in only mode), migrate to 2 (speex)
+  // Speex now includes built-in browser features, so this preserves user intent
+  if (currentNsState === 1) {
+    console.log(
+      "Storage: Migrating nsState from 1 (built-in only) to 2 (speex with built-in features)",
+    );
+    return 2;
+  }
+
+  // Valid values: 0 (off), 2 (speex), 3 (rnnoise)
+  // Default to 0 if undefined or invalid
+  if (currentNsState === 0 || currentNsState === 2 || currentNsState === 3) {
+    return currentNsState;
+  }
+
+  return 0;
+}
+
 // Package Imports
 import {
   createContext,
@@ -109,6 +136,29 @@ export function StorageProvider({
       userData.forEach((entry) => {
         loadedUserData[entry.key] = entry.value;
       });
+
+      // Migrate nsState if needed (convert legacy value 1 to 2)
+      if (loadedUserData.nsState !== undefined) {
+        const migratedValue = migrateNsState(loadedUserData.nsState);
+        if (migratedValue !== loadedUserData.nsState) {
+          loadedUserData.nsState = migratedValue;
+          // Update in database
+          db.put("data", { key: "nsState", value: migratedValue });
+        }
+      }
+
+      // Ensure sensible defaults for new users (persist into DB).
+      if (loadedUserData.nsState === undefined) {
+        // Default to RNNoise (3) for improved suppression
+        loadedUserData.nsState = 3;
+        db.put("data", { key: "nsState", value: 3 });
+      }
+      if (loadedUserData.audioThreshold === undefined) {
+        // Default gate threshold to -40 dB
+        loadedUserData.audioThreshold = -40;
+        db.put("data", { key: "audioThreshold", value: -40 });
+      }
+
       setUserData(loadedUserData);
       offlineData.forEach((entry) => {
         switch (entry.key) {
@@ -122,7 +172,7 @@ export function StorageProvider({
                   if (!db) return;
 
                   const updated = (offlineData || []).filter(
-                    (entry) => entry.user.uuid !== userEntry.user.uuid
+                    (entry) => entry.user.uuid !== userEntry.user.uuid,
                   );
 
                   db.put("offline", { key: "storedUsers", value: updated });
@@ -133,7 +183,7 @@ export function StorageProvider({
                   user: userEntry.user,
                   storeTime: userEntry.storeTime,
                 });
-              }
+              },
             );
             break;
           case "storedConversations":
@@ -166,7 +216,7 @@ export function StorageProvider({
     const isRules = /\{/.test(themeCSS);
     if (isRules) {
       let style = document.getElementById(
-        "theme-style"
+        "theme-style",
       ) as HTMLStyleElement | null;
       if (!style) {
         style = document.createElement("style");
@@ -209,7 +259,7 @@ export function StorageProvider({
         handleError("STORAGE_CONTEXT", "ERROR_UPDATING_DATABASE_UNKNOWN", err);
       }
     },
-    [db]
+    [db],
   );
 
   const setThemeCSS = useCallback(
@@ -217,7 +267,7 @@ export function StorageProvider({
       setRawThemeCSS(css);
       set("themeCSS", css);
     },
-    [set]
+    [set],
   );
 
   const setThemeTint = useCallback(
@@ -225,7 +275,7 @@ export function StorageProvider({
       setRawThemeTint(tint);
       set("themeTint", tint);
     },
-    [set]
+    [set],
   );
 
   const setThemeTintType = useCallback(
@@ -233,7 +283,7 @@ export function StorageProvider({
       setRawThemeTintType(tintType);
       set("themeTintType", tintType);
     },
-    [set]
+    [set],
   );
 
   useEffect(() => {
@@ -252,11 +302,11 @@ export function StorageProvider({
     const colors = generateColors(
       userData.themeHex as string,
       userData.tintType as "hard" | "light",
-      activeScheme
+      activeScheme,
     );
 
     Object.entries(colors).forEach(([name, value]) =>
-      document.documentElement.style.setProperty(name, value)
+      document.documentElement.style.setProperty(name, value),
     );
   }, [resolvedTheme, systemTheme, userData.tintType, userData.themeHex]);
 
@@ -304,7 +354,7 @@ export function StorageProvider({
 
         const storeTime = Date.now();
         const existingIndex = current.findIndex(
-          (stored) => stored.user.uuid === user.uuid
+          (stored) => stored.user.uuid === user.uuid,
         );
 
         const updated: StoredUser[] = [...current];
@@ -328,7 +378,7 @@ export function StorageProvider({
         handleError("STORAGE_CONTEXT", "ERROR_ADD_OFFLINE_USER_UNKNOWN", err);
       }
     },
-    [db]
+    [db],
   );
 
   const setOfflineConversations = useCallback(
@@ -339,7 +389,7 @@ export function StorageProvider({
         value: conversations,
       });
     },
-    [db]
+    [db],
   );
 
   const setOfflineCommunities = useCallback(
@@ -350,13 +400,13 @@ export function StorageProvider({
         value: communities,
       });
     },
-    [db]
+    [db],
   );
 
   function debugLog(
     sender: string,
     message: string,
-    extraInfo?: unknown
+    extraInfo?: unknown,
   ): void {
     const tagStyle =
       "background: #3f3f3f; padding: 1px 4px; border-radius: 2px; " +
@@ -368,12 +418,12 @@ export function StorageProvider({
       (message === "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS"
         ? "color: #a6d189;"
         : message === "SOCKET_CONTEXT_CONNECTED"
-        ? "color: #a6d189;"
-        : message === "SOCKET_CONTEXT_DISCONNECTED"
-        ? "color: #e78284;"
-        : message.startsWith("ERROR")
-        ? "color: #e78284;"
-        : "");
+          ? "color: #a6d189;"
+          : message === "SOCKET_CONTEXT_DISCONNECTED"
+            ? "color: #e78284;"
+            : message.startsWith("ERROR")
+              ? "color: #e78284;"
+              : "");
 
     console.log(
       "%c%s%c %c%s%c",
@@ -383,7 +433,7 @@ export function StorageProvider({
       msgStyle,
       message,
       "",
-      extraInfo !== undefined ? extraInfo : ""
+      extraInfo !== undefined ? extraInfo : "",
     );
   }
 

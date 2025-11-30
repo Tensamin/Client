@@ -44,9 +44,10 @@ import {
   Track,
 } from "livekit-client";
 import { isTrackReference } from "@livekit/components-core";
+import { toast } from "sonner";
 
 // Main
-export function CallUserModal() {
+export function CallUserModal({ hideBadges }: { hideBadges?: boolean } = {}) {
   const { identity, metadata } = useParticipantInfo();
   const participant = useParticipantContext();
   const trackRef = useMaybeTrackRefContext();
@@ -68,6 +69,7 @@ export function CallUserModal() {
       } catch {}
     }
   }, [metadata]);
+
   useEffect(() => {
     if (!participant) {
       return;
@@ -93,6 +95,7 @@ export function CallUserModal() {
         muted,
         deafened,
         screenShareTrackRef,
+        hideBadges,
       }}
     />
   ) : identity !== "" ? (
@@ -148,7 +151,22 @@ export function VoiceActions() {
     },
   } satisfies ChartConfig;
 
+  // Copy Button
+  const [copyCallId, setCopyCallId] = useState(false);
+  useEffect(() => {
+    let timeout = null;
+    if (copyCallId) {
+      timeout = setTimeout(() => setCopyCallId(false), 2000);
+    }
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [copyCallId, name]);
+
   const commonClassNames = "text-sm";
+  const connectingColor = "text-ring";
   return shouldConnect ? (
     <Card className="bg-input/30 rounded-lg border-input flex flex-col gap-2 justify-center items-center w-full p-2">
       <Popover>
@@ -159,8 +177,8 @@ export function VoiceActions() {
           >
             {connectionState !== ConnectionState.Connected ? (
               <>
-                <Icon.WifiSync className="text-muted-foreground" />
-                <p className={cn("text-muted-foreground", commonClassNames)}>
+                <Icon.WifiSync className={connectingColor} />
+                <p className={cn(connectingColor, commonClassNames)}>
                   Connecting...
                 </p>
               </>
@@ -194,15 +212,15 @@ export function VoiceActions() {
               </>
             ) : quality === ConnectionQuality.Unknown ? (
               <>
-                <Icon.WifiSync className="text-muted-foreground" />
-                <p className={cn("text-muted-foreground", commonClassNames)}>
+                <Icon.WifiSync className={connectingColor} />
+                <p className={cn(connectingColor, commonClassNames)}>
                   Connecting...
                 </p>
               </>
             ) : (
               <>
-                <Icon.WifiSync className="text-muted-foreground" />
-                <p className={cn("text-muted-foreground", commonClassNames)}>
+                <Icon.WifiSync className={connectingColor} />
+                <p className={cn(connectingColor, commonClassNames)}>
                   Connecting...
                 </p>
               </>
@@ -214,12 +232,26 @@ export function VoiceActions() {
           className="ml-5 w-[350px] flex flex-col gap-2"
         >
           <p className="font-medium">Connection Status</p>
+          <Button
+            onClick={() => {
+              try {
+                navigator.clipboard.writeText(name || "");
+                setCopyCallId(true);
+              } catch {
+                toast.error("Failed to copy Call ID to clipboard");
+              }
+            }}
+            className="flex justify-start w-33 items-center"
+            variant="outline"
+          >
+            {copyCallId ? <Icon.Check /> : <Icon.Copy />}
+            <span>Copy Call ID</span>
+          </Button>
           <div className="flex flex-col gap-0.5 text-sm">
             <p>Quality: {quality ? quality : "..."}</p>
             <p>State: {connectionState ? connectionState : "..."}</p>
-            <p>Call: {name ? name : ""}</p>
           </div>
-          <p className="font-medium">Ping</p>
+          <p className="font-medium">Ping Graph</p>
           <div className="flex flex-col gap-0.5 text-sm">
             <ChartContainer config={pingGraph}>
               <AreaChart accessibilityLayer data={pingData}>

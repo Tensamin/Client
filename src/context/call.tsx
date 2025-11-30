@@ -69,7 +69,22 @@ export function useSubCallContext() {
 
 // Main Provider Component
 export function CallProvider({ children }: { children: React.ReactNode }) {
-  const { data, set } = useStorageContext();
+  const { data, set, debugLog } = useStorageContext();
+  const dlog = (...args: any[]) => {
+    try {
+      // debugLog signature expects (section, label, payload?). We call with up to 3 args.
+      // Use typed indexes to appease TypeScript.
+      // @ts-ignore - ensure we don't crash if debugLog signature differs slightly
+      debugLog?.(args[0] as string, args[1] as string, args[2]);
+    } catch (err) {
+      // ignore
+    }
+    // ensure something visible in console
+    try {
+      // eslint-disable-next-line no-console
+      console.debug("CALL_PROVIDER", ...args);
+    } catch (err) {}
+  };
   const { lastMessage, send } = useSocketContext();
   const { get } = useUserContext();
 
@@ -85,7 +100,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         [userId]: volume,
       });
     },
-    [data.call_userVolumes, set],
+    [data.call_userVolumes, set]
   );
 
   // Incoming call state
@@ -99,6 +114,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   // Handle incoming call invites
   useEffect(() => {
     if (lastMessage?.type === "call_invite") {
+      dlog("CALL_PROVIDER", "INCOMING_INVITE", lastMessage?.data);
       if (!lastMessage.data.sender_id || !lastMessage.data.call_id) {
         toast.error("Failed joining call");
         return;
@@ -121,25 +137,29 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   ]);
 
   const connect = useCallback(() => {
+    dlog("CALL_PROVIDER", "CONNECT_INIT", { shouldConnect, token });
     setOuterState("CONNECTING");
     setShouldConnect(true);
   }, []);
 
   const getCallToken = useCallback(
     async (callId: string) => {
+      dlog("CALL_PROVIDER", "GET_CALL_TOKEN", { callId });
       return send("call_token", {
         call_id: callId,
       }).then((data) => {
+        dlog("CALL_PROVIDER", "GET_CALL_TOKEN_RESULT", { callId, data });
         if (data.type !== "error") {
           return data.data.call_token ?? "error";
         }
         return "error";
       });
     },
-    [send],
+    [send]
   );
 
   const handleAcceptCall = useCallback(() => {
+    dlog("CALL_PROVIDER", "ACCEPT_CALL", { newCallData });
     setNewCallWidgetOpen(false);
     if (!newCallData?.call_id) return;
     getCallToken(newCallData.call_id).then((token) => {
@@ -220,8 +240,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         connect={shouldConnect}
         audio={false}
         video={false}
-        onConnected={() => setOuterState("CONNECTED")}
-        onDisconnected={() => setOuterState("DISCONNECTED")}
+        onConnected={() => {
+          dlog("CALL_PROVIDER", "ROOM_CONNECTED", { token });
+          setOuterState("CONNECTED");
+        }}
+        onDisconnected={() => {
+          dlog("CALL_PROVIDER", "ROOM_DISCONNECTED");
+          setOuterState("DISCONNECTED");
+        }}
       >
         <RoomAudioRenderer />
         <SubCallProvider>{children}</SubCallProvider>
@@ -231,174 +257,237 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 }
 
 // Sub Provider Component - handles call functionality within room context
+// ... imports stay same ...
+
+// Sub Provider Component - handles call functionality within room context
 function SubCallProvider({ children }: { children: React.ReactNode }) {
   const { setOuterState, setShouldConnect, connect, shouldConnect } =
     useCallContext();
   const { data, debugLog } = useStorageContext();
+  const dlog = (...args: any[]) => {
+    try {
+      // @ts-ignore
+      debugLog?.(args[0] as string, args[1] as string, args[2]);
+    } catch (err) {}
+    try {
+      // eslint-disable-next-line no-console
+      console.debug("SUB_CALL", ...args);
+    } catch (err) {}
+  };
 
-  // LiveKit hooks
   const room = useRoomContext();
   const connectionState = useConnectionState();
   const { buttonProps: disconnectButtonProps } = useDisconnectButton({});
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant();
 
-  // Track toggle using LiveKit's hook for microphone
   const microphoneToggle = useTrackToggle({
     source: Track.Source.Microphone,
   });
 
-  // Local state
   const [noiseSuppressionSupported, setNoiseSuppressionSupported] =
     useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
   const [audioTrackPublished, setAudioTrackPublished] = useState(false);
 
-  // Refs for audio track management
   const publishedTrackRef = useRef<LocalAudioTrack | null>(null);
   const rawStreamRef = useRef<MediaStream | null>(null);
 
-  // Get stored user volumes
   const storedUserVolumes = data.call_userVolumes as UserAudioSettings | null;
 
-  // Check noise suppression support on mount
   useEffect(() => {
     setNoiseSuppressionSupported(audioService.isSupported());
   }, []);
 
-  // Apply stored volumes to participants when they connect
   useEffect(() => {
     if (!room) return;
-
     const handleParticipantConnected = (participant: {
       identity: string;
       setVolume: (volume: number) => void;
     }) => {
+      dlog("SUB_CALL", "PARTICIPANT_CONNECTED", {
+        identity: participant.identity,
+        storedVolume: storedUserVolumes?.[participant.identity],
+      });
       const storedVolume = storedUserVolumes?.[participant.identity];
       if (storedVolume) {
         participant.setVolume(storedVolume as number);
       }
     };
-
     room.on(RoomEvent.ParticipantConnected, handleParticipantConnected);
-
     return () => {
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
     };
   }, [room, storedUserVolumes]);
 
-  // Handle deafened state - mute all audio elements
   useEffect(() => {
     const audioElements = document.querySelectorAll("audio");
     audioElements.forEach((audio) => {
       audio.muted = isDeafened;
     });
-
-    // Update participant metadata
     if (localParticipant && shouldConnect) {
+      dlog("SUB_CALL", "SET_LOCAL_METADATA", { deafened: isDeafened });
       localParticipant
         .setMetadata(JSON.stringify({ deafened: isDeafened }))
-        .catch((error) => {
-          if (
-            error instanceof Error &&
-            error.message?.includes(
-              "Request to update local metadata timed out",
-            )
-          ) {
-            return;
-          }
-          throw error;
-        });
+        .catch(() => {});
     }
   }, [isDeafened, localParticipant, shouldConnect]);
 
-  // Helper function to get processed audio stream with noise suppression
   const getProcessedAudioStream =
     useCallback(async (): Promise<MediaStream> => {
-      const nsState = (data.nsState as number) ?? 0;
+      // Default to RNNoise for improved suppression when not explicitly set
+      const nsState = (data.nsState as number) ?? 3;
       const channelCount = (data.call_channelCount as number) || 2;
+      const enableAudioGate = (data.enableAudioGate as boolean) ?? false;
+      const audioThreshold = (data.audioThreshold as number) ?? -40;
 
-      debugLog("NOISE_SUPPRESSION", "NS_GET_STREAM", {
+      let algorithm: NoiseSuppressionAlgorithm | "off" = "off";
+      let needsCustomProcessing = false;
+
+      switch (nsState) {
+        case 0:
+          algorithm = "off";
+          break;
+        case 1:
+        case 2:
+          algorithm = "speex";
+          needsCustomProcessing = nsState >= 2;
+          break;
+        case 3:
+          algorithm = "rnnoise";
+          needsCustomProcessing = true;
+          break;
+        default:
+          algorithm = "off";
+      }
+
+      dlog("SUB_CALL", "GET_PROCESSED_AUDIO_STREAM_START", {
         nsState,
+        channelCount,
+        enableAudioGate,
+        audioThreshold,
         noiseSuppressionSupported,
       });
 
-      // Define audio constraints based on noise suppression mode
-      const rawConstraints: MediaTrackConstraints = {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
-        sampleRate: 48000,
-        channelCount,
-      };
+      // 1. Get constraints
+      const audioConstraints = audioService.getRecommendedConstraints(
+        algorithm,
+        channelCount
+      );
 
-      const builtInConstraints: MediaTrackConstraints = {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        sampleRate: 48000,
-        channelCount,
-      };
+      // Allow user override via storage: call_voiceIsolation
+      const userVoiceIsolationSetting =
+        (data.call_voiceIsolation as boolean) ?? true;
+      const requestedAudioConstraints = {
+        ...(audioConstraints as Record<string, unknown>),
+      } as Record<string, unknown>;
+      if (
+        !userVoiceIsolationSetting &&
+        "voiceIsolation" in requestedAudioConstraints
+      ) {
+        delete requestedAudioConstraints.voiceIsolation;
+      }
 
-      // Determine which constraints to use
-      const constraints: MediaStreamConstraints = {
-        audio: nsState === 1 ? builtInConstraints : rawConstraints,
-        video: false,
-      };
-
-      // Get raw stream
-      const rawStream = await navigator.mediaDevices.getUserMedia(constraints);
-      rawStreamRef.current = rawStream;
-
-      debugLog("CALL_CONTEXT", "RAW_STREAM_ACQUIRED", {
-        tracks: rawStream.getTracks().map((t) => ({
-          kind: t.kind,
-          enabled: t.enabled,
-          readyState: t.readyState,
-        })),
-        nsState,
+      // Log if voiceIsolation is requested/available
+      dlog("SUB_CALL", "VOICE_ISOLATION_SUPPORT", {
+        requested:
+          requestedAudioConstraints &&
+          (requestedAudioConstraints as any).voiceIsolation === true,
+        supported: audioService.isVoiceIsolationSupported(),
+        userEnabled: userVoiceIsolationSetting,
       });
 
-      // Apply custom noise suppression if enabled and supported
-      // nsState: 2 = speex, 3 = rnnoise
-      if (nsState >= 2 && nsState <= 3 && noiseSuppressionSupported) {
+      dlog("SUB_CALL", "AUDIO_CONSTRAINTS", { audioConstraints });
+
+      // 2. Acquire raw stream
+      // We must stop previous tracks before requesting new ones to avoid device busy errors
+      if (rawStreamRef.current) {
+        rawStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+
+      const inputStream = await navigator.mediaDevices.getUserMedia({
+        audio: requestedAudioConstraints,
+        video: false,
+      });
+
+      dlog("SUB_CALL", "RAW_STREAM_ACQUIRED", {
+        audioTracks: inputStream.getAudioTracks().map((t) => t.getSettings()),
+        trackCount: inputStream.getAudioTracks().length,
+      });
+
+      rawStreamRef.current = inputStream;
+
+      // 3. Process stream if needed
+      if (
+        needsCustomProcessing &&
+        algorithm !== "off" &&
+        noiseSuppressionSupported
+      ) {
         try {
-          let algorithm: NoiseSuppressionAlgorithm;
-          switch (nsState) {
-            case 2:
-              algorithm = "speex";
-              debugLog("CALL_CONTEXT", "NS_ALGORITHM", "speex");
-              break;
-            case 3:
-              algorithm = "rnnoise";
-              debugLog("CALL_CONTEXT", "NS_ALGORITHM", "rnnoise");
-              break;
-            default:
-              debugLog("CALL_CONTEXT", "NS_INVALID_STATE", nsState);
-              return rawStream;
-          }
+          const gateOptions = enableAudioGate
+            ? { threshold: audioThreshold, maxChannels: channelCount }
+            : undefined;
 
-          const processedStream = await audioService.processStream(rawStream, {
-            algorithm,
-            maxChannels: channelCount,
+          const processed = await audioService.processStream(
+            inputStream,
+            {
+              algorithm: algorithm as NoiseSuppressionAlgorithm,
+              maxChannels: channelCount,
+            },
+            gateOptions
+          );
+          dlog("SUB_CALL", "PROCESSED_STREAM_WITH_NS", {
+            originalTracks: inputStream
+              .getAudioTracks()
+              .map((t) => t.getSettings()),
+            processedTracks: processed
+              .getAudioTracks()
+              .map((t) => t.getSettings()),
           });
-
-          debugLog("CALL_CONTEXT", "NS_STREAM_PROCESSED", algorithm);
-          return processedStream;
+          return processed;
         } catch (err) {
-          debugLog("CALL_CONTEXT", "NS_ERROR", err);
-          return rawStream;
+          dlog("CALL_CONTEXT", "NS_ERROR", err);
+          return inputStream;
         }
       }
 
-      return rawStream;
+      if (enableAudioGate && noiseSuppressionSupported) {
+        try {
+          const processedGate = await audioService.processStreamWithGate(
+            inputStream,
+            {
+              threshold: audioThreshold,
+              maxChannels: channelCount,
+            }
+          );
+          dlog("SUB_CALL", "PROCESSED_STREAM_WITH_GATE", {
+            originalTracks: inputStream
+              .getAudioTracks()
+              .map((t) => t.getSettings()),
+            processedTracks: processedGate
+              .getAudioTracks()
+              .map((t) => t.getSettings()),
+          });
+          return processedGate;
+        } catch (err) {
+          dlog("CALL_CONTEXT", "GATE_ERROR", err);
+          return inputStream;
+        }
+      }
+
+      dlog("SUB_CALL", "RETURN_RAW_STREAM", {
+        trackCount: inputStream.getAudioTracks().length,
+      });
+      return inputStream;
     }, [
       data.nsState,
       data.call_channelCount,
+      data.enableAudioGate,
+      data.audioThreshold,
       noiseSuppressionSupported,
       debugLog,
     ]);
 
-  // Publish audio track when connected
+  // Publish audio track
   useEffect(() => {
     if (!localParticipant || !shouldConnect || audioTrackPublished) return;
     if (connectionState !== ConnectionState.Connected) return;
@@ -407,55 +496,41 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
     const publishAudioTrack = async () => {
       try {
-        debugLog("NOISE_SUPPRESSION", "NS_PUBLISHING_TRACK", {
-          nsState: data.nsState,
-          noiseSuppressionSupported,
-        });
-
-        // Get the processed audio stream
         const processedStream = await getProcessedAudioStream();
-        if (!processedStream || !isMounted) return;
+        if (!isMounted || !processedStream) return;
 
-        // Get the audio track from the stream
         const audioTrack = processedStream.getAudioTracks()[0];
-        if (!audioTrack) {
-          debugLog(
-            "NOISE_SUPPRESSION",
-            "NS_NO_AUDIO_TRACK",
-            "No audio track found",
-          );
-          return;
-        }
+        if (!audioTrack) return;
 
-        // Create a LiveKit LocalAudioTrack
-        const localAudioTrack = await createLocalAudioTrack({
-          deviceId: audioTrack.getSettings().deviceId,
+        // CRITICAL FIX: Do NOT use createLocalAudioTrack here.
+        // createLocalAudioTrack attempts to open the microphone (again), but we already
+        // opened it in getProcessedAudioStream. Opening it twice causes errors on many OSs.
+        // Instead, wrap the existing processed track directly.
+        dlog("SUB_CALL", "PUBLISHING_TRACK_START", {
+          trackSettings: audioTrack.getSettings(),
         });
+        const localAudioTrack = new LocalAudioTrack(audioTrack);
 
-        if (!isMounted) {
-          localAudioTrack.stop();
-          return;
-        }
-
-        // Replace the track's mediaStreamTrack with our processed one
-        await localAudioTrack.replaceTrack(audioTrack);
-
-        // Publish the track
-        await localParticipant.publishTrack(localAudioTrack, {
+        const pub = await localParticipant.publishTrack(localAudioTrack, {
           name: "microphone",
           source: Track.Source.Microphone,
         });
 
-        publishedTrackRef.current = localAudioTrack;
-        setAudioTrackPublished(true);
+        dlog("SUB_CALL", "TRACK_PUBLISHED", {
+          name: "microphone",
+          publishedTrackTrackSid: pub?.trackSid ?? null,
+        });
 
-        debugLog(
-          "NOISE_SUPPRESSION",
-          "NS_TRACK_PUBLISHED",
-          "Audio track published successfully",
-        );
+        if (isMounted) {
+          publishedTrackRef.current = localAudioTrack;
+          setAudioTrackPublished(true);
+        } else {
+          localAudioTrack.stop();
+        }
       } catch (err) {
-        debugLog("NOISE_SUPPRESSION", "NS_PUBLISH_ERROR", err);
+        dlog("NOISE_SUPPRESSION", "NS_PUBLISH_ERROR", {
+          err,
+        });
       }
     };
 
@@ -469,142 +544,211 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     shouldConnect,
     connectionState,
     audioTrackPublished,
-    data.nsState,
-    noiseSuppressionSupported,
     getProcessedAudioStream,
     debugLog,
   ]);
 
-  // Cleanup when disconnecting
+  // Cleanup
   useEffect(() => {
-    if (!shouldConnect && publishedTrackRef.current) {
-      try {
+    if (!shouldConnect) {
+      dlog("SUB_CALL", "CLEANUP_START", { audioTrackPublished });
+      if (publishedTrackRef.current) {
         publishedTrackRef.current.stop();
         publishedTrackRef.current = null;
-        setAudioTrackPublished(false);
-
-        if (rawStreamRef.current) {
-          rawStreamRef.current.getTracks().forEach((t) => t.stop());
-          rawStreamRef.current = null;
-        }
-
-        audioService.cleanup();
-      } catch {
-        // Track may already be stopped
       }
+      setAudioTrackPublished(false);
+      if (rawStreamRef.current) {
+        rawStreamRef.current.getTracks().forEach((t) => t.stop());
+        rawStreamRef.current = null;
+      }
+      audioService.cleanup();
+      dlog("SUB_CALL", "CLEANUP_DONE");
     }
   }, [shouldConnect]);
 
-  // Re-publish track when noise suppression settings change
+  // Republish on settings change
   useEffect(() => {
     if (!shouldConnect || !audioTrackPublished || !localParticipant) return;
     if (connectionState !== ConnectionState.Connected) return;
 
+    let isMounted = true;
+
     const republishTrack = async () => {
       try {
-        // Unpublish current track
+        dlog("SUB_CALL", "REPUBLISH_TRACK_START", {
+          nsState: data.nsState,
+          enableAudioGate: data.enableAudioGate,
+          audioThreshold: data.audioThreshold,
+        });
+        // 1. Unpublish & Stop existing
         if (publishedTrackRef.current) {
           await localParticipant.unpublishTrack(publishedTrackRef.current);
           publishedTrackRef.current.stop();
           publishedTrackRef.current = null;
         }
 
-        if (rawStreamRef.current) {
-          rawStreamRef.current.getTracks().forEach((t) => t.stop());
-          rawStreamRef.current = null;
-        }
-
         audioService.cleanup();
 
-        // Get new processed stream
+        // 2. Get new stream
         const processedStream = await getProcessedAudioStream();
-        if (!processedStream) return;
+        if (!processedStream || !isMounted) return;
 
         const audioTrack = processedStream.getAudioTracks()[0];
         if (!audioTrack) return;
 
-        // Create and publish new track
-        const localAudioTrack = await createLocalAudioTrack({
-          deviceId: audioTrack.getSettings().deviceId,
-        });
+        // 3. Publish new
+        const localAudioTrack = new LocalAudioTrack(audioTrack);
 
-        await localAudioTrack.replaceTrack(audioTrack);
-
-        await localParticipant.publishTrack(localAudioTrack, {
+        const newPub = await localParticipant.publishTrack(localAudioTrack, {
           name: "microphone",
           source: Track.Source.Microphone,
         });
 
-        publishedTrackRef.current = localAudioTrack;
-
-        debugLog(
-          "NOISE_SUPPRESSION",
-          "NS_TRACK_REPUBLISHED",
-          "Audio track republished with new settings",
-        );
+        if (isMounted) {
+          publishedTrackRef.current = localAudioTrack;
+        } else {
+          localAudioTrack.stop();
+        }
+        dlog("SUB_CALL", "REPUBLISH_TRACK_SUCCESS", {
+          publishedTrackTrackSid: newPub?.trackSid ?? null,
+        });
       } catch (err) {
-        debugLog("NOISE_SUPPRESSION", "NS_REPUBLISH_ERROR", err);
+        dlog("NOISE_SUPPRESSION", "NS_REPUBLISH_ERROR", { err });
       }
     };
 
-    // Debounce to avoid rapid changes
-    const timeoutId = setTimeout(republishTrack, 200);
-    return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.nsState]);
+    const timeoutId = setTimeout(republishTrack, 500); // Increased debounce to 500ms for safety
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [data.nsState, data.enableAudioGate, data.audioThreshold]);
 
-  // Toggle mute using LiveKit's track toggle when available, fallback to manual
+  // ... toggleMute, toggleDeafen, disconnect handlers remain the same ...
+  // (Assuming you have them from your original code, paste them here)
+
   const toggleMute = useCallback(async () => {
+    dlog("SUB_CALL", "TOGGLE_MUTE_START", { isMicrophoneEnabled });
     if (microphoneToggle.toggle) {
       await microphoneToggle.toggle();
     } else if (localParticipant) {
       const newState = !isMicrophoneEnabled;
       await localParticipant.setMicrophoneEnabled(newState);
     }
-
-    // If unmuting while deafened, undeafen
     if (!isMicrophoneEnabled && isDeafened) {
       setIsDeafened(false);
     }
+    dlog("SUB_CALL", "TOGGLE_MUTE_END", {
+      isMicrophoneEnabled: !isMicrophoneEnabled,
+    });
   }, [microphoneToggle, localParticipant, isMicrophoneEnabled, isDeafened]);
 
-  // Toggle deafen
   const toggleDeafen = useCallback(async () => {
+    dlog("SUB_CALL", "TOGGLE_DEAFEN_START", {
+      isDeafened,
+      isMicrophoneEnabled,
+    });
     const newDeafenedState = !isDeafened;
     setIsDeafened(newDeafenedState);
-
-    // Mute mic when deafening, unmute when undeafening
     if (newDeafenedState && isMicrophoneEnabled) {
-      if (localParticipant) {
-        await localParticipant.setMicrophoneEnabled(false);
-      }
+      if (localParticipant) await localParticipant.setMicrophoneEnabled(false);
     } else if (!newDeafenedState && !isMicrophoneEnabled) {
-      if (localParticipant) {
-        await localParticipant.setMicrophoneEnabled(true);
-      }
+      if (localParticipant) await localParticipant.setMicrophoneEnabled(true);
     }
+    dlog("SUB_CALL", "TOGGLE_DEAFEN_END", { newDeafenedState });
   }, [isDeafened, isMicrophoneEnabled, localParticipant]);
 
-  // Disconnect handler
   const disconnect = useCallback(() => {
+    dlog("SUB_CALL", "DISCONNECT_START", { connectionState });
     disconnectButtonProps.onClick();
     setOuterState("DISCONNECTED");
     setShouldConnect(false);
     setAudioTrackPublished(false);
 
-    // Cleanup
     if (publishedTrackRef.current) {
       publishedTrackRef.current.stop();
       publishedTrackRef.current = null;
     }
-
     if (rawStreamRef.current) {
       rawStreamRef.current.getTracks().forEach((t) => t.stop());
       rawStreamRef.current = null;
     }
-
     audioService.cleanup();
+    dlog("SUB_CALL", "DISCONNECT_END");
   }, [disconnectButtonProps, setOuterState, setShouldConnect]);
+
+  // Verbose event listeners for the room - many events for debugging only
+  useEffect(() => {
+    if (!room) return;
+    const events: Array<{
+      event: RoomEvent;
+      handler: (...args: any[]) => void;
+    }> = [
+      {
+        event: RoomEvent.ParticipantConnected,
+        handler: (p) =>
+          dlog?.("SUB_CALL", "EVENT_PARTICIPANT_CONNECTED", {
+            identity: p.identity,
+          }),
+      },
+      {
+        event: RoomEvent.ParticipantDisconnected,
+        handler: (p) =>
+          dlog?.("SUB_CALL", "EVENT_PARTICIPANT_DISCONNECTED", {
+            identity: p.identity,
+          }),
+      },
+      {
+        event: RoomEvent.TrackPublished,
+        handler: (p, tx) =>
+          dlog?.("SUB_CALL", "EVENT_TRACK_PUBLISHED", {
+            participant: p?.identity,
+            track: tx?.name,
+          }),
+      },
+      {
+        event: RoomEvent.TrackUnpublished,
+        handler: (p, tx) =>
+          dlog?.("SUB_CALL", "EVENT_TRACK_UNPUBLISHED", {
+            participant: p?.identity,
+            track: tx?.name,
+          }),
+      },
+      {
+        event: RoomEvent.TrackMuted,
+        handler: (p, tx) =>
+          dlog?.("SUB_CALL", "EVENT_TRACK_MUTED", {
+            participant: p?.identity,
+            track: tx?.name,
+          }),
+      },
+      {
+        event: RoomEvent.TrackUnmuted,
+        handler: (p, tx) =>
+          dlog?.("SUB_CALL", "EVENT_TRACK_UNMUTED", {
+            participant: p?.identity,
+            track: tx?.name,
+          }),
+      },
+      {
+        event: RoomEvent.ActiveSpeakersChanged,
+        handler: (speakers) =>
+          dlog?.("SUB_CALL", "EVENT_ACTIVE_SPEAKERS", { speakers }),
+      },
+      {
+        event: RoomEvent.ConnectionQualityChanged,
+        handler: (participant, quality) =>
+          dlog?.("SUB_CALL", "EVENT_CONN_QUALITY", {
+            participant: participant?.identity,
+            quality,
+          }),
+      },
+    ];
+    events.forEach(({ event, handler }) => room.on(event, handler));
+    return () => {
+      events.forEach(({ event, handler }) => room.off(event, handler));
+    };
+  }, [room]);
 
   return (
     <SubCallContext.Provider

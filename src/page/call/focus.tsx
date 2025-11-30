@@ -38,12 +38,12 @@ export function CallFocus({
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 py-6">
-      <FocusLayout
+        <FocusLayout
         trackRef={focusedTrackRef}
         onParticipantClick={onParticipantClick}
         className="relative aspect-video w-full max-w-5xl border-0"
       >
-        <TileContent />
+        <TileContent hideBadges />
       </FocusLayout>
       <div className="w-full max-w-5xl">
         <div className="h-32 flex items-center justify-center gap-3 overflow-x-auto px-2">
@@ -55,6 +55,7 @@ export function CallFocus({
               onParticipantClick={onParticipantClick}
               className="relative h-full aspect-video flex-none rounded-lg"
             >
+              {/* CallModal from @/.../raw.tsx */}
               <TileContent />
               <FocusDuplicateOverlay focusedTrackSid={focusedTrackSid} />
             </ParticipantTile>

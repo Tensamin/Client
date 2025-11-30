@@ -31,28 +31,27 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 
 // Types
-type NoiseSuppressionMode = 0 | 1 | 2 | 3 | 4;
+type NoiseSuppressionMode = 0 | 2 | 3;
 
 const NS_OPTIONS: {
   value: NoiseSuppressionMode;
   label: string;
   description: string;
 }[] = [
-  { value: 0, label: "Off", description: "No noise suppression" },
   {
-    value: 1,
-    label: "Built-in",
-    description: "Browser's built-in noise suppression",
+    value: 0,
+    label: "Off",
+    description: "No noise suppression or built-in features",
   },
   {
     value: 2,
     label: "Speex",
-    description: "Speex DSP-based noise suppression",
+    description: "DSP-based suppression + built-in browser features",
   },
   {
     value: 3,
     label: "RNNoise",
-    description: "AI-powered noise suppression (recommended)",
+    description: "AI-powered suppression + built-in features (recommended)",
   },
 ];
 
@@ -61,7 +60,8 @@ function AudioLevelIndicator({
   trackRef,
   isListening,
 }: {
-  trackRef?: LocalAudioTrack;
+  // Accept either a LiveKit LocalAudioTrack or a plain MediaStreamTrack for flexibility
+  trackRef?: LocalAudioTrack | MediaStreamTrack | null | undefined;
   isListening: boolean;
 }) {
   const [audioLevel, setAudioLevel] = useState(0);
@@ -84,9 +84,11 @@ function AudioLevelIndicator({
         analyserRef.current.smoothingTimeConstant = 0.8;
 
         // Get the media stream from the track
-        const mediaStream = new MediaStream([
-          trackRef.mediaStreamTrack as MediaStreamTrack,
-        ]);
+        const msTrack = (trackRef as any)?.mediaStreamTrack
+          ? (trackRef as any).mediaStreamTrack
+          : (trackRef as MediaStreamTrack | undefined);
+        if (!msTrack) return;
+        const mediaStream = new MediaStream([msTrack as MediaStreamTrack]);
         const source =
           audioContextRef.current.createMediaStreamSource(mediaStream);
         source.connect(analyserRef.current);
@@ -160,7 +162,7 @@ function AudioLevelIndicator({
 
 // Main Component
 export default function Page() {
-  const { data, set } = useStorageContext();
+  const { data, set, debugLog } = useStorageContext();
   const { shouldConnect } = useCallContext();
 
   // LiveKit hooks for device management
@@ -187,33 +189,36 @@ export default function Page() {
   const [previewError, setPreviewError] = useState<string | null>(null);
 
   // Get current settings
-  const nsState = (data.nsState as NoiseSuppressionMode) ?? 0;
+  // Default to RNNoise for improved suppression when not explicitly set
+  const nsState = (data.nsState as NoiseSuppressionMode) ?? 3;
   const monitorVolume = (data.audioMonitorVolume as number) ?? 50;
+  const audioThreshold = (data.audioThreshold as number) ?? -40;
+  const enableAudioGate = (data.enableAudioGate as boolean) ?? false;
 
-  // Build audio constraints based on noise suppression setting
-  const audioConstraints: MediaTrackConstraints = useMemo(
+  // Memoize audio constraints
+  // Note: For speex (2) and rnnoise (3), built-in features are always enabled
+  const audioConstraints = useMemo(
     () =>
-      nsState === 1
-        ? {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          }
-        : {
-            echoCancellation: false,
-            noiseSuppression: false,
-            autoGainControl: false,
-          },
+      audioService.getRecommendedConstraints(
+        nsState === 0 ? "off" : nsState === 2 ? "speex" : "rnnoise",
+        2,
+      ),
     [nsState],
   );
 
   // Audio preview using LiveKit's usePreviewTracks
   // Only enable when listening and not in a room
+  const needsCustomProcessingForPreview =
+    isNoiseSuppressionSupported && nsState >= 2;
+
   const shouldPreview = isListening && !isInRoom;
 
+  // Only use the LiveKit `usePreviewTracks` hook when we don't need custom
+  // processing. If we need custom processing (speex/rnnoise/noisegate), we'll
+  // obtain the MediaStream ourselves and use `audioService` to process it.
   const previewTracks = usePreviewTracks(
     {
-      audio: shouldPreview ? audioConstraints : false,
+      audio: shouldPreview && !needsCustomProcessingForPreview ? audioConstraints : false,
       video: false,
     },
     (err: Error) => {
@@ -232,6 +237,11 @@ export default function Page() {
     return audioTrack as LocalAudioTrack | undefined;
   }, [previewTracks, shouldPreview]);
 
+  // Processed preview stream (custom processing path)
+  const [processedPreviewStream, setProcessedPreviewStream] = useState<
+    MediaStream | null
+  >(null);
+
   // Audio playback ref for "listen to myself"
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
@@ -242,9 +252,101 @@ export default function Page() {
     setIsNoiseSuppressionSupported(audioService.isSupported());
   }, []);
 
+  // If we need custom processing for preview (speex/rnnoise/gate), create a
+  // processed MediaStream and use it for playback and visualization.
+  useEffect(() => {
+    let mounted = true;
+    let rawStream: MediaStream | null = null;
+    let processedStream: MediaStream | null = null;
+
+    const setupProcessedPreview = async () => {
+      if (!shouldPreview || !needsCustomProcessingForPreview) return;
+      try {
+        // Acquire raw track using desired constraints (may include voiceIsolation etc.)
+        rawStream = await navigator.mediaDevices.getUserMedia({
+          audio: audioConstraints,
+          video: false,
+        });
+
+        // If we need advanced processing, apply worklets
+        const algorithm = nsState === 2 ? "speex" : "rnnoise";
+        const gateOptions = enableAudioGate
+          ? { threshold: audioThreshold, maxChannels: 2 }
+          : undefined;
+
+        if (audioService.isSupported()) {
+          try {
+            processedStream = await audioService.processStream(rawStream, {
+              algorithm: algorithm as any,
+              maxChannels: 2,
+            }, gateOptions);
+          } catch (err) {
+            console.error("Failed to process preview stream:", err);
+            processedStream = rawStream;
+          }
+        } else if (enableAudioGate && audioService.isSupported()) {
+          try {
+            processedStream = await audioService.processStreamWithGate(rawStream, {
+              threshold: audioThreshold,
+              maxChannels: 2,
+            });
+          } catch (err) {
+            console.error("Failed to process preview gate:", err);
+            processedStream = rawStream;
+          }
+        } else {
+          processedStream = rawStream;
+        }
+
+        if (mounted) {
+          setProcessedPreviewStream(processedStream);
+          debugLog?.("AUDIO_SETTINGS", "PROCESSED_PREVIEW_CREATED", {
+            trackSettings: processedStream
+              ? processedStream.getAudioTracks().map((t) => t.getSettings())
+              : null,
+          });
+        } else {
+          // Immediately stop tracks if unmounted
+          processedStream?.getTracks().forEach((t) => t.stop());
+          rawStream?.getTracks().forEach((t) => t.stop());
+        }
+      } catch (err) {
+        console.error("Could not create processed preview stream:", err);
+        setPreviewError((err as Error)?.message ?? "Unknown error");
+        setIsListening(false);
+      }
+    };
+
+    if (shouldPreview && needsCustomProcessingForPreview) {
+      setupProcessedPreview();
+    }
+
+    return () => {
+      mounted = false;
+      if (processedStream) {
+        processedStream.getTracks().forEach((t) => t.stop());
+      }
+      if (rawStream) {
+        rawStream.getTracks().forEach((t) => t.stop());
+      }
+      // Clear state we may have set to avoid lingering references
+      setProcessedPreviewStream(null);
+      audioService.cleanup();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldPreview, needsCustomProcessingForPreview, nsState, enableAudioGate, audioThreshold]);
+
+  // Clear processed preview stream when we no longer require it
+  useEffect(() => {
+    if (!shouldPreview || !needsCustomProcessingForPreview) {
+      setProcessedPreviewStream(null);
+    }
+  }, [shouldPreview, needsCustomProcessingForPreview]);
+
   // Handle audio playback for "listen to myself"
   useEffect(() => {
-    if (!audioPreviewTrack || !isListening) {
+    const isProcessedPreview = !!processedPreviewStream;
+    if ((!audioPreviewTrack && !isProcessedPreview) || !isListening) {
       // Cleanup playback
       if (audioElementRef.current) {
         audioElementRef.current.srcObject = null;
@@ -271,9 +373,11 @@ export default function Page() {
         }
 
         // Create media stream from track
-        const mediaStream = new MediaStream([
-          audioPreviewTrack.mediaStreamTrack as MediaStreamTrack,
-        ]);
+        const msTrack = (audioPreviewTrack as any)?.mediaStreamTrack
+          ? (audioPreviewTrack as any).mediaStreamTrack
+          : (processedPreviewStream?.getAudioTracks()[0] as MediaStreamTrack | undefined);
+        if (!msTrack) return;
+        const mediaStream = new MediaStream([msTrack]);
 
         // Set up audio graph: source -> gain -> destination
         const source = ctx.createMediaStreamSource(mediaStream);
@@ -323,9 +427,12 @@ export default function Page() {
     };
   }, [
     audioPreviewTrack,
+    processedPreviewStream,
     isListening,
     audioOutputController.activeDeviceId,
     monitorVolume,
+    enableAudioGate,
+    audioThreshold,
   ]);
 
   // Update gain when volume changes
@@ -505,6 +612,69 @@ export default function Page() {
         </div>
       </div>
 
+      {/* Audio Threshold Gate */}
+      <div className="flex flex-col gap-4">
+        <h3 className="text-lg font-medium">Audio Threshold</h3>
+        <p className="text-sm text-muted-foreground">
+          Suppress audio below a specified decibel level to prevent quiet sounds
+          from being transmitted.
+        </p>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <Switch
+              id="enableAudioGate"
+              checked={enableAudioGate}
+              onCheckedChange={(checked) => {
+                set("enableAudioGate", checked);
+                // Restart preview if currently listening
+                if (isListening) {
+                  setIsListening(false);
+                  setTimeout(() => setIsListening(true), 100);
+                }
+              }}
+            />
+            <Label htmlFor="enableAudioGate">Enable Audio Gate</Label>
+          </div>
+
+          {enableAudioGate && (
+            <div className="flex flex-col gap-2">
+              <Label>Threshold: {audioThreshold} dB</Label>
+              <Slider
+                value={[audioThreshold]}
+                min={-80}
+                max={-10}
+                step={1}
+                className="w-[250px]"
+                onValueChange={([value]) => {
+                  set("audioThreshold", value);
+                  // Restart preview if currently listening
+                  if (isListening) {
+                    setIsListening(false);
+                    setTimeout(() => setIsListening(true), 100);
+                  }
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Lower values (e.g., -60 dB) = more sensitive, higher values
+                (e.g., -30 dB) = less sensitive. Audio below this level will not
+                be recorded.
+              </p>
+            </div>
+          )}
+
+          {enableAudioGate && (
+            <div className="rounded-lg border border-border bg-muted/50 p-3">
+              <p className="text-sm text-muted-foreground">
+                <strong>Note:</strong> The audio gate will be applied during
+                calls to suppress audio below {audioThreshold} dB. This helps
+                prevent background noise and quiet sounds from being transmitted
+                while you&apos;re not speaking.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Audio Preview */}
       <div className="flex flex-col gap-4">
         <h3 className="text-lg font-medium">Audio Preview</h3>
@@ -550,7 +720,7 @@ export default function Page() {
 
           {/* Audio level meter */}
           <AudioLevelIndicator
-            trackRef={audioPreviewTrack}
+            trackRef={processedPreviewStream?.getAudioTracks()[0] ?? audioPreviewTrack}
             isListening={isListening}
           />
         </div>

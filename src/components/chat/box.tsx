@@ -302,8 +302,8 @@ export function Box() {
       className="h-full w-full overflow-y-auto flex flex-col-reverse contain-strict"
       onScroll={onScroll}
     >
-      {messageGroups.map((messageGroup) => (
-        <div key={messageGroup.id}>
+      {messageGroups.map((messageGroup, index) => (
+        <div key={messageGroup.id ?? index}>
           <MessageGroupComponent data={messageGroup} />
         </div>
       ))}

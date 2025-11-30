@@ -279,6 +279,7 @@ export function CallModal({
   muted,
   deafened,
   screenShareTrackRef,
+  hideBadges,
 }: Readonly<{
   title: string;
   icon?: string;
@@ -286,6 +287,7 @@ export function CallModal({
   muted?: boolean;
   deafened?: boolean;
   screenShareTrackRef?: TrackReference;
+  hideBadges?: boolean;
 }>) {
   const isScreenShare = !!screenShareTrackRef;
 
@@ -295,16 +297,18 @@ export function CallModal({
         <div className="w-full h-full flex justify-center items-center">
           <UserAvatar title={title} size="jumbo" border loading />
         </div>
-        <div className="absolute h-full w-full flex items-end justify-start p-4">
-          <Badge className="select-none">...</Badge>
-        </div>
+        {!hideBadges && (
+          <div className="absolute h-full w-full flex items-end justify-start p-4 z-30">
+            <Badge className="select-none">...</Badge>
+          </div>
+        )}
       </CardContent>
     </Card>
   ) : (
     <Card className="relative w-full h-full bg-input/30">
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
         {isScreenShare && screenShareTrackRef ? (
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 z-0">
             <VideoTrack
               trackRef={screenShareTrackRef}
               className="rounded-lg h-full w-full object-contain bg-black"
@@ -321,7 +325,8 @@ export function CallModal({
             />
           </div>
         )}
-        <div className="absolute h-full w-full flex items-end justify-start p-2 gap-2 pointer-events-none">
+        {!hideBadges && (
+          <div className="absolute h-full w-full flex items-end justify-start p-2 gap-2 pointer-events-none z-30">
           <Badge
             variant="outline"
             className="h-5.5 select-none bg-background/75 border-input"
@@ -329,16 +334,17 @@ export function CallModal({
             {isScreenShare ? `${title}'s screen` : title}
           </Badge>
           {muted && (
-            <Badge className="h-5.5 select-none">
-              <Icon.MicOff />
+            <Badge className="h-5.5 select-none bg-background/75 border-input">
+              <Icon.MicOff color="var(--foreground)" />
             </Badge>
           )}
           {deafened && (
-            <Badge className="h-5.5 select-none">
-              <Icon.HeadphoneOff />
+            <Badge className="h-5.5 select-none bg-background/75 border-input">
+              <Icon.HeadphoneOff color="var(--foreground)" />
             </Badge>
           )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -384,8 +390,8 @@ export function CallButton({ calls }: { calls: string[] }) {
             </Button>
           </SelectTrigger>
           <SelectContent>
-            {calls.map((callId) => (
-              <SelectItem key={callId} value={callId}>
+            {calls.map((callId, index) => (
+              <SelectItem key={`${callId}-${index}`} value={callId}>
                 <Popover>
                   <PopoverTrigger>{callId}</PopoverTrigger>
                   <PopoverContent>

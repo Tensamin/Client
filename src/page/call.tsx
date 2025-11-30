@@ -134,7 +134,6 @@ export default function Page() {
         ) : (
           <CallGrid
             participantTracks={participantTracks}
-            focusedTrackSid={focusedTrackSid}
             onParticipantClick={handleParticipantClick}
             className="h-full"
           />
@@ -144,15 +143,19 @@ export default function Page() {
   );
 }
 
-export function TileContent() {
+export function TileContent({ hideBadges }: { hideBadges?: boolean } = {}) {
   const isSpeaking = useIsSpeaking();
   return (
-    <div
-      className={`w-full h-full flex items-center justify-center rounded-lg ${
-        isSpeaking && "ring-2 ring-primary ring-inset"
-      }`}
-    >
-      <CallUserModal />
+    <div className="relative w-full h-full">
+      <div
+        className={`absolute inset-0 rounded-xl transition-all ease-in-out duration-400 pointer-events-none z-20 ${
+          isSpeaking && "ring-3 ring-primary ring-inset"
+        }`}
+      />
+
+      <div className="w-full h-full flex items-center justify-center rounded-xl z-10">
+        <CallUserModal hideBadges={hideBadges} />
+      </div>
     </div>
   );
 }
@@ -173,7 +176,7 @@ export function FocusDuplicateOverlay({
   }
 
   return (
-    <div className="absolute inset-0 bg-black/75 z-10 text-white flex items-center justify-center">
+    <div className="absolute inset-0 bg-black/75 z-20 text-white flex items-center justify-center">
       <Icon.ScanEye className="h-6 w-6" />
     </div>
   );

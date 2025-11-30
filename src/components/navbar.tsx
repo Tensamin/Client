@@ -73,7 +73,7 @@ export function Navbar() {
             <p>{receiverUsername}</p>
           </MotionDivWrapper>
         )}
-        <div className="w-full h-9 electron-drag" />
+        <div key="electron-drag" className="w-full h-9 electron-drag" />
 
         {/* Failed Messages */}
         {failedMessagesAmount > 0 && page === "chat" && (
@@ -96,10 +96,10 @@ export function Navbar() {
         )}
 
         {/* Call Button */}
-        {page === "chat" && (
-          <>
-            {currentUserAlreadyHasACall ? (
-              <CallButton
+        {page === "chat" &&
+          (currentUserAlreadyHasACall ? (
+            <CallButton
+                key="call-button"
                 calls={
                   conversations.find(
                     (conv) => conv?.user_id === currentReceiverUuid
@@ -124,9 +124,7 @@ export function Navbar() {
                   <Icon.Phone />
                 </Button>
               </MotionDivWrapper>
-            )}
-          </>
-        )}
+            ))}
 
         {/* Electron Window Controls */}
         <WindowControls key="electron-window-controls" />
