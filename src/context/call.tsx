@@ -14,7 +14,6 @@ import {
   RoomAudioRenderer,
   useLocalParticipant,
   useRoomContext,
-  useDisconnectButton,
   useTrackToggle,
   useConnectionState,
 } from "@livekit/components-react";
@@ -68,7 +67,7 @@ export function useSubCallContext() {
 export function CallProvider({ children }: { children: React.ReactNode }) {
   const { data, set, debugLog } = useStorageContext();
   const { lastMessage, send } = useSocketContext();
-  const { get, ownUserHasPremium } = useUserContext();
+  const { get } = useUserContext();
 
   const [shouldConnect, setShouldConnect] = useState(false);
   const [token, setToken] = useState("");
@@ -76,12 +75,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   // Disconnect function
   const disconnect = useCallback(() => {
-    console.trace("Disconnect called");
     debugLog("CALL_PROVIDER", "DISCONNECT_START");
     setOuterState("DISCONNECTED");
     setShouldConnect(false);
     debugLog("CALL_PROVIDER", "DISCONNECT_END");
-  }, []);
+  }, [debugLog]);
 
   // User volume management
   const setUserVolumes = useCallback(
@@ -120,18 +118,13 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         setNewCallWidgetOpen(true);
       });
     }
-  }, [
-    lastMessage?.type,
-    get,
-    lastMessage?.data.call_id,
-    lastMessage?.data.sender_id,
-  ]);
+  }, [lastMessage, get, debugLog]);
 
   const connect = useCallback(() => {
     debugLog("CALL_PROVIDER", "CONNECT_INIT", { shouldConnect, token });
     setOuterState("CONNECTING");
     setShouldConnect(true);
-  }, []);
+  }, [debugLog, shouldConnect, token]);
 
   const getCallToken = useCallback(
     async (callId: string) => {
@@ -146,7 +139,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         return "error";
       });
     },
-    [send]
+    [send, debugLog]
   );
 
   const handleAcceptCall = useCallback(() => {
@@ -157,7 +150,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       setToken(token);
       connect();
     });
-  }, [newCallData, getCallToken, connect]);
+  }, [newCallData, getCallToken, connect, debugLog]);
 
   // Custom room for audio processing
   const roomRef = useRef<Room | null>(null);
@@ -249,16 +242,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
                 <Icon.PhoneForwarded />
               </Button>
             </div>
-            <audio
-              loop
-              hidden
-              autoPlay
-              onPlay={(el) => {
-                // @ts-expect-error Types missing
-                el.target.volume = 0.2;
-              }}
-              src="/assets/sounds/call.wav"
-            />
+            <audio loop hidden autoPlay src="/assets/sounds/call2.wav" />
           </DialogContent>
         </Dialog>
       )}
@@ -329,7 +313,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     return () => {
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
     };
-  }, [room, storedUserVolumes]);
+  }, [room, storedUserVolumes, debugLog]);
 
   // Mute audio tags on deafen
   useEffect(() => {
@@ -343,7 +327,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         .setMetadata(JSON.stringify({ deafened: isDeafened }))
         .catch(() => {});
     }
-  }, [isDeafened, localParticipant, shouldConnect]);
+  }, [isDeafened, localParticipant, shouldConnect, connectionState, debugLog]);
 
   // Cleanup
   useEffect(() => {
@@ -361,7 +345,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       audioService.cleanup();
       debugLog("SUB_CALL", "CLEANUP_DONE");
     }
-  }, [shouldConnect]);
+  }, [shouldConnect, audioTrackPublished, debugLog]);
 
   // Toggle Mute
   const toggleMute = useCallback(async () => {
@@ -378,7 +362,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     debugLog("SUB_CALL", "TOGGLE_MUTE_END", {
       isMicrophoneEnabled: !isMicrophoneEnabled,
     });
-  }, [microphoneToggle, localParticipant, isMicrophoneEnabled, isDeafened]);
+  }, [microphoneToggle, localParticipant, isMicrophoneEnabled, isDeafened, debugLog]);
 
   // Toggle Deafen
   const toggleDeafen = useCallback(async () => {
@@ -394,60 +378,76 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       if (localParticipant) await localParticipant.setMicrophoneEnabled(true);
     }
     debugLog("SUB_CALL", "TOGGLE_DEAFEN_END", { newDeafenedState });
-  }, [isDeafened, isMicrophoneEnabled, localParticipant]);
+  }, [isDeafened, isMicrophoneEnabled, localParticipant, debugLog]);
 
   // Room Event Subscriptions
   useEffect(() => {
     if (!room) return;
     const events: Array<{
       event: RoomEvent;
-      handler: (...args: any[]) => void;
+      handler: (...args: unknown[]) => void;
     }> = [
       {
         event: RoomEvent.ParticipantConnected,
-        handler: (p) =>
+        handler: (p) => {
+          const participant = p as { identity?: string } | undefined;
           debugLog("SUB_CALL", "EVENT_PARTICIPANT_CONNECTED", {
-            identity: p.identity,
-          }),
+            identity: participant?.identity,
+          });
+        },
       },
       {
         event: RoomEvent.ParticipantDisconnected,
-        handler: (p) =>
+        handler: (p) => {
+          const participant = p as { identity?: string } | undefined;
           debugLog("SUB_CALL", "EVENT_PARTICIPANT_DISCONNECTED", {
-            identity: p.identity,
-          }),
+            identity: participant?.identity,
+          });
+        },
       },
       {
         event: RoomEvent.TrackPublished,
-        handler: (p, tx) =>
+        handler: (p, tx) => {
+          const participant = p as { identity?: string } | undefined;
+          const trackPub = tx as { name?: string } | undefined;
           debugLog("SUB_CALL", "EVENT_TRACK_PUBLISHED", {
-            participant: p?.identity,
-            track: tx?.name,
-          }),
+            participant: participant?.identity,
+            track: trackPub?.name,
+          });
+        },
       },
       {
         event: RoomEvent.TrackUnpublished,
-        handler: (p, tx) =>
+        handler: (p, tx) => {
+          const participant = p as { identity?: string } | undefined;
+          const trackPub = tx as { name?: string } | undefined;
           debugLog("SUB_CALL", "EVENT_TRACK_UNPUBLISHED", {
-            participant: p?.identity,
-            track: tx?.name,
-          }),
+            participant: participant?.identity,
+            track: trackPub?.name,
+          });
+        },
       },
       {
         event: RoomEvent.TrackMuted,
-        handler: (p, tx) =>
+        handler: (p, tx) => {
+          const participant = p as { identity?: string } | undefined;
+          const trackPub = tx as { name?: string } | undefined;
           debugLog("SUB_CALL", "EVENT_TRACK_MUTED", {
-            participant: p?.identity,
-            track: tx?.name,
-          }),
+            participant: participant?.identity,
+            track: trackPub?.name,
+          });
+        },
       },
       {
         event: RoomEvent.TrackUnmuted,
-        handler: (p, tx) =>
+        handler: (p, tx) => {
+          const participant = p as { identity?: string } | undefined;
+          const trackPub = tx as { name?: string } | undefined;
           debugLog("SUB_CALL", "EVENT_TRACK_UNMUTED", {
-            participant: p?.identity,
-            track: tx?.name,
-          }),
+            participant: participant?.identity,
+            track: trackPub?.name,
+          });
+        },
       },
       {
         event: RoomEvent.ActiveSpeakersChanged,
@@ -456,18 +456,20 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       },
       {
         event: RoomEvent.ConnectionQualityChanged,
-        handler: (participant, quality) =>
+        handler: (participant, quality) => {
+          const participantObj = participant as { identity?: string } | undefined;
           debugLog("SUB_CALL", "EVENT_CONN_QUALITY", {
-            participant: participant?.identity,
+            participant: participantObj?.identity,
             quality,
-          }),
+          });
+        },
       },
     ];
     events.forEach(({ event, handler }) => room.on(event, handler));
     return () => {
       events.forEach(({ event, handler }) => room.off(event, handler));
     };
-  }, [room]);
+  }, [room, debugLog]);
 
   return (
     <SubCallContext.Provider

@@ -82,6 +82,7 @@ export default function Page() {
           {contributers.map((contributer, index) => (
             <div className="flex flex-col gap-2" key={index}>
               <div className="flex gap-3">
+                {/* eslint-disable-next-line */ }
                 <img
                   src={contributer.picture}
                   className="aspect-square h-12 rounded-full border"

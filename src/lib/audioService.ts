@@ -67,7 +67,7 @@ class AudioService {
           : ({} as MediaTrackSupportedConstraints);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return !!((supported as any)?.voiceIsolation === true);
-    } catch (err) {
+    } catch {
       return false;
     }
   }
@@ -293,8 +293,8 @@ class AudioService {
       // RNNoise -> Speex (SpeedX) chain. The createNoiseProcessor can be used
       // to construct each processor individually.
       if (options.algorithm === "speedx_rnnoise") {
-        const rnnoiseOptions = { algorithm: "rnnoise" as any, maxChannels: options.maxChannels };
-        const speexOptions = { algorithm: "speex" as any, maxChannels: options.maxChannels };
+        const rnnoiseOptions = { algorithm: "rnnoise" as NoiseSuppressionAlgorithm, maxChannels: options.maxChannels };
+        const speexOptions = { algorithm: "speex" as NoiseSuppressionAlgorithm, maxChannels: options.maxChannels };
         const rnNode = await this.createNoiseProcessor(rnnoiseOptions);
         const spNode = await this.createNoiseProcessor(speexOptions);
         this.currentProcessor = rnNode;
@@ -342,9 +342,7 @@ class AudioService {
       this.currentGateProcessor?.disconnect();
       this.currentSecondProcessor?.disconnect();
       this.destinationNode?.disconnect();
-    } catch (e) {
-      // Ignore disconnect errors if nodes are already invalid
-    }
+    } catch {}
 
     this.sourceNode = null;
     this.currentProcessor = null;
@@ -356,6 +354,7 @@ class AudioService {
 
   public isSupported(): boolean {
     return (
+      // eslint-disable-next-line
       !!(window.AudioContext || (window as any).webkitAudioContext) &&
       !!window.AudioWorklet
     );
