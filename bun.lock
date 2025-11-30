@@ -5,6 +5,7 @@
     "": {
       "name": "tensamin",
       "dependencies": {
+        "@hayatialikeles/dtln-rs": "^0.3.1",
         "@livekit/components-react": "^2.9.16",
         "@livekit/components-styles": "^1.2.0",
         "@monaco-editor/react": "^4.7.0",
@@ -79,6 +80,10 @@
       },
     },
   },
+  "trustedDependencies": [
+    "@hayatialikeles/dtln-rs",
+    "unrs-resolver",
+  ],
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
 
@@ -153,6 +158,8 @@
     "@floating-ui/react-dom": ["@floating-ui/react-dom@2.1.6", "", { "dependencies": { "@floating-ui/dom": "^1.7.4" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-4JX6rEatQEvlmgU80wZyq9RT96HZJa88q8hp0pBd+LrczeDI4o6uA2M+uvxngVHo4Ihr8uibXxH6+70zhAFrVw=="],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.10", "", {}, "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ=="],
+
+    "@hayatialikeles/dtln-rs": ["@hayatialikeles/dtln-rs@0.3.1", "", { "os": [ "linux", "win32", "darwin", ], "cpu": [ "x64", "arm64", ] }, "sha512-BU5i1Vt798ljHX/Tll/xr1fW7fqSp7ja0EollGRnrhZkV6DLvVDTifYzZGmMOMvX4b1b6iNNGYVpwnbg3/b5KQ=="],
 
     "@humanfs/core": ["@humanfs/core@0.19.1", "", {}, "sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA=="],
 

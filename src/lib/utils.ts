@@ -103,3 +103,20 @@ export function convertStringToInitials(content: string) {
     return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
   }
 }
+
+export function errorMessageToInfo(error: string) {
+  switch (error) {
+    case "NONE":
+      return "No errors detected.";
+    case "ERROR_INVALID_PRIVATE_KEY":
+      return "The provided private key is invalid.";
+    case "ERROR_INVALID_PRIVATE_KEY_EXTRA":
+      return "This may be an issue on our side unless you recently changed your private key. \n Consider checking our status page or your login details.";
+    case "ERROR_NO_IOTA":
+      return "Unable to connect to the Iota.";
+    case "ERROR_NO_IOTA_EXTRA":
+      return "Check your Iota's connectivity and ensure it's online. \n If the problem persists check for updates or restart your Iota.";
+    default:
+      return error;
+  }
+}

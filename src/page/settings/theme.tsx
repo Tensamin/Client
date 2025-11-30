@@ -1,4 +1,5 @@
 // Package Imports
+import { useState } from "react";
 import { HexColorPicker } from "react-colorful";
 
 // Context Imports
@@ -16,12 +17,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
 
 // Main
 export default function Page() {
   const { data, set } = useStorageContext();
   const { setTheme } = useTheme();
+  const [tempColor, setTempColor] = useState(
+    (data.themeHex as string) || "#000000"
+  );
 
   useEffect(() => {
     setTheme((data.colorScheme as string) || "system");
@@ -33,12 +38,9 @@ export default function Page() {
         <div className="flex flex-col gap-2 w-50">
           <HexColorPicker
             className="border rounded-md"
-            color={(data.themeHex as string) || "#000000"}
+            color={tempColor}
             onChange={(value) => {
-              if (typeof data.themeHex !== "string") {
-                set("tintType", "hard");
-              }
-              set("themeHex", value);
+              setTempColor(value);
             }}
           />
         </div>
@@ -49,8 +51,8 @@ export default function Page() {
             <Input
               id="themeHex"
               className="w-full"
-              value={(data.themeHex as string) || "#000000"}
-              onChange={(e) => set("themeHex", e.target.value)}
+              value={tempColor}
+              onChange={(e) => setTempColor(e.target.value)}
             />
           </div>
 
@@ -93,6 +95,39 @@ export default function Page() {
             </Select>
           </div>
         </div>
+      </div>
+      <div className="flex gap-2 w-full justify-end">
+        <Button
+          onClick={() => {
+            set("themeHex", tempColor);
+            if (!data.tintType || data.tintType === "") {
+              set("tintType", "hard");
+            }
+          }}
+        >
+          Save
+        </Button>
+        <Button
+          onClick={() => {
+            setTempColor((data.themeHex as string) || "#000000");
+          }}
+          variant="outline"
+          className="mr-auto"
+        >
+          Discard
+        </Button>
+        <Button
+          onClick={() => {
+            set("themeHex", "");
+            set("colorScheme", "");
+            set("tintType", "");
+            setTempColor("#000000");
+            window.location.reload();
+          }}
+          variant="destructive"
+        >
+          Reset
+        </Button>
       </div>
     </div>
   );

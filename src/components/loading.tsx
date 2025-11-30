@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { MotionDivWrapper } from "@/components/animation/presence";
+import { errorMessageToInfo } from "@/lib/utils";
 
 // Main
 function ClearButton() {
@@ -143,12 +144,12 @@ export function RawLoading({
               messageSize === "small" ? "text-lg" : "text-2xl"
             } font-semibold text-foreground text-center`}
           >
-            {message}
+            {errorMessageToInfo(message)}
           </p>
         ) : null}
         {(isError || debug) && typeof extra !== "undefined" ? (
           <p className="text-md font-medium text-muted-foreground text-center whitespace-pre-wrap">
-            {extra}
+            {errorMessageToInfo(extra)}
           </p>
         ) : null}
       </div>
