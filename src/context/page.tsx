@@ -21,6 +21,7 @@ import { CallProvider } from "@/context/call";
 
 // Pages
 import LoginPage from "@/page/login";
+import SignupPage from "@/page/signup";
 
 // Components
 import { Toaster } from "@/components/ui/sonner";
@@ -102,12 +103,13 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
       <Loading message={pageData || "ERROR"} extra={extraPageData || ""} />
     );
 
-  if (page === "login")
+  if (page === "login" || page === "signup")
     return (
       <PageContext.Provider value={contextValues}>
         <CryptoProvider>
           <Toaster position="top-right" richColors expand />
-          <LoginPage />
+          {page === "login" && <LoginPage key={`login-${pageInstance}`} />}
+          {page === "signup" && <SignupPage key={`signup-${pageInstance}`} />}
         </CryptoProvider>
       </PageContext.Provider>
     );

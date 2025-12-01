@@ -117,7 +117,7 @@ export function CryptoProvider({
   useEffect(() => {
     let cancelled = false;
 
-    if (page === "login") {
+    if (page === "login" || page === "signup") {
       Promise.resolve().then(() => {
         if (!cancelled) setIsReady(true);
       });

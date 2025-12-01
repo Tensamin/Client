@@ -153,7 +153,7 @@ export default function Page() {
     <div className="w-full h-screen flex items-center justify-center">
       <div className="flex flex-col gap-5 w-full">
         <div className="flex flex-col md:flex-row w-full gap-3 px-10 justify-center">
-          <Card className="w-full md:w-75 gap-3">
+          <Card className="w-full md:w-90 gap-3 h-80">
             <CardHeader>
               <CardTitle className="select-none">
                 Login using .tu file
@@ -209,68 +209,9 @@ export default function Page() {
               </div>
             </CardContent>
           </Card>
-          <div className="h-0.75 md:w-0.75 md:h-auto m-5 bg-input/60 rounded-full" />
-          <Card className="transition-opacity duration-300 ease-in-out w-full md:w-75">
-            <CardHeader>
-              <CardTitle className="select-none">
-                Login using credentials
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form
-                className="flex flex-col gap-5"
-                onSubmit={handleSubmit}
-                autoComplete="on"
-              >
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    required
-                    id="username"
-                    type="text"
-                    name="username"
-                    autoComplete="username"
-                    placeholder="Enter a username..."
-                    disabled={loading}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="password">Private Key</Label>
-                  <Input
-                    required
-                    id="password"
-                    type="password"
-                    name="password"
-                    autoComplete="current-password"
-                    placeholder="•••••••••••••••"
-                    disabled={loading}
-                    value={privateKey}
-                    onChange={(e) => setPrivateKey(e.target.value)}
-                  />
-                </div>
-                <Button
-                  className="select-none"
-                  type="submit"
-                  disabled={hover || loading || !privateKey}
-                >
-                  {loading ? (
-                    <Ring
-                      size="17"
-                      stroke="2"
-                      bgOpacity={0}
-                      speed={2}
-                      color="var(--background)"
-                    />
-                  ) : (
-                    "Login"
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
         </div>
         <div className="text-xs text-muted-foreground/75 w-full flex flex-col text-center">
-          <p>By logging in you agree to our</p>
+          <p>By signing up you agree to our</p>
           <p>
             <a
               className="underline"
@@ -295,10 +236,10 @@ export default function Page() {
           <Button
             variant="outline"
             onClick={() => {
-              setPage("signup");
+              setPage("login");
             }}
           >
-            Sign up
+            Login
           </Button>
         </div>
       </div>
