@@ -3,12 +3,11 @@
 // Package Imports
 import React, { useCallback, useEffect, useState } from "react";
 import * as Icon from "lucide-react";
-import { Ring } from "ldrs/react";
 import { toast } from "sonner";
 import "ldrs/react/Ring.css";
 
 // Lib Imports
-import { tos, pp, username_to_uuid } from "@/lib/endpoints";
+import { tos, pp } from "@/lib/endpoints";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
@@ -16,15 +15,10 @@ import { usePageContext } from "@/context/page";
 
 // Components
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 export default function Page() {
   const [hover, setHover] = useState(false);
-  const [privateKey, setPrivateKey] = useState("");
-  const [loading, setLoading] = useState(false);
-
   const tuFileRef = React.useRef<HTMLInputElement>(null);
 
   const { set, debugLog, data } = useStorageContext();
@@ -62,7 +56,6 @@ export default function Page() {
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       e.preventDefault();
       setHover(false);
-      setLoading(true);
       const files = e.target.files;
       if (!files) return;
       if (files.length === 0) return;
@@ -84,7 +77,6 @@ export default function Page() {
       } catch {
         toast.error("Invalid .tu file provided.");
       } finally {
-        setLoading(false);
       }
     },
     [login]
@@ -94,7 +86,6 @@ export default function Page() {
     async (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       setHover(false);
-      setLoading(true);
       const { files } = e.dataTransfer;
       if (files.length === 0) return;
       const file = files[0];
@@ -115,42 +106,13 @@ export default function Page() {
       } catch {
         toast.error("Invalid .tu file provided.");
       } finally {
-        setLoading(false);
       }
     },
     [login]
   );
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      setLoading(true);
-
-      const form = e.currentTarget;
-      const formData = new FormData(form);
-      const username = formData.get("username") as string;
-
-      try {
-        const uuidResponse = await fetch(`${username_to_uuid}${username}`);
-        const uuidData = await uuidResponse.json();
-        if (uuidData.type !== "success") {
-          throw new Error(
-            uuidData.log.message || "Failed to retrieve user ID."
-          );
-        }
-        const uuid: string = uuidData.data.user_id;
-
-        await login(uuid, privateKey);
-      } catch (err: unknown) {
-        toast.error("An unkown error occured.");
-        debugLog("LOGIN_PAGE", "LOGIN_ERROR", err);
-      }
-    },
-    [login, privateKey, debugLog]
-  );
-
   return (
-    <div className="w-full h-screen flex items-center justify-center">
+    <div className="w-full h-screen flex items-center justify-center electron-drag">
       <div className="flex flex-col gap-5 w-full">
         <div className="flex flex-col md:flex-row w-full gap-3 px-10 justify-center">
           <Card className="w-full md:w-90 gap-3 h-80">

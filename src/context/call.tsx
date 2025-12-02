@@ -7,6 +7,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import {
   LiveKitRoom,
@@ -69,14 +70,31 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [shouldConnect, setShouldConnect] = useState(false);
   const [token, setToken] = useState("");
   const [outerState, setOuterState] = useState("DISCONNECTED");
+  const [dontSendInvite, setDontSendInvite] = useState(false);
+  const [callId, setCallId] = useState("");
 
   // Connect function
+  const connectPromiseRef = useRef<{
+    resolve: (() => void) | null;
+    reject: ((err?: any) => void) | null;
+  } | null>(null);
+
   const connect = useCallback(
-    (token: string) => {
+    (token: string, callId: string) => {
       debugLog("CALL_PROVIDER", "CONNECTING");
       setOuterState("CONNECTING");
       setToken(token);
+      setCallId(callId);
       setShouldConnect(true);
+
+      // If there is a pending connect promise, cancel it
+      if (connectPromiseRef.current && connectPromiseRef.current.reject) {
+        connectPromiseRef.current.reject({ message: "replaced by new connect" });
+      }
+
+      return new Promise<void>((resolve, reject) => {
+        connectPromiseRef.current = { resolve, reject };
+      });
     },
     [debugLog, setToken]
   );
@@ -87,6 +105,10 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     setOuterState("DISCONNECTED");
     setShouldConnect(false);
     setToken("");
+    if (connectPromiseRef.current && connectPromiseRef.current.reject) {
+      connectPromiseRef.current.reject({ message: "disconnect" });
+      connectPromiseRef.current = null;
+    }
     debugLog("CALL_PROVIDER", "DISCONNECT_END");
   }, [debugLog, setToken]);
 
@@ -125,35 +147,28 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }).then((data) => {
         debugLog("CALL_PROVIDER", "GET_CALL_TOKEN_RESULT", { callId, data });
         if (data.type !== "error") {
-          send("call_invite", {
-            receiver_id: currentReceiverUuid,
-            call_id: callId,
-          }).then((data) => {
-            if (data.type !== "error") {
-              toast.success("Call invite sent successfully");
-            } else {
-              toast.error("Failed to send call invite");
-            }
-          });
           return data.data.call_token ?? "error";
         }
         return "error";
       });
     },
-    [send, debugLog, currentReceiverUuid]
+    [send, debugLog]
   );
+
   const handleAcceptCall = useCallback(() => {
     debugLog("CALL_PROVIDER", "ACCEPT_CALL", { newCallData });
     setNewCallWidgetOpen(false);
     if (!newCallData?.call_id) return;
     getCallToken(newCallData.call_id).then((token) => {
-      connect(token);
+      setDontSendInvite(true);
+      connect(token, newCallData.call_id);
     });
   }, [newCallData, getCallToken, connect, debugLog]);
 
   return (
     <CallContext.Provider
       value={{
+        setDontSendInvite,
         disconnect,
         getCallToken,
         shouldConnect,
@@ -218,10 +233,34 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         onConnected={() => {
           debugLog("CALL_PROVIDER", "ROOM_CONNECTED", { token });
           setOuterState("CONNECTED");
+          if (!dontSendInvite) {
+            send("call_invite", {
+              receiver_id: currentReceiverUuid,
+              call_id: callId,
+            }).then((data) => {
+              if (data.type !== "error") {
+                toast.success("Call invite sent successfully");
+              } else {
+                toast.error("Failed to send call invite");
+              }
+            });
+          }
+          setDontSendInvite(false);
+
+          // Resolve the pending connect promise if one exists
+          if (connectPromiseRef.current && connectPromiseRef.current.resolve) {
+            connectPromiseRef.current.resolve();
+            connectPromiseRef.current = null;
+          }
         }}
         onDisconnected={() => {
           debugLog("CALL_PROVIDER", "ROOM_DISCONNECTED");
           setOuterState("DISCONNECTED");
+          // If we had a pending connection, reject its promise
+          if (connectPromiseRef.current && connectPromiseRef.current.reject) {
+            connectPromiseRef.current.reject({ message: "Room disconnected before connect finished" });
+            connectPromiseRef.current = null;
+          }
         }}
       >
         <RoomAudioRenderer />
@@ -451,10 +490,11 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
 // Types
 type CallContextValue = {
-  getCallToken: (callId: string) => Promise<string>;
+  setDontSendInvite: (input: boolean) => void;
+  getCallToken: (callId: string, sendInvite?: boolean) => Promise<string>;
   shouldConnect: boolean;
   outerState: string;
-  connect: (token: string) => void;
+  connect: (token: string, callId: string) => Promise<void>;
   setOuterState: (input: string) => void;
   setShouldConnect: (input: boolean) => void;
   disconnect: () => void;

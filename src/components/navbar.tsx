@@ -99,31 +99,32 @@ export function Navbar() {
         {page === "chat" &&
           (currentUserAlreadyHasACall ? (
             <CallButton
-                key="call-button"
-                calls={
-                  conversations.find(
-                    (conv) => conv?.user_id === currentReceiverUuid
-                  )?.calls ?? []
+              key="call-button"
+              calls={
+                conversations.find(
+                  (conv) => conv?.user_id === currentReceiverUuid
+                )?.calls ?? []
+              }
+            />
+          ) : (
+            <MotionDivWrapper key="call-button">
+              <Button
+                className="h-9 w-9"
+                variant="outline"
+                onClick={() => {
+                  const callId = v7();
+                  getCallToken(callId).then((token) => {
+                    connect(token, callId);
+                  });
+                }}
+                disabled={
+                  outerState === "CONNECTED" || outerState === "CONNECTING"
                 }
-              />
-            ) : (
-              <MotionDivWrapper key="call-button">
-                <Button
-                  className="h-9 w-9"
-                  variant="outline"
-                  onClick={() => {
-                    getCallToken(v7()).then((token) => {
-                      connect(token);
-                    });
-                  }}
-                  disabled={
-                    outerState === "CONNECTED" || outerState === "CONNECTING"
-                  }
-                >
-                  <Icon.Phone />
-                </Button>
-              </MotionDivWrapper>
-            ))}
+              >
+                <Icon.Phone />
+              </Button>
+            </MotionDivWrapper>
+          ))}
 
         {/* Electron Window Controls */}
         <WindowControls key="electron-window-controls" />

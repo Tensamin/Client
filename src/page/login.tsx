@@ -150,7 +150,7 @@ export default function Page() {
   );
 
   return (
-    <div className="w-full h-screen flex items-center justify-center">
+    <div className="w-full h-screen flex items-center justify-center electron-drag">
       <div className="flex flex-col gap-5 w-full">
         <div className="flex flex-col md:flex-row w-full gap-3 px-10 justify-center">
           <Card className="w-full md:w-75 gap-3">

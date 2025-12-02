@@ -1,5 +1,6 @@
 // Package Imports
 import * as Icon from "lucide-react";
+import { useState } from "react";
 import { VideoTrack } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-core";
 
@@ -41,6 +42,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { LoadingIcon } from "../loading";
 
 // Main
 export function UserAvatar({
@@ -183,20 +185,30 @@ export function MediumModal({
   calls: string[];
 }>) {
   return loading ? (
-    <Button
+    <div
       data-slot="card"
-      variant="outline"
-      className="w-full bg-input/30 p-2 rounded-2xl border-input text-card-foreground flex gap-3 items-center justify-start border py-6 shadow-sm"
+      role="button"
+      tabIndex={0}
+      className="w-full bg-input/30 p-2 rounded-2xl border-input text-card-foreground flex gap-3 items-center justify-start border py-2 shadow-sm"
     >
       <UserAvatar title={title} size="small" border loading />
       <Skeleton className="h-5 w-20" />
-    </Button>
+    </div>
   ) : (
-    <Button
+    <div
       data-slot="card"
-      variant="outline"
-      className="w-full bg-input/30 p-2 rounded-2xl border-input text-card-foreground flex gap-3 items-center justify-start border py-6 shadow-sm"
+      role="button"
+      tabIndex={0}
+      className="w-full bg-input/30 p-2 rounded-2xl border-input text-card-foreground flex gap-3 items-center justify-start border py-2 shadow-sm hover:bg-input/35 transition-all duration-300 ease-in-out"
       onClick={onClick}
+      onKeyDown={(e) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const key = (e as any).key;
+        if (key === "Enter" || key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
     >
       <UserAvatar icon={icon} title={title} state={state} size="small" border />
       <div className="flex flex-col gap-1">
@@ -207,8 +219,10 @@ export function MediumModal({
           </p>
         )}
       </div>
-      <CallButton calls={calls} />
-    </Button>
+      {calls.length > 0 && (
+        <Icon.PhoneIncoming size={16} className="ml-auto mr-2" />
+      )}
+    </div>
   );
 }
 
@@ -354,58 +368,131 @@ export function CallModal({
   );
 }
 
-export function CallInteraction({ callId }: { callId: string }) {
-  const { getCallToken, connect } = useCallContext();
+export function CallInteraction({
+  callId,
+  onClose,
+}: {
+  callId: string;
+  onClose: () => void;
+}) {
+  const { getCallToken, connect, setDontSendInvite } = useCallContext();
+  const [loading, setLoading] = useState(false);
 
   return (
     <div className="flex flex-col gap-3">
-      <p>{callId}</p>
+      <p>{displayCallId(callId)}</p>
       <Button
+        disabled={loading}
         onClick={() => {
           getCallToken(callId).then((token) => {
-            connect(token);
+            setDontSendInvite(true);
+            setLoading(true);
+            connect(token, callId).then(() => {
+              setLoading(false);
+              onClose();
+            });
           });
         }}
       >
-        Connect
+        {loading ? (
+          <>
+            <LoadingIcon invert />
+            <p>Connecting...</p>
+          </>
+        ) : (
+          "Connect"
+        )}
       </Button>
     </div>
   );
 }
 
-export function CallButton({ calls }: { calls: string[] }) {
+export function CallButton({
+  calls,
+  moreRounded,
+}: {
+  calls: string[];
+  moreRounded?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(calls[0] || "");
+
   return (
-    <>
-      {calls.length === 1 && (
-        <Popover>
-          <PopoverTrigger asChild></PopoverTrigger>
-          <PopoverContent>
-            <CallInteraction callId={calls[0]} />
-          </PopoverContent>
-        </Popover>
-      )}
-      {calls.length > 2 && (
-        <Select value="">
-          <SelectTrigger asChild>
-            <Button className="w-8 h-8">
-              <Icon.Phone scale={80} />
-              <Icon.ChevronDown scale={80} />
-            </Button>
+    <CallButtonPopover open={open} setOpen={setOpen} callId={value}>
+      {calls.length === 1 ? (
+        <Button className="w-9 h-9">
+          <Icon.Phone />
+        </Button>
+      ) : calls.length > 2 ? (
+        <Select
+          value=""
+          onValueChange={(value) => {
+            setOpen(true);
+            setValue(value);
+          }}
+        >
+          <SelectTrigger className={moreRounded ? "rounded-xl" : "rounded-lg"}>
+            <Icon.Phone color="var(--foreground)" scale={80} />
           </SelectTrigger>
           <SelectContent>
             {calls.map((callId, index) => (
               <SelectItem key={`${callId}-${index}`} value={callId}>
-                <Popover>
-                  <PopoverTrigger>{callId}</PopoverTrigger>
-                  <PopoverContent>
-                    <CallInteraction callId={callId} />
-                  </PopoverContent>
-                </Popover>
+                {displayCallId(callId)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-      )}
-    </>
+      ) : null}
+    </CallButtonPopover>
+  );
+}
+
+export function CallButtonPopover({
+  callId,
+  children,
+  open,
+  setOpen,
+}: {
+  callId: string;
+  children: React.ReactNode;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) {
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild className="ml-auto">
+        <p>{children}</p>
+      </PopoverTrigger>
+      <PopoverContent>
+        <CallInteraction
+          onClose={() => {
+            setOpen(false);
+          }}
+          callId={callId}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function displayCallId(callId: string) {
+  const hex = callId.replace(/-/g, "");
+
+  const int = BigInt(`0x${hex}`);
+  const chars =
+    "!#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~";
+  let result = "";
+  let n = int;
+
+  while (n > BigInt(0)) {
+    result = chars[Number(n % BigInt(85))] + result;
+    n = n / BigInt(85);
+  }
+
+  return (
+    result
+      .replaceAll(/[^a-zA-Z0-9]/g, "")
+      .slice(4, 12)
+      .toUpperCase() || "0"
   );
 }
