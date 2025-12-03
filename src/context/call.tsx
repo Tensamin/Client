@@ -29,7 +29,7 @@ import * as Icon from "lucide-react";
 import { audioService } from "@/lib/audioService";
 
 // Context Imports
-import { useStorageContext } from "@/context/storage";
+import { useStorageContext, rawDebugLog } from "@/context/storage";
 import { useSocketContext } from "@/context/socket";
 import { useUserContext } from "@/context/user";
 
@@ -81,7 +81,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   const connect = useCallback(
     (token: string, callId: string) => {
-      debugLog("CALL_PROVIDER", "CONNECTING");
+      rawDebugLog("Call Context", "Connecting...");
       setOuterState("CONNECTING");
       setToken(token);
       setCallId(callId);
@@ -89,7 +89,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
       // If there is a pending connect promise, cancel it
       if (connectPromiseRef.current && connectPromiseRef.current.reject) {
-        connectPromiseRef.current.reject({ message: "replaced by new connect" });
+        connectPromiseRef.current.reject({
+          message: "replaced by new connect",
+        });
       }
 
       return new Promise<void>((resolve, reject) => {
@@ -101,7 +103,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   // Disconnect function
   const disconnect = useCallback(() => {
-    debugLog("CALL_PROVIDER", "DISCONNECT_START");
+    rawDebugLog("Call Context", "Disconnect");
     setOuterState("DISCONNECTED");
     setShouldConnect(false);
     setToken("");
@@ -109,7 +111,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       connectPromiseRef.current.reject({ message: "disconnect" });
       connectPromiseRef.current = null;
     }
-    debugLog("CALL_PROVIDER", "DISCONNECT_END");
   }, [debugLog, setToken]);
 
   // Call invites
@@ -121,7 +122,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [newCaller, setNewCaller] = useState<User | null>(null);
   useEffect(() => {
     if (lastMessage?.type === "call_invite") {
-      debugLog("CALL_PROVIDER", "INCOMING_INVITE", lastMessage?.data);
+      rawDebugLog("Call Context", "Incoming Invite", lastMessage?.data);
       if (!lastMessage.data.sender_id || !lastMessage.data.call_id) {
         toast.error("Failed joining call");
         return;
@@ -141,11 +142,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   // Call tokens
   const getCallToken = useCallback(
     async (callId: string) => {
-      debugLog("CALL_PROVIDER", "GET_CALL_TOKEN", { callId });
+      rawDebugLog("Call Context", "Getting call token", { callId });
       return send("call_token", {
         call_id: callId,
       }).then((data) => {
-        debugLog("CALL_PROVIDER", "GET_CALL_TOKEN_RESULT", { callId, data });
+        rawDebugLog("Call Context", "Got call token", { callId, data });
         if (data.type !== "error") {
           return data.data.call_token ?? "error";
         }
@@ -156,7 +157,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   );
 
   const handleAcceptCall = useCallback(() => {
-    debugLog("CALL_PROVIDER", "ACCEPT_CALL", { newCallData });
+    rawDebugLog("Call Context", "Accept Call", { newCallData });
     setNewCallWidgetOpen(false);
     if (!newCallData?.call_id) return;
     getCallToken(newCallData.call_id).then((token) => {
@@ -231,7 +232,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           (data.call_amountOfSimulatedParticipants as number) ?? 0
         }
         onConnected={() => {
-          debugLog("CALL_PROVIDER", "ROOM_CONNECTED", { token });
+          rawDebugLog("Call Context", "Room connected", { token });
           setOuterState("CONNECTED");
           if (!dontSendInvite) {
             send("call_invite", {
@@ -254,11 +255,13 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           }
         }}
         onDisconnected={() => {
-          debugLog("CALL_PROVIDER", "ROOM_DISCONNECTED");
+          rawDebugLog("Call Context", "Room disconnected");
           setOuterState("DISCONNECTED");
           // If we had a pending connection, reject its promise
           if (connectPromiseRef.current && connectPromiseRef.current.reject) {
-            connectPromiseRef.current.reject({ message: "Room disconnected before connect finished" });
+            connectPromiseRef.current.reject({
+              message: "Room disconnected before connect finished",
+            });
             connectPromiseRef.current = null;
           }
         }}
@@ -273,7 +276,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 // Sub Provider Component
 function SubCallProvider({ children }: { children: React.ReactNode }) {
   const { shouldConnect } = useCallContext();
-  const { data, debugLog } = useStorageContext();
+  const { data } = useStorageContext();
 
   const room = useRoomContext();
   const connectionState = useConnectionState();
@@ -300,7 +303,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     return () => {
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
     };
-  }, [room, storedUserVolumes, debugLog]);
+  }, [room, storedUserVolumes]);
 
   // Custom Audio Init for Noise Suppression
   useEffect(() => {
@@ -345,7 +348,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           await localParticipant.publishTrack(createdTrack);
           setLocalTrack(createdTrack);
         } catch (error) {
-          debugLog("SUB_CALL_CONTEXT", "INIT_AUDIO_ERROR", error);
+          rawDebugLog("Sub Call Context", "INIT_AUDIO_ERROR", error);
           toast.error("Failed to initialize microphone.");
           if (createdTrack) createdTrack.stop();
         }
@@ -357,14 +360,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [
-    connectionState,
-    shouldConnect,
-    localParticipant,
-    localTrack,
-    data,
-    debugLog,
-  ]);
+  }, [connectionState, shouldConnect, localParticipant, localTrack, data]);
 
   // Deafen logic
   useEffect(() => {
@@ -377,13 +373,15 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         .setMetadata(JSON.stringify({ deafened: isDeafened }))
         .catch(() => {});
     }
-  }, [isDeafened, localParticipant, shouldConnect, connectionState, debugLog]);
+  }, [isDeafened, localParticipant, shouldConnect, connectionState]);
 
   // Toggle Mute
   const toggleMute = useCallback(async () => {
     if (!localTrack) return;
 
-    debugLog("SUB_CALL", "TOGGLE_MUTE", { currentMuted: localTrack.isMuted });
+    rawDebugLog("SUB_CALL", "TOGGLE_MUTE", {
+      currentMuted: localTrack.isMuted,
+    });
 
     if (localTrack.isMuted) {
       await localTrack.unmute();
@@ -401,7 +399,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     if (localTrack.isMuted && isDeafened) {
       setIsDeafened(false);
     }
-  }, [localTrack, isDeafened, debugLog]);
+  }, [localTrack, isDeafened]);
 
   // Toggle Deafen
   const toggleDeafen = useCallback(async () => {
@@ -427,34 +425,34 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   // Cleanup
   useEffect(() => {
     if (!shouldConnect && localTrack) {
-      debugLog("SUB_CALL_CONTEXT", "CLEANUP_TRACK");
+      rawDebugLog("Sub Call Context", "CLEANUP_TRACK");
       localTrack.stop();
       setLocalTrack(null);
       audioService.cleanup();
     }
-  }, [shouldConnect, localTrack, debugLog]);
+  }, [shouldConnect, localTrack]);
 
   useEffect(() => {
     if (!shouldConnect && localTrack) {
-      debugLog("SUB_CALL_CONTEXT", "CLEANUP_TRACK");
+      rawDebugLog("Sub Call Context", "CLEANUP_TRACK");
       (async () => {
         try {
           if (localParticipant && localParticipant?.unpublishTrack) {
             await localParticipant.unpublishTrack(localTrack);
           }
         } catch (err) {
-          debugLog("SUB_CALL_CONTEXT", "UNPUBLISH_ERROR", err);
+          rawDebugLog("Sub Call Context", "UNPUBLISH_ERROR", err);
         }
         try {
           localTrack.stop();
         } catch (err) {
-          debugLog("SUB_CALL_CONTEXT", "STOP_TRACK_ERROR", err);
+          rawDebugLog("Sub Call Context", "STOP_TRACK_ERROR", err);
         }
         setLocalTrack(null);
         audioService.cleanup();
       })();
     }
-  }, [shouldConnect, localTrack, localParticipant, debugLog]);
+  }, [shouldConnect, localTrack, localParticipant]);
 
   useEffect(() => {
     return () => {

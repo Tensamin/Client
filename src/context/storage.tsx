@@ -13,7 +13,7 @@ function migrateNsState(nsState: unknown): number {
   // Speex now includes built-in browser features, so this preserves user intent
   if (currentNsState === 1) {
     console.log(
-      "Storage: Migrating nsState from 1 (built-in only) to 2 (speex with built-in features)",
+      "Storage: Migrating nsState from 1 (built-in only) to 2 (speex with built-in features)"
     );
     return 2;
   }
@@ -23,7 +23,9 @@ function migrateNsState(nsState: unknown): number {
   // Translation: keep allowed values, and map the legacy combined option (4)
   // to RNNoise (3) now that the combined 'speedx + rnnoise' option was removed.
   if (currentNsState === 4) {
-    console.log("Storage: Migrating nsState from 4 (speedx + rnnoise) to 3 (rnnoise)");
+    console.log(
+      "Storage: Migrating nsState from 4 (speedx + rnnoise) to 3 (rnnoise)"
+    );
     return 3;
   }
 
@@ -85,6 +87,41 @@ function createDBPromise() {
       }
     },
   });
+}
+
+export function rawDebugLog(
+  sender: string,
+  message: string,
+  extraInfo?: unknown,
+  color?: string
+) {
+  const tagStyle =
+    "background: #3f3f3f; padding: 1px 4px; border-radius: 2px; " +
+    "font-size: 10px; font-weight: 700; letter-spacing: 0.5px;";
+
+  const msgStyle =
+    "padding: 1px 4px; border-radius: 2px; font-size: 10px; " +
+    "font-family: 'Consolas', 'Monaco', monospace; " +
+    (message === "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS" || color === "green"
+      ? "color: #a6d189;"
+      : message === "SOCKET_CONTEXT_CONNECTED"
+      ? "color: #a6d189;"
+      : message === "SOCKET_CONTEXT_DISCONNECTED" || color === "red"
+      ? "color: #e78284;"
+      : message.startsWith("ERROR")
+      ? "color: #e78284;"
+      : "");
+
+  console.log(
+    "%c%s%c %c%s%c",
+    tagStyle,
+    sender,
+    "",
+    msgStyle,
+    message,
+    "",
+    extraInfo !== undefined ? extraInfo : ""
+  );
 }
 
 // Main
@@ -186,7 +223,7 @@ export function StorageProvider({
                   if (!db) return;
 
                   const updated = (offlineData || []).filter(
-                    (entry) => entry.user.uuid !== userEntry.user.uuid,
+                    (entry) => entry.user.uuid !== userEntry.user.uuid
                   );
 
                   db.put("offline", { key: "storedUsers", value: updated });
@@ -197,7 +234,7 @@ export function StorageProvider({
                   user: userEntry.user,
                   storeTime: userEntry.storeTime,
                 });
-              },
+              }
             );
             break;
           case "storedConversations":
@@ -230,7 +267,7 @@ export function StorageProvider({
     const isRules = /\{/.test(themeCSS);
     if (isRules) {
       let style = document.getElementById(
-        "theme-style",
+        "theme-style"
       ) as HTMLStyleElement | null;
       if (!style) {
         style = document.createElement("style");
@@ -253,11 +290,7 @@ export function StorageProvider({
     async (key: string, value: Value) => {
       if (!db) return;
       try {
-        if (
-          value === null ||
-          typeof value === "undefined" ||
-          value === ""
-        ) {
+        if (value === null || typeof value === "undefined" || value === "") {
           await db.delete("data", key);
           setUserData((prevData) => {
             const newData = { ...prevData };
@@ -272,7 +305,7 @@ export function StorageProvider({
         handleError("STORAGE_CONTEXT", "ERROR_UPDATING_DATABASE_UNKNOWN", err);
       }
     },
-    [db],
+    [db]
   );
 
   const setThemeCSS = useCallback(
@@ -280,7 +313,7 @@ export function StorageProvider({
       setRawThemeCSS(css);
       set("themeCSS", css);
     },
-    [set],
+    [set]
   );
 
   const setThemeTint = useCallback(
@@ -288,7 +321,7 @@ export function StorageProvider({
       setRawThemeTint(tint);
       set("themeTint", tint);
     },
-    [set],
+    [set]
   );
 
   const setThemeTintType = useCallback(
@@ -296,7 +329,7 @@ export function StorageProvider({
       setRawThemeTintType(tintType);
       set("themeTintType", tintType);
     },
-    [set],
+    [set]
   );
 
   useEffect(() => {
@@ -315,11 +348,11 @@ export function StorageProvider({
     const colors = generateColors(
       userData.themeHex as string,
       userData.tintType as "hard" | "light",
-      activeScheme,
+      activeScheme
     );
 
     Object.entries(colors).forEach(([name, value]) =>
-      document.documentElement.style.setProperty(name, value),
+      document.documentElement.style.setProperty(name, value)
     );
   }, [resolvedTheme, systemTheme, userData.tintType, userData.themeHex]);
 
@@ -367,7 +400,7 @@ export function StorageProvider({
 
         const storeTime = Date.now();
         const existingIndex = current.findIndex(
-          (stored) => stored.user.uuid === user.uuid,
+          (stored) => stored.user.uuid === user.uuid
         );
 
         const updated: StoredUser[] = [...current];
@@ -391,7 +424,7 @@ export function StorageProvider({
         handleError("STORAGE_CONTEXT", "ERROR_ADD_OFFLINE_USER_UNKNOWN", err);
       }
     },
-    [db],
+    [db]
   );
 
   const setOfflineConversations = useCallback(
@@ -402,7 +435,7 @@ export function StorageProvider({
         value: conversations,
       });
     },
-    [db],
+    [db]
   );
 
   const setOfflineCommunities = useCallback(
@@ -413,41 +446,15 @@ export function StorageProvider({
         value: communities,
       });
     },
-    [db],
+    [db]
   );
 
   function debugLog(
     sender: string,
     message: string,
-    extraInfo?: unknown,
+    extraInfo?: unknown
   ): void {
-    const tagStyle =
-      "background: #3f3f3f; padding: 1px 4px; border-radius: 2px; " +
-      "font-size: 10px; font-weight: 700; letter-spacing: 0.5px;";
-
-    const msgStyle =
-      "padding: 1px 4px; border-radius: 2px; font-size: 10px; " +
-      "font-family: 'Consolas', 'Monaco', monospace; " +
-      (message === "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS"
-        ? "color: #a6d189;"
-        : message === "SOCKET_CONTEXT_CONNECTED"
-          ? "color: #a6d189;"
-          : message === "SOCKET_CONTEXT_DISCONNECTED"
-            ? "color: #e78284;"
-            : message.startsWith("ERROR")
-              ? "color: #e78284;"
-              : "");
-
-    console.log(
-      "%c%s%c %c%s%c",
-      tagStyle,
-      sender,
-      "",
-      msgStyle,
-      message,
-      "",
-      extraInfo !== undefined ? extraInfo : "",
-    );
+    rawDebugLog(sender, message, extraInfo);
   }
 
   if (typeof window !== "undefined") {

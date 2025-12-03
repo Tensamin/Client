@@ -55,7 +55,7 @@ type ApiRef = {
 
 const CryptoContext = createContext<CryptoContextType | null>(null);
 const apiNotInitializedError = new Error(
-  "ERROR_CRYPTO_CONTEXT_API_NOT_INITIALIZED"
+  "Crypto Context API not initialized"
 );
 
 export function useCryptoContext() {

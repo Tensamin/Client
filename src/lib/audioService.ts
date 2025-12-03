@@ -7,6 +7,7 @@ import {
 } from "@sapphi-red/web-noise-suppressor";
 import { TrackProcessor, Track } from "livekit-client";
 import type { AudioProcessorOptions } from "livekit-client";
+import { rawDebugLog } from "@/context/storage";
 
 export type NoiseSuppressionAlgorithm = "speex" | "rnnoise" | "noisegate";
 
@@ -26,6 +27,12 @@ class AudioService {
   private audioContext: AudioContext | null = null;
   private wasmBinaries: Map<string, ArrayBuffer> = new Map();
   private workletLoaded: Map<string, boolean> = new Map();
+
+  // Simple log helpers (green messages)
+  private logGreen(message: string): void {
+    // eslint-disable-next-line no-console
+    rawDebugLog("Audio Service", message, "", "green");
+  }
 
   // Current noise suppression setup
   private currentProcessor: AudioWorkletNode | null = null;
@@ -72,9 +79,18 @@ class AudioService {
         wasmBinary = await loadRnnoise({ url: wasmPath, simdUrl: simdPath });
       }
       this.wasmBinaries.set(algorithm, wasmBinary);
+      this.logGreen(`Loaded WASM for ${algorithm}`);
       return wasmBinary;
     } catch (error) {
-      console.error("AudioService: Failed to load WASM for", algorithm, error);
+      rawDebugLog(
+        "Audio Service",
+        "Failed to load WASM",
+        {
+          algorithm,
+          error,
+        },
+        "red"
+      );
       throw new Error(`Failed to load ${algorithm} WASM: ${error}`);
     }
   }
@@ -90,8 +106,17 @@ class AudioService {
     try {
       await ctx.audioWorklet.addModule(workletPath);
       this.workletLoaded.set(algorithm, true);
+      this.logGreen(`Loaded worklet for ${algorithm}`);
     } catch (error) {
-      console.error("AudioService: Failed to load worklet", algorithm, error);
+      rawDebugLog(
+        "Audio Service",
+        "Failed to load worklet",
+        {
+          algorithm,
+          error,
+        },
+        "red"
+      );
       throw new Error(`Failed to load ${algorithm} worklet: ${error}`);
     }
   }
@@ -105,24 +130,63 @@ class AudioService {
     switch (options.algorithm) {
       case "speex": {
         const wasmBinary = await this.loadWasmBinary("speex");
-        return new SpeexWorkletNode(ctx, {
+        const node = new SpeexWorkletNode(ctx, {
           wasmBinary,
           maxChannels: options.maxChannels || 2,
         });
+        this.logGreen(
+          `Noise suppression enabled (speex, maxChannels=${
+            options.maxChannels || 2
+          })`
+        );
+        return node;
       }
       case "rnnoise": {
         const wasmBinary = await this.loadWasmBinary("rnnoise");
-        return new RnnoiseWorkletNode(ctx, {
+        const node = new RnnoiseWorkletNode(ctx, {
           wasmBinary,
           maxChannels: options.maxChannels || 2,
         });
+        this.logGreen(
+          `Noise suppression enabled (rnnoise, maxChannels=${
+            options.maxChannels || 2
+          })`
+        );
+        return node;
       }
       case "noisegate": {
-        return new NoiseGateWorkletNode(ctx, {
+        const node = new NoiseGateWorkletNode(ctx, {
           openThreshold: options.sensitivity || -50,
           holdMs: 100,
           maxChannels: options.maxChannels || 2,
         });
+        // Attach port listener if available so we can log gate-specific events
+        try {
+          if ((node as any).port) {
+            (node as any).port.onmessage = (evt: MessageEvent) => {
+              rawDebugLog(
+                "Audio Service",
+                "Noise gate event",
+                evt.data,
+                "green"
+              );
+            };
+            this.logGreen(`Attached noise gate message handler`);
+          }
+        } catch (err) {
+          rawDebugLog(
+            "Audio Service",
+            "Failed to attach noise gate message handler",
+            err,
+            "red"
+          );
+        }
+        this.logGreen(
+          `Noise gate enabled (threshold=${
+            options.sensitivity ?? -50
+          }, maxChannels=${options.maxChannels || 2})`
+        );
+        return node;
       }
       default:
         throw new Error(`Unsupported algorithm: ${options.algorithm}`);
@@ -134,12 +198,33 @@ class AudioService {
   ): Promise<AudioWorkletNode> {
     const ctx = this.getAudioContext();
     await this.loadWorklet("noisegate");
-    return new NoiseGateWorkletNode(ctx, {
+    const node = new NoiseGateWorkletNode(ctx, {
       openThreshold: options.threshold,
       closeThreshold: options.threshold - 6,
       holdMs: 100,
       maxChannels: options.maxChannels || 2,
     });
+    this.logGreen(
+      `Audio gate enabled (threshold=${options.threshold}, maxChannels=${
+        options.maxChannels || 2
+      })`
+    );
+    try {
+      if ((node as any).port) {
+        (node as any).port.onmessage = (evt: MessageEvent) => {
+          rawDebugLog("Audio Service", "Audio gate event", evt.data, "green");
+        };
+        this.logGreen(`Attached audio gate message handler`);
+      }
+    } catch (err) {
+      rawDebugLog(
+        "Audio Service",
+        "Failed to attach audio gate message handler",
+        err,
+        "red"
+      );
+    }
+    return node;
   }
 
   public async processStreamWithGate(
@@ -162,9 +247,12 @@ class AudioService {
       this.currentGateProcessor.connect(this.destinationNode);
 
       this.isProcessing = true;
+      this.logGreen(
+        `Processing stream with gate: threshold=${gateOptions.threshold}`
+      );
       return this.destinationNode.stream;
     } catch (error) {
-      console.error("AudioService: Gate error", error);
+      rawDebugLog("Audio Service", "Noise gate error", error, "red");
       this.cleanup();
       throw error;
     }
@@ -198,9 +286,20 @@ class AudioService {
       }
 
       this.isProcessing = true;
+      if (options.algorithm === "noisegate") {
+        this.logGreen(
+          `Processing stream with noise gate: threshold=${
+            options.sensitivity ?? "(default)"
+          }`
+        );
+      } else {
+        this.logGreen(
+          `Processing stream with noise suppression: algorithm=${options.algorithm}`
+        );
+      }
       return this.destinationNode.stream;
     } catch (error) {
-      console.error("AudioService: Process error", error);
+      rawDebugLog("Audio Service", "Process error", error, "red");
       this.cleanup();
       throw error;
     }
@@ -220,6 +319,12 @@ class AudioService {
     this.currentGateProcessor = null;
     this.currentSecondProcessor = null;
     this.destinationNode = null;
+    if (this.currentGateProcessor) {
+      this.logGreen("Audio gate disabled");
+    }
+    if (this.currentProcessor) {
+      this.logGreen("Noise suppression disabled");
+    }
     this.isProcessing = false;
   }
 
@@ -273,10 +378,25 @@ class AudioService {
             sensitivity: defaultNoiseOptions?.sensitivity,
           });
           setProcessedTrackFromStream(processed);
-        } catch (err) {
-          console.error("audioService.getProcessor.init failed", err);
+          if (processor.processedTrack) {
+            if (algorithm === "noisegate") {
+              self.logGreen(
+                `Processor initialized: noise gate working (processed track set)`
+              );
+            } else {
+              self.logGreen(
+                `Processor initialized: noise suppression working (processed track set)`
+              );
+            }
+          } else {
+            self.logGreen(
+              `Processor initialized: noise suppression not active (no processed track)`
+            );
+          }
+        } catch (error) {
+          rawDebugLog("Audio Service", "Failed to get processor", error, "red");
           setProcessedTrackFromStream(undefined);
-          throw err;
+          throw error;
         }
       },
 
@@ -300,8 +420,28 @@ class AudioService {
             sensitivity: defaultNoiseOptions?.sensitivity,
           });
           setProcessedTrackFromStream(processed);
+          if (processor.processedTrack) {
+            if (algorithm === "noisegate") {
+              self.logGreen(
+                `Processor restarted: noise gate working (processed track set)`
+              );
+            } else {
+              self.logGreen(
+                `Processor restarted: noise suppression working (processed track set)`
+              );
+            }
+          } else {
+            self.logGreen(
+              `Processor restarted: noise suppression not active (no processed track)`
+            );
+          }
         } catch (err) {
-          console.error("audioService.getProcessor.restart failed", err);
+          rawDebugLog(
+            "Audio Service",
+            "Failed to restart audio processor",
+            err,
+            "red"
+          );
           setProcessedTrackFromStream(undefined);
           throw err;
         }
@@ -313,7 +453,13 @@ class AudioService {
           processedStream?.getTracks().forEach((t) => t.stop());
         } catch {}
         setProcessedTrackFromStream(undefined);
+        const hadGate = !!self.currentGateProcessor;
         self.cleanup();
+        if (hadGate) {
+          self.logGreen(`Processor destroyed: audio gate disabled`);
+        } else {
+          self.logGreen(`Processor destroyed: noise suppression disabled`);
+        }
       },
     } as TrackProcessor<Track.Kind.Audio, AudioProcessorOptions>;
 
