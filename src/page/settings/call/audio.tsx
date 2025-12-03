@@ -30,16 +30,6 @@ export default function Page() {
 
   const options = [
     {
-      label: "Enable Dynacast",
-      key: "call_enableDynacast",
-      default: true,
-    },
-    {
-      label: "Enable Adaptive Stream",
-      key: "call_enableAdaptiveStream",
-      default: true,
-    },
-    {
       label: "Enable Echo Cancellation",
       key: "call_enableEchoCancellation",
       default: true,
@@ -57,6 +47,19 @@ export default function Page() {
     {
       label: "Enable Voice Isolation",
       key: "call_enableVoiceIsolation",
+      default: true,
+    },
+  ];
+
+  const advancedSwitches = [
+    {
+      label: "Enable Dynacast",
+      key: "call_enableDynacast",
+      default: true,
+    },
+    {
+      label: "Enable Adaptive Stream",
+      key: "call_enableAdaptiveStream",
       default: true,
     },
   ];
@@ -88,7 +91,7 @@ export default function Page() {
     <div className="flex flex-col gap-7">
       <div className="flex gap-5">
         <div className="flex flex-col gap-1">
-          <p>Input Devices</p>
+          <p className="font-semibold">Input Device</p>
           <Select
             value={inputDevices.activeDeviceId}
             onValueChange={(value) => {
@@ -109,7 +112,7 @@ export default function Page() {
           </Select>
         </div>
         <div className="flex flex-col gap-1">
-          <p>Output Devices</p>
+          <p className="font-semibold">Output Device</p>
           <Select
             value={outputDevices.activeDeviceId}
             onValueChange={(value) => {
@@ -131,7 +134,6 @@ export default function Page() {
         </div>
       </div>
       <div className="flex flex-col">
-        <SettingsPageTitle text="Enhancements" />
         <div className="flex flex-col gap-3">
           {options.map((option) => (
             <SwitchWithLabel
@@ -146,6 +148,17 @@ export default function Page() {
       </div>
       <div className="flex flex-col">
         <SettingsPageTitle text="Advanced" />
+        <div className="flex flex-col gap-3 pb-4">
+          {advancedSwitches.map((option) => (
+            <SwitchWithLabel
+              key={option.key}
+              id={option.key}
+              label={option.label}
+              value={(data[option.key] as boolean) ?? option.default}
+              setValue={(value) => set(option.key, value)}
+            />
+          ))}
+        </div>
         <div className="flex flex-col gap-3">
           {advanced.map((option) => (
             <div key={option.key} className="flex flex-col gap-2">
