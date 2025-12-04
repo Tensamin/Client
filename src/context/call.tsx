@@ -63,7 +63,7 @@ export function useSubCallContext() {
 
 // Main Provider Component
 export function CallProvider({ children }: { children: React.ReactNode }) {
-  const { data, debugLog } = useStorageContext();
+  const { data } = useStorageContext();
   const { lastMessage, send } = useSocketContext();
   const { get, currentReceiverUuid } = useUserContext();
 
@@ -76,7 +76,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   // Connect function
   const connectPromiseRef = useRef<{
     resolve: (() => void) | null;
-    reject: ((err?: any) => void) | null;
+    reject: ((error?: { message: string }) => void) | null;
   } | null>(null);
 
   const connect = useCallback(
@@ -98,7 +98,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         connectPromiseRef.current = { resolve, reject };
       });
     },
-    [debugLog, setToken]
+    [setToken]
   );
 
   // Disconnect function
@@ -111,7 +111,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       connectPromiseRef.current.reject({ message: "disconnect" });
       connectPromiseRef.current = null;
     }
-  }, [debugLog, setToken]);
+  }, [setToken]);
 
   // Call invites
   const [newCallWidgetOpen, setNewCallWidgetOpen] = useState(false);
@@ -137,7 +137,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         setNewCallWidgetOpen(true);
       });
     }
-  }, [lastMessage, get, debugLog]);
+  }, [lastMessage, get]);
 
   // Call tokens
   const getCallToken = useCallback(
@@ -153,7 +153,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         return "error";
       });
     },
-    [send, debugLog]
+    [send]
   );
 
   const handleAcceptCall = useCallback(() => {
@@ -164,7 +164,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       setDontSendInvite(true);
       connect(token, newCallData.call_id);
     });
-  }, [newCallData, getCallToken, connect, debugLog]);
+  }, [newCallData, getCallToken, connect]);
 
   return (
     <CallContext.Provider

@@ -32,7 +32,6 @@ class AudioService {
 
   // Simple log helpers (green messages)
   private logGreen(message: string): void {
-    // eslint-disable-next-line no-console
     rawDebugLog("Audio Service", message, "", "green");
   }
 
@@ -167,8 +166,8 @@ class AudioService {
         });
         // Attach port listener if available so we can log gate-specific events
         try {
-          if ((node as any).port) {
-            (node as any).port.onmessage = (evt: MessageEvent) => {
+          if (node.port) {
+            node.port.onmessage = (evt: MessageEvent) => {
               rawDebugLog(
                 "Audio Service",
                 "Noise gate event",
@@ -215,8 +214,8 @@ class AudioService {
       })`
     );
     try {
-      if ((node as any).port) {
-        (node as any).port.onmessage = (evt: MessageEvent) => {
+      if (node.port) {
+        node.port.onmessage = (evt: MessageEvent) => {
           rawDebugLog("Audio Service", "Audio gate event", evt.data, "green");
         };
         this.logGreen(`Attached audio gate message handler`);
@@ -357,8 +356,8 @@ class AudioService {
 
   public isSupported(): boolean {
     return (
-      // eslint-disable-next-line
-      !!(window.AudioContext || (window as any).webkitAudioContext) &&
+      // @ts-expect-error webkitAudioContext exists on Safari
+      !!(window.AudioContext || window.webkitAudioContext) &&
       !!window.AudioWorklet
     );
   }

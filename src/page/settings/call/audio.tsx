@@ -24,7 +24,7 @@ import { SettingsPageTitle } from "@/page/settings";
 import { Slider } from "@/components/ui/slider";
 
 // Icons
-import { Mic, MicOff, Play, Square, Volume2 } from "lucide-react";
+import * as Icon from "lucide-react";
 
 // Audio Test Hook
 function useAudioTest(
@@ -482,12 +482,12 @@ export default function Page() {
             >
               {audioTest.isRecording ? (
                 <>
-                  <Square className="h-4 w-4" />
+                  <Icon.Square className="h-4 w-4" />
                   Stop Recording
                 </>
               ) : (
                 <>
-                  <Mic className="h-4 w-4 text-destructive" />
+                  <Icon.Mic className="h-4 w-4 text-destructive" />
                   Record Test
                 </>
               )}
@@ -509,12 +509,12 @@ export default function Page() {
             >
               {audioTest.isPlaying ? (
                 <>
-                  <Square className="h-4 w-4" />
+                  <Icon.Square className="h-4 w-4" />
                   Stop
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4" />
+                  <Icon.Play className="h-4 w-4" />
                   Play Recording
                 </>
               )}
