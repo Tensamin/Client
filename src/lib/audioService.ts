@@ -16,6 +16,7 @@ interface NoiseSuppressionOptions {
   algorithm: NoiseSuppressionAlgorithm;
   maxChannels?: number;
   sensitivity?: number;
+  inputGain?: number;
 }
 
 interface AudioGateOptions {
@@ -40,6 +41,7 @@ class AudioService {
   private currentGateProcessor: AudioWorkletNode | null = null;
   private currentSecondProcessor: AudioWorkletNode | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
+  private gainNode: GainNode | null = null;
   private destinationNode: MediaStreamAudioDestinationNode | null = null;
   private isProcessing: boolean = false;
 
@@ -156,9 +158,11 @@ class AudioService {
         return node;
       }
       case "noisegate": {
+        const threshold = options.sensitivity || -50;
         const node = new NoiseGateWorkletNode(ctx, {
-          openThreshold: options.sensitivity || -50,
-          holdMs: 100,
+          openThreshold: threshold,
+          closeThreshold: threshold - 10, // 10dB hysteresis
+          holdMs: 200, // Longer hold time
           maxChannels: options.maxChannels || 2,
         });
         // Attach port listener if available so we can log gate-specific events
@@ -201,8 +205,8 @@ class AudioService {
     await this.loadWorklet("noisegate");
     const node = new NoiseGateWorkletNode(ctx, {
       openThreshold: options.threshold,
-      closeThreshold: options.threshold - 6,
-      holdMs: 100,
+      closeThreshold: options.threshold - 10, // Increased hysteresis to 10dB
+      holdMs: 200, // Increased hold time to 200ms
       maxChannels: options.maxChannels || 2,
     });
     this.logGreen(
@@ -276,9 +280,18 @@ class AudioService {
       this.destinationNode = ctx.createMediaStreamDestination();
       this.currentProcessor = await this.createNoiseProcessor(options);
 
+      // Create and configure gain node
+      this.gainNode = ctx.createGain();
+      this.gainNode.gain.value = options.inputGain ?? 1.0;
+      this.logGreen(`Input gain set to ${this.gainNode.gain.value}`);
+
       const shouldEnableGate =
         gateOptions ||
         (options.enableNoiseGate && options.algorithm !== "noisegate");
+
+      // Connect: Source -> Gain -> Processor -> [Gate] -> Destination
+      this.sourceNode.connect(this.gainNode);
+      this.gainNode.connect(this.currentProcessor);
 
       if (shouldEnableGate) {
         const effectiveGateOptions = gateOptions || {
@@ -288,11 +301,9 @@ class AudioService {
         this.currentGateProcessor = await this.createAudioGate(
           effectiveGateOptions
         );
-        this.sourceNode.connect(this.currentProcessor);
         this.currentProcessor.connect(this.currentGateProcessor);
         this.currentGateProcessor.connect(this.destinationNode);
       } else {
-        this.sourceNode.connect(this.currentProcessor);
         this.currentProcessor.connect(this.destinationNode);
       }
 
@@ -322,6 +333,7 @@ class AudioService {
   public cleanup(): void {
     try {
       this.sourceNode?.disconnect();
+      this.gainNode?.disconnect();
       this.currentProcessor?.disconnect();
       this.currentGateProcessor?.disconnect();
       this.currentSecondProcessor?.disconnect();
@@ -329,6 +341,7 @@ class AudioService {
     } catch {}
 
     this.sourceNode = null;
+    this.gainNode = null;
     this.currentProcessor = null;
     this.currentGateProcessor = null;
     this.currentSecondProcessor = null;
@@ -391,6 +404,7 @@ class AudioService {
             algorithm,
             maxChannels: channelCount,
             sensitivity: defaultNoiseOptions?.sensitivity,
+            inputGain: defaultNoiseOptions?.inputGain,
           });
           setProcessedTrackFromStream(processed);
           if (processor.processedTrack) {
@@ -434,6 +448,7 @@ class AudioService {
             algorithm,
             maxChannels: defaultNoiseOptions?.maxChannels ?? 1,
             sensitivity: defaultNoiseOptions?.sensitivity,
+            inputGain: defaultNoiseOptions?.inputGain,
           });
           setProcessedTrackFromStream(processed);
           if (processor.processedTrack) {

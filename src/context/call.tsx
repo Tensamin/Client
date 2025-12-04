@@ -318,11 +318,13 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         !localTrack
       ) {
         try {
+          const enableNoiseSuppression =
+            (data.call_enableNoiseSuppression as boolean) ?? true;
+
           createdTrack = await createLocalAudioTrack({
             echoCancellation:
               (data.call_enableEchoCancellation as boolean) ?? true,
-            noiseSuppression:
-              (data.call_enableNoiseSuppression as boolean) ?? true,
+            noiseSuppression: false,
             autoGainControl:
               (data.call_enableAutoGainControl as boolean) ?? true,
             deviceId: (data.call_inputDeviceID as string) ?? "default",
@@ -335,16 +337,29 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          const audioContext = audioService.getAudioContext();
-          createdTrack.setAudioContext(audioContext);
+          // Only apply custom noise processor when noise suppression is enabled
+          if (enableNoiseSuppression) {
+            const audioContext = audioService.getAudioContext();
+            createdTrack.setAudioContext(audioContext);
 
-          const processor = audioService.getProcessor({
-            enableNoiseGate: (data.call_enableNoiseGate as boolean) ?? true,
-            algorithm: "rnnoise",
-            maxChannels: (data.call_channelCount as number) ?? 2,
-            sensitivity: (data.call_noiseSensitivity as number) ?? 0.5,
-          });
-          await createdTrack.setProcessor(processor);
+            // Calculate threshold from sensitivity (0-1)
+            // Higher sensitivity = lower threshold (opens easier)
+            // 0.0 -> -20dB
+            // 0.5 -> -55dB
+            // 1.0 -> -90dB
+            const sensitivity = (data.call_noiseSensitivity as number) ?? 0.5;
+            const threshold = -20 - sensitivity * 70;
+            const inputGain = (data.call_inputGain as number) ?? 1.0;
+
+            const processor = audioService.getProcessor({
+              enableNoiseGate: (data.call_enableNoiseGate as boolean) ?? true,
+              algorithm: "rnnoise",
+              maxChannels: (data.call_channelCount as number) ?? 2,
+              sensitivity: threshold,
+              inputGain: inputGain,
+            });
+            await createdTrack.setProcessor(processor);
+          }
 
           await localParticipant.publishTrack(createdTrack);
           setLocalTrack(createdTrack);
