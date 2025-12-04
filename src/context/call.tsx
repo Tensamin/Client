@@ -339,6 +339,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           createdTrack.setAudioContext(audioContext);
 
           const processor = audioService.getProcessor({
+            enableNoiseGate: (data.call_enableNoiseGate as boolean) ?? true,
             algorithm: "rnnoise",
             maxChannels: (data.call_channelCount as number) ?? 2,
             sensitivity: (data.call_noiseSensitivity as number) ?? 0.5,
@@ -425,7 +426,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   // Cleanup
   useEffect(() => {
     if (!shouldConnect && localTrack) {
-      rawDebugLog("Sub Call Context", "CLEANUP_TRACK");
+      rawDebugLog("Sub Call Context", "Cleanup Track");
       localTrack.stop();
       setLocalTrack(null);
       audioService.cleanup();
@@ -434,19 +435,20 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!shouldConnect && localTrack) {
-      rawDebugLog("Sub Call Context", "CLEANUP_TRACK");
+      rawDebugLog("Sub Call Context", "Cleanup Track");
       (async () => {
         try {
           if (localParticipant && localParticipant?.unpublishTrack) {
             await localParticipant.unpublishTrack(localTrack);
           }
         } catch (err) {
-          rawDebugLog("Sub Call Context", "UNPUBLISH_ERROR", err);
+          toast.error("Error during track unpublish!");
+          rawDebugLog("Sub Call Context", "Error during unpublish", err, "red");
         }
         try {
           localTrack.stop();
         } catch (err) {
-          rawDebugLog("Sub Call Context", "STOP_TRACK_ERROR", err);
+          rawDebugLog("Sub Call Context", "Error stopping track", err, "red");
         }
         setLocalTrack(null);
         audioService.cleanup();
@@ -505,17 +507,3 @@ type SubCallContextValue = {
   isMuted: boolean;
   connectionState: ConnectionState;
 };
-
-/*
-
-  connect?: boolean;
-  options?: RoomOptions;
-  connectOptions?: RoomConnectOptions;
-  onConnected?: () => void;
-  onDisconnected?: (reason?: DisconnectReason) => void;
-  onError?: (error: Error) => void;
-  onMediaDeviceFailure?: (failure?: MediaDeviceFailure, kind?: MediaDeviceKind) => void;
-  onEncryptionError?: (error: Error) => void;
-  featureFlags?: FeatureFlags;
-
-*/

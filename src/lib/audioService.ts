@@ -12,6 +12,7 @@ import { rawDebugLog } from "@/context/storage";
 export type NoiseSuppressionAlgorithm = "speex" | "rnnoise" | "noisegate";
 
 interface NoiseSuppressionOptions {
+  enableNoiseGate: boolean;
   algorithm: NoiseSuppressionAlgorithm;
   maxChannels?: number;
   sensitivity?: number;
@@ -275,8 +276,18 @@ class AudioService {
       this.destinationNode = ctx.createMediaStreamDestination();
       this.currentProcessor = await this.createNoiseProcessor(options);
 
-      if (gateOptions) {
-        this.currentGateProcessor = await this.createAudioGate(gateOptions);
+      const shouldEnableGate =
+        gateOptions ||
+        (options.enableNoiseGate && options.algorithm !== "noisegate");
+
+      if (shouldEnableGate) {
+        const effectiveGateOptions = gateOptions || {
+          threshold: options.sensitivity ?? -50,
+          maxChannels: options.maxChannels,
+        };
+        this.currentGateProcessor = await this.createAudioGate(
+          effectiveGateOptions
+        );
         this.sourceNode.connect(this.currentProcessor);
         this.currentProcessor.connect(this.currentGateProcessor);
         this.currentGateProcessor.connect(this.destinationNode);
@@ -296,6 +307,9 @@ class AudioService {
         this.logGreen(
           `Processing stream with noise suppression: algorithm=${options.algorithm}`
         );
+        if (shouldEnableGate) {
+          this.logGreen(`Processing stream with additional noise gate`);
+        }
       }
       return this.destinationNode.stream;
     } catch (error) {
@@ -373,6 +387,7 @@ class AudioService {
           );
 
           const processed = await self.processStream(inputStream, {
+            enableNoiseGate: defaultNoiseOptions?.enableNoiseGate ?? true,
             algorithm,
             maxChannels: channelCount,
             sensitivity: defaultNoiseOptions?.sensitivity,
@@ -415,6 +430,7 @@ class AudioService {
             defaultNoiseOptions?.algorithm ??
             (self.isSupported() ? "rnnoise" : "noisegate");
           const processed = await self.processStream(inputStream, {
+            enableNoiseGate: defaultNoiseOptions?.enableNoiseGate ?? true,
             algorithm,
             maxChannels: defaultNoiseOptions?.maxChannels ?? 1,
             sensitivity: defaultNoiseOptions?.sensitivity,
