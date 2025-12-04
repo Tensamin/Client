@@ -137,6 +137,7 @@ export default function Page() {
         </Button>
       </div>
       <UserModal size="profile" uuid={ownUuid} />
+      <ContentForTesting />
       <div className="mt-auto">
         {appUpdateInformation && (
           <Card className="bg-muted/70">
@@ -202,4 +203,8 @@ export default function Page() {
       </div>
     </PageDiv>
   );
+}
+
+export function ContentForTesting() {
+  return <div>🗣️ TOOOOOOOOOM</div>;
 }
