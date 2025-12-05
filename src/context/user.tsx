@@ -32,7 +32,7 @@ import { getDisplayFromUsername } from "@/lib/utils";
 import { useSocketContext } from "@/context/socket";
 import { usePageContext } from "@/context/page";
 import { useCryptoContext } from "@/context/crypto";
-import { useStorageContext } from "@/context/storage";
+import { rawDebugLog, useStorageContext } from "@/context/storage";
 
 // Types
 type UserContextType = {
@@ -83,7 +83,6 @@ export function UserProvider({
   const prevLastMessageRef = useRef<unknown>(null);
 
   const {
-    debugLog,
     offlineData,
     addOfflineUser,
     setOfflineCommunities,
@@ -106,14 +105,6 @@ export function UserProvider({
   const [ownState, setOwnState] = useState<UserState>(initialUserState);
   const [ownUserHasPremium, setOwnUserHasPremium] = useState<boolean>(false);
   const [ownUserData, setOwnUserData] = useState<User | null>(null);
-
-  const setConversationsAndSync = useCallback(
-    (next: Conversation[]) => {
-      setConversationsState(next);
-      setOfflineConversations(next);
-    },
-    [setOfflineConversations]
-  );
 
   const setCommunitiesAndSync = useCallback(
     (next: Community[]) => {
@@ -138,7 +129,9 @@ export function UserProvider({
   useEffect(() => {
     updateFetchedUsers((draft) => {
       offlineData.storedUsers.forEach((offlineUser: StoredUser) => {
-        draft.set(offlineUser.user.uuid, offlineUser.user);
+        if (!draft.has(offlineUser.user.uuid)) {
+          draft.set(offlineUser.user.uuid, offlineUser.user);
+        }
       });
     });
   }, [offlineData, updateFetchedUsers]);
@@ -147,7 +140,7 @@ export function UserProvider({
     async (uuid: string, refetch: boolean = false): Promise<User> => {
       try {
         if (!uuid || uuid === "0") {
-          throw new Error("ERROR_USER_CONTEXT_GET_NO_USER_ID");
+          throw new Error("Invalid UUID");
         }
 
         const hasUser = fetchedUsersRef.current.has(uuid);
@@ -158,12 +151,12 @@ export function UserProvider({
           refetch || !hasUser || !!(existingUser && existingUser.loading);
 
         if (hasUser && !shouldFetch) {
-          debugLog("USER_CONTEXT", "USER_CONTEXT_USER_ALREADY_FETCHED");
+          rawDebugLog("User Context", "User already fetched", "", "yellow");
           return existingUser!;
         }
 
         setReloadUsers(true);
-        debugLog("USER_CONTEXT", "USER_CONTEXT_USER_NOT_FETCHED");
+        rawDebugLog("User Context", "Fetching user...", { uuid }, "yellow");
         const response = await fetch(`${user}${uuid}`);
         const data = await response.json();
 
@@ -197,7 +190,7 @@ export function UserProvider({
         updateFetchedUsers((draft) => {
           draft.set(uuid, newUser);
         });
-        await addOfflineUser(newUser);
+        await addOfflineUser(newUser, true);
         return newUser;
       } catch (err: unknown) {
         const error = err as ErrorType;
@@ -231,7 +224,21 @@ export function UserProvider({
         } as User;
       }
     },
-    [debugLog, addOfflineUser, updateFetchedUsers]
+    [addOfflineUser, updateFetchedUsers]
+  );
+
+  const setConversationsAndSync = useCallback(
+    (next: Conversation[]) => {
+      setConversationsState(next);
+      setOfflineConversations(next);
+
+      next.forEach((c) => {
+        if (c.user_id && c.user_id !== "0") {
+          void get(c.user_id, true);
+        }
+      });
+    },
+    [setOfflineConversations, get]
   );
 
   // Get own user
@@ -247,7 +254,7 @@ export function UserProvider({
       if (data.type !== "error") {
         setConversationsAndSync(data.data.user_ids || []);
       } else {
-        toast.error("ERROR_USER_CONTEXT_GET_CONVERSATIONS");
+        toast.error("Failed to get conversations");
       }
     });
   }, [send, setConversationsAndSync]);
@@ -315,7 +322,7 @@ export function UserProvider({
             last_message_at: 0,
           },
         ]);
-        toast.error("ERROR_USER_CONTEXT_GET_CONVERSATIONS");
+        toast.error("Failed to get conversations");
       }
     });
   }, [isReady, send, setConversationsAndSync]);
@@ -331,11 +338,11 @@ export function UserProvider({
         setCommunitiesAndSync([
           {
             community_address: "error",
-            community_title: "ERROR_USER_CONTEXT_GET_COMMUNITIES",
+            community_title: "Failed to get communities",
             position: "0",
           },
         ]);
-        toast.error("ERROR_USER_CONTEXT_GET_COMMUNITIES");
+        toast.error("Failed to get communities");
       }
     });
   }, [isReady, send, setCommunitiesAndSync]);
@@ -420,10 +427,7 @@ export function UserProvider({
 
     // @ts-expect-error ElectronAPI only available in Electron
     const electronAPI = window.electronAPI;
-    if (!electronAPI) {
-      console.log("ElectronAPI not available");
-      return;
-    }
+    if (!electronAPI) return;
 
     const handleUpdatePayload = (
       update: UpdatePayload,
@@ -454,7 +458,7 @@ export function UserProvider({
 
     const unsubscribeLogs = electronAPI.onUpdateLog?.(
       (log: UpdateLogPayload) => {
-        debugLog("ELECTRON_APP", "ELECTRON_APP_UPDATE_LOG", log);
+        rawDebugLog("Electron App", "Received Update Log", log, "green");
       }
     );
 
@@ -473,7 +477,7 @@ export function UserProvider({
       unsubscribeUpdate?.();
       unsubscribeLogs?.();
     };
-  }, [debugLog]);
+  }, []);
 
   return (
     <UserContext.Provider

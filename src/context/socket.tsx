@@ -25,7 +25,7 @@ import { client_wss } from "@/lib/endpoints";
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
 import { usePageContext } from "@/context/page";
-import { useStorageContext } from "@/context/storage";
+import { rawDebugLog, useStorageContext } from "@/context/storage";
 
 // Components
 import { Loading } from "@/components/loading";
@@ -69,7 +69,7 @@ export function SocketProvider({
   const [ownPing, setOwnPing] = useState<number>(0);
   const [iotaPing, setIotaPing] = useState<number>(0);
 
-  const { debugLog, bypass } = useStorageContext();
+  const { bypass } = useStorageContext();
   const { setPage } = usePageContext();
   const { privateKeyHash, ownUuid } = useCryptoContext();
 
@@ -86,10 +86,15 @@ export function SocketProvider({
         try {
           parsedMessage = JSON.parse(message.data);
         } catch {
-          debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_INVALID_MESSAGE");
+          rawDebugLog(
+            "Socket Context",
+            "Received invalid JSON message",
+            { message },
+            "red"
+          );
         }
         if (parsedMessage.type !== "pong") {
-          debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_RECEIVE", {
+          rawDebugLog("Socket Context", "Received", {
             type: parsedMessage.type,
             data: parsedMessage.data,
           });
@@ -101,20 +106,23 @@ export function SocketProvider({
           pendingRequests.current.delete(parsedMessage.id);
           currentRequest.resolve(parsedMessage);
         }
-      } catch {
-        debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
+      } catch (error: unknown) {
+        rawDebugLog("Socket Context", "Unknown error occured", error, "red");
       }
     },
-    [debugLog]
+    []
   );
 
   const { sendMessage: sendRaw, readyState } = useWebSocket(client_wss, {
-    onOpen: () => debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_CONNECTED"),
+    onOpen: () =>
+      rawDebugLog("Socket Context", "Connected to Omikron", "", "green"),
     onClose: () => {
-      debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_DISCONNECTED");
+      rawDebugLog("Socket Context", "Disconnected from Omikron", "", "red");
       pendingRequests.current.forEach(({ reject, timeoutId }) => {
         clearTimeout(timeoutId);
-        reject(new Error("ERROR_SOCKET_CONTEXT_CLOSED_BEFORE_RESPONSE"));
+        reject(
+          new Error("Disconnected before a response for `send` was received")
+        );
       });
       pendingRequests.current.clear();
     },
@@ -126,8 +134,8 @@ export function SocketProvider({
     onReconnectStop: () => {
       setPage(
         "error",
-        "ERROR_SOCKET_CONTEXT_CANNOT_CONNECT",
-        "ERROR_SOCKET_CONTEXT_CANNOT_CONNECT_EXTRA"
+        "Could not connect to Omikron",
+        "Either your internet connection or the Omikron is down. Check our status page and try again later."
       );
     },
   });
@@ -153,14 +161,19 @@ export function SocketProvider({
 
           try {
             if (messageToSend.type !== "ping") {
-              debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", {
+              rawDebugLog("Socket Context", "Sent", {
                 type: messageToSend.type,
                 data: messageToSend.data,
               });
             }
             sendRaw(JSON.stringify(messageToSend));
-          } catch {
-            debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
+          } catch (error: unknown) {
+            rawDebugLog(
+              "Socket Context",
+              "An unknown error occured",
+              error,
+              "red"
+            );
           }
           return {
             id: "",
@@ -180,10 +193,11 @@ export function SocketProvider({
 
           const timeoutId = setTimeout(() => {
             pendingRequests.current.delete(id);
-            debugLog(
-              "SOCKET_CONTEXT",
-              "ERROR_SOCKET_CONTEXT_TIMEOUT",
-              requestType
+            rawDebugLog(
+              "Socket Context",
+              "Request timed out",
+              { id, type: requestType, data },
+              "red"
             );
             reject();
           }, responseTimeout);
@@ -192,17 +206,22 @@ export function SocketProvider({
 
           try {
             if (messageToSend.type !== "ping") {
-              debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_SEND", {
+              rawDebugLog("Socket Context", "Sent", {
                 type: messageToSend.type,
                 data: messageToSend.data,
               });
             }
             sendRaw(JSON.stringify(messageToSend));
-          } catch (err: unknown) {
+          } catch (error: unknown) {
             clearTimeout(timeoutId);
             pendingRequests.current.delete(id);
-            debugLog("SOCKET_CONTEXT", "ERROR_SOCKET_CONTEXT_UNKNOWN");
-            reject(err);
+            rawDebugLog(
+              "Socket Context",
+              "An unkown error occured",
+              error,
+              "red"
+            );
+            reject(error);
           }
         });
       } else {
@@ -213,7 +232,7 @@ export function SocketProvider({
         };
       }
     },
-    [readyState, forceLoad, debugLog, sendRaw]
+    [readyState, forceLoad, sendRaw]
   );
 
   const sendPing = useEffectEvent(async () => {
@@ -239,25 +258,37 @@ export function SocketProvider({
             setInitialUserState(
               (data.data.user_status as UserState) || "ONLINE"
             );
-            debugLog("SOCKET_CONTEXT", "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS");
+            rawDebugLog(
+              "Socket Context",
+              "Successfully identified with Omikron",
+              "",
+              "green"
+            );
           } else {
             setPage(
               "error",
-              data.type.toUpperCase(),
-              data.type.toUpperCase() + "_EXTRA"
+              "An unkown error occured during identification",
+              "Check the browser console and report the issue to us."
             );
           }
         })
         .catch((err) => {
-          debugLog(
-            "SOCKET_CONTEXT",
-            "ERROR_SOCKET_CONTEXT_IDENTIFICATION_FAILED",
-            err
+          rawDebugLog("Socket Context", "Identification failed", err, "red");
+          setPage(
+            "error",
+            "Identification failed",
+            "This could be a invalid private key or an unkown error."
           );
-          setPage("error", "ERROR_SOCKET_CONTEXT_IDENTIFICATION_FAILED");
         });
     }
-  }, [connected, privateKeyHash, setPage, identified, ownUuid, debugLog, send]);
+  }, [
+    connected,
+    privateKeyHash,
+    setPage,
+    identified,
+    ownUuid,
+    send,
+  ]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -311,17 +342,17 @@ export function SocketProvider({
           {children}
         </SocketContext.Provider>
       ) : (
-        <Loading message="SOCKET_CONTEXT_LOADING_IDENTIFYING" />
+        <Loading message="Identifying" />
       );
     case ReadyState.CONNECTING:
-      return <Loading message="SOCKET_CONTEXT_LOADING_CONNECTING" />;
+      return <Loading message="Connecting" />;
     case ReadyState.CLOSING:
-      return <Loading message="SOCKET_CONTEXT_LOADING_CLOSING" />;
+      return <Loading message="Closing" />;
     case ReadyState.CLOSED:
-      return <Loading message="SOCKET_CONTEXT_LOADING_CLOSED" />;
+      return <Loading message="Closed" />;
     case ReadyState.UNINSTANTIATED:
-      return <Loading message="SOCKET_CONTEXT_LOADING_UNINSTANTIATED" />;
+      return <Loading message="Uninstantiated" />;
     default:
-      return <Loading message="SOCKET_CONTEXT_LOADING" />;
+      return <Loading message="Loading" />;
   }
 }

@@ -1,41 +1,5 @@
 "use client";
 
-/**
- * Migration helper for noise suppression settings
- * Converts legacy nsState values to new format:
- * - Old nsState 1 (built-in only) → New nsState 2 (speex with built-in)
- * This maintains the user's intent while using the improved implementation
- */
-function migrateNsState(nsState: unknown): number {
-  const currentNsState = nsState as number | undefined;
-
-  // If nsState is 1 (legacy built-in only mode), migrate to 2 (speex)
-  // Speex now includes built-in browser features, so this preserves user intent
-  if (currentNsState === 1) {
-    console.log(
-      "Storage: Migrating nsState from 1 (built-in only) to 2 (speex with built-in features)"
-    );
-    return 2;
-  }
-
-  // Valid values: 0 (off), 2 (speex), 3 (rnnoise)
-  // Default to 0 if undefined or invalid
-  // Translation: keep allowed values, and map the legacy combined option (4)
-  // to RNNoise (3) now that the combined 'speedx + rnnoise' option was removed.
-  if (currentNsState === 4) {
-    console.log(
-      "Storage: Migrating nsState from 4 (speedx + rnnoise) to 3 (rnnoise)"
-    );
-    return 3;
-  }
-
-  if (currentNsState === 0 || currentNsState === 2 || currentNsState === 3) {
-    return currentNsState;
-  }
-
-  return 0;
-}
-
 // Package Imports
 import {
   createContext,
@@ -44,6 +8,7 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 import { openDB, IDBPDatabase } from "idb";
 import { useTheme } from "next-themes";
@@ -102,14 +67,12 @@ export function rawDebugLog(
   const msgStyle =
     "padding: 1px 4px; border-radius: 2px; font-size: 10px; " +
     "font-family: 'Consolas', 'Monaco', monospace; " +
-    (message === "SOCKET_CONTEXT_IDENTIFICATION_SUCCESS" || color === "green"
+    (color === "green"
       ? "color: #a6d189;"
-      : message === "SOCKET_CONTEXT_CONNECTED"
-      ? "color: #a6d189;"
-      : message === "SOCKET_CONTEXT_DISCONNECTED" || color === "red"
+      : color === "red"
       ? "color: #e78284;"
-      : message.startsWith("ERROR")
-      ? "color: #e78284;"
+      : color === "yellow"
+      ? "color: #f9e2af;"
       : "");
 
   console.log(
@@ -155,6 +118,9 @@ export function StorageProvider({
 
   const { resolvedTheme, systemTheme } = useTheme();
 
+  const pendingOfflineUsers = useRef<Map<string, StoredUser>>(new Map());
+  const flushTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     // @ts-expect-error ElectronAPI only available in Electron
     if (window.electronAPI) {
@@ -181,30 +147,11 @@ export function StorageProvider({
         loadedUserData[entry.key] = entry.value;
       });
 
-      // Migrate nsState if needed (convert legacy value 1 to 2)
-      if (loadedUserData.nsState !== undefined) {
-        const migratedValue = migrateNsState(loadedUserData.nsState);
-        if (migratedValue !== loadedUserData.nsState) {
-          loadedUserData.nsState = migratedValue;
-          // Update in database
-          db.put("data", { key: "nsState", value: migratedValue });
-        }
-      }
-
-      // Ensure sensible defaults for new users (persist into DB).
-      if (loadedUserData.nsState === undefined) {
-        // Default to RNNoise (3) for improved suppression
-        loadedUserData.nsState = 3;
-        db.put("data", { key: "nsState", value: 3 });
-      }
       if (loadedUserData.audioThreshold === undefined) {
-        // Default gate threshold to -40 dB
         loadedUserData.audioThreshold = -40;
         db.put("data", { key: "audioThreshold", value: -40 });
       }
       if (loadedUserData.enableAudioGate === undefined) {
-        // Default the audio gate setting to enabled so users get quieter noise
-        // without needing to visit the audio settings UI.
         console.log("Storage: Defaulting enableAudioGate to true");
         loadedUserData.enableAudioGate = true;
         db.put("data", { key: "enableAudioGate", value: true });
@@ -214,28 +161,26 @@ export function StorageProvider({
       offlineData.forEach((entry) => {
         switch (entry.key) {
           case "storedUsers":
-            entry.value.forEach(
-              (userEntry: { user: User; storeTime: number }) => {
-                if (
-                  userEntry.storeTime + 1000 * 60 * 60 * 24 * 7 <
-                  Date.now()
-                ) {
-                  if (!db) return;
+            const validUsers: StoredUser[] = [];
+            let hasChanges = false;
+            const now = Date.now();
+            const sevenDays = 1000 * 60 * 60 * 24 * 7;
 
-                  const updated = (offlineData || []).filter(
-                    (entry) => entry.user.uuid !== userEntry.user.uuid
-                  );
-
-                  db.put("offline", { key: "storedUsers", value: updated });
-                  return;
+            if (Array.isArray(entry.value)) {
+              entry.value.forEach((userEntry: StoredUser) => {
+                if (userEntry.storeTime + sevenDays < now) {
+                  hasChanges = true;
+                } else {
+                  validUsers.push(userEntry);
                 }
+              });
+            }
 
-                loadedOfflineData.storedUsers.push({
-                  user: userEntry.user,
-                  storeTime: userEntry.storeTime,
-                });
-              }
-            );
+            if (hasChanges && db) {
+              db.put("offline", { key: "storedUsers", value: validUsers });
+            }
+
+            loadedOfflineData.storedUsers = validUsers;
             break;
           case "storedConversations":
             entry.value.forEach((conversation: Conversation) => {
@@ -386,45 +331,60 @@ export function StorageProvider({
     })();
   }, [dbPromise, loadData, setFailed]);
 
+  const flushOfflineUsers = useCallback(async () => {
+    if (!db || pendingOfflineUsers.current.size === 0) return;
+
+    const usersToSave = Array.from(pendingOfflineUsers.current.values());
+    pendingOfflineUsers.current.clear();
+    flushTimeout.current = null;
+
+    try {
+      const tx = db.transaction("offline", "readwrite");
+      const store = tx.objectStore("offline");
+      const entry = await store.get("storedUsers");
+      const rawValue = entry?.value;
+      const current: StoredUser[] = Array.isArray(rawValue)
+        ? (rawValue as StoredUser[])
+        : [];
+
+      const userMap = new Map(current.map((u) => [u.user.uuid, u]));
+
+      usersToSave.forEach((u) => {
+        userMap.set(u.user.uuid, u);
+      });
+
+      const updated = Array.from(userMap.values());
+
+      await store.put({ key: "storedUsers", value: updated });
+      await tx.done;
+
+      setOfflineData((prev) => ({
+        ...prev,
+        storedUsers: updated,
+      }));
+    } catch (err: unknown) {
+      handleError("STORAGE_CONTEXT", "ERROR_FLUSH_OFFLINE_USERS", err);
+    }
+  }, [db]);
+
   const addOfflineUser = useCallback(
-    async (user: User) => {
-      if (!db) return;
-      try {
-        const tx = db.transaction("offline", "readwrite");
-        const store = tx.objectStore("offline");
-        const entry = await store.get("storedUsers");
-        const rawValue = entry?.value;
-        const current: StoredUser[] = Array.isArray(rawValue)
-          ? (rawValue as StoredUser[])
-          : [];
+    async (user: User, immediate: boolean = false) => {
+      const storedUser: StoredUser = { user, storeTime: Date.now() };
+      pendingOfflineUsers.current.set(user.uuid, storedUser);
 
-        const storeTime = Date.now();
-        const existingIndex = current.findIndex(
-          (stored) => stored.user.uuid === user.uuid
-        );
+      if (flushTimeout.current) {
+        clearTimeout(flushTimeout.current);
+      }
 
-        const updated: StoredUser[] = [...current];
-        if (existingIndex !== -1) {
-          updated[existingIndex] = {
-            user,
-            storeTime,
-          };
-        } else {
-          updated.push({ user, storeTime });
-        }
-
-        await store.put({ key: "storedUsers", value: updated });
-        await tx.done;
-
-        setOfflineData((prev) => ({
-          ...prev,
-          storedUsers: updated,
-        }));
-      } catch (err: unknown) {
-        handleError("STORAGE_CONTEXT", "ERROR_ADD_OFFLINE_USER_UNKNOWN", err);
+      if (immediate) {
+        await flushOfflineUsers();
+      } else {
+        flushTimeout.current = setTimeout(() => {
+          void flushOfflineUsers();
+        }, 2000);
       }
     },
-    [db]
+    [flushOfflineUsers]
   );
 
   const setOfflineConversations = useCallback(
@@ -523,7 +483,7 @@ type StorageContextType = {
   bypass: boolean;
   isElectron: boolean;
   setBypass: (bypass: boolean) => void;
-  addOfflineUser: (user: User) => Promise<void>;
+  addOfflineUser: (user: User, immediate?: boolean) => Promise<void>;
   setOfflineCommunities: (communities: Community[]) => void;
   setOfflineConversations: (conversations: Conversation[]) => void;
 };

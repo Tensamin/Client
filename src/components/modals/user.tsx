@@ -8,6 +8,11 @@ import { usePageContext } from "@/context/page";
 // Components
 import * as RawModal from "@/components/modals/raw";
 import { fallbackUser } from "@/lib/types";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+} from "@/components/ui/context-menu";
 
 // Main
 export function UserModal({
@@ -47,15 +52,26 @@ export function UserModal({
       return <RawModal.BigModal key={uuid} {...props} />;
     case "medium":
       return (
-        <RawModal.MediumModal
-          key={uuid}
-          calls={calls ?? []}
-          {...props}
-          description={user.status || ""}
-          onClick={() => {
-            setPage("chat", user.uuid);
-          }}
-        />
+        <ContextMenu>
+          <ContextMenuTrigger>
+            <RawModal.MediumModal
+              key={uuid}
+              calls={calls ?? []}
+              {...props}
+              description={user.status || ""}
+              onClick={() => {
+                setPage("chat", user.uuid);
+              }}
+            />
+          </ContextMenuTrigger>
+          <ContextMenuContent className="p-0 bg-background rounded-xl border-none">
+            <RawModal.Profile
+              {...props}
+              description={user.about || ""}
+              state={user.state || "NONE"}
+            />
+          </ContextMenuContent>
+        </ContextMenu>
       );
     case "profile":
       return (

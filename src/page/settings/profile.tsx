@@ -243,6 +243,7 @@ export default function Page() {
             profileFormCache.set(ownUuid, { ...form });
 
             await send("client_changed", { user_state: ownState }, true);
+            await get(ownUuid, true);
 
             toast.success("Profile updated successfully!");
           } catch (err: unknown) {
