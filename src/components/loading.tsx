@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MotionDivWrapper } from "@/components/animation/presence";
 import { errorMessageToInfo } from "@/lib/utils";
+import { FixedWindowControls } from "./windowControls";
 
 // Main
 function ClearButton() {
@@ -33,7 +34,9 @@ function ClearButton() {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline">{"Clear Storage"}</Button>
+        <Button variant="outline" className="electron-no-drag">
+          Clear Storage
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -64,8 +67,13 @@ function ClearButton() {
 function BypassButton() {
   const { setBypass, bypass } = useStorageContext();
   return (
-    <Button variant="outline" onClick={() => setBypass(true)} disabled={bypass}>
-      {"Bypass Screen"}
+    <Button
+      variant="outline"
+      className="electron-no-drag"
+      onClick={() => setBypass(true)}
+      disabled={bypass}
+    >
+      Bypass Screen
     </Button>
   );
 }
@@ -121,7 +129,8 @@ export function RawLoading({
 }) {
   return (
     <>
-      <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10">
+      <FixedWindowControls />
+      <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10 electron-drag">
         {isError ? (
           // eslint-disable-next-line
           <img
@@ -142,13 +151,13 @@ export function RawLoading({
           <p
             className={`${
               messageSize === "small" ? "text-lg" : "text-2xl"
-            } font-semibold text-foreground text-center`}
+            } font-semibold text-foreground text-center electron-no-drag`}
           >
             {errorMessageToInfo(message)}
           </p>
         ) : null}
         {(isError || debug) && typeof extra !== "undefined" ? (
-          <p className="text-md font-medium text-muted-foreground text-center whitespace-pre-wrap">
+          <p className="text-md font-medium text-muted-foreground text-center whitespace-pre-wrap electron-no-drag">
             {errorMessageToInfo(extra)}
           </p>
         ) : null}

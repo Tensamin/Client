@@ -63,3 +63,11 @@ export function WindowControls() {
     );
   }
 }
+
+export function FixedWindowControls() {
+  return (
+    <div className="fixed top-0 right-0 m-2">
+      <WindowControls />
+    </div>
+  );
+}

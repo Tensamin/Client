@@ -19,7 +19,9 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { FixedWindowControls } from "@/components/windowControls";
 
+// Main
 export default function Page() {
   const [hover, setHover] = useState(false);
   const [privateKey, setPrivateKey] = useState("");
@@ -150,158 +152,161 @@ export default function Page() {
   );
 
   return (
-    <div className="w-full h-screen flex items-center justify-center electron-drag">
-      <div className="flex flex-col gap-5 w-full">
-        <div className="flex flex-col md:flex-row w-full gap-3 px-10 justify-center">
-          <Card className="w-full md:w-75 gap-3">
-            <CardHeader>
-              <CardTitle className="select-none">
-                Login using .tu file
-                <p className="text-xs text-muted-foreground/70 font-normal mt-2">
-                  Recommended
-                </p>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="w-full h-full">
-              <input
-                hidden
-                ref={tuFileRef}
-                type="file"
-                accept=".tu"
-                onChange={handleFileSelect}
-              />
-              <div
-                className={`${
-                  hover ? "opacity-60" : "opacity-100"
-                } transition-opacity duration-300 ease-in-out flex flex-col gap-10 items-center justify-center w-full h-full border-dashed rounded-xl cursor-pointer select-none text-sm md:py-0 py-15 ${buttonVariants(
-                  { variant: "outline" }
-                )}`}
-                onClick={() => tuFileRef.current?.click()}
-                onDrop={handleDrop}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setHover(true);
-                }}
-                onDragLeave={() => setHover(false)}
-              >
-                {hover ? (
-                  <Icon.FileInput
-                    className="size-8"
-                    strokeWidth={1.5}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setHover(true);
-                    }}
-                    onDragLeave={() => setHover(false)}
-                  />
-                ) : (
-                  <Icon.FileKey
-                    className="size-8"
-                    strokeWidth={1.5}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setHover(true);
-                    }}
-                    onDragLeave={() => setHover(false)}
-                  />
-                )}
-                {hover ? "Release to login" : "Select a .tu file"}
-              </div>
-            </CardContent>
-          </Card>
-          <div className="h-0.75 md:w-0.75 md:h-auto m-5 bg-input/60 rounded-full" />
-          <Card className="transition-opacity duration-300 ease-in-out w-full md:w-75">
-            <CardHeader>
-              <CardTitle className="select-none">
-                Login using credentials
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form
-                className="flex flex-col gap-5"
-                onSubmit={handleSubmit}
-                autoComplete="on"
-              >
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    required
-                    id="username"
-                    type="text"
-                    name="username"
-                    autoComplete="username"
-                    placeholder="Enter a username..."
-                    disabled={loading}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="password">Private Key</Label>
-                  <Input
-                    required
-                    id="password"
-                    type="password"
-                    name="password"
-                    autoComplete="current-password"
-                    placeholder="•••••••••••••••"
-                    disabled={loading}
-                    value={privateKey}
-                    onChange={(e) => setPrivateKey(e.target.value)}
-                  />
-                </div>
-                <Button
-                  className="select-none"
-                  type="submit"
-                  disabled={hover || loading || !privateKey}
+    <>
+      <FixedWindowControls />
+      <div className="w-full h-screen flex items-center justify-center electron-drag">
+        <div className="flex flex-col gap-5 w-full">
+          <div className="flex flex-col md:flex-row w-full gap-3 px-10 justify-center">
+            <Card className="w-full md:w-75 gap-3 electron-no-drag">
+              <CardHeader>
+                <CardTitle className="select-none">
+                  Login using .tu file
+                  <p className="text-xs text-muted-foreground/70 font-normal mt-2">
+                    Recommended
+                  </p>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="w-full h-full">
+                <input
+                  hidden
+                  ref={tuFileRef}
+                  type="file"
+                  accept=".tu"
+                  onChange={handleFileSelect}
+                />
+                <div
+                  className={`${
+                    hover ? "opacity-60" : "opacity-100"
+                  } transition-opacity duration-300 ease-in-out flex flex-col gap-10 items-center justify-center w-full h-full border-dashed rounded-xl cursor-pointer select-none text-sm md:py-0 py-15 ${buttonVariants(
+                    { variant: "outline" }
+                  )}`}
+                  onClick={() => tuFileRef.current?.click()}
+                  onDrop={handleDrop}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setHover(true);
+                  }}
+                  onDragLeave={() => setHover(false)}
                 >
-                  {loading ? (
-                    <Ring
-                      size="17"
-                      stroke="2"
-                      bgOpacity={0}
-                      speed={2}
-                      color="var(--background)"
+                  {hover ? (
+                    <Icon.FileInput
+                      className="size-8"
+                      strokeWidth={1.5}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setHover(true);
+                      }}
+                      onDragLeave={() => setHover(false)}
                     />
                   ) : (
-                    "Login"
+                    <Icon.FileKey
+                      className="size-8"
+                      strokeWidth={1.5}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setHover(true);
+                      }}
+                      onDragLeave={() => setHover(false)}
+                    />
                   )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-        <div className="text-xs text-muted-foreground/75 w-full flex flex-col text-center">
-          <p>By logging in you agree to our</p>
-          <p>
-            <a
-              className="underline"
-              href={tos}
-              target="_blank"
-              rel="noopener noreferrer"
+                  {hover ? "Release to login" : "Select a .tu file"}
+                </div>
+              </CardContent>
+            </Card>
+            <div className="h-0.75 md:w-0.75 md:h-auto m-5 bg-input/60 rounded-full" />
+            <Card className="transition-opacity duration-300 ease-in-out w-full md:w-75 electron-no-drag">
+              <CardHeader>
+                <CardTitle className="select-none">
+                  Login using credentials
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form
+                  className="flex flex-col gap-5"
+                  onSubmit={handleSubmit}
+                  autoComplete="on"
+                >
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      required
+                      id="username"
+                      type="text"
+                      name="username"
+                      autoComplete="username"
+                      placeholder="Enter a username..."
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="password">Private Key</Label>
+                    <Input
+                      required
+                      id="password"
+                      type="password"
+                      name="password"
+                      autoComplete="current-password"
+                      placeholder="•••••••••••••••"
+                      disabled={loading}
+                      value={privateKey}
+                      onChange={(e) => setPrivateKey(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    className="select-none"
+                    type="submit"
+                    disabled={hover || loading || !privateKey}
+                  >
+                    {loading ? (
+                      <Ring
+                        size="17"
+                        stroke="2"
+                        bgOpacity={0}
+                        speed={2}
+                        color="var(--background)"
+                      />
+                    ) : (
+                      "Login"
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="text-xs text-muted-foreground/75 w-full flex flex-col text-center">
+            <p>By logging in you agree to our</p>
+            <p>
+              <a
+                className="underline electron-no-drag"
+                href={tos}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Terms of Service
+              </a>
+              {" and "}
+              <a
+                className="underline electron-no-drag"
+                href={pp}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Privacy Policy
+              </a>
+            </p>
+          </div>
+          <div className="flex justify-center items-center pt-15">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPage("signup");
+              }}
             >
-              Terms of Service
-            </a>
-            {" and "}
-            <a
-              className="underline"
-              href={pp}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Privacy Policy
-            </a>
-          </p>
-        </div>
-        <div className="flex justify-center items-center pt-15">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setPage("signup");
-            }}
-          >
-            Sign up
-          </Button>
+              Sign up
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
