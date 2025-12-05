@@ -28,6 +28,7 @@ import {
 } from "@/lib/types";
 import { UserAvatar } from "@/components/modals/raw";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Text } from "../markdown/text";
 
 // This needs restructuring!
 
@@ -175,7 +176,7 @@ function FinalMessage({ message: data }: { message: Message }) {
           {isDecrypting ? (
             <Skeleton className="h-4 w-24 rounded-md" />
           ) : (
-            content
+            <Text text={content} />
           )}
         </div>
       </ContextMenuTrigger>

@@ -1,6 +1,7 @@
 // Package Imports
 import { useState } from "react";
 import { HexColorPicker } from "react-colorful";
+import { bundledThemes } from "shiki";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
@@ -19,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
+import { SettingsPageTitle } from "../settings";
+import { capitalizeFirstLetter } from "@/lib/utils";
 
 // Main
 export default function Page() {
@@ -128,6 +131,34 @@ export default function Page() {
         >
           Reset
         </Button>
+      </div>
+      <div className="flex flex-col gap-1">
+        <SettingsPageTitle text="Code Block" />
+        <Select
+          value={(data.codeBlockShikiTheme as string) ?? "houston"}
+          onValueChange={(value) => set("codeBlockShikiTheme", value)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue
+              placeholder={
+                (data.codeBlockShikiTheme as string) ?? "Select shiki theme"
+              }
+            />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {Object.keys(bundledThemes).map((theme) => (
+                <SelectItem
+                  key={theme}
+                  value={theme}
+                  onClick={() => set("codeBlockShikiTheme", theme)}
+                >
+                  {capitalizeFirstLetter(theme)}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

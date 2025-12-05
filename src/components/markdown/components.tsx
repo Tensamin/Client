@@ -2,7 +2,6 @@
 import React from "react";
 import Link from "next/link";
 import type { Components } from "react-markdown";
-import * as Icon from "lucide-react";
 
 // Components
 import {
@@ -14,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { CodeBlock } from "@/components/markdown/code-block";
 
 // Types
 type HProps = React.HTMLAttributes<HTMLHeadingElement>;
@@ -29,6 +28,7 @@ type HrProps = React.HTMLAttributes<HTMLHRElement>;
 type ImgProps = React.ImgHTMLAttributes<HTMLImageElement>;
 type EmProps = React.HTMLAttributes<HTMLElement>;
 type StrongProps = React.HTMLAttributes<HTMLElement>;
+type CodeProps = React.HTMLAttributes<HTMLElement> & { inline?: boolean };
 
 // Main
 export const H1 = ({ className, ...props }: HProps) => {
@@ -215,30 +215,30 @@ export const markdownComponents: Components = {
   td: TableCell,
   strong: Strong,
   em: Em,
-  code: ({ className, children }) => {
-    const languageToken = className?.split(" ")[1]?.replace("language-", "");
-    return (
-      <div className={cn("flex flex-col p-1 rounded-lg border", className)}>
-        <div className="flex gap-1 items-center">
-          <Button size="icon" variant="ghost" className="w-6 h-6 rounded-sm">
-            <Icon.Copy
-              className="scale-75"
-              color="var(--muted-foreground)"
-              strokeWidth={2}
-            />
-          </Button>
-          {languageToken ? (
-            <span className="text-xs text-muted-foreground">
-              {languageToken}
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground">WEEWOO</span>
+  code: ({ className, children, inline, ...props }: CodeProps) => {
+    const code = String(children).replace(/\n$/, "");
+
+    if (inline) {
+      return (
+        <code
+          className={cn(
+            "bg-muted px-1.5 py-0.5 rounded-md font-mono text-sm text-foreground",
+            className
           )}
-        </div>
-        <code className="text-xs p-1 overflow-scroll scrollbar-hide">
+          {...props}
+        >
           {children}
         </code>
-      </div>
+      );
+    }
+
+    const languageToken = className?.split(" ")[1]?.replace("language-", "");
+    return (
+      <CodeBlock
+        language={languageToken || "text"}
+        code={code}
+        className={className}
+      />
     );
   },
 };
