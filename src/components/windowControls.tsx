@@ -9,7 +9,18 @@ import { Button } from "@/components/ui/button";
 
 // Main
 export function WindowControls() {
-  const { isElectron } = useStorageContext();
+  let isElectron = false;
+  try {
+    const storageContext = useStorageContext();
+    isElectron = storageContext.isElectron;
+  } catch {
+    // @ts-expect-error ElectronAPI only available in Electron
+    if (window.electronAPI) {
+      isElectron = true;
+    } else {
+      isElectron = false;
+    }
+  }
 
   const handleMinimize = () => {
     // @ts-expect-error ElectronAPI only available in Electron
