@@ -15,10 +15,37 @@ import type {
 } from "@livekit/components-core";
 import * as Icon from "lucide-react";
 
+// Lib Imports
+import { User } from "@/lib/types";
+
+// Context Imports
+import { useCallContext } from "@/context/call";
+import { useUserContext } from "@/context/user";
+
 // Components
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { CallUserModal } from "@/components/modals/call";
 import { CallGrid } from "./call/grid";
 import { CallFocus } from "./call/focus";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { UserAvatar } from "@/components/modals/raw";
+import {
+  DeafButton,
+  MuteButton,
+  ScreenShareButton,
+} from "@/components/modals/call";
 
 // Helper Functions
 function mergeParticipantTracks(
@@ -56,6 +83,9 @@ function getTrackPriority(track: TrackReferenceOrPlaceholder) {
 
 // Main
 export default function Page() {
+  const { conversations, get } = useUserContext();
+  const { disconnect } = useCallContext();
+
   // track management
   const trackReferences = useTracks(
     [
@@ -140,6 +170,69 @@ export default function Page() {
             className="h-full"
           />
         )}
+      </div>
+      <div className="flex justify-center pb-5">
+        <div className="flex gap-3 bg-card p-1.5 rounded-lg border">
+          {/* Mute Button */}
+          <MuteButton ghostMode className="w-10" />
+          {/* Deaf Button */}
+          <DeafButton ghostMode className="w-10" />
+          {/* Screen Share Button */}
+          <ScreenShareButton ghostMode className="w-10" />
+          {/* Future Camera Button */}
+          <Button disabled variant="ghost" className="w-10 h-9">
+            <Icon.Camera />
+          </Button>
+          {/* Invite Button */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" className="w-10 h-9">
+                <Icon.MailPlus />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0">
+              <Command>
+                <CommandInput placeholder="Search conversations..." />
+                <CommandList>
+                  <CommandEmpty>No conversation found.</CommandEmpty>
+                  <CommandGroup>
+                    {conversations.map((conversation) => {
+                      const [user, setUser] = useState<User | null>(null);
+                      useEffect(() => {
+                        get(conversation.user_id, false).then((data) => {
+                          setUser(data);
+                        });
+                      }, [conversation.user_id, get]);
+                      return (
+                        <CommandItem
+                          key={conversation.user_id}
+                          value={user?.display}
+                        >
+                          <UserAvatar
+                            border
+                            icon={user?.avatar}
+                            size="small"
+                            title={user?.display ?? ""}
+                            loading={!user}
+                          />
+                          {user?.display}
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {/* Leave Button */}
+          <Button
+            className="w-10 h-9"
+            variant="destructive"
+            onClick={() => disconnect()}
+          >
+            <Icon.LogOut />
+          </Button>
+        </div>
       </div>
     </div>
   );

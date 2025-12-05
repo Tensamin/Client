@@ -74,7 +74,7 @@ function useAudioTest(
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           deviceId: inputDeviceId ? { exact: inputDeviceId } : undefined,
-          echoCancellation: true,
+          echoCancellation: false,
           noiseSuppression: false,
           autoGainControl: true,
           channelCount: settings.channelCount,
@@ -349,7 +349,7 @@ export default function Page() {
     {
       label: "Enable Echo Cancellation",
       key: "call_enableEchoCancellation",
-      default: true,
+      default: false,
     },
     {
       label: "Enable Noise Suppression",

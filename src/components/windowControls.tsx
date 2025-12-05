@@ -1,9 +1,6 @@
 // Package Imports
 import * as Icon from "lucide-react";
 
-// Context Imports
-import { useStorageContext } from "@/context/storage";
-
 // Components
 import { Button } from "@/components/ui/button";
 
@@ -11,16 +8,11 @@ import { Button } from "@/components/ui/button";
 export function WindowControls() {
   let isElectron = false;
   try {
-    const storageContext = useStorageContext();
-    isElectron = storageContext.isElectron;
-  } catch {
-    // @ts-expect-error ElectronAPI only available in Electron
+    /// @ts-expect-error ElectronAPI only available in Electron
     if (window.electronAPI) {
       isElectron = true;
-    } else {
-      isElectron = false;
     }
-  }
+  } catch {}
 
   const handleMinimize = () => {
     // @ts-expect-error ElectronAPI only available in Electron

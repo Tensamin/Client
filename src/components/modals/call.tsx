@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { useCallContext, useSubCallContext } from "@/context/call";
 import { usePageContext } from "@/context/page";
 import { useStorageContext } from "@/context/storage";
+import { useUserContext } from "@/context/user";
 
 // Components
 import { Card } from "@/components/ui/card";
@@ -35,6 +36,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { UserAvatar } from "@/components/modals/raw";
 
 // Types
 import {
@@ -297,14 +299,28 @@ export function VoiceActions() {
   ) : null;
 }
 
-function MuteButton() {
+export function MuteButton({
+  ghostMode,
+  className,
+}: {
+  ghostMode?: boolean;
+  className?: string;
+}) {
   const { toggleMute } = useSubCallContext();
   const { isMicrophoneEnabled } = useLocalParticipant();
 
   return (
     <Button
-      className="h-9 flex-3"
-      variant={isMicrophoneEnabled ? "outline" : "default"}
+      className={`h-9 flex-3 ${className}`}
+      variant={
+        ghostMode
+          ? isMicrophoneEnabled
+            ? "ghost"
+            : "destructive"
+          : isMicrophoneEnabled
+          ? "outline"
+          : "default"
+      }
       onClick={toggleMute}
       aria-label={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
     >
@@ -313,7 +329,13 @@ function MuteButton() {
   );
 }
 
-function ScreenShareButton() {
+export function ScreenShareButton({
+  ghostMode,
+  className,
+}: {
+  ghostMode?: boolean;
+  className?: string;
+}) {
   const { isScreenShareEnabled, localParticipant } = useLocalParticipant();
 
   const toggleScreenShare = async () => {
@@ -324,8 +346,16 @@ function ScreenShareButton() {
 
   return (
     <Button
-      className="h-9 flex-3"
-      variant={isScreenShareEnabled ? "default" : "outline"}
+      className={`h-9 flex-3 ${className}`}
+      variant={
+        ghostMode
+          ? isScreenShareEnabled
+            ? "default"
+            : "ghost"
+          : isScreenShareEnabled
+          ? "default"
+          : "outline"
+      }
       onClick={toggleScreenShare}
       aria-label={isScreenShareEnabled ? "Stop screen share" : "Share screen"}
     >
@@ -334,13 +364,27 @@ function ScreenShareButton() {
   );
 }
 
-function DeafButton() {
+export function DeafButton({
+  ghostMode,
+  className,
+}: {
+  ghostMode?: boolean;
+  className?: string;
+}) {
   const { isDeafened, toggleDeafen } = useSubCallContext();
 
   return (
     <Button
-      className="h-9 flex-3"
-      variant={isDeafened ? "default" : "outline"}
+      className={`h-9 flex-3 ${className}`}
+      variant={
+        ghostMode
+          ? isDeafened
+            ? "destructive"
+            : "ghost"
+          : isDeafened
+          ? "default"
+          : "outline"
+      }
       onClick={toggleDeafen}
       aria-label={isDeafened ? "Undeafen" : "Deafen"}
     >

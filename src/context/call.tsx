@@ -32,6 +32,7 @@ import { audioService } from "@/lib/audioService";
 import { useStorageContext, rawDebugLog } from "@/context/storage";
 import { useSocketContext } from "@/context/socket";
 import { useUserContext } from "@/context/user";
+import { usePageContext } from "@/context/page";
 
 // Components
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -66,6 +67,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const { data } = useStorageContext();
   const { lastMessage, send } = useSocketContext();
   const { get, currentReceiverUuid } = useUserContext();
+  const { setPage } = usePageContext();
 
   const [shouldConnect, setShouldConnect] = useState(false);
   const [token, setToken] = useState("");
@@ -103,6 +105,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   // Disconnect function
   const disconnect = useCallback(() => {
+    setPage("home");
     rawDebugLog("Call Context", "Disconnect");
     setOuterState("DISCONNECTED");
     setShouldConnect(false);
@@ -111,7 +114,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       connectPromiseRef.current.reject({ message: "disconnect" });
       connectPromiseRef.current = null;
     }
-  }, [setToken]);
+  }, [setToken, setPage]);
 
   // Call invites
   const [newCallWidgetOpen, setNewCallWidgetOpen] = useState(false);
@@ -228,9 +231,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         audio={false}
         video={false}
         screen={false}
-        simulateParticipants={
-          (data.call_amountOfSimulatedParticipants as number) ?? 0
-        }
         onConnected={() => {
           rawDebugLog("Call Context", "Room connected", { token });
           setOuterState("CONNECTED");
@@ -323,7 +323,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
           createdTrack = await createLocalAudioTrack({
             echoCancellation:
-              (data.call_enableEchoCancellation as boolean) ?? true,
+              (data.call_enableEchoCancellation as boolean) ?? false,
             noiseSuppression: false,
             autoGainControl:
               (data.call_enableAutoGainControl as boolean) ?? true,
