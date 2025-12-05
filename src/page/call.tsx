@@ -83,7 +83,7 @@ function getTrackPriority(track: TrackReferenceOrPlaceholder) {
 
 // Main
 export default function Page() {
-  const { conversations, get } = useUserContext();
+  const { conversations } = useUserContext();
   const { disconnect } = useCallContext();
 
   // track management
@@ -154,7 +154,7 @@ export default function Page() {
   );
 
   return (
-    <div className="flex flex-col gap-2 w-full h-full">
+    <div className="flex flex-col w-full h-full py-5 gap-5">
       <div className="flex-1">
         {focusedTrackRef ? (
           <CallFocus
@@ -171,7 +171,7 @@ export default function Page() {
           />
         )}
       </div>
-      <div className="flex justify-center pb-5">
+      <div className="flex justify-center">
         <div className="flex gap-3 bg-card p-1.5 rounded-lg border">
           {/* Mute Button */}
           <MuteButton ghostMode className="w-10" />
@@ -196,29 +196,12 @@ export default function Page() {
                 <CommandList>
                   <CommandEmpty>No conversation found.</CommandEmpty>
                   <CommandGroup>
-                    {conversations.map((conversation) => {
-                      const [user, setUser] = useState<User | null>(null);
-                      useEffect(() => {
-                        get(conversation.user_id, false).then((data) => {
-                          setUser(data);
-                        });
-                      }, [conversation.user_id, get]);
-                      return (
-                        <CommandItem
-                          key={conversation.user_id}
-                          value={user?.display}
-                        >
-                          <UserAvatar
-                            border
-                            icon={user?.avatar}
-                            size="small"
-                            title={user?.display ?? ""}
-                            loading={!user}
-                          />
-                          {user?.display}
-                        </CommandItem>
-                      );
-                    })}
+                    {conversations.map((conversation) => (
+                      <UserInInviteSelection
+                        userId={conversation.user_id}
+                        key={conversation.user_id}
+                      />
+                    ))}
                   </CommandGroup>
                 </CommandList>
               </Command>
@@ -238,10 +221,36 @@ export default function Page() {
   );
 }
 
-export function TileContent({ hideBadges }: { hideBadges?: boolean } = {}) {
+function UserInInviteSelection({ userId }: { userId: string }) {
+  const { get } = useUserContext();
+  const [user, setUser] = useState<User | null>(null);
+  useEffect(() => {
+    get(userId, false).then((data) => {
+      setUser(data);
+    });
+  }, [userId, get]);
+  return (
+    <CommandItem value={user?.display}>
+      <UserAvatar
+        border
+        icon={user?.avatar}
+        size="small"
+        title={user?.display ?? ""}
+        loading={!user}
+      />
+      {user?.display}
+    </CommandItem>
+  );
+}
+
+export function TileContent({
+  hideBadges,
+  index,
+}: { hideBadges?: boolean; index?: number } = {}) {
+  console.log(index);
   const isSpeaking = useIsSpeaking();
   return (
-    <div className="relative w-full h-full">
+    <div className="aspect-video relative w-full max-h-full">
       <div
         className={`absolute inset-0 rounded-xl transition-all ease-in-out duration-400 pointer-events-none z-20 ${
           isSpeaking && "ring-3 ring-primary ring-inset"

@@ -89,8 +89,8 @@ export function UserAvatar({
         {icon && <AvatarImage src={icon} />}
         <AvatarFallback
           className={`${size === "extraLarge" && "text-2xl"} ${
-            size === "gigantica" && "text-4xl"
-          } ${size === "jumbo" && "text-3xl"} ${
+            size === "gigantica" && "text-6xl"
+          } ${size === "jumbo" && "text-5xl"} ${
             size === "large" && "text-xl"
           } ${size === "medium" && "text-sm"} ${size === "small" && "text-xs"}`}
         >

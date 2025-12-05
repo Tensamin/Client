@@ -64,7 +64,6 @@ export function useSubCallContext() {
 
 // Main Provider Component
 export function CallProvider({ children }: { children: React.ReactNode }) {
-  const { data } = useStorageContext();
   const { lastMessage, send } = useSocketContext();
   const { get, currentReceiverUuid } = useUserContext();
   const { setPage } = usePageContext();
@@ -284,6 +283,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
   const [localTrack, setLocalTrack] = useState<LocalAudioTrack | null>(null);
   const [isDeafened, setIsDeafened] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
 
   const storedUserVolumes = data.call_userVolumes as UserAudioSettings | null;
 
@@ -363,6 +363,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
           await localParticipant.publishTrack(createdTrack);
           setLocalTrack(createdTrack);
+          setIsMuted(createdTrack.isMuted);
         } catch (error) {
           rawDebugLog("Sub Call Context", "INIT_AUDIO_ERROR", error);
           toast.error("Failed to initialize microphone.");
@@ -401,20 +402,14 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
     if (localTrack.isMuted) {
       await localTrack.unmute();
+      if (isDeafened) {
+        setIsDeafened(false);
+      }
     } else {
       await localTrack.mute();
     }
 
-    setLocalTrack(
-      Object.assign(
-        Object.create(Object.getPrototypeOf(localTrack)),
-        localTrack
-      )
-    );
-
-    if (localTrack.isMuted && isDeafened) {
-      setIsDeafened(false);
-    }
+    setIsMuted(localTrack.isMuted);
   }, [localTrack, isDeafened]);
 
   // Toggle Deafen
@@ -429,12 +424,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         await localTrack.unmute();
       }
 
-      setLocalTrack(
-        Object.assign(
-          Object.create(Object.getPrototypeOf(localTrack)),
-          localTrack
-        )
-      );
+      setIsMuted(localTrack.isMuted);
     }
   }, [isDeafened, localTrack]);
 
@@ -444,6 +434,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       rawDebugLog("Sub Call Context", "Cleanup Track");
       localTrack.stop();
       setLocalTrack(null);
+      setIsMuted(true);
       audioService.cleanup();
     }
   }, [shouldConnect, localTrack]);
@@ -466,6 +457,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           rawDebugLog("Sub Call Context", "Error stopping track", err, "red");
         }
         setLocalTrack(null);
+        setIsMuted(true);
         audioService.cleanup();
       })();
     }
@@ -484,6 +476,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         } catch {}
         audioService.cleanup();
         setLocalTrack(null);
+        setIsMuted(true);
       }
     };
   }, [localParticipant, localTrack]);
@@ -494,7 +487,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         toggleMute,
         isDeafened,
         toggleDeafen,
-        isMuted: localTrack ? localTrack.isMuted : true,
+        isMuted,
         connectionState,
       }}
     >

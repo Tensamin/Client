@@ -9,8 +9,16 @@ import {
   useParticipantContext,
   useMaybeTrackRefContext,
 } from "@livekit/components-react";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useEffect, useState } from "react";
+import {
+  ConnectionQuality,
+  ConnectionState,
+  ParticipantEvent,
+  Track,
+} from "livekit-client";
+import { isTrackReference } from "@livekit/components-core";
+import { toast } from "sonner";
 
 // Lib Imports
 import { cn } from "@/lib/utils";
@@ -19,7 +27,6 @@ import { cn } from "@/lib/utils";
 import { useCallContext, useSubCallContext } from "@/context/call";
 import { usePageContext } from "@/context/page";
 import { useStorageContext } from "@/context/storage";
-import { useUserContext } from "@/context/user";
 
 // Components
 import { Card } from "@/components/ui/card";
@@ -36,17 +43,16 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { UserAvatar } from "@/components/modals/raw";
-
-// Types
 import {
-  ConnectionQuality,
-  ConnectionState,
-  ParticipantEvent,
-  Track,
-} from "livekit-client";
-import { isTrackReference } from "@livekit/components-core";
-import { toast } from "sonner";
+  Menubar,
+  MenubarMenu,
+  MenubarContent,
+  MenubarItem,
+  MenubarTrigger,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+} from "@/components/ui/menubar";
 
 // Main
 export function CallUserModal({ hideBadges }: { hideBadges?: boolean } = {}) {
@@ -136,12 +142,12 @@ export function VoiceActions() {
 
       setPingData((prevData) => {
         const newData = [...prevData, { time: currentTime, ping: currentPing }];
-        if (newData.length > 20) {
+        if (newData.length > 10) {
           newData.shift();
         }
         return newData;
       });
-    }, 5000);
+    }, 2500);
 
     return () => clearInterval(interval);
   }, [localParticipant.engine.client.rtt]);
@@ -258,6 +264,7 @@ export function VoiceActions() {
               <AreaChart accessibilityLayer data={pingData}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="time" hide />
+                <YAxis dataKey="ping" width={28} />
                 <ChartTooltip
                   cursor={false}
                   content={<ChartTooltipContent indicator="dot" />}
@@ -266,7 +273,7 @@ export function VoiceActions() {
                   dataKey="ping"
                   type="linear"
                   fill="var(--primary)"
-                  fillOpacity={0.4}
+                  fillOpacity={0.3}
                   stroke="var(--primary)"
                 />
               </AreaChart>
@@ -319,7 +326,7 @@ export function MuteButton({
             : "destructive"
           : isMicrophoneEnabled
           ? "outline"
-          : "default"
+          : "destructive"
       }
       onClick={toggleMute}
       aria-label={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
@@ -345,22 +352,52 @@ export function ScreenShareButton({
   };
 
   return (
-    <Button
-      className={`h-9 flex-3 ${className}`}
-      variant={
-        ghostMode
-          ? isScreenShareEnabled
-            ? "default"
-            : "ghost"
-          : isScreenShareEnabled
-          ? "default"
-          : "outline"
-      }
-      onClick={toggleScreenShare}
-      aria-label={isScreenShareEnabled ? "Stop screen share" : "Share screen"}
-    >
-      {isScreenShareEnabled ? <Icon.MonitorOff /> : <Icon.Monitor />}
-    </Button>
+    <Menubar asChild>
+      <MenubarMenu>
+        <MenubarTrigger asChild>
+          <Button
+            className={`h-9 flex-3 ${className} rounded-lg ${
+              isScreenShareEnabled &&
+              "focus:bg-primary/85 focus-visible:dark:bg-primary/85 focus:text-primary-foreground data-[state=open]:bg-primary/85 data-[state=open]:text-background"
+            }`}
+            variant={
+              ghostMode
+                ? isScreenShareEnabled
+                  ? "default"
+                  : "ghost"
+                : isScreenShareEnabled
+                ? "default"
+                : "outline"
+            }
+          >
+            {isScreenShareEnabled ? <Icon.MonitorDot /> : <Icon.Monitor />}
+          </Button>
+        </MenubarTrigger>
+        <MenubarContent align="center">
+          <MenubarItem onSelect={toggleScreenShare}>
+            {isScreenShareEnabled ? (
+              <>
+                <Icon.CircleStop color="var(--destructive)" />
+                Stop
+              </>
+            ) : (
+              <>
+                <Icon.CirclePlay color="var(--foreground)" />
+                Start
+              </>
+            )}
+          </MenubarItem>
+          <MenubarSub>
+            <MenubarSubTrigger className="flex gap-2 items-center">
+              <Icon.Gem size={15} /> Change Quality
+            </MenubarSubTrigger>
+            <MenubarSubContent>
+              <MenubarItem disabled>Weewoo</MenubarItem>
+            </MenubarSubContent>
+          </MenubarSub>
+        </MenubarContent>
+      </MenubarMenu>
+    </Menubar>
   );
 }
 
@@ -382,7 +419,7 @@ export function DeafButton({
             ? "destructive"
             : "ghost"
           : isDeafened
-          ? "default"
+          ? "destructive"
           : "outline"
       }
       onClick={toggleDeafen}
