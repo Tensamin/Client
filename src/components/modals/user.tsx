@@ -1,5 +1,5 @@
 // Package Imports
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // Context Imports
 import { useUserContext } from "@/context/user";
@@ -12,7 +12,9 @@ import {
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
+  ContextMenuItem,
 } from "@/components/ui/context-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 
 // Main
 export function UserModal({
@@ -47,31 +49,52 @@ export function UserModal({
     state: user.uuid === ownUuid ? ownState : user.state,
   };
 
+  const [profileOpen, setProfileOpen] = useState(false);
   switch (size) {
     case "big":
       return <RawModal.BigModal key={uuid} {...props} />;
     case "medium":
       return (
-        <ContextMenu>
-          <ContextMenuTrigger>
-            <RawModal.MediumModal
-              key={uuid}
-              calls={calls ?? []}
-              {...props}
-              description={user.status || ""}
-              onClick={() => {
-                setPage("chat", user.uuid);
-              }}
-            />
-          </ContextMenuTrigger>
-          <ContextMenuContent className="p-0 bg-background rounded-xl border-none">
-            <RawModal.Profile
-              {...props}
-              description={user.about || ""}
-              state={user.state || "NONE"}
-            />
-          </ContextMenuContent>
-        </ContextMenu>
+        <>
+          <ContextMenu>
+            <ContextMenuTrigger>
+              <RawModal.MediumModal
+                key={uuid}
+                calls={calls ?? []}
+                {...props}
+                description={user.status || ""}
+                onClick={() => {
+                  setPage("chat", user.uuid);
+                }}
+              />
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+              <ContextMenuItem onSelect={() => setProfileOpen(true)}>
+                View Profile
+              </ContextMenuItem>
+              <ContextMenuItem disabled variant="destructive">
+                Delete Conversation
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
+
+          <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+            <DialogContent
+              aria-describedby={undefined}
+              className="w-auto rounded-3xl scale-115"
+            >
+              <DialogHeader>
+                <DialogTitle>{user.display}&apos;s Profile</DialogTitle>
+              </DialogHeader>
+              <RawModal.Profile
+                key={uuid}
+                {...props}
+                description={user.about || ""}
+                state={user.state || "NONE"}
+              />
+            </DialogContent>
+          </Dialog>
+        </>
       );
     case "profile":
       return (

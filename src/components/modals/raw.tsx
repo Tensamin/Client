@@ -329,7 +329,7 @@ export function CallModal({
           <div className="absolute inset-0 z-0">
             <VideoTrack
               trackRef={screenShareTrackRef}
-              className="rounded-lg h-full w-full object-contain bg-black"
+              className="rounded-xl h-full w-full object-contain bg-black"
             />
           </div>
         ) : (

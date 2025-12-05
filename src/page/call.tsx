@@ -14,6 +14,7 @@ import type {
   ParticipantClickEvent,
 } from "@livekit/components-core";
 import * as Icon from "lucide-react";
+import { toast } from "sonner";
 
 // Lib Imports
 import { User } from "@/lib/types";
@@ -46,6 +47,7 @@ import {
   MuteButton,
   ScreenShareButton,
 } from "@/components/modals/call";
+import { useSocketContext } from "@/context/socket";
 
 // Helper Functions
 function mergeParticipantTracks(
@@ -223,6 +225,8 @@ export default function Page() {
 
 function UserInInviteSelection({ userId }: { userId: string }) {
   const { get } = useUserContext();
+  const { send } = useSocketContext();
+  const { callId } = useCallContext();
   const [user, setUser] = useState<User | null>(null);
   useEffect(() => {
     get(userId, false).then((data) => {
@@ -230,7 +234,21 @@ function UserInInviteSelection({ userId }: { userId: string }) {
     });
   }, [userId, get]);
   return (
-    <CommandItem value={user?.display}>
+    <CommandItem
+      value={user?.display}
+      onSelect={() => {
+        send("call_invite", {
+          receiver_id: userId,
+          call_id: callId,
+        }).then((data) => {
+          if (data.type !== "error") {
+            toast.success("Call invite sent successfully");
+          } else {
+            toast.error("Failed to send call invite");
+          }
+        });
+      }}
+    >
       <UserAvatar
         border
         icon={user?.avatar}

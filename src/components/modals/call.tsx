@@ -6,8 +6,10 @@ import {
   useConnectionQualityIndicator,
   useConnectionState,
   useLocalParticipant,
+  useTracks,
   useParticipantContext,
   useMaybeTrackRefContext,
+  VideoTrack,
 } from "@livekit/components-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useEffect, useState } from "react";
@@ -26,7 +28,6 @@ import { cn } from "@/lib/utils";
 // Context Imports
 import { useCallContext, useSubCallContext } from "@/context/call";
 import { usePageContext } from "@/context/page";
-import { useStorageContext } from "@/context/storage";
 
 // Components
 import { Card } from "@/components/ui/card";
@@ -117,10 +118,9 @@ export function VoiceActions() {
   const { shouldConnect, disconnect } = useCallContext();
   const { name } = useRoomInfo();
   const { setPage } = usePageContext();
-  useStorageContext();
 
   // Connection Quality
-  const { localParticipant } = useLocalParticipant();
+  const { localParticipant, isScreenShareEnabled } = useLocalParticipant();
   const { quality } = useConnectionQualityIndicator({
     participant: localParticipant,
   });
@@ -172,10 +172,23 @@ export function VoiceActions() {
     };
   }, [copyCallId, name]);
 
+  // Screen Share Preview
+  const screenShareTrackRefs = useTracks([Track.Source.ScreenShare], {
+    onlySubscribed: false,
+  });
+  const trackRef = screenShareTrackRefs.find(
+    (ref) =>
+      ref && ref.participant?.isLocal && ref.source === Track.Source.ScreenShare
+  );
+  const isScreenShare = isScreenShareEnabled || !!trackRef;
+
   const commonClassNames = "text-sm";
   const connectingColor = "text-ring";
   return shouldConnect ? (
     <Card className="bg-input/30 rounded-lg border-input flex flex-col gap-2 justify-center items-center w-full p-2">
+      {isScreenShare && trackRef && (
+        <VideoTrack className="border rounded-lg" trackRef={trackRef} />
+      )}
       <Popover>
         <PopoverTrigger asChild>
           <Button

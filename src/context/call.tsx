@@ -179,6 +179,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         connect,
         setOuterState,
         setShouldConnect,
+        callId,
       }}
     >
       {/* Incoming Call Dialog */}
@@ -498,6 +499,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
 // Types
 type CallContextValue = {
+  callId: string;
   setDontSendInvite: (input: boolean) => void;
   getCallToken: (callId: string, sendInvite?: boolean) => Promise<string>;
   shouldConnect: boolean;
