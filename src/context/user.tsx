@@ -156,7 +156,7 @@ export function UserProvider({
         }
 
         setReloadUsers(true);
-        rawDebugLog("User Context", "Fetching user...", { uuid }, "yellow");
+        rawDebugLog("User Context", "Fetching user", { uuid }, "yellow");
         const response = await fetch(`${user}${uuid}`);
         const data = await response.json();
 
@@ -251,7 +251,7 @@ export function UserProvider({
 
   const refetchConversations = useCallback(async () => {
     await send("get_chats").then((data) => {
-      if (data.type !== "error") {
+      if (!data.type.startsWith("error")) {
         setConversationsAndSync(data.data.user_ids || []);
       } else {
         toast.error("Failed to get conversations");
@@ -312,7 +312,7 @@ export function UserProvider({
     chatsFetched = true;
 
     send("get_chats").then((data) => {
-      if (data.type !== "error") {
+      if (!data.type.startsWith("error")) {
         setConversationsAndSync(data.data.user_ids || []);
       } else {
         setConversationsAndSync([
@@ -332,7 +332,7 @@ export function UserProvider({
     communitiesFetched = true;
 
     send("get_communities").then((data) => {
-      if (data.type !== "error") {
+      if (!data.type.startsWith("error")) {
         setCommunitiesAndSync(data.data.communities || []);
       } else {
         setCommunitiesAndSync([

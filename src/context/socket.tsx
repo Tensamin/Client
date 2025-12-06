@@ -75,43 +75,40 @@ export function SocketProvider({
 
   const forceLoad = false;
 
-  const handleMessage = useCallback(
-    async (message: MessageEvent) => {
-      let parsedMessage: AdvancedSuccessMessage = {
-        type: "",
-        data: {},
-        id: "",
-      };
+  const handleMessage = useCallback(async (message: MessageEvent) => {
+    let parsedMessage: AdvancedSuccessMessage = {
+      type: "",
+      data: {},
+      id: "",
+    };
+    try {
       try {
-        try {
-          parsedMessage = JSON.parse(message.data);
-        } catch {
-          rawDebugLog(
-            "Socket Context",
-            "Received invalid JSON message",
-            { message },
-            "red"
-          );
-        }
-        if (parsedMessage.type !== "pong") {
-          rawDebugLog("Socket Context", "Received", {
-            type: parsedMessage.type,
-            data: parsedMessage.data,
-          });
-        }
-        setLastMessage(parsedMessage);
-        const currentRequest = pendingRequests.current.get(parsedMessage.id);
-        if (currentRequest) {
-          clearTimeout(currentRequest.timeoutId);
-          pendingRequests.current.delete(parsedMessage.id);
-          currentRequest.resolve(parsedMessage);
-        }
-      } catch (error: unknown) {
-        rawDebugLog("Socket Context", "Unknown error occured", error, "red");
+        parsedMessage = JSON.parse(message.data);
+      } catch {
+        rawDebugLog(
+          "Socket Context",
+          "Received invalid JSON message",
+          { message },
+          "red"
+        );
       }
-    },
-    []
-  );
+      if (parsedMessage.type !== "pong") {
+        rawDebugLog("Socket Context", "Received", {
+          type: parsedMessage.type,
+          data: parsedMessage.data,
+        });
+      }
+      setLastMessage(parsedMessage);
+      const currentRequest = pendingRequests.current.get(parsedMessage.id);
+      if (currentRequest) {
+        clearTimeout(currentRequest.timeoutId);
+        pendingRequests.current.delete(parsedMessage.id);
+        currentRequest.resolve(parsedMessage);
+      }
+    } catch (error: unknown) {
+      rawDebugLog("Socket Context", "Unknown error occured", error, "red");
+    }
+  }, []);
 
   const { sendMessage: sendRaw, readyState } = useWebSocket(client_wss, {
     onOpen: () =>
@@ -238,7 +235,7 @@ export function SocketProvider({
   const sendPing = useEffectEvent(async () => {
     const originalNow = Date.now();
     const data = await send("ping", { last_ping: originalNow });
-    if (data.type !== "error") {
+    if (!data.type.startsWith("error")) {
       const travelTime = Date.now() - originalNow;
       setOwnPing(travelTime);
       setIotaPing(data.data.ping_iota || 0);
@@ -267,8 +264,8 @@ export function SocketProvider({
           } else {
             setPage(
               "error",
-              "An unkown error occured during identification",
-              "Check the browser console and report the issue to us."
+              "Identification failed",
+              "This could be a invalid private key or an unkown error."
             );
           }
         })
@@ -281,14 +278,7 @@ export function SocketProvider({
           );
         });
     }
-  }, [
-    connected,
-    privateKeyHash,
-    setPage,
-    identified,
-    ownUuid,
-    send,
-  ]);
+  }, [connected, privateKeyHash, setPage, identified, ownUuid, send]);
 
   useEffect(() => {
     if (!isReady) return;

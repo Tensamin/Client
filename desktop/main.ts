@@ -7,6 +7,8 @@ import {
   protocol,
   net,
   shell,
+  systemPreferences,
+  desktopCapturer,
 } from "electron";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -28,6 +30,10 @@ type UpdateLogPayload = {
   details?: Record<string, unknown>;
   timestamp: number;
 };
+
+type MediaAccessType = Parameters<
+  typeof systemPreferences.getMediaAccessStatus
+>[0];
 
 // Helper Functions
 function emitUpdateAvailable(payload: UpdatePayload) {
@@ -51,14 +57,73 @@ function serializeErrorDetails(error: unknown) {
   return { message: String(error) };
 }
 
+function isMediaAccessGranted(mediaType: MediaAccessType) {
+  const getStatus = systemPreferences.getMediaAccessStatus;
+
+  if (typeof getStatus !== "function") {
+    return true;
+  }
+
+  try {
+    return getStatus.call(systemPreferences, mediaType) === "granted";
+  } catch (error) {
+    console.warn(`Unable to determine ${mediaType} access:`, error);
+    return true;
+  }
+}
+
+async function listScreenSources() {
+  const sources = await desktopCapturer.getSources({
+    types: ["window", "screen"],
+    fetchWindowIcons: true,
+    thumbnailSize: {
+      width: 854,
+      height: 480,
+    },
+  });
+
+  return sources.map((source) => {
+    return {
+      id: source.id,
+      name: source.name,
+      thumbnail: source.thumbnail.toDataURL(),
+      appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
+    };
+  });
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: string
+) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error(timeoutMessage)),
+          timeoutMs
+        );
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
 // Main
 const FILENAME = fileURLToPath(import.meta.url);
 const DIRNAME = path.dirname(FILENAME);
 const RELEASES_URL = "https://github.com/Tensamin/Frontend/releases";
 const UPDATE_AVAILABLE_CHANNEL = "app:update-available";
 const UPDATE_LOG_CHANNEL = "app:update-log";
-const UPDATE_CHECK_INTERVAL_MS = 5 * 1000; // 5 seconds
-//const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+//const UPDATE_CHECK_INTERVAL_MS = 5 * 1000; // 5 seconds
+const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 let mainWindow: BrowserWindow | null = null;
 let latestUpdatePayload: UpdatePayload | null = null;
@@ -67,6 +132,15 @@ let isUpdateDownloaded = false;
 
 // Squirrel Startup Handling
 if (squirrelStartup) app.quit();
+
+// Force Wayland and PipeWire on Linux
+if (process.platform === "linux") {
+  app.commandLine.appendSwitch(
+    "enable-features",
+    "UseOzonePlatform,WebRTCPipeWireCapturer"
+  );
+  app.commandLine.appendSwitch("ozone-platform", "wayland");
+}
 
 // Register custom protocol
 protocol.registerSchemesAsPrivileged([
@@ -207,6 +281,18 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  const ozonePlatform =
+    app.commandLine.getSwitchValue("ozone-platform") ||
+    process.env.ELECTRON_OZONE_PLATFORM_HINT;
+  const isWayland =
+    ozonePlatform === "wayland" ||
+    (ozonePlatform === "auto" && !!process.env.WAYLAND_DISPLAY);
+  const platform = isWayland ? "Wayland" : "X11";
+  const color = isWayland ? "\x1b[32m" : "\x1b[33m"; // Wayland: green, x11: yellow
+  const reset = "\x1b[0m";
+
+  console.log(`${color}[INFO] Running with ${platform}${reset}`);
+
   protocol.handle("app", (request) => {
     const { pathname } = new URL(request.url);
     const filePath = path.join(DIRNAME, decodeURIComponent(pathname));
@@ -300,4 +386,24 @@ ipcMain.handle("get-latest-update", async () => latestUpdatePayload);
 
 ipcMain.handle("open-link", async (_event, url: string) => {
   shell.openExternal(url);
+});
+
+// Calling
+ipcMain.handle("electronMain:getScreenAccess", () =>
+  isMediaAccessGranted("screen")
+);
+ipcMain.handle("electronMain:getCameraAccess", () =>
+  isMediaAccessGranted("camera")
+);
+ipcMain.handle("electronMain:getMicrophoneAccess", () =>
+  isMediaAccessGranted("microphone")
+);
+ipcMain.handle("electronMain:screen:getSources", async () => {
+  try {
+    return await listScreenSources();
+  } catch (error) {
+    console.error("Failed to fetch screen sources:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to fetch screen sources: ${message}`);
+  }
 });

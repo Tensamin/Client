@@ -5,8 +5,7 @@
 (pkgs.buildFHSEnv {
   name = "electron-dev-env";
   targetPkgs =
-    pkgs:
-    with pkgs; [
+    pkgs: with pkgs; [
       nodejs
       ffmpeg-full
       glib
@@ -20,17 +19,11 @@
       cairo
       gtk3
       pango
-      xorg.libX11
-      xorg.libXcomposite
-      xorg.libXdamage
-      xorg.libXext
-      xorg.libXfixes
-      xorg.libXrandr
-      xorg.libxcb
-      xorg.libXcursor
       mesa
       expat
       libxkbcommon
+      libxkbfile
+      wayland
       systemd
       alsa-lib
       at-spi2-core
@@ -38,6 +31,20 @@
       vips
       musl
       libGL
+      libdrm
+      pipewire
+      xorg.libX11
+      xorg.libXcomposite
+      xorg.libXcursor
+      xorg.libXdamage
+      xorg.libXext
+      xorg.libXfixes
+      xorg.libXi
+      xorg.libXrandr
+      xorg.libXrender
+      xorg.libXScrnSaver
+      xorg.libXtst
+      xorg.libxcb
     ];
   runScript = "bun run dev";
 }).env

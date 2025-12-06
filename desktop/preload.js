@@ -34,4 +34,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.removeListener(UPDATE_LOG_CHANNEL, subscription);
     };
   },
+
+  getMicrophoneAccess: () =>
+    ipcRenderer.invoke("electronMain:getMicrophoneAccess"),
+  getCameraAccess: () => ipcRenderer.invoke("electronMain:getCameraAccess"),
+  getScreenAccess: () => ipcRenderer.invoke("electronMain:getScreenAccess"),
+  getScreenSources: () => ipcRenderer.invoke("electronMain:screen:getSources"),
 });

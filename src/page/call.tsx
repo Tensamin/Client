@@ -241,7 +241,7 @@ function UserInInviteSelection({ userId }: { userId: string }) {
           receiver_id: userId,
           call_id: callId,
         }).then((data) => {
-          if (data.type !== "error") {
+          if (!data.type.startsWith("error")) {
             toast.success("Call invite sent successfully");
           } else {
             toast.error("Failed to send call invite");
@@ -261,11 +261,7 @@ function UserInInviteSelection({ userId }: { userId: string }) {
   );
 }
 
-export function TileContent({
-  hideBadges,
-  index,
-}: { hideBadges?: boolean; index?: number } = {}) {
-  console.log(index);
+export function TileContent({ hideBadges }: { hideBadges?: boolean } = {}) {
   const isSpeaking = useIsSpeaking();
   return (
     <div className="aspect-video relative w-full max-h-full">

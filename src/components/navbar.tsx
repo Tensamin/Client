@@ -98,14 +98,16 @@ export function Navbar() {
         {/* Call Button */}
         {page === "chat" &&
           (currentUserAlreadyHasACall ? (
-            <CallButton
-              key="call-button"
-              calls={
-                conversations.find(
-                  (conv) => conv?.user_id === currentReceiverUuid
-                )?.calls ?? []
-              }
-            />
+            <MotionDivWrapper key="call-button">
+              <CallButton
+                key="call-button"
+                calls={
+                  conversations.find(
+                    (conv) => conv?.user_id === currentReceiverUuid
+                  )?.calls ?? []
+                }
+              />
+            </MotionDivWrapper>
           ) : (
             <MotionDivWrapper key="call-button">
               <Button

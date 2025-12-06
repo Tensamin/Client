@@ -116,10 +116,10 @@ export default function Page() {
   return (
     <>
       <FixedWindowControls />
-      <div className="w-full h-screen flex items-center justify-center electron-drag">
+      <div className="w-full h-screen flex items-center justify-center">
         <div className="flex flex-col gap-5 w-full">
           <div className="flex flex-col md:flex-row w-full gap-3 px-10 justify-center">
-            <Card className="w-full md:w-90 gap-3 h-80 electron-no-drag">
+            <Card className="w-full md:w-90 gap-3 h-80">
               <CardHeader>
                 <CardTitle className="select-none">
                   Login using .tu file
@@ -180,7 +180,7 @@ export default function Page() {
             <p>By signing up you agree to our</p>
             <p>
               <a
-                className="underline electron-no-drag"
+                className="underline"
                 href={tos}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -189,7 +189,7 @@ export default function Page() {
               </a>
               {" and "}
               <a
-                className="underline electron-no-drag"
+                className="underline"
                 href={pp}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -200,7 +200,6 @@ export default function Page() {
           </div>
           <div className="flex justify-center items-center pt-15">
             <Button
-              className="electron-no-drag"
               variant="outline"
               onClick={() => {
                 setPage("login");

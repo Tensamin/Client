@@ -64,7 +64,7 @@ export default function Page() {
             await send("add_chat", {
               user_id: data.data.user_id,
             }).then(async (data) => {
-              if (data.type !== "error") {
+              if (!data.type.startsWith("error")) {
                 await refetchConversations();
               }
             });

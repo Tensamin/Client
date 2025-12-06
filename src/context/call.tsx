@@ -149,7 +149,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         call_id: callId,
       }).then((data) => {
         rawDebugLog("Call Context", "Got call token", { callId, data });
-        if (data.type !== "error") {
+        if (!data.type.startsWith("error")) {
           return data.data.call_token ?? "error";
         }
         return "error";
@@ -239,7 +239,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
               receiver_id: currentReceiverUuid,
               call_id: callId,
             }).then((data) => {
-              if (data.type !== "error") {
+              if (!data.type.startsWith("error")) {
                 toast.success("Call invite sent successfully");
               } else {
                 toast.error("Failed to send call invite");

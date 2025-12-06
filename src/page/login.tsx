@@ -154,10 +154,10 @@ export default function Page() {
   return (
     <>
       <FixedWindowControls />
-      <div className="w-full h-screen flex items-center justify-center electron-drag">
+      <div className="w-full h-screen flex items-center justify-center">
         <div className="flex flex-col gap-5 w-full">
           <div className="flex flex-col md:flex-row w-full gap-3 px-10 justify-center">
-            <Card className="w-full md:w-75 gap-3 electron-no-drag">
+            <Card className="w-full md:w-75 gap-3">
               <CardHeader>
                 <CardTitle className="select-none">
                   Login using .tu file
@@ -214,7 +214,7 @@ export default function Page() {
               </CardContent>
             </Card>
             <div className="h-0.75 md:w-0.75 md:h-auto m-5 bg-input/60 rounded-full" />
-            <Card className="transition-opacity duration-300 ease-in-out w-full md:w-75 electron-no-drag">
+            <Card className="transition-opacity duration-300 ease-in-out w-full md:w-75">
               <CardHeader>
                 <CardTitle className="select-none">
                   Login using credentials
@@ -277,7 +277,7 @@ export default function Page() {
             <p>By logging in you agree to our</p>
             <p>
               <a
-                className="underline electron-no-drag"
+                className="underline"
                 href={tos}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -286,7 +286,7 @@ export default function Page() {
               </a>
               {" and "}
               <a
-                className="underline electron-no-drag"
+                className="underline"
                 href={pp}
                 target="_blank"
                 rel="noopener noreferrer"

@@ -30,16 +30,40 @@ export default function Page() {
 
   const contributers = [
     {
-      name: "t3kkm0tt",
-      website: "https://t3kkm0tt.github.io/",
-      work: "Helped with testing the aur packages. Added documentation entries. Helped during development. (He uses arch btw)",
-      picture: "http://github.com/t3kkm0tt.png",
+      name: "Alex Emmet",
+      website: "https://methanium.net",
+      work: "Project founder and lead backend developer. Created the Iota, Omikron and Omega, as well as make the two graphics on the homepage. ",
+      picture: "https://github.com/Alex-Emmet.png",
+    },
+    {
+      name: "Alois",
+      website: "https://alois.methanium.net",
+      work: "Project co-founder and lead frontend developer. Created the Client, Homepage and Documentation websites and the Auth Server.",
+      picture: "https://github.com/aloisianer.png",
+    },
+    {
+      name: "Gamebreaker",
+      website: "https://github.com/realgamebreaker",
+      work: "Implemented noise suppression for calls and help a lot with the Iota Frontend.",
+      picture: "https://github.com/realgamebreaker.png",
+    },
+    {
+      name: "Jonathan Wanke",
+      website: "https://github.com/JonathanWanke",
+      work: "Helped with testing the macos app, made the call sounds and helped a lot with the Iota Frontend.",
+      picture: "https://github.com/JonathanWanke.png",
     },
     {
       name: "Tommy2kk",
       website: "https://github.com/Tommy2kk",
-      work: "Made our logo and some icons as well as help with design desicions. (Also he's the writer of the design section in the documentation)",
+      work: "Made our logo and some icons as well as help with design desicions.",
       picture: "https://github.com/tommy2kk.png",
+    },
+    {
+      name: "t3kkm0tt",
+      website: "https://t3kkm0tt.github.io/",
+      work: "Helped with testing the aur packages. Helped during developement.",
+      picture: "http://github.com/t3kkm0tt.png",
     },
   ];
 
@@ -78,11 +102,11 @@ export default function Page() {
       </div>
       <div className="flex flex-col gap-5">
         <h2 className="text-xl font-medium">Contributers</h2>
-        <div className="flex flex-col 2xl:flex-row gap-10 pl-3">
+        <div className="flex flex-col gap-10 pl-3">
           {contributers.map((contributer, index) => (
             <div className="flex flex-col gap-2" key={index}>
               <div className="flex gap-3">
-                {/* eslint-disable-next-line */ }
+                {/* eslint-disable-next-line */}
                 <img
                   src={contributer.picture}
                   className="aspect-square h-12 rounded-full border"
