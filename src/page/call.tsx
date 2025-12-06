@@ -51,7 +51,7 @@ import { useSocketContext } from "@/context/socket";
 
 // Helper Functions
 function mergeParticipantTracks(
-  tracks: TrackReferenceOrPlaceholder[],
+  tracks: TrackReferenceOrPlaceholder[]
 ): TrackReferenceOrPlaceholder[] {
   const merged = new Map<string, TrackReferenceOrPlaceholder>();
 
@@ -94,11 +94,11 @@ export default function Page() {
       { source: Track.Source.Camera, withPlaceholder: true },
       { source: Track.Source.ScreenShare, withPlaceholder: false },
     ],
-    { onlySubscribed: false },
+    { onlySubscribed: false }
   );
   const participantTracks = useMemo(
     () => mergeParticipantTracks(trackReferences),
-    [trackReferences],
+    [trackReferences]
   );
 
   // focus stuff
@@ -112,7 +112,7 @@ export default function Page() {
     return participantTracks.find(
       (track) =>
         isTrackReference(track) &&
-        track.publication?.trackSid === focusedTrackSid,
+        track.publication?.trackSid === focusedTrackSid
     );
   }, [participantTracks, focusedTrackSid]);
 
@@ -132,19 +132,19 @@ export default function Page() {
       const fallbackTrack = participantTracks.find(
         (track) =>
           isTrackReference(track) &&
-          track.participant.identity === participantIdentity,
+          track.participant.identity === participantIdentity
       );
 
       return fallbackTrack?.publication?.trackSid ?? null;
     },
-    [participantTracks],
+    [participantTracks]
   );
 
   const handleParticipantClick = useCallback(
     (event: ParticipantClickEvent) => {
       const trackSid = resolveTrackSid(
         event.participant.identity,
-        event.track?.trackSid,
+        event.track?.trackSid
       );
       if (!trackSid) {
         return;
@@ -152,9 +152,10 @@ export default function Page() {
 
       setFocusedTrackSid((current) => (current === trackSid ? null : trackSid));
     },
-    [resolveTrackSid],
+    [resolveTrackSid]
   );
 
+  const [open, setOpen] = useState(false);
   return (
     <div className="flex flex-col w-full h-full py-5 gap-5">
       <div className="flex-1">
@@ -186,7 +187,7 @@ export default function Page() {
             <Icon.Camera />
           </Button>
           {/* Invite Button */}
-          <Popover>
+          <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" className="w-10 h-9">
                 <Icon.MailPlus />
@@ -202,6 +203,9 @@ export default function Page() {
                       <UserInInviteSelection
                         userId={conversation.user_id}
                         key={conversation.user_id}
+                        onClose={() => {
+                          setOpen(false);
+                        }}
                       />
                     ))}
                   </CommandGroup>
@@ -223,7 +227,13 @@ export default function Page() {
   );
 }
 
-function UserInInviteSelection({ userId }: { userId: string }) {
+function UserInInviteSelection({
+  userId,
+  onClose,
+}: {
+  userId: string;
+  onClose: () => void;
+}) {
   const { get } = useUserContext();
   const { send } = useSocketContext();
   const { callId } = useCallContext();
@@ -246,6 +256,7 @@ function UserInInviteSelection({ userId }: { userId: string }) {
           } else {
             toast.error("Failed to send call invite");
           }
+          onClose();
         });
       }}
     >
@@ -261,7 +272,10 @@ function UserInInviteSelection({ userId }: { userId: string }) {
   );
 }
 
-export function TileContent({ hideBadges }: { hideBadges?: boolean } = {}) {
+export function TileContent({
+  hideBadges,
+  small,
+}: { hideBadges?: boolean; small?: boolean } = {}) {
   const isSpeaking = useIsSpeaking();
   return (
     <div className="aspect-video relative w-full max-h-full">
@@ -272,7 +286,10 @@ export function TileContent({ hideBadges }: { hideBadges?: boolean } = {}) {
       />
 
       <div className="w-full h-full flex items-center justify-center rounded-xl z-10">
-        <CallUserModal hideBadges={hideBadges} />
+        <CallUserModal
+          overwriteSize={small ? "extraLarge" : undefined}
+          hideBadges={hideBadges}
+        />
       </div>
     </div>
   );
@@ -294,7 +311,7 @@ export function FocusDuplicateOverlay({
   }
 
   return (
-    <div className="absolute inset-0 bg-black/75 z-20 text-white flex items-center justify-center">
+    <div className="absolute inset-0 bg-black/65 z-20 text-white flex items-center justify-center">
       <Icon.ScanEye className="h-6 w-6" />
     </div>
   );

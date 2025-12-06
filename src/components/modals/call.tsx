@@ -65,9 +65,10 @@ import {
   MenubarSubTrigger,
 } from "@/components/ui/menubar";
 import { LoadingIcon } from "../loading";
+import { AvatarSizes } from "@/lib/types";
 
 // Main
-export function CallUserModal({ hideBadges }: { hideBadges?: boolean } = {}) {
+export function CallUserModal({ hideBadges, overwriteSize }: { hideBadges?: boolean, overwriteSize?: AvatarSizes } = {}) {
   const { identity, metadata } = useParticipantInfo();
   const participant = useParticipantContext();
   const trackRef = useMaybeTrackRefContext();
@@ -111,6 +112,7 @@ export function CallUserModal({ hideBadges }: { hideBadges?: boolean } = {}) {
     <UserModal
       uuid={identity}
       size="call"
+      overwriteSize={overwriteSize}
       extraProps={{
         muted,
         deafened,
@@ -593,7 +595,7 @@ export function ScreenShareButton({
                 <Icon.Gem size={15} /> Change Quality
               </MenubarSubTrigger>
               <MenubarSubContent>
-                <MenubarItem disabled>Weewoo</MenubarItem>
+                <MenubarItem disabled>Change in settings</MenubarItem>
               </MenubarSubContent>
             </MenubarSub>
           </MenubarContent>

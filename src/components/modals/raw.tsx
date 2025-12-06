@@ -43,6 +43,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { LoadingIcon } from "../loading";
+import { AvatarSizes } from "@/lib/types";
 
 // Main
 export function UserAvatar({
@@ -57,7 +58,7 @@ export function UserAvatar({
   icon?: string;
   title: string;
   state?: string;
-  size: "small" | "medium" | "large" | "extraLarge" | "jumbo" | "gigantica";
+  size: AvatarSizes;
   border: boolean;
   loading?: boolean;
   className?: string;
@@ -291,6 +292,7 @@ export function Profile({
 }
 
 export function CallModal({
+  overwriteSize,
   title,
   icon,
   loading,
@@ -299,6 +301,7 @@ export function CallModal({
   screenShareTrackRef,
   hideBadges,
 }: Readonly<{
+  overwriteSize?: AvatarSizes;
   title: string;
   icon?: string;
   loading: boolean;
@@ -313,7 +316,12 @@ export function CallModal({
     <Card className="relative w-full h-full bg-input/30">
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
         <div className="w-full h-full flex justify-center items-center">
-          <UserAvatar title={title} size="jumbo" border loading />
+          <UserAvatar
+            title={title}
+            size={overwriteSize ? overwriteSize : "jumbo"}
+            border
+            loading
+          />
         </div>
         {!hideBadges && (
           <div className="absolute h-full w-full flex items-end justify-start p-4 z-30">
@@ -337,7 +345,7 @@ export function CallModal({
             <UserAvatar
               icon={icon}
               title={title}
-              size="jumbo"
+              size={overwriteSize ? overwriteSize : "jumbo"}
               state={undefined}
               border
             />

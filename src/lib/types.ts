@@ -40,6 +40,8 @@ export type BasicSuccessMessage = {
   message: string;
 };
 
+export type AvatarSizes = "small" | "medium" | "large" | "extraLarge" | "jumbo" | "gigantica";
+
 export type JWK = {
   kty: string;
   crv: string;

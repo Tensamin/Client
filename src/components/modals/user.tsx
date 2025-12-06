@@ -7,7 +7,7 @@ import { usePageContext } from "@/context/page";
 
 // Components
 import * as RawModal from "@/components/modals/raw";
-import { fallbackUser } from "@/lib/types";
+import { AvatarSizes, fallbackUser } from "@/lib/types";
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -20,11 +20,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 export function UserModal({
   uuid,
   size,
+  overwriteSize,
   calls,
   extraProps,
 }: {
   uuid: string;
   size: "big" | "medium" | "profile" | "call";
+  overwriteSize?: AvatarSizes;
   calls?: string[];
   extraProps?: Record<string, unknown>;
 }) {
@@ -106,7 +108,14 @@ export function UserModal({
         />
       );
     case "call":
-      return <RawModal.CallModal key={uuid} {...props} {...extraProps} />;
+      return (
+        <RawModal.CallModal
+          overwriteSize={overwriteSize}
+          key={uuid}
+          {...props}
+          {...extraProps}
+        />
+      );
     default:
       return null;
   }

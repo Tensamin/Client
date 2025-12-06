@@ -56,7 +56,7 @@ export function CallFocus({
               className="relative h-full aspect-video flex-none rounded-lg"
             >
               {/* CallModal from @/.../raw.tsx */}
-              <TileContent />
+              <TileContent small />
               <FocusDuplicateOverlay focusedTrackSid={focusedTrackSid} />
             </ParticipantTile>
           ))}
