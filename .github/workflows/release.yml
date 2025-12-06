@@ -1,4 +1,4 @@
-name: Build and Publish Electron App
+name: Build and Publish Electron & Web App
 
 on:
   workflow_dispatch:
@@ -7,7 +7,21 @@ permissions:
   contents: write
 
 jobs:
+  publish-web-app:
+    name: Build & Publish Web App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update on methanium
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: cd /home/${{ secrets.SSH_USER }}/Tensamin/Release && ./update.sh
+
   build:
+    needs: publish-web-app
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
