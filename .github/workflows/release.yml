@@ -49,7 +49,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-web-app:
-    name: Build & Publish Web App
+    name: Publish (web)
     runs-on: ubuntu-latest
     steps:
       - name: Update on methanium
