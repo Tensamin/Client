@@ -68,7 +68,10 @@ import { LoadingIcon } from "../loading";
 import { AvatarSizes } from "@/lib/types";
 
 // Main
-export function CallUserModal({ hideBadges, overwriteSize }: { hideBadges?: boolean, overwriteSize?: AvatarSizes } = {}) {
+export function CallUserModal({
+  hideBadges,
+  overwriteSize,
+}: { hideBadges?: boolean; overwriteSize?: AvatarSizes } = {}) {
   const { identity, metadata } = useParticipantInfo();
   const participant = useParticipantContext();
   const trackRef = useMaybeTrackRefContext();
@@ -110,8 +113,8 @@ export function CallUserModal({ hideBadges, overwriteSize }: { hideBadges?: bool
 
   return identity && identity !== "" ? (
     <UserModal
-      uuid={identity}
       size="call"
+      id={Number(identity)}
       overwriteSize={overwriteSize}
       extraProps={{
         muted,

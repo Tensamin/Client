@@ -58,7 +58,7 @@ export function MessageProvider({
 }>) {
   const { send, isReady, lastMessage } = useSocketContext();
   const { pageData: id } = usePageContext();
-  const { ownUuid, currentReceiverUuid, get } = useUserContext();
+  const { ownId, currentReceiverId, get } = useUserContext();
   const { get_shared_secret, encrypt, privateKey } = useCryptoContext();
   const newUserNotification = useNewUserNotification();
   const [addRealtimeMessageToBox, setAddRealtimeMessageToBox] =
@@ -73,7 +73,7 @@ export function MessageProvider({
     if (processedMessageRef.current === messageId) return;
     processedMessageRef.current = messageId;
 
-    if (lastMessage.data.sender_id === currentReceiverUuid) {
+    if (lastMessage.data.sender_id === currentReceiverId) {
       setAddRealtimeMessageToBox({
         send_to_server: false,
         sender: lastMessage.data.sender_id ?? "",
@@ -84,11 +84,11 @@ export function MessageProvider({
       });
     } else {
       newUserNotification(
-        lastMessage.data.sender_id ?? "",
+        lastMessage.data.sender_id ?? 0,
         lastMessage.data.message ?? "",
       );
     }
-  }, [currentReceiverUuid, lastMessage, newUserNotification]);
+  }, [currentReceiverId, lastMessage, newUserNotification]);
 
   const groupMessages = useCallback(
     (messagesList: Message[]): MessageGroup[] => {
@@ -130,7 +130,7 @@ export function MessageProvider({
         throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
       if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
       const groupedMessages = await send("messages_get", {
-        user_id: id,
+        user_id: Number(id),
         amount: amount,
         offset: loaded,
       }).then((data) => {
@@ -141,7 +141,7 @@ export function MessageProvider({
         ) {
           const emptyStateMessage: Message = {
             send_to_server: false,
-            sender: "SYSTEM",
+            sender: 0,
             avatar: true,
             display: true,
             tint: "var(--primary)",
@@ -156,7 +156,7 @@ export function MessageProvider({
           .map((m) => {
             return {
               send_to_server: false,
-              sender: m.sent_by_self ? ownUuid : currentReceiverUuid,
+              sender: m.sent_by_self ? ownId : currentReceiverId,
               ...m,
             } as Message;
           })
@@ -171,7 +171,7 @@ export function MessageProvider({
         previous: loaded - amount,
       };
     },
-    [currentReceiverUuid, groupMessages, id, isReady, ownUuid, send],
+    [currentReceiverId, groupMessages, id, isReady, ownId, send],
   );
 
   const sendMessage = useCallback(
@@ -183,10 +183,10 @@ export function MessageProvider({
         throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
       if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
       setAddRealtimeMessageToBox(message);
-      const ownPublicKey = await get(ownUuid, false).then(
+      const ownPublicKey = await get(ownId, false).then(
         (data) => data.public_key,
       );
-      const otherPublicKey = await get(currentReceiverUuid, false).then(
+      const otherPublicKey = await get(currentReceiverId, false).then(
         (data) => data.public_key,
       );
       const sharedSecret = await get_shared_secret(
@@ -198,17 +198,17 @@ export function MessageProvider({
       return await send("message_send", {
         ...(files && { files }),
         content: encrypted.message,
-        receiver_id: currentReceiverUuid,
+        receiver_id: currentReceiverId,
       });
     },
     [
-      currentReceiverUuid,
+      currentReceiverId,
       encrypt,
       get,
       get_shared_secret,
       id,
       isReady,
-      ownUuid,
+      ownId,
       privateKey,
       send,
     ],
@@ -229,18 +229,18 @@ export function MessageProvider({
 }
 
 export function useNewUserNotification() {
-  const { get, ownUuid } = useUserContext();
+  const { get, ownId } = useUserContext();
   const { decrypt, get_shared_secret, privateKey } = useCryptoContext();
   const { data } = useStorageContext();
 
   return useCallback(
-    (userId: string, encryptedMessage: string) => {
+    (userId: number, encryptedMessage: string) => {
       if (!userId || !encryptedMessage) return;
       void (async () => {
         try {
           const [otherUser, ownUser] = await Promise.all([
             get(userId, false),
-            get(ownUuid, false),
+            get(ownId, false),
           ]);
 
           const sharedSecret = await get_shared_secret(
@@ -340,7 +340,7 @@ export function useNewUserNotification() {
       decrypt,
       get,
       get_shared_secret,
-      ownUuid,
+      ownId,
       privateKey,
       data.enableNotifications,
     ],

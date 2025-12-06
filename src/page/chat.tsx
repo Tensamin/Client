@@ -20,7 +20,7 @@ import { PageDiv, PageTextarea } from "@/components/pageDiv";
 export default function Page() {
   const { data } = useStorageContext();
   const { sendMessage } = useMessageContext();
-  const { ownUuid } = useUserContext();
+  const { ownId } = useUserContext();
   const [client] = React.useState(() => new QueryClient());
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -61,7 +61,7 @@ export default function Page() {
               e.preventDefault();
               sendMessage({
                 send_to_server: true,
-                sender: ownUuid,
+                sender: ownId,
                 timestamp: Date.now(),
                 //files
                 content: message,

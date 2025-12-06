@@ -36,11 +36,11 @@ import { rawDebugLog, useStorageContext } from "@/context/storage";
 // Types
 type UserContextType = {
   appUpdateInformation: UpdatePayload | null;
-  get: (uuid: string, refetch: boolean) => Promise<User>;
-  ownUuid: string;
+  get: (id: number, refetch: boolean) => Promise<User>;
+  ownId: number;
   failedMessagesAmount: number;
   setFailedMessagesAmount: (amount: number) => void;
-  currentReceiverUuid: string;
+  currentReceiverId: number;
   currentReceiverSharedSecret: string;
   conversations: Conversation[];
   communities: Community[];
@@ -49,8 +49,8 @@ type UserContextType = {
   refetchConversations: () => Promise<void>;
   reloadUsers: boolean;
   setReloadUsers: (reload: boolean) => void;
-  doCustomEdit: (uuid: string, user: User) => void;
-  fetchedUsers: Map<string, User>;
+  doCustomEdit: (id: number, user: User) => void;
+  fetchedUsers: Map<number, User>;
   ownState: UserState;
   setOwnState: (state: UserState) => void;
 
@@ -72,7 +72,7 @@ export function UserProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [fetchedUsers, setFetchedUsers] = useState<Map<string, User>>(
+  const [fetchedUsers, setFetchedUsers] = useState<Map<number, User>>(
     new Map(),
   );
   const fetchedUsersRef = useRef(fetchedUsers);
@@ -80,12 +80,12 @@ export function UserProvider({
 
   const { offlineData, setOfflineCommunities, setOfflineConversations } =
     useStorageContext();
-  const { ownUuid, get_shared_secret, privateKey } = useCryptoContext();
+  const { ownId, get_shared_secret, privateKey } = useCryptoContext();
   const { send, isReady, lastMessage, initialUserState } = useSocketContext();
   const { page, pageData } = usePageContext();
-  const currentReceiverUuid = page === "chat" ? pageData || "0" : "0";
+  const currentReceiverId: number = page === "chat" ? Number(pageData) || 0 : 0;
   const [currentReceiverSharedSecret, setCurrentReceiverSharedSecret] =
-    useState<string>("0");
+    useState<string>("");
   const [conversations, setConversationsState] = useState<Conversation[]>(
     offlineData.storedConversations,
   );
@@ -107,7 +107,7 @@ export function UserProvider({
   );
 
   const updateFetchedUsers = useCallback(
-    (updater: (next: Map<string, User>) => void) => {
+    (updater: (next: Map<number, User>) => void) => {
       setFetchedUsers((prev) => {
         const next = new Map(prev);
         updater(next);
@@ -119,15 +119,15 @@ export function UserProvider({
   );
 
   const get = useCallback(
-    async (uuid: string, refetch: boolean = false): Promise<User> => {
+    async (id: number, refetch: boolean = false): Promise<User> => {
       try {
-        if (!uuid || uuid === "0") {
-          throw new Error("Invalid UUID");
+        if (!id || id === 0) {
+          throw new Error("Invalid ID");
         }
 
-        const hasUser = fetchedUsersRef.current.has(uuid);
+        const hasUser = fetchedUsersRef.current.has(id);
         const existingUser = hasUser
-          ? fetchedUsersRef.current.get(uuid)
+          ? fetchedUsersRef.current.get(id)
           : undefined;
         const shouldFetch =
           refetch || !hasUser || !!(existingUser && existingUser.loading);
@@ -138,8 +138,8 @@ export function UserProvider({
         }
 
         setReloadUsers(true);
-        rawDebugLog("User Context", "Fetching user", { uuid }, "yellow");
-        const response = await fetch(`${user}${uuid}`);
+        rawDebugLog("User Context", "Fetching user", { id }, "yellow");
+        const response = await fetch(`${user}${id}`);
         const data = await response.json();
 
         if (data.type !== "success") {
@@ -147,7 +147,7 @@ export function UserProvider({
         }
 
         const apiUserData: Omit<User, "state" | "loading"> = {
-          uuid,
+          id,
           username: data.data.username,
           display: getDisplayFromUsername(
             data.data.username,
@@ -159,10 +159,9 @@ export function UserProvider({
           sub_level: data.data.sub_level,
           sub_end: data.data.sub_end,
           public_key: data.data.public_key,
-          created_at: data.data.created_at,
         };
 
-        const latest = fetchedUsersRef.current.get(uuid);
+        const latest = fetchedUsersRef.current.get(id);
         const newUser: User = {
           ...(latest ?? { state: "NONE", loading: true }),
           ...apiUserData,
@@ -170,13 +169,13 @@ export function UserProvider({
         };
 
         updateFetchedUsers((draft) => {
-          draft.set(uuid, newUser);
+          draft.set(id, newUser);
         });
         return newUser;
       } catch (err: unknown) {
         const error = err as ErrorType;
 
-        const currentExisting = fetchedUsersRef.current.get(uuid);
+        const currentExisting = fetchedUsersRef.current.get(id);
         if (currentExisting) {
           const failedUser: User = {
             ...currentExisting,
@@ -184,13 +183,13 @@ export function UserProvider({
             loading: false,
           };
           updateFetchedUsers((draft) => {
-            draft.set(uuid, failedUser);
+            draft.set(id, failedUser);
           });
           return failedUser;
         }
 
         return {
-          uuid: "0",
+          id: 0,
           username: "failed",
           display: "Failed to load",
           avatar: undefined,
@@ -214,7 +213,7 @@ export function UserProvider({
       setOfflineConversations(next);
 
       next.forEach((c) => {
-        if (c.user_id && c.user_id !== "0") {
+        if (c.user_id && c.user_id !== 0) {
           void get(c.user_id, true);
         }
       });
@@ -224,11 +223,11 @@ export function UserProvider({
 
   // Get own user
   useEffect(() => {
-    get(ownUuid).then((user) => {
+    get(ownId).then((user) => {
       setOwnUserData(user);
       setOwnUserHasPremium(user.sub_level > 0);
     });
-  }, [ownUuid, get, setOwnUserData, setOwnUserHasPremium]);
+  }, [ownId, get, setOwnUserData, setOwnUserHasPremium]);
 
   const refetchConversations = useCallback(async () => {
     await send("get_chats").then((data) => {
@@ -243,8 +242,8 @@ export function UserProvider({
   useEffect(() => {
     setFailedMessagesAmount(0);
 
-    if (currentReceiverUuid === "0") {
-      setCurrentReceiverSharedSecret("0");
+    if (currentReceiverId === 0) {
+      setCurrentReceiverSharedSecret("");
       return;
     }
 
@@ -253,8 +252,8 @@ export function UserProvider({
     const resolveSharedSecret = async () => {
       try {
         const [otherUser, ownUser] = await Promise.all([
-          get(currentReceiverUuid, false),
-          get(ownUuid, false),
+          get(currentReceiverId, false),
+          get(ownId, false),
         ]);
 
         const sharedSecret = await get_shared_secret(
@@ -286,7 +285,7 @@ export function UserProvider({
     return () => {
       cancelled = true;
     };
-  }, [currentReceiverUuid, get, get_shared_secret, ownUuid, privateKey]);
+  }, [currentReceiverId, get, get_shared_secret, ownId, privateKey]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -297,7 +296,7 @@ export function UserProvider({
       } else {
         setConversationsAndSync([
           {
-            user_id: "0",
+            user_id: 0,
             calls: [],
             last_message_at: 0,
           },
@@ -333,7 +332,7 @@ export function UserProvider({
         if (!data.user_id || !data.user_state) return;
         const user = await get(data.user_id, true);
         updateFetchedUsers((draft) => {
-          draft.set(user.uuid, {
+          draft.set(user.id, {
             ...user,
             state: data.user_state || "NONE",
           });
@@ -341,30 +340,28 @@ export function UserProvider({
       }
 
       if (message.type === "get_states") {
-        const data = message.data as AdvancedSuccessMessageData & {
-          user_states: Record<string, string>;
-        };
+        const data = message.data as AdvancedSuccessMessageData;
 
         updateFetchedUsers((draft) => {
           Object.entries(data.user_states ?? {}).forEach(
-            ([uuid, nextState]) => {
-              const existingUser = draft.get(uuid);
+            ([stringId, nextState]) => {
+              const id = Number(stringId);
+              const existingUser = draft.get(id);
               if (existingUser) {
-                draft.set(uuid, { ...existingUser, state: nextState });
+                draft.set(id, { ...existingUser, state: nextState });
                 return;
               }
 
-              draft.set(uuid, {
-                uuid,
-                username: uuid,
-                display: uuid,
+              draft.set(id, {
+                id,
+                username: "",
+                display: "",
                 avatar: undefined,
                 about: "",
                 status: "",
                 sub_level: 0,
                 sub_end: 0,
                 public_key: "",
-                created_at: new Date().toISOString(),
                 state: nextState,
                 loading: true,
               });
@@ -382,13 +379,13 @@ export function UserProvider({
   }, [lastMessage]);
 
   const doCustomEdit = useCallback(
-    (uuid: string, user: User) => {
+    (id: number, user: User) => {
       const newUser = {
         ...user,
         display: getDisplayFromUsername(user.username, user.display),
       };
       updateFetchedUsers((draft) => {
-        draft.set(uuid, newUser);
+        draft.set(id, newUser);
       });
     },
     [updateFetchedUsers],
@@ -463,8 +460,8 @@ export function UserProvider({
       value={{
         appUpdateInformation,
         get,
-        ownUuid,
-        currentReceiverUuid,
+        ownId,
+        currentReceiverId,
         currentReceiverSharedSecret,
         failedMessagesAmount,
         setFailedMessagesAmount,

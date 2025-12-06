@@ -25,7 +25,7 @@ import CallPage from "@/page/call";
 export default function Page() {
   const [, startTransition] = useTransition();
 
-  const { ownUuid } = useCryptoContext();
+  const { ownId } = useCryptoContext();
   const { page, pageInstance } = usePageContext();
   const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
     "CONVERSATIONS",
@@ -35,7 +35,7 @@ export default function Page() {
     <PageTransition>
       <div className="w-full h-screen flex bg-sidebar">
         <div className="w-64 h-full flex flex-col gap-4 p-2 shrink-0">
-          <UserModal key={ownUuid} uuid={ownUuid} size="big" />
+          <UserModal key={ownId} id={ownId} size="big" />
           <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden mx-1 p-1">
             <div className="relative grid grid-cols-2 w-full gap-1">
               <ViewTransition>

@@ -10,7 +10,7 @@ export type RawMessage = {
 
 export type Message = {
   send_to_server: boolean;
-  sender: string;
+  sender: number;
   avatar?: boolean;
   display?: boolean;
   timestamp: number;
@@ -21,7 +21,7 @@ export type Message = {
 
 export type MessageGroup = {
   id: string;
-  sender: string;
+  sender: number;
   avatar?: boolean;
   display?: boolean;
   timestamp: number;
@@ -40,7 +40,13 @@ export type BasicSuccessMessage = {
   message: string;
 };
 
-export type AvatarSizes = "small" | "medium" | "large" | "extraLarge" | "jumbo" | "gigantica";
+export type AvatarSizes =
+  | "small"
+  | "medium"
+  | "large"
+  | "extraLarge"
+  | "jumbo"
+  | "gigantica";
 
 export type JWK = {
   kty: string;
@@ -77,26 +83,26 @@ export type AdvancedSuccessMessageData = {
   send_time?: string | null;
   content?: string | null;
   messages?: RawMessage[] | null;
-  user_id?: string | null;
+  user_id?: number | null;
   user_ids?: Conversation[] | null;
   private_key_hash?: string | null;
   last_ping?: number | null;
   ping_iota?: number | null;
-  chat_partner_id?: string | null;
+  chat_partner_id?: number | null;
   loaded_messages?: number | null;
   message_amount?: number | null;
   communities?: Community[] | null;
-  user_states?: [] | null;
+  user_states?: Record<number, string> | null;
   user_state?: string | null;
   amount?: number | null;
   offset?: number | null;
   settings?: string[] | null;
   user_status?: string | null;
-  receiver_id?: string | null;
-  sender_id?: string | null;
+  receiver_id?: number | null;
+  sender_id?: number | null;
   call_id?: string | null;
   call_state?: string | null;
-  receiver?: string | null;
+  receiver?: number | null;
   settings_name?: string | null;
   token?: string | null;
   call_secret?: string | null;
@@ -150,7 +156,7 @@ export type File = {
 };
 
 export type User = {
-  uuid: string;
+  id: number;
   username: string;
   display: string;
   avatar?: string;
@@ -160,7 +166,6 @@ export type User = {
   sub_level: number;
   sub_end: number;
   public_key: string;
-  created_at: string;
   loading: boolean;
   //badges?: string[];
 };
@@ -171,7 +176,7 @@ export type ErrorType = {
 };
 
 export type Conversation = {
-  user_id: string;
+  user_id: number;
   calls?: string[];
   last_message_at: number;
 };
@@ -189,10 +194,9 @@ export type CallUser = {
 };
 
 export const systemUser: User = {
-  uuid: "SYSTEM",
+  id: 0,
   username: "SYSTEM",
   public_key: "",
-  created_at: "0",
   display: "Tensamin",
   avatar: "/assets/images/systemUser.webp",
   about: "",
@@ -205,12 +209,11 @@ export const systemUser: User = {
 };
 
 export const fallbackUser: User = {
-  uuid: "",
+  id: 0,
   username: "",
   about: "",
   sub_level: 0,
   sub_end: 0,
-  created_at: "",
   public_key: "",
   display: "",
   avatar: "",

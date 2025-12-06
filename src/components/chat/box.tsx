@@ -56,13 +56,13 @@ export function Box() {
   useStorageContext();
   const { getMessages, addRealtimeMessageToBox, setAddRealtimeMessageToBox } =
     useMessageContext();
-  const { currentReceiverUuid } = useUserContext();
+  const { currentReceiverId } = useUserContext();
 
   const queryKey = useMemo<MessagesQueryKey>(
-    () => ["messages", "top-infinite", currentReceiverUuid || "0"],
-    [currentReceiverUuid],
+    () => ["messages", "top-infinite", String(currentReceiverId || 0)],
+    [currentReceiverId],
   );
-  const shouldLoadMessages = currentReceiverUuid !== "0";
+  const shouldLoadMessages = currentReceiverId !== 0;
 
   const {
     data,
@@ -245,7 +245,7 @@ export function Box() {
     isLoadingOlderRef.current = false;
     previousScrollHeightRef.current = 0;
     lastMessageCountRef.current = 0;
-  }, [currentReceiverUuid]);
+  }, [currentReceiverId]);
 
   // Initially scroll to bottom only on first load
   useEffect(() => {

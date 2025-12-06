@@ -3,7 +3,7 @@ const authServer =
     ? "https://dev-auth.tensamin.net"
     : "https://auth.tensamin.net";
 
-export const username_to_uuid = authServer + "/api/get/uuid/";
+export const username_to_id = authServer + "/api/get/id/";
 export const user = authServer + "/api/get/";
 export const change = authServer + "/api/change/";
 export const call_token = authServer + "/api/call_token/";

@@ -18,55 +18,55 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 
 // Main
 export function UserModal({
-  uuid,
+  id,
   size,
   overwriteSize,
   calls,
   extraProps,
 }: {
-  uuid: string;
+  id: number;
   size: "big" | "medium" | "profile" | "call";
   overwriteSize?: AvatarSizes;
   calls?: string[];
   extraProps?: Record<string, unknown>;
 }) {
-  const { get, ownState, ownUuid, fetchedUsers } = useUserContext();
+  const { get, ownState, ownId, fetchedUsers } = useUserContext();
   const { setPage } = usePageContext();
 
   useEffect(() => {
-    const cachedUser = fetchedUsers.get(uuid);
+    const cachedUser = fetchedUsers.get(id);
     if (cachedUser && !cachedUser.loading) {
       return;
     }
-    get(uuid, false);
-  }, [uuid, get, fetchedUsers]);
+    get(id, false);
+  }, [id, get, fetchedUsers]);
 
-  const user = fetchedUsers.get(uuid) ?? fallbackUser;
+  const user = fetchedUsers.get(id) ?? fallbackUser;
 
   const props = {
     title: user.display,
     description: user.username || "",
     icon: user.avatar || undefined,
     loading: user.loading,
-    state: user.uuid === ownUuid ? ownState : user.state,
+    state: user.id === ownId ? ownState : user.state,
   };
 
   const [profileOpen, setProfileOpen] = useState(false);
   switch (size) {
     case "big":
-      return <RawModal.BigModal key={uuid} {...props} />;
+      return <RawModal.BigModal key={id} {...props} />;
     case "medium":
       return (
         <>
           <ContextMenu>
             <ContextMenuTrigger>
               <RawModal.MediumModal
-                key={uuid}
+                key={id}
                 calls={calls ?? []}
                 {...props}
                 description={user.status || ""}
                 onClick={() => {
-                  setPage("chat", user.uuid);
+                  setPage("chat", String(user.id));
                 }}
               />
             </ContextMenuTrigger>
@@ -89,7 +89,7 @@ export function UserModal({
                 <DialogTitle>{user.display}&apos;s Profile</DialogTitle>
               </DialogHeader>
               <RawModal.Profile
-                key={uuid}
+                key={id}
                 {...props}
                 description={user.about || ""}
                 state={user.state || "NONE"}
@@ -101,7 +101,7 @@ export function UserModal({
     case "profile":
       return (
         <RawModal.Profile
-          key={uuid}
+          key={id}
           {...props}
           description={user.about || ""}
           state={user.state || "NONE"}
@@ -111,7 +111,7 @@ export function UserModal({
       return (
         <RawModal.CallModal
           overwriteSize={overwriteSize}
-          key={uuid}
+          key={id}
           {...props}
           {...extraProps}
         />

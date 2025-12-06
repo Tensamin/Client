@@ -23,22 +23,22 @@ import { CallButton } from "@/components/modals/raw";
 // Main
 export function Navbar() {
   const { setPage, page } = usePageContext();
-  const { failedMessagesAmount, currentReceiverUuid, get, conversations } =
+  const { failedMessagesAmount, currentReceiverId, get, conversations } =
     useUserContext();
   const { outerState, getCallToken, connect } = useCallContext();
   const [receiverUsername, setReceiverUsername] = useState("");
 
   useEffect(() => {
-    if (currentReceiverUuid) {
-      get(currentReceiverUuid, false).then((user) =>
+    if (currentReceiverId) {
+      get(currentReceiverId, false).then((user) =>
         setReceiverUsername(user.display),
       );
     }
-  }, [currentReceiverUuid, get]);
+  }, [currentReceiverId, get]);
 
   const currentUserAlreadyHasACall = conversations.find(
     (conv) =>
-      conv.user_id === currentReceiverUuid && (conv.calls?.length ?? 0) > 0,
+      conv.user_id === currentReceiverId && (conv.calls?.length ?? 0) > 0,
   );
 
   return (
@@ -103,7 +103,7 @@ export function Navbar() {
                 key="call-button"
                 calls={
                   conversations.find(
-                    (conv) => conv?.user_id === currentReceiverUuid,
+                    (conv) => conv?.user_id === currentReceiverId,
                   )?.calls ?? []
                 }
               />

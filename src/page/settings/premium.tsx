@@ -8,7 +8,7 @@ import { useUserContext } from "@/context/user";
 
 // Main
 export default function Page() {
-  const { get, ownUuid } = useUserContext();
+  const { get, ownId } = useUserContext();
   const [premiumInfo, setPremiumInfo] = useState<{
     level: string;
     expiresInDays: number;
@@ -16,7 +16,7 @@ export default function Page() {
 
   useEffect(() => {
     let cancelled = false;
-    get(ownUuid, false).then((data) => {
+    get(ownId, false).then((data) => {
       if (cancelled) return;
       let levelKey = "SETTINGS_PREMIUM_LEVEL_ERROR";
       switch (data.sub_level) {
@@ -37,7 +37,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [get, ownUuid]);
+  }, [get, ownId]);
 
   return (
     <div className="flex flex-col">

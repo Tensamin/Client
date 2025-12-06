@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import * as Icon from "lucide-react";
 
 // Lib Imports
-import { username_to_uuid } from "@/lib/endpoints";
+import { username_to_id } from "@/lib/endpoints";
 import { cn } from "@/lib/utils";
 
 // Context Imports
@@ -42,7 +42,7 @@ import { Text } from "@/components/markdown/text";
 // Main
 export default function Page() {
   const { send } = useSocketContext();
-  const { refetchConversations, ownUuid, appUpdateInformation } =
+  const { refetchConversations, ownId, appUpdateInformation } =
     useUserContext();
   const { debugLog } = useStorageContext();
 
@@ -53,7 +53,7 @@ export default function Page() {
   const addConversation = useCallback(async () => {
     setLoading(true);
     try {
-      await fetch(username_to_uuid + newUsername)
+      await fetch(username_to_id + newUsername)
         .then((res) => res.json())
         .then(async (data) => {
           if (data.type === "error") {
@@ -136,7 +136,7 @@ export default function Page() {
           Add Community
         </Button>
       </div>
-      <UserModal size="profile" uuid={ownUuid} />
+      <UserModal size="profile" id={ownId} />
       <ContentForTesting />
       <div className="mt-auto">
         {appUpdateInformation && (

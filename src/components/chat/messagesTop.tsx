@@ -9,18 +9,18 @@ import { User } from "@/lib/types";
 
 // Main
 export function MessagesTop() {
-  const { currentReceiverUuid, get } = useUserContext();
+  const { currentReceiverId, get } = useUserContext();
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-    get(currentReceiverUuid, false).then((fetchedUser) => {
+    get(currentReceiverId, false).then((fetchedUser) => {
       if (isMounted) setUser(fetchedUser);
     });
     return () => {
       isMounted = false;
     };
-  }, [currentReceiverUuid, get]);
+  }, [currentReceiverId, get]);
 
   return (
     <div className="relative aspect-16/2 w-2/3 flex justify-center items-end">

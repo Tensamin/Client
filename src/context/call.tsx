@@ -75,7 +75,7 @@ export function useSubCallContext() {
 // Main Provider Component
 export function CallProvider({ children }: { children: React.ReactNode }) {
   const { lastMessage, send } = useSocketContext();
-  const { get, currentReceiverUuid } = useUserContext();
+  const { get, currentReceiverId } = useUserContext();
   const { setPage } = usePageContext();
 
   const [shouldConnect, setShouldConnect] = useState(false);
@@ -155,7 +155,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [newCallWidgetOpen, setNewCallWidgetOpen] = useState(false);
   const [newCallData, setNewCallData] = useState<{
     call_id: string;
-    sender_id: string;
+    sender_id: number;
   } | null>(null);
   const [newCaller, setNewCaller] = useState<User | null>(null);
   useEffect(() => {
@@ -295,7 +295,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           setOuterState("CONNECTED");
           if (!dontSendInvite) {
             send("call_invite", {
-              receiver_id: currentReceiverUuid,
+              receiver_id: currentReceiverId,
               call_id: callId,
             }).then((data) => {
               if (!data.type.startsWith("error")) {

@@ -39,7 +39,7 @@ type SocketContextType = {
   send: (
     requestType: string,
     data?: AdvancedSuccessMessageData,
-    noResponse?: boolean
+    noResponse?: boolean,
   ) => Promise<AdvancedSuccessMessage>;
   isReady: boolean;
   initialUserState: UserState;
@@ -62,7 +62,7 @@ export function SocketProvider({
   const [isReady, setIsReady] = useState(false);
   const [identified, setIdentified] = useState(false);
   const [lastMessage, setLastMessage] = useState<AdvancedSuccessMessage | null>(
-    null
+    null,
   );
   const [initialUserState, setInitialUserState] = useState<UserState>("NONE");
 
@@ -72,7 +72,7 @@ export function SocketProvider({
 
   const { bypass } = useStorageContext();
   const { setPage } = usePageContext();
-  const { privateKeyHash, ownUuid } = useCryptoContext();
+  const { privateKeyHash, ownId } = useCryptoContext();
 
   const forceLoad = false;
 
@@ -101,7 +101,7 @@ export function SocketProvider({
           "Socket Context",
           "Received invalid JSON message",
           { message },
-          "red"
+          "red",
         );
       }
       if (parsedMessage.type !== "pong") {
@@ -130,7 +130,7 @@ export function SocketProvider({
       pendingRequests.current.forEach(({ reject, timeoutId }) => {
         clearTimeout(timeoutId);
         reject(
-          new Error("Disconnected before a response for `send` was received")
+          new Error("Disconnected before a response for `send` was received"),
         );
       });
       pendingRequests.current.clear();
@@ -147,7 +147,7 @@ export function SocketProvider({
       setPage(
         "error",
         "Could not connect to Omikron",
-        "Either your internet connection or the Omikron is down. Check our status page and try again later."
+        "Either your internet connection or the Omikron is down. Check our status page and try again later.",
       );
     },
   });
@@ -158,7 +158,7 @@ export function SocketProvider({
     async (
       requestType: string,
       data: AdvancedSuccessMessageData = {},
-      noResponse = false
+      noResponse = false,
     ): Promise<AdvancedSuccessMessage> => {
       if (
         !forceLoad &&
@@ -184,7 +184,7 @@ export function SocketProvider({
               "Socket Context",
               "An unknown error occured",
               error,
-              "red"
+              "red",
             );
           }
           return {
@@ -209,7 +209,7 @@ export function SocketProvider({
               "Socket Context",
               "Request timed out",
               { id, type: requestType, data },
-              "red"
+              "red",
             );
             reject();
           }, responseTimeout);
@@ -231,7 +231,7 @@ export function SocketProvider({
               "Socket Context",
               "An unkown error occured",
               error,
-              "red"
+              "red",
             );
             reject(error);
           }
@@ -244,7 +244,7 @@ export function SocketProvider({
         };
       }
     },
-    [readyState, forceLoad, sendRaw]
+    [readyState, forceLoad, sendRaw],
   );
 
   const sendPing = useEffectEvent(async () => {
@@ -260,7 +260,7 @@ export function SocketProvider({
   useEffect(() => {
     if (connected && !identified && privateKeyHash) {
       send("identification", {
-        user_id: ownUuid,
+        user_id: ownId,
         private_key_hash: privateKeyHash,
       })
         .then((data) => {
@@ -268,19 +268,19 @@ export function SocketProvider({
             setIdentified(true);
             setIsReady(true);
             setInitialUserState(
-              (data.data.user_status as UserState) || "ONLINE"
+              (data.data.user_status as UserState) || "ONLINE",
             );
             rawDebugLog(
               "Socket Context",
               "Successfully identified with Omikron",
               "",
-              "green"
+              "green",
             );
           } else {
             setPage(
               "error",
               "Identification failed",
-              "This could be a broken Omikron or an unkown error."
+              "This could be a broken Omikron or an unkown error.",
             );
           }
         })
@@ -289,11 +289,11 @@ export function SocketProvider({
           setPage(
             "error",
             "Identification failed",
-            "This could be a broken Omikron or an unkown error."
+            "This could be a broken Omikron or an unkown error.",
           );
         });
     }
-  }, [connected, privateKeyHash, setPage, identified, ownUuid, send]);
+  }, [connected, privateKeyHash, setPage, identified, ownId, send]);
 
   useEffect(() => {
     if (!isReady) return;

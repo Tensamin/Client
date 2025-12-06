@@ -36,7 +36,7 @@ import { Text } from "../markdown/text";
 export function MessageGroup({ data }: { data: MessageGroupType }) {
   const { get, fetchedUsers, setFailedMessagesAmount } = useUserContext();
   const cachedSender = useMemo(() => {
-    if (data.sender === "SYSTEM") return systemUser;
+    if (data.sender === 0) return systemUser;
     if (!data.sender) return null;
     return fetchedUsers.get(data.sender) ?? null;
   }, [data.sender, fetchedUsers]);
@@ -47,7 +47,7 @@ export function MessageGroup({ data }: { data: MessageGroupType }) {
   }, [cachedSender]);
 
   useEffect(() => {
-    if (!data.sender || data.sender === "SYSTEM") {
+    if (!data.sender || data.sender === 0) {
       setSender(systemUser);
       return;
     }
@@ -106,7 +106,7 @@ export function MessageGroup({ data }: { data: MessageGroupType }) {
 
 function FinalMessage({ message: data }: { message: Message }) {
   const { decrypt } = useCryptoContext();
-  const { ownUuid, currentReceiverSharedSecret, setFailedMessagesAmount } =
+  const { ownId, currentReceiverSharedSecret, setFailedMessagesAmount } =
     useUserContext();
   const [content, setContent] = useState<string>("");
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
@@ -117,7 +117,7 @@ function FinalMessage({ message: data }: { message: Message }) {
     const isEncryptedMessage =
       !data.send_to_server &&
       data.content !== "NO_MESSAGES_WITH_USER" &&
-      data.sender !== "SYSTEM";
+      data.sender !== 0;
     setIsDecrypting(isEncryptedMessage);
 
     if (data.content === "NO_MESSAGES_WITH_USER") {
@@ -198,7 +198,7 @@ function FinalMessage({ message: data }: { message: Message }) {
           <Icon.Reply /> {"Reply"}
         </ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem disabled={data.sender !== ownUuid || true}>
+        <ContextMenuItem disabled={data.sender !== ownId || true}>
           <Icon.Trash /> {"Delete"}
         </ContextMenuItem>
       </ContextMenuContent>

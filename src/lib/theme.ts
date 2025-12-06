@@ -381,7 +381,7 @@ export function generateColors(
         muted: toneIsHard ? 0.25 : 0.22,
         border: toneIsHard ? 0.26 : 0.22,
         sidebar: toneIsHard ? 0.13 : 0.11,
-        input: toneIsHard ? 0.30 : 0.26,
+        input: toneIsHard ? 0.3 : 0.26,
       };
 
   const background = toGamut({

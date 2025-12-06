@@ -43,7 +43,7 @@ export function Conversations() {
       {conversations.map((conversation) => (
         <UserModal
           key={conversation.user_id}
-          uuid={conversation.user_id}
+          id={conversation.user_id}
           calls={conversation.calls}
           size="medium"
         />

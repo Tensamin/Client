@@ -8,10 +8,10 @@ import { toast } from "sonner";
 import "ldrs/react/Ring.css";
 
 // Lib Imports
-import { tos, pp, username_to_uuid } from "@/lib/endpoints";
+import { tos, pp, username_to_id } from "@/lib/endpoints";
 
 // Context Imports
-import { useStorageContext } from "@/context/storage";
+import { rawDebugLog, useStorageContext } from "@/context/storage";
 import { usePageContext } from "@/context/page";
 
 // Components
@@ -29,15 +29,15 @@ export default function Page() {
 
   const tuFileRef = React.useRef<HTMLInputElement>(null);
 
-  const { set, debugLog, data } = useStorageContext();
+  const { set, data } = useStorageContext();
   const { pageData, setPage } = usePageContext();
-  debugLog("LOGIN_PAGE", "REASONE_FOR_LOGIN", pageData);
+  rawDebugLog("Login Page", "Reason for login", pageData, "yellow");
 
   const login = useCallback(
-    async (uuid: string, privateKey: string) => {
-      set("uuid", uuid);
+    async (id: number, privateKey: string) => {
+      set("id", id);
       set("privateKey", privateKey);
-      if (uuid === "" || privateKey === "") {
+      if (id === 0 || privateKey === "") {
         toast.error("Empty Credentials Provided.");
       } else {
         //window.location.reload();
@@ -50,15 +50,15 @@ export default function Page() {
     if (
       data.privateKey === "" ||
       !data.privateKey ||
-      data.uuid === "" ||
-      !data.uuid
+      data.id === "" ||
+      !data.id
     ) {
-      console.log(data.uuid);
+      console.log(data.id);
       console.log(data.privateKey);
     } else {
       window.location.reload();
     }
-  }, [data.uuid, data.privateKey]);
+  }, [data.id, data.privateKey]);
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,15 +74,15 @@ export default function Page() {
         const text = await file.text();
         const splitText = text.replaceAll("\n", "").split("::");
 
-        const uuid = splitText[0];
+        const id = splitText[0];
         const nextPrivateKey = splitText[1];
 
-        if (!uuid || !nextPrivateKey) throw new Error();
+        if (!id || !nextPrivateKey) throw new Error();
 
         const buf = Buffer.from(nextPrivateKey, "base64");
         if (buf.length !== 72)
           toast.warning("Your private key has an unusual length.");
-        await login(uuid, nextPrivateKey);
+        await login(Number(id), nextPrivateKey);
       } catch {
         toast.error("Invalid .tu file provided.");
       } finally {
@@ -105,15 +105,15 @@ export default function Page() {
         const text = await file.text();
         const splitText = text.replaceAll("\n", "").split("::");
 
-        const uuid = splitText[0];
+        const id = splitText[0];
         const nextPrivateKey = splitText[1];
 
-        if (!uuid || !nextPrivateKey) throw new Error();
+        if (!id || !nextPrivateKey) throw new Error();
 
         const buf = Buffer.from(nextPrivateKey, "base64");
         if (buf.length !== 72)
           toast.warning("Your private key has an unusual length.");
-        await login(uuid, nextPrivateKey);
+        await login(Number(id), nextPrivateKey);
       } catch {
         toast.error("Invalid .tu file provided.");
       } finally {
@@ -133,22 +133,20 @@ export default function Page() {
       const username = formData.get("username") as string;
 
       try {
-        const uuidResponse = await fetch(`${username_to_uuid}${username}`);
-        const uuidData = await uuidResponse.json();
-        if (uuidData.type !== "success") {
-          throw new Error(
-            uuidData.log.message || "Failed to retrieve user ID.",
-          );
+        const idResponse = await fetch(`${username_to_id}${username}`);
+        const idData = await idResponse.json();
+        if (idData.type !== "success") {
+          throw new Error(idData.log.message || "Failed to retrieve user ID.");
         }
-        const uuid: string = uuidData.data.user_id;
+        const id: number = idData.data.user_id;
 
-        await login(uuid, privateKey);
+        await login(id, privateKey);
       } catch (err: unknown) {
         toast.error("An unkown error occured.");
-        debugLog("LOGIN_PAGE", "LOGIN_ERROR", err);
+        rawDebugLog("Login Page", "An unknown error occured", err, "red");
       }
     },
-    [login, privateKey, debugLog],
+    [login, privateKey],
   );
 
   return (

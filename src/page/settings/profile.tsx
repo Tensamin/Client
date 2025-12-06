@@ -42,26 +42,25 @@ type FormState = {
 };
 
 // Main
-const profileFormCache = new Map<string, FormState>();
+const profileFormCache = new Map<number, FormState>();
 
 export default function Page() {
   const { debugLog } = useStorageContext();
   const { send } = useSocketContext();
-  const { ownUuid, get, doCustomEdit, ownState, setOwnState } =
-    useUserContext();
+  const { ownId, get, doCustomEdit, ownState, setOwnState } = useUserContext();
   const { privateKeyHash } = useCryptoContext();
 
   const [form, setForm] = useState<FormState | null>(() => {
-    return profileFormCache.get(ownUuid) ?? null;
+    return profileFormCache.get(ownId) ?? null;
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (form || profileFormCache.has(ownUuid)) return;
+    if (form || profileFormCache.has(ownId)) return;
     let cancelled = false;
 
     (async () => {
-      const user = await get(ownUuid, false);
+      const user = await get(ownId, false);
       if (cancelled) return;
       const next: FormState = {
         username: user?.username ?? "",
@@ -70,14 +69,14 @@ export default function Page() {
         avatar: user?.avatar ?? "",
         status: user?.status ?? "",
       };
-      profileFormCache.set(ownUuid, next);
+      profileFormCache.set(ownId, next);
       setForm(next);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [get, ownUuid, form]);
+  }, [get, ownId, form]);
 
   if (!form) return <div />;
 
@@ -120,7 +119,7 @@ export default function Page() {
                   setForm((prev) => {
                     if (!prev) return prev;
                     const next = { ...prev, avatar };
-                    profileFormCache.set(ownUuid, next);
+                    profileFormCache.set(ownId, next);
                     return next;
                   });
                 };
@@ -135,7 +134,7 @@ export default function Page() {
                 setForm((prev) => {
                   if (!prev) return prev;
                   const next = { ...prev, avatar: "" };
-                  profileFormCache.set(ownUuid, next);
+                  profileFormCache.set(ownId, next);
                   return next;
                 });
               }}
@@ -167,7 +166,7 @@ export default function Page() {
           setForm((prev) => {
             if (!prev) return prev;
             const next = { ...prev, display };
-            profileFormCache.set(ownUuid, next);
+            profileFormCache.set(ownId, next);
             return next;
           });
         }}
@@ -183,7 +182,7 @@ export default function Page() {
           setForm((prev) => {
             if (!prev) return prev;
             const next = { ...prev, username };
-            profileFormCache.set(ownUuid, next);
+            profileFormCache.set(ownId, next);
             return next;
           });
         }}
@@ -198,7 +197,7 @@ export default function Page() {
             setForm((prev) => {
               if (!prev) return prev;
               const next = { ...prev, about };
-              profileFormCache.set(ownUuid, next);
+              profileFormCache.set(ownId, next);
               return next;
             });
           }}
@@ -221,7 +220,7 @@ export default function Page() {
           }
           setLoading(true);
           try {
-            const res = await fetch(change + ownUuid, {
+            const res = await fetch(change + ownId, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -238,12 +237,12 @@ export default function Page() {
             debugLog("PROFILE_PAGE", "DATA_PROFILE_PAGE_UPDATE", data);
             if (data?.type === "error") throw new Error("api_error");
 
-            doCustomEdit(ownUuid, { ...data.data, state: ownState });
+            doCustomEdit(ownId, { ...data.data, state: ownState });
 
-            profileFormCache.set(ownUuid, { ...form });
+            profileFormCache.set(ownId, { ...form });
 
             await send("client_changed", { user_state: ownState }, true);
-            await get(ownUuid, true);
+            await get(ownId, true);
 
             toast.success("Profile updated successfully!");
           } catch (err: unknown) {
