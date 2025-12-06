@@ -38,7 +38,7 @@ export function CallFocus({
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 py-6">
-        <FocusLayout
+      <FocusLayout
         trackRef={focusedTrackRef}
         onParticipantClick={onParticipantClick}
         className="relative aspect-video w-full max-w-5xl border-0"

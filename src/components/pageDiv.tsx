@@ -18,7 +18,7 @@ export function PageDiv({
     <ScrollArea
       className={cn(
         "rounded-lg border p-2 bg-card/46 flex flex-col",
-        className
+        className,
       )}
     >
       {children}
@@ -27,7 +27,7 @@ export function PageDiv({
     <div
       className={cn(
         "rounded-lg border p-2 bg-card/46 overflow-y-auto overflow-x-hidden",
-        className
+        className,
       )}
     >
       {children}
@@ -55,7 +55,7 @@ export function PageTextarea({
     <Textarea
       className={cn(
         "dark:bg-card/46 bg-card/46 dark:border-border border-border border resize-none rounded-lg focus-visible:ring-0",
-        className
+        className,
       )}
       {...props}
     />

@@ -118,7 +118,7 @@ export default function Page() {
 
   const entries = useMemo(
     () => Object.entries(data || {}).map(([key, value]) => ({ key, value })),
-    [data]
+    [data],
   );
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>("");

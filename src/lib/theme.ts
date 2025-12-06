@@ -269,8 +269,8 @@ const buildCharts = (base: LCH, scheme: Scheme, tone: Tone): ChartMap => {
         ? [0.7, 0.68, 0.64, 0.76, 0.73]
         : [0.74, 0.72, 0.68, 0.79, 0.76]
       : tone === "hard"
-      ? [0.68, 0.72, 0.78, 0.7, 0.66]
-      : [0.72, 0.76, 0.82, 0.74, 0.7];
+        ? [0.68, 0.72, 0.78, 0.7, 0.66]
+        : [0.72, 0.76, 0.82, 0.74, 0.7];
 
   const cMul = tone === "hard" ? 1.1 : 0.95;
   const out = CHART_VARS.reduce<ChartMap>((acc, key, i) => {
@@ -289,7 +289,7 @@ const buildCharts = (base: LCH, scheme: Scheme, tone: Tone): ChartMap => {
 export function generateColors(
   hex: string,
   type: Tone,
-  colorScheme: Scheme
+  colorScheme: Scheme,
 ): ThemeMap {
   const schemeIsLight = colorScheme === "light";
   const toneIsHard = type === "hard";
@@ -307,10 +307,10 @@ export function generateColors(
       ? 0.72
       : 0.8
     : toneIsHard
-    ? 0.75
-    : 0.82;
+      ? 0.75
+      : 0.82;
   const primary: LCH = toGamut(
-    withTone({ ...baseLch, c: baseLch.c * cBoost }, primaryL, 1)
+    withTone({ ...baseLch, c: baseLch.c * cBoost }, primaryL, 1),
   );
 
   // Ring (low-chroma brand)
@@ -346,19 +346,19 @@ export function generateColors(
     baseLch.c *
       (schemeIsLight ? (toneIsHard ? 0.1 : 0.085) : toneIsHard ? 0.24 : 0.2),
     schemeIsLight ? 0.008 : 0.02,
-    schemeIsLight ? 0.03 : 0.08
+    schemeIsLight ? 0.03 : 0.08,
   );
   const subtlerChroma = clamp(neutralChroma * 0.5, 0.006, 0.026);
   const borderChroma = clamp(
     neutralChroma * (schemeIsLight ? 0.65 : 0.55),
     schemeIsLight ? 0.01 : 0.024,
-    schemeIsLight ? 0.052 : 0.09
+    schemeIsLight ? 0.052 : 0.09,
   );
   const sidebarChroma = clamp(neutralChroma * 1.05, 0.014, 0.07);
   const inputChroma = clamp(
     borderChroma * (schemeIsLight ? 3 : 1.8),
     schemeIsLight ? 0.02 : 0.04,
-    schemeIsLight ? 0.06 : 0.09
+    schemeIsLight ? 0.06 : 0.09,
   );
   const borderHue = rotateHue(baseLch.h, toneIsHard ? -10 : -6);
 
@@ -418,7 +418,7 @@ export function generateColors(
     c: clamp(
       muted.c * (toneIsHard ? 2 : 0.95),
       schemeIsLight ? 0.012 : 0.04,
-      schemeIsLight ? 0.08 : 0.12
+      schemeIsLight ? 0.08 : 0.12,
     ),
     h: muted.h,
   });

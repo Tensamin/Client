@@ -97,7 +97,7 @@ export default function Page() {
                 <div className="absolute bottom-0 right-0 flex size-4.5 items-center justify-center rounded-full bg-muted">
                   <div
                     className={`size-3 rounded-full border ${getColorFor(
-                      ownState
+                      ownState,
                     )}`}
                   />
                 </div>

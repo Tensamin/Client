@@ -20,7 +20,7 @@ import { Loading } from "@/components/loading";
 const font = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  appleWebApp: { 
+  appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: packageJson.productName,
@@ -48,7 +48,9 @@ export default function RootLayout({
         >
           <StorageProvider>
             <PageProvider>
-              <Suspense fallback={<Loading />}>{children}</Suspense>
+              <Suspense fallback={<Loading progress={10} />}>
+                {children}
+              </Suspense>
             </PageProvider>
           </StorageProvider>
         </ThemeProvider>

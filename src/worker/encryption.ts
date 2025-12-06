@@ -8,14 +8,14 @@ const crypto = globalThis.crypto;
 
 export async function encrypt(
   input: string,
-  password: string
+  password: string,
 ): Promise<BasicSuccessMessage> {
   try {
     const decodedData = Uint8Array.from(input, (c) => c.charCodeAt(0));
 
     const passwordHash = await crypto.subtle.digest(
       "SHA-256",
-      textEncoder.encode(password)
+      textEncoder.encode(password),
     );
 
     const derivedKey = await crypto.subtle.importKey(
@@ -23,7 +23,7 @@ export async function encrypt(
       passwordHash,
       { name: "AES-CBC", length: 256 },
       false,
-      ["encrypt"]
+      ["encrypt"],
     );
 
     const iv = crypto.getRandomValues(new Uint8Array(16));
@@ -31,7 +31,7 @@ export async function encrypt(
     const encryptedBuffer = await crypto.subtle.encrypt(
       { name: "AES-CBC", iv },
       derivedKey,
-      decodedData
+      decodedData,
     );
 
     const combined = new Uint8Array(iv.length + encryptedBuffer.byteLength);
@@ -46,11 +46,11 @@ export async function encrypt(
 
 export async function decrypt(
   input: Base64URLString,
-  password: string
+  password: string,
 ): Promise<BasicSuccessMessage> {
   try {
     const combinedDecoded = Uint8Array.from(atob(input), (c) =>
-      c.charCodeAt(0)
+      c.charCodeAt(0),
     );
 
     const iv = combinedDecoded.subarray(0, 16);
@@ -58,7 +58,7 @@ export async function decrypt(
 
     const passwordHash = await crypto.subtle.digest(
       "SHA-256",
-      textEncoder.encode(password)
+      textEncoder.encode(password),
     );
 
     const derivedKey = await crypto.subtle.importKey(
@@ -66,13 +66,13 @@ export async function decrypt(
       passwordHash,
       { name: "AES-CBC", length: 256 },
       false,
-      ["decrypt"]
+      ["decrypt"],
     );
 
     const decryptedBuffer = await crypto.subtle.decrypt(
       { name: "AES-CBC", iv },
       derivedKey,
-      ciphertext
+      ciphertext,
     );
 
     const decryptedData = new Uint8Array(decryptedBuffer);
@@ -88,7 +88,7 @@ export async function decrypt(
 export async function get_shared_secret(
   own_private_key: string,
   own_public_key: string,
-  other_public_key: string
+  other_public_key: string,
 ): Promise<BasicSuccessMessage> {
   try {
     const other_jwk: JWK = { kty: "OKP", crv: "X448", x: other_public_key };
@@ -231,7 +231,7 @@ export async function get_shared_secret(
         } catch {
           if (xBytes.length !== 56) {
             throw new Error(
-              `${label}: "x" is not a valid X448 SPKI or raw 56-byte key`
+              `${label}: "x" is not a valid X448 SPKI or raw 56-byte key`,
             );
           }
           rawX = xBytes;
@@ -247,7 +247,7 @@ export async function get_shared_secret(
         } catch {
           if (dBytes.length !== 56) {
             throw new Error(
-              `${label}: "d" is not a valid X448 PKCS#8 or raw 56-byte key`
+              `${label}: "d" is not a valid X448 PKCS#8 or raw 56-byte key`,
             );
           }
           rawD = dBytes;
@@ -314,7 +314,7 @@ export async function get_shared_secret(
           const sharedBits = await subtle.deriveBits(
             { name: algorithm.name, public: peerPub },
             myPriv,
-            448
+            448,
           );
 
           const sharedSecret = new Uint8Array(sharedBits);

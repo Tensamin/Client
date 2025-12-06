@@ -28,7 +28,7 @@ export default function Page() {
   const { data, set } = useStorageContext();
   const { setTheme } = useTheme();
   const [tempColor, setTempColor] = useState(
-    (data.themeHex as string) || "#000000"
+    (data.themeHex as string) || "#000000",
   );
 
   useEffect(() => {

@@ -113,7 +113,7 @@ if (squirrelStartup) app.quit();
 if (process.platform === "linux") {
   app.commandLine.appendSwitch(
     "enable-features",
-    "UseOzonePlatform,WebRTCPipeWireCapturer"
+    "UseOzonePlatform,WebRTCPipeWireCapturer",
   );
   app.commandLine.appendSwitch("ozone-platform", "wayland");
 }
@@ -139,7 +139,7 @@ function isAutoUpdateSupported(): boolean {
 function setupAutoUpdater() {
   if (!isAutoUpdateSupported()) {
     console.log(
-      `Auto-updates not supported on ${process.platform}. Users will be directed to manual download.`
+      `Auto-updates not supported on ${process.platform}. Users will be directed to manual download.`,
     );
     return;
   }
@@ -193,7 +193,7 @@ function setupAutoUpdater() {
           message: `Update ${releaseName || "available"} downloaded and ready to install`,
           timestamp: Date.now(),
         });
-      }
+      },
     );
 
     // Check for updates immediately
@@ -245,7 +245,7 @@ function createWindow() {
       if (latestUpdatePayload) {
         mainWindow.webContents.send(
           UPDATE_AVAILABLE_CHANNEL,
-          latestUpdatePayload
+          latestUpdatePayload,
         );
       }
     }
@@ -366,13 +366,13 @@ ipcMain.handle("open-link", async (_event, url: string) => {
 
 // Calling
 ipcMain.handle("electronMain:getScreenAccess", () =>
-  isMediaAccessGranted("screen")
+  isMediaAccessGranted("screen"),
 );
 ipcMain.handle("electronMain:getCameraAccess", () =>
-  isMediaAccessGranted("camera")
+  isMediaAccessGranted("camera"),
 );
 ipcMain.handle("electronMain:getMicrophoneAccess", () =>
-  isMediaAccessGranted("microphone")
+  isMediaAccessGranted("microphone"),
 );
 ipcMain.handle("electronMain:screen:getSources", async () => {
   try {

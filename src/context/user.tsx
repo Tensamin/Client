@@ -22,7 +22,6 @@ import {
   ErrorType,
   User,
   UserState,
-  StoredUser,
   UpdateLogPayload,
   UpdatePayload,
 } from "@/lib/types";
@@ -60,9 +59,6 @@ type UserContextType = {
 };
 
 // Main
-let chatsFetched = false;
-let communitiesFetched = false;
-
 const UserContext = createContext<UserContextType | null>(null);
 
 export function useUserContext() {
@@ -77,17 +73,13 @@ export function UserProvider({
   children: React.ReactNode;
 }>) {
   const [fetchedUsers, setFetchedUsers] = useState<Map<string, User>>(
-    new Map()
+    new Map(),
   );
   const fetchedUsersRef = useRef(fetchedUsers);
   const prevLastMessageRef = useRef<unknown>(null);
 
-  const {
-    offlineData,
-    addOfflineUser,
-    setOfflineCommunities,
-    setOfflineConversations,
-  } = useStorageContext();
+  const { offlineData, setOfflineCommunities, setOfflineConversations } =
+    useStorageContext();
   const { ownUuid, get_shared_secret, privateKey } = useCryptoContext();
   const { send, isReady, lastMessage, initialUserState } = useSocketContext();
   const { page, pageData } = usePageContext();
@@ -95,10 +87,10 @@ export function UserProvider({
   const [currentReceiverSharedSecret, setCurrentReceiverSharedSecret] =
     useState<string>("0");
   const [conversations, setConversationsState] = useState<Conversation[]>(
-    offlineData.storedConversations
+    offlineData.storedConversations,
   );
   const [communities, setCommunitiesState] = useState<Community[]>(
-    offlineData.storedCommunities
+    offlineData.storedCommunities,
   );
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
   const [reloadUsers, setReloadUsers] = useState<boolean>(false);
@@ -111,7 +103,7 @@ export function UserProvider({
       setCommunitiesState(next);
       setOfflineCommunities(next);
     },
-    [setOfflineCommunities]
+    [setOfflineCommunities],
   );
 
   const updateFetchedUsers = useCallback(
@@ -123,18 +115,8 @@ export function UserProvider({
         return next;
       });
     },
-    []
+    [],
   );
-
-  useEffect(() => {
-    updateFetchedUsers((draft) => {
-      offlineData.storedUsers.forEach((offlineUser: StoredUser) => {
-        if (!draft.has(offlineUser.user.uuid)) {
-          draft.set(offlineUser.user.uuid, offlineUser.user);
-        }
-      });
-    });
-  }, [offlineData, updateFetchedUsers]);
 
   const get = useCallback(
     async (uuid: string, refetch: boolean = false): Promise<User> => {
@@ -169,7 +151,7 @@ export function UserProvider({
           username: data.data.username,
           display: getDisplayFromUsername(
             data.data.username,
-            data.data.display
+            data.data.display,
           ),
           avatar: data.data.avatar,
           about: data.data.about,
@@ -190,7 +172,6 @@ export function UserProvider({
         updateFetchedUsers((draft) => {
           draft.set(uuid, newUser);
         });
-        await addOfflineUser(newUser, true);
         return newUser;
       } catch (err: unknown) {
         const error = err as ErrorType;
@@ -224,7 +205,7 @@ export function UserProvider({
         } as User;
       }
     },
-    [addOfflineUser, updateFetchedUsers]
+    [updateFetchedUsers],
   );
 
   const setConversationsAndSync = useCallback(
@@ -238,7 +219,7 @@ export function UserProvider({
         }
       });
     },
-    [setOfflineConversations, get]
+    [setOfflineConversations, get],
   );
 
   // Get own user
@@ -279,7 +260,7 @@ export function UserProvider({
         const sharedSecret = await get_shared_secret(
           privateKey,
           ownUser.public_key,
-          otherUser.public_key
+          otherUser.public_key,
         );
 
         if (!sharedSecret.success) {
@@ -308,8 +289,7 @@ export function UserProvider({
   }, [currentReceiverUuid, get, get_shared_secret, ownUuid, privateKey]);
 
   useEffect(() => {
-    if (!isReady || chatsFetched) return;
-    chatsFetched = true;
+    if (!isReady) return;
 
     send("get_chats").then((data) => {
       if (!data.type.startsWith("error")) {
@@ -328,8 +308,7 @@ export function UserProvider({
   }, [isReady, send, setConversationsAndSync]);
 
   useEffect(() => {
-    if (!isReady || communitiesFetched) return;
-    communitiesFetched = true;
+    if (!isReady) return;
 
     send("get_communities").then((data) => {
       if (!data.type.startsWith("error")) {
@@ -389,11 +368,11 @@ export function UserProvider({
                 state: nextState,
                 loading: true,
               });
-            }
+            },
           );
         });
       }
-    }
+    },
   );
 
   useEffect(() => {
@@ -412,12 +391,12 @@ export function UserProvider({
         draft.set(uuid, newUser);
       });
     },
-    [updateFetchedUsers]
+    [updateFetchedUsers],
   );
 
   // Electron Update Stuff
   const [appUpdateInformation, setUpdate] = useState<UpdatePayload | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -431,7 +410,7 @@ export function UserProvider({
 
     const handleUpdatePayload = (
       update: UpdatePayload,
-      shouldToast: boolean
+      shouldToast: boolean,
     ) => {
       if (shouldToast) {
         toast.info("There is an update available!", {
@@ -453,13 +432,13 @@ export function UserProvider({
       (update: UpdatePayload) => {
         console.log("Update available:", update);
         handleUpdatePayload(update, true);
-      }
+      },
     );
 
     const unsubscribeLogs = electronAPI.onUpdateLog?.(
       (log: UpdateLogPayload) => {
         rawDebugLog("Electron App", "Received Update Log", log, "green");
-      }
+      },
     );
 
     void (async () => {

@@ -2,8 +2,7 @@
 
 // Package Imports
 import { useEffect, useState } from "react";
-import { AnimatePresence } from "framer-motion";
-import * as Icon from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Ring, Hourglass } from "ldrs/react";
 import "ldrs/react/Ring.css";
 import "ldrs/react/Hourglass.css";
@@ -74,11 +73,15 @@ function BypassButton() {
 export function Loading({
   message,
   extra,
+  isError: isErrorProp,
+  progress,
 }: {
   message?: string;
   extra?: string;
+  isError?: boolean;
+  progress?: number;
 }) {
-  const isError = (message?.split("_")[0] ?? "") === "ERROR";
+  const isError = isErrorProp || (message?.split("_")[0] ?? "") === "ERROR";
   const { data } = useStorageContext();
 
   const [showClearButton, setShowClearButton] = useState(false);
@@ -99,6 +102,7 @@ export function Loading({
       debug={(data?.debug as boolean) || false}
       addBypassButton={(data?.enableLockScreenBypass as boolean) || false}
       addClearButton={showClearButton || isError}
+      progress={progress}
     />
   );
 }
@@ -111,6 +115,7 @@ export function RawLoading({
   addClearButton,
   addBypassButton,
   messageSize,
+  progress,
 }: {
   message: string;
   extra?: string;
@@ -119,6 +124,7 @@ export function RawLoading({
   addClearButton?: boolean;
   addBypassButton?: boolean;
   messageSize?: "small";
+  progress?: number;
 }) {
   return (
     <>
@@ -133,11 +139,15 @@ export function RawLoading({
             className="w-75 h-75"
           />
         ) : (
-          <Icon.Loader
-            role="status"
-            aria-label="Loading"
-            className="size-14 animate-spin text-foreground"
-          />
+          <div className="w-64 h-1.5 bg-secondary rounded-full overflow-hidden relative">
+            <motion.div
+              layoutId="loading-progress"
+              className="h-full bg-primary absolute left-0 top-0"
+              initial={{ width: "0%" }}
+              animate={{ width: `${progress ?? 0}%` }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            />
+          </div>
         )}
         {(isError || debug) && typeof message !== "undefined" ? (
           <p

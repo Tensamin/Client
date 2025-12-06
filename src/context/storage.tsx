@@ -8,7 +8,6 @@ import {
   useEffect,
   useCallback,
   useMemo,
-  useRef,
 } from "react";
 import { openDB, IDBPDatabase } from "idb";
 import { useTheme } from "next-themes";
@@ -18,7 +17,7 @@ import { handleError } from "@/lib/utils";
 import { generateColors } from "@/lib/theme";
 
 // Context Imports
-import { Community, Conversation, User, StoredUser } from "@/lib/types";
+import { Community, Conversation } from "@/lib/types";
 
 // Components
 import { RawLoading } from "@/components/loading";
@@ -58,7 +57,7 @@ export function rawDebugLog(
   sender: string,
   message: string,
   extraInfo?: unknown,
-  color?: string
+  color?: string,
 ) {
   const tagStyle =
     "background: #3f3f3f; padding: 1px 4px; border-radius: 2px; " +
@@ -70,10 +69,10 @@ export function rawDebugLog(
     (color === "green"
       ? "color: #a6d189;"
       : color === "red"
-      ? "color: #e78284;"
-      : color === "yellow"
-      ? "color: #f9e2af;"
-      : "");
+        ? "color: #e78284;"
+        : color === "yellow"
+          ? "color: #f9e2af;"
+          : "");
 
   console.log(
     "%c%s%c %c%s%c",
@@ -83,7 +82,7 @@ export function rawDebugLog(
     msgStyle,
     message,
     "",
-    extraInfo !== undefined ? extraInfo : ""
+    extraInfo !== undefined ? extraInfo : "",
   );
 }
 
@@ -104,7 +103,6 @@ export function StorageProvider({
   const [failed, setFailed] = useState(false);
   const [userData, setUserData] = useState<StoredSettings>({});
   const [offlineData, setOfflineData] = useState<OfflineData>({
-    storedUsers: [],
     storedConversations: [],
     storedCommunities: [],
   });
@@ -117,9 +115,6 @@ export function StorageProvider({
   const [, setRawThemeTintType] = useState<string | null>(null);
 
   const { resolvedTheme, systemTheme } = useTheme();
-
-  const pendingOfflineUsers = useRef<Map<string, StoredUser>>(new Map());
-  const flushTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // @ts-expect-error ElectronAPI only available in Electron
@@ -139,7 +134,6 @@ export function StorageProvider({
       const loadedUserData: StoredSettings = {};
       const offlineData = await db.getAll("offline");
       const loadedOfflineData: OfflineData = {
-        storedUsers: [],
         storedConversations: [],
         storedCommunities: [],
       };
@@ -160,28 +154,6 @@ export function StorageProvider({
       setUserData(loadedUserData);
       offlineData.forEach((entry) => {
         switch (entry.key) {
-          case "storedUsers":
-            const validUsers: StoredUser[] = [];
-            let hasChanges = false;
-            const now = Date.now();
-            const sevenDays = 1000 * 60 * 60 * 24 * 7;
-
-            if (Array.isArray(entry.value)) {
-              entry.value.forEach((userEntry: StoredUser) => {
-                if (userEntry.storeTime + sevenDays < now) {
-                  hasChanges = true;
-                } else {
-                  validUsers.push(userEntry);
-                }
-              });
-            }
-
-            if (hasChanges && db) {
-              db.put("offline", { key: "storedUsers", value: validUsers });
-            }
-
-            loadedOfflineData.storedUsers = validUsers;
-            break;
           case "storedConversations":
             entry.value.forEach((conversation: Conversation) => {
               loadedOfflineData.storedConversations.push(conversation);
@@ -212,7 +184,7 @@ export function StorageProvider({
     const isRules = /\{/.test(themeCSS);
     if (isRules) {
       let style = document.getElementById(
-        "theme-style"
+        "theme-style",
       ) as HTMLStyleElement | null;
       if (!style) {
         style = document.createElement("style");
@@ -250,7 +222,7 @@ export function StorageProvider({
         handleError("STORAGE_CONTEXT", "ERROR_UPDATING_DATABASE_UNKNOWN", err);
       }
     },
-    [db]
+    [db],
   );
 
   const setThemeCSS = useCallback(
@@ -258,7 +230,7 @@ export function StorageProvider({
       setRawThemeCSS(css);
       set("themeCSS", css);
     },
-    [set]
+    [set],
   );
 
   const setThemeTint = useCallback(
@@ -266,7 +238,7 @@ export function StorageProvider({
       setRawThemeTint(tint);
       set("themeTint", tint);
     },
-    [set]
+    [set],
   );
 
   const setThemeTintType = useCallback(
@@ -274,7 +246,7 @@ export function StorageProvider({
       setRawThemeTintType(tintType);
       set("themeTintType", tintType);
     },
-    [set]
+    [set],
   );
 
   useEffect(() => {
@@ -293,11 +265,11 @@ export function StorageProvider({
     const colors = generateColors(
       userData.themeHex as string,
       userData.tintType as "hard" | "light",
-      activeScheme
+      activeScheme,
     );
 
     Object.entries(colors).forEach(([name, value]) =>
-      document.documentElement.style.setProperty(name, value)
+      document.documentElement.style.setProperty(name, value),
     );
   }, [resolvedTheme, systemTheme, userData.tintType, userData.themeHex]);
 
@@ -308,7 +280,6 @@ export function StorageProvider({
       setUserData({});
       await db.clear("offline");
       setOfflineData({
-        storedUsers: [],
         storedConversations: [],
         storedCommunities: [],
       });
@@ -331,62 +302,6 @@ export function StorageProvider({
     })();
   }, [dbPromise, loadData, setFailed]);
 
-  const flushOfflineUsers = useCallback(async () => {
-    if (!db || pendingOfflineUsers.current.size === 0) return;
-
-    const usersToSave = Array.from(pendingOfflineUsers.current.values());
-    pendingOfflineUsers.current.clear();
-    flushTimeout.current = null;
-
-    try {
-      const tx = db.transaction("offline", "readwrite");
-      const store = tx.objectStore("offline");
-      const entry = await store.get("storedUsers");
-      const rawValue = entry?.value;
-      const current: StoredUser[] = Array.isArray(rawValue)
-        ? (rawValue as StoredUser[])
-        : [];
-
-      const userMap = new Map(current.map((u) => [u.user.uuid, u]));
-
-      usersToSave.forEach((u) => {
-        userMap.set(u.user.uuid, u);
-      });
-
-      const updated = Array.from(userMap.values());
-
-      await store.put({ key: "storedUsers", value: updated });
-      await tx.done;
-
-      setOfflineData((prev) => ({
-        ...prev,
-        storedUsers: updated,
-      }));
-    } catch (err: unknown) {
-      handleError("STORAGE_CONTEXT", "ERROR_FLUSH_OFFLINE_USERS", err);
-    }
-  }, [db]);
-
-  const addOfflineUser = useCallback(
-    async (user: User, immediate: boolean = false) => {
-      const storedUser: StoredUser = { user, storeTime: Date.now() };
-      pendingOfflineUsers.current.set(user.uuid, storedUser);
-
-      if (flushTimeout.current) {
-        clearTimeout(flushTimeout.current);
-      }
-
-      if (immediate) {
-        await flushOfflineUsers();
-      } else {
-        flushTimeout.current = setTimeout(() => {
-          void flushOfflineUsers();
-        }, 2000);
-      }
-    },
-    [flushOfflineUsers]
-  );
-
   const setOfflineConversations = useCallback(
     (conversations: Conversation[]) => {
       if (!db) return;
@@ -395,7 +310,7 @@ export function StorageProvider({
         value: conversations,
       });
     },
-    [db]
+    [db],
   );
 
   const setOfflineCommunities = useCallback(
@@ -406,13 +321,13 @@ export function StorageProvider({
         value: communities,
       });
     },
-    [db]
+    [db],
   );
 
   function debugLog(
     sender: string,
     message: string,
-    extraInfo?: unknown
+    extraInfo?: unknown,
   ): void {
     rawDebugLog(sender, message, extraInfo);
   }
@@ -453,7 +368,6 @@ export function StorageProvider({
         bypass,
         isElectron,
         setBypass,
-        addOfflineUser,
         setOfflineCommunities,
         setOfflineConversations,
       }}
@@ -483,7 +397,6 @@ type StorageContextType = {
   bypass: boolean;
   isElectron: boolean;
   setBypass: (bypass: boolean) => void;
-  addOfflineUser: (user: User, immediate?: boolean) => Promise<void>;
   setOfflineCommunities: (communities: Community[]) => void;
   setOfflineConversations: (conversations: Conversation[]) => void;
 };

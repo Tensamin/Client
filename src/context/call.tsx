@@ -36,6 +36,16 @@ import { usePageContext } from "@/context/page";
 
 // Components
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
 // Types
@@ -80,7 +90,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     reject: ((error?: { message: string }) => void) | null;
   } | null>(null);
 
-  const connect = useCallback(
+  const performConnect = useCallback(
     (token: string, callId: string) => {
       rawDebugLog("Call Context", "Connecting...");
       setOuterState("CONNECTING");
@@ -99,8 +109,34 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         connectPromiseRef.current = { resolve, reject };
       });
     },
-    [setToken]
+    [setToken],
   );
+
+  const [switchCallDialogOpen, setSwitchCallDialogOpen] = useState(false);
+  const [pendingCall, setPendingCall] = useState<{
+    token: string;
+    callId: string;
+  } | null>(null);
+
+  const connect = useCallback(
+    (token: string, newCallId: string) => {
+      if (shouldConnect && callId !== newCallId) {
+        setPendingCall({ token, callId: newCallId });
+        setSwitchCallDialogOpen(true);
+        return Promise.resolve();
+      }
+      return performConnect(token, newCallId);
+    },
+    [shouldConnect, callId, performConnect],
+  );
+
+  const handleSwitchCall = useCallback(() => {
+    if (pendingCall) {
+      performConnect(pendingCall.token, pendingCall.callId);
+      setSwitchCallDialogOpen(false);
+      setPendingCall(null);
+    }
+  }, [pendingCall, performConnect]);
 
   // Disconnect function
   const disconnect = useCallback(() => {
@@ -155,7 +191,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         return "error";
       });
     },
-    [send]
+    [send],
   );
 
   const handleAcceptCall = useCallback(() => {
@@ -182,6 +218,29 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         callId,
       }}
     >
+      <AlertDialog
+        open={switchCallDialogOpen}
+        onOpenChange={setSwitchCallDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Switch Call?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are already in a call. Do you want to leave the current call
+              and join the new one?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingCall(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSwitchCall}>
+              Switch Call
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Incoming Call Dialog */}
       {newCaller && (
         <Dialog open={newCallWidgetOpen} onOpenChange={setNewCallWidgetOpen}>
@@ -431,25 +490,16 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
   // Cleanup
   useEffect(() => {
-    if (!shouldConnect && localTrack) {
-      rawDebugLog("Sub Call Context", "Cleanup Track");
-      localTrack.stop();
-      setLocalTrack(null);
-      setIsMuted(true);
-      audioService.cleanup();
-    }
-  }, [shouldConnect, localTrack]);
+    let isMounted = true;
 
-  useEffect(() => {
-    if (!shouldConnect && localTrack) {
-      rawDebugLog("Sub Call Context", "Cleanup Track");
-      (async () => {
+    const cleanup = async () => {
+      if (localTrack) {
+        rawDebugLog("Sub Call Context", "Cleanup Track");
         try {
-          if (localParticipant && localParticipant?.unpublishTrack) {
+          if (localParticipant?.unpublishTrack) {
             await localParticipant.unpublishTrack(localTrack);
           }
         } catch (err) {
-          toast.error("Error during track unpublish!");
           rawDebugLog("Sub Call Context", "Error during unpublish", err, "red");
         }
         try {
@@ -457,30 +507,29 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
           rawDebugLog("Sub Call Context", "Error stopping track", err, "red");
         }
-        setLocalTrack(null);
-        setIsMuted(true);
         audioService.cleanup();
-      })();
-    }
-  }, [shouldConnect, localTrack, localParticipant]);
 
-  useEffect(() => {
+        if (isMounted) {
+          setLocalTrack(null);
+          setIsMuted(true);
+        }
+      }
+    };
+
+    if (!shouldConnect && localTrack) {
+      void cleanup();
+    }
+
     return () => {
+      isMounted = false;
       if (localTrack) {
-        try {
-          if (localParticipant && localParticipant?.unpublishTrack) {
-            localParticipant.unpublishTrack(localTrack).catch(() => {});
-          }
-        } catch {}
         try {
           localTrack.stop();
         } catch {}
         audioService.cleanup();
-        setLocalTrack(null);
-        setIsMuted(true);
       }
     };
-  }, [localParticipant, localTrack]);
+  }, [shouldConnect, localTrack, localParticipant]);
 
   return (
     <SubCallContext.Provider

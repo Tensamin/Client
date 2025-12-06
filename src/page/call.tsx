@@ -51,7 +51,7 @@ import { useSocketContext } from "@/context/socket";
 
 // Helper Functions
 function mergeParticipantTracks(
-  tracks: TrackReferenceOrPlaceholder[]
+  tracks: TrackReferenceOrPlaceholder[],
 ): TrackReferenceOrPlaceholder[] {
   const merged = new Map<string, TrackReferenceOrPlaceholder>();
 
@@ -94,11 +94,11 @@ export default function Page() {
       { source: Track.Source.Camera, withPlaceholder: true },
       { source: Track.Source.ScreenShare, withPlaceholder: false },
     ],
-    { onlySubscribed: false }
+    { onlySubscribed: false },
   );
   const participantTracks = useMemo(
     () => mergeParticipantTracks(trackReferences),
-    [trackReferences]
+    [trackReferences],
   );
 
   // focus stuff
@@ -112,7 +112,7 @@ export default function Page() {
     return participantTracks.find(
       (track) =>
         isTrackReference(track) &&
-        track.publication?.trackSid === focusedTrackSid
+        track.publication?.trackSid === focusedTrackSid,
     );
   }, [participantTracks, focusedTrackSid]);
 
@@ -132,19 +132,19 @@ export default function Page() {
       const fallbackTrack = participantTracks.find(
         (track) =>
           isTrackReference(track) &&
-          track.participant.identity === participantIdentity
+          track.participant.identity === participantIdentity,
       );
 
       return fallbackTrack?.publication?.trackSid ?? null;
     },
-    [participantTracks]
+    [participantTracks],
   );
 
   const handleParticipantClick = useCallback(
     (event: ParticipantClickEvent) => {
       const trackSid = resolveTrackSid(
         event.participant.identity,
-        event.track?.trackSid
+        event.track?.trackSid,
       );
       if (!trackSid) {
         return;
@@ -152,7 +152,7 @@ export default function Page() {
 
       setFocusedTrackSid((current) => (current === trackSid ? null : trackSid));
     },
-    [resolveTrackSid]
+    [resolveTrackSid],
   );
 
   return (

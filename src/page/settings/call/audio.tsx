@@ -36,7 +36,7 @@ function useAudioTest(
     inputGain: number;
     channelCount: number;
     sampleRate: number;
-  }
+  },
 ) {
   const [isListening, setIsListening] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -53,7 +53,7 @@ function useAudioTest(
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const destinationNodeRef = useRef<MediaStreamAudioDestinationNode | null>(
-    null
+    null,
   );
 
   const updateAudioLevel = useCallback(() => {
@@ -119,7 +119,7 @@ function useAudioTest(
       analyserRef.current = analyser;
 
       sourceNodeRef.current = audioContext.createMediaStreamSource(
-        processedStreamRef.current!
+        processedStreamRef.current!,
       );
       sourceNodeRef.current.connect(analyser);
 
@@ -342,7 +342,7 @@ export default function Page() {
       inputGain: (data.call_inputGain as number) ?? 1.0,
       channelCount: (data.call_channelCount as number) ?? 2,
       sampleRate: (data.call_sampleRate as number) ?? 48000,
-    }
+    },
   );
 
   const options = [

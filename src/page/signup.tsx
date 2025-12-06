@@ -37,7 +37,7 @@ export default function Page() {
         //window.location.reload();
       }
     },
-    [set]
+    [set],
   );
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function Page() {
       } finally {
       }
     },
-    [login]
+    [login],
   );
 
   const handleDrop = useCallback(
@@ -110,7 +110,7 @@ export default function Page() {
       } finally {
       }
     },
-    [login]
+    [login],
   );
 
   return (
@@ -140,7 +140,7 @@ export default function Page() {
                   className={`${
                     hover ? "opacity-60" : "opacity-100"
                   } transition-opacity duration-300 ease-in-out flex flex-col gap-10 items-center justify-center w-full h-full border-dashed rounded-xl cursor-pointer select-none text-sm md:py-0 py-15 ${buttonVariants(
-                    { variant: "outline" }
+                    { variant: "outline" },
                   )}`}
                   onClick={() => tuFileRef.current?.click()}
                   onDrop={handleDrop}

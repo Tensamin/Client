@@ -115,7 +115,14 @@ export type AdvancedSuccessMessageData = {
 };
 
 export type Language = Record<string, string>;
-export type Value = string | boolean | number | object | Language | object[] | null;
+export type Value =
+  | string
+  | boolean
+  | number
+  | object
+  | Language
+  | object[]
+  | null;
 export type StoredSettings = {
   [key: string]: Value;
 };
@@ -210,13 +217,7 @@ export const fallbackUser: User = {
   loading: true,
 };
 
-export type StoredUser = {
-  user: User;
-  storeTime: number;
-};
-
 export type OfflineData = {
-  storedUsers: StoredUser[];
   storedConversations: Conversation[];
   storedCommunities: Community[];
 };

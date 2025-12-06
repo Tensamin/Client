@@ -37,7 +37,7 @@ type MessageContextType = {
   getMessages: (loaded: number, amount: number) => Promise<Messages>;
   sendMessage: (
     message: Message,
-    files?: File[]
+    files?: File[],
   ) => Promise<AdvancedSuccessMessage>;
   addRealtimeMessageToBox: Message | null;
   setAddRealtimeMessageToBox: (message: Message | null) => void;
@@ -85,7 +85,7 @@ export function MessageProvider({
     } else {
       newUserNotification(
         lastMessage.data.sender_id ?? "",
-        lastMessage.data.message ?? ""
+        lastMessage.data.message ?? "",
       );
     }
   }, [currentReceiverUuid, lastMessage, newUserNotification]);
@@ -121,7 +121,7 @@ export function MessageProvider({
 
       return grouped;
     },
-    []
+    [],
   );
 
   const getMessages = useCallback(
@@ -171,28 +171,28 @@ export function MessageProvider({
         previous: loaded - amount,
       };
     },
-    [currentReceiverUuid, groupMessages, id, isReady, ownUuid, send]
+    [currentReceiverUuid, groupMessages, id, isReady, ownUuid, send],
   );
 
   const sendMessage = useCallback(
     async (
       message: Message,
-      files?: File[]
+      files?: File[],
     ): Promise<AdvancedSuccessMessage> => {
       if (!isReady)
         throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
       if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
       setAddRealtimeMessageToBox(message);
       const ownPublicKey = await get(ownUuid, false).then(
-        (data) => data.public_key
+        (data) => data.public_key,
       );
       const otherPublicKey = await get(currentReceiverUuid, false).then(
-        (data) => data.public_key
+        (data) => data.public_key,
       );
       const sharedSecret = await get_shared_secret(
         privateKey,
         ownPublicKey,
-        otherPublicKey
+        otherPublicKey,
       );
       const encrypted = await encrypt(message.content, sharedSecret.message);
       return await send("message_send", {
@@ -211,7 +211,7 @@ export function MessageProvider({
       ownUuid,
       privateKey,
       send,
-    ]
+    ],
   );
 
   return (
@@ -246,26 +246,27 @@ export function useNewUserNotification() {
           const sharedSecret = await get_shared_secret(
             privateKey,
             ownUser.public_key,
-            otherUser.public_key
+            otherUser.public_key,
           );
 
           const decrypted = await decrypt(
             encryptedMessage,
-            sharedSecret.message
+            sharedSecret.message,
           );
 
           if (!decrypted.success) return;
 
           const playSound = async () => {
             try {
-              const audioContext = new (window.AudioContext ||
+              const audioContext = new (
+                window.AudioContext ||
                 // @ts-expect-error idk
-                window.webkitAudioContext)();
+                window.webkitAudioContext
+              )();
               const response = await fetch("/assets/sounds/message.wav");
               const arrayBuffer = await response.arrayBuffer();
-              const audioBuffer = await audioContext.decodeAudioData(
-                arrayBuffer
-              );
+              const audioBuffer =
+                await audioContext.decodeAudioData(arrayBuffer);
               const source = audioContext.createBufferSource();
               source.buffer = audioBuffer;
               source.connect(audioContext.destination);
@@ -300,8 +301,7 @@ export function useNewUserNotification() {
 
           const showRealNotification = () => {
             const notification = new Notification(otherUser.display, {
-              icon:
-                otherUser.avatar || "/assets/images/logo.png",
+              icon: otherUser.avatar || "/assets/images/logo.png",
               body: decrypted.message,
               silent: true,
             });
@@ -343,6 +343,6 @@ export function useNewUserNotification() {
       ownUuid,
       privateKey,
       data.enableNotifications,
-    ]
+    ],
   );
 }

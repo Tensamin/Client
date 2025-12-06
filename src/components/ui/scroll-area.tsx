@@ -15,7 +15,7 @@ function ScrollArea({
       data-slot="scroll-area"
       className={cn(
         "relative transition-all duration-200 ease-in-out",
-        className
+        className,
       )}
       {...props}
     >
@@ -46,7 +46,7 @@ function ScrollBar({
           "h-full my-2 w-2 border-l border-l-transparent",
         orientation === "horizontal" &&
           "mx-2 h-2 flex-col border-t border-t-transparent",
-        className
+        className,
       )}
       {...props}
     >

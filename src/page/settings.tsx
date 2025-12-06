@@ -123,7 +123,7 @@ export default function Page() {
     (page: string) => {
       set("lastSettingsMenu", page);
     },
-    [set]
+    [set],
   );
 
   return (
@@ -204,7 +204,7 @@ export default function Page() {
         {[...Pages, "Credits"].map((page) =>
           page === selected ? (
             <SettingsPageTitle key={page} text={page} />
-          ) : null
+          ) : null,
         )}
         <div className="flex w-full h-full overflow-auto">
           <MainPage selected={selected} />

@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 
 // Main
 const bundledLanguageSet = new Set(
-  Object.keys(bundledLanguages).map((lang) => lang.toLowerCase())
+  Object.keys(bundledLanguages).map((lang) => lang.toLowerCase()),
 );
 
 interface CodeBlockProps {
@@ -85,7 +85,7 @@ export function CodeBlock({ language, code, className }: CodeBlockProps) {
     <div
       className={cn(
         "flex flex-col rounded-lg border bg-input/30 overflow-hidden my-1",
-        className
+        className,
       )}
     >
       <div className="flex items-center justify-between px-2 py-1.5 border-b bg-input/30">

@@ -14,7 +14,7 @@ function Avatar({
       data-slot="avatar"
       className={cn(
         `bg-card relative flex size-${ThemeSize} shrink-0 overflow-hidden rounded-full transition-all duration-200 ease-in-out`,
-        className
+        className,
       )}
       {...props}
     />
@@ -30,7 +30,7 @@ function AvatarImage({
       data-slot="avatar-image"
       className={cn(
         "aspect-square size-full transition-all duration-200 ease-in-out",
-        className
+        className,
       )}
       {...props}
     />
@@ -46,7 +46,7 @@ function AvatarFallback({
       data-slot="avatar-fallback"
       className={cn(
         "select-none flex size-full items-center justify-center rounded-full transition-all duration-200 ease-in-out",
-        className
+        className,
       )}
       {...props}
     />

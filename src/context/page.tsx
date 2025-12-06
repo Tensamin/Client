@@ -76,7 +76,7 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
         }
       });
     },
-    [bypass, page, pageData, extraPageData]
+    [bypass, page, pageData, extraPageData],
   );
 
   useEffect(() => {
@@ -100,7 +100,12 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
 
   if (page === "error" && !bypass)
     return (
-      <Loading message={pageData || "ERROR"} extra={extraPageData || ""} />
+      <Loading
+        message={pageData || "ERROR"}
+        extra={extraPageData || ""}
+        isError
+        progress={100}
+      />
     );
 
   if (page === "login" || page === "signup")

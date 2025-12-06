@@ -110,7 +110,7 @@ export default function Page() {
                       }).then((settingsData) => {
                         if (!settingsData.data.payload) return;
                         const payload: StoredSettings = JSON.parse(
-                          settingsData.data.payload as string
+                          settingsData.data.payload as string,
                         );
                         Object.keys(payload).forEach((key) => {
                           if (
@@ -126,7 +126,7 @@ export default function Page() {
                         loading: "Loading settings...",
                         success: "Settings loaded",
                         error: "Failed to load settings",
-                      }
+                      },
                     );
                   }}
                 >
@@ -190,7 +190,7 @@ export default function Page() {
                           value={setting}
                           onSelect={(currentValue) => {
                             setValue(
-                              currentValue === value ? "" : currentValue
+                              currentValue === value ? "" : currentValue,
                             );
                             setOpen(false);
                           }}
@@ -199,7 +199,7 @@ export default function Page() {
                           <Icon.Check
                             className={cn(
                               "ml-auto",
-                              value === setting ? "opacity-100" : "opacity-0"
+                              value === setting ? "opacity-100" : "opacity-0",
                             )}
                           />
                         </CommandItem>

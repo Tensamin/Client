@@ -140,7 +140,7 @@ function FinalMessage({ message: data }: { message: Message }) {
       try {
         const sharedSecretData = await decrypt(
           data.content,
-          currentReceiverSharedSecret
+          currentReceiverSharedSecret,
         );
         if (cancelled) return;
         if (!sharedSecretData.success) {

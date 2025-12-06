@@ -19,7 +19,7 @@ function calculateOptimalLayout(
   containerWidth: number,
   containerHeight: number,
   gap: number = 16,
-  aspectRatio: number = 16 / 9
+  aspectRatio: number = 16 / 9,
 ) {
   if (count === 0) return { width: 0, height: 0, cols: 0 };
 
@@ -94,7 +94,7 @@ export function CallGrid({
       participantTracks.length,
       containerSize.width,
       containerSize.height,
-      16 // gap-4
+      16, // gap-4
     );
   }, [participantTracks.length, containerSize]);
 
@@ -105,7 +105,7 @@ export function CallGrid({
         className="absolute inset-0 flex items-center justify-center py-6 overflow-hidden"
       >
         <div className="flex flex-wrap justify-center gap-4 max-w-full max-h-full">
-          {participantTracks.map((track, index) => (
+          {participantTracks.map((track) => (
             <div
               key={getTrackReferenceId(track)}
               style={{

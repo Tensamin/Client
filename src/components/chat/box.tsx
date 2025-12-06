@@ -37,7 +37,7 @@ const GROUP_WINDOW_MS = 60 * 1000;
 
 // Main
 function flattenPages(
-  data: InfiniteData<Messages, number> | undefined
+  data: InfiniteData<Messages, number> | undefined,
 ): MessageGroupType[] {
   if (!data) return [];
   return data.pages.flatMap((page) => [...page.messages].reverse());
@@ -60,7 +60,7 @@ export function Box() {
 
   const queryKey = useMemo<MessagesQueryKey>(
     () => ["messages", "top-infinite", currentReceiverUuid || "0"],
-    [currentReceiverUuid]
+    [currentReceiverUuid],
   );
   const shouldLoadMessages = currentReceiverUuid !== "0";
 
@@ -128,7 +128,7 @@ export function Box() {
           handleFetchOlder();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (topSentinelRef.current) {
@@ -210,7 +210,7 @@ export function Box() {
 
         clonedPages[targetIndex] = targetPage;
         return { ...base, pages: clonedPages };
-      }
+      },
     );
   });
 

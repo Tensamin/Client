@@ -13,9 +13,13 @@ export function MessagesTop() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     get(currentReceiverUuid, false).then((fetchedUser) => {
-      setUser(fetchedUser);
+      if (isMounted) setUser(fetchedUser);
     });
+    return () => {
+      isMounted = false;
+    };
   }, [currentReceiverUuid, get]);
 
   return (

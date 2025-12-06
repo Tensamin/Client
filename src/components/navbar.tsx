@@ -31,14 +31,14 @@ export function Navbar() {
   useEffect(() => {
     if (currentReceiverUuid) {
       get(currentReceiverUuid, false).then((user) =>
-        setReceiverUsername(user.display)
+        setReceiverUsername(user.display),
       );
     }
   }, [currentReceiverUuid, get]);
 
   const currentUserAlreadyHasACall = conversations.find(
     (conv) =>
-      conv.user_id === currentReceiverUuid && (conv.calls?.length ?? 0) > 0
+      conv.user_id === currentReceiverUuid && (conv.calls?.length ?? 0) > 0,
   );
 
   return (
@@ -103,7 +103,7 @@ export function Navbar() {
                 key="call-button"
                 calls={
                   conversations.find(
-                    (conv) => conv?.user_id === currentReceiverUuid
+                    (conv) => conv?.user_id === currentReceiverUuid,
                   )?.calls ?? []
                 }
               />

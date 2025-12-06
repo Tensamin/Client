@@ -55,7 +55,7 @@ export async function sha256(content: string | BufferSource) {
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
-    undefined
+    undefined,
   );
 
   React.useEffect(() => {

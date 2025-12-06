@@ -189,7 +189,9 @@ export function VoiceActions() {
   });
   const trackRef = screenShareTrackRefs.find(
     (ref) =>
-      ref && ref.participant?.isLocal && ref.source === Track.Source.ScreenShare
+      ref &&
+      ref.participant?.isLocal &&
+      ref.source === Track.Source.ScreenShare,
   );
   const isScreenShare = isScreenShareEnabled || !!trackRef;
 
@@ -352,8 +354,8 @@ export function MuteButton({
             ? "ghost"
             : "destructive"
           : isMicrophoneEnabled
-          ? "outline"
-          : "destructive"
+            ? "outline"
+            : "destructive"
       }
       onClick={toggleMute}
       aria-label={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
@@ -442,7 +444,11 @@ function ScreenSharePickerDialog({
                   />
                   <div className="flex items-center gap-2 mt-2 justify-center">
                     {source.appIcon && source.appIcon.endsWith("=") && (
-                      <img src={source.appIcon} className="w-6 h-6" alt={source.name || "Source"} />
+                      <img
+                        src={source.appIcon}
+                        className="w-6 h-6"
+                        alt={source.name || "Source"}
+                      />
                     )}
                     <p className="text-center mt-2 text-sm truncate">
                       {source.name}
@@ -483,7 +489,7 @@ export function ScreenShareButton({
             const allowed = await window.electronAPI.getScreenAccess();
             if (!allowed) {
               toast.error(
-                "Screen capture permission denied. Please allow screen access in your system settings."
+                "Screen capture permission denied. Please allow screen access in your system settings.",
               );
               setLoading(false);
               return;
@@ -555,8 +561,8 @@ export function ScreenShareButton({
                     ? "default"
                     : "ghost"
                   : isScreenShareEnabled
-                  ? "default"
-                  : "outline"
+                    ? "default"
+                    : "outline"
               }
             >
               {isScreenShareEnabled ? (
@@ -615,8 +621,8 @@ export function DeafButton({
             ? "destructive"
             : "ghost"
           : isDeafened
-          ? "destructive"
-          : "outline"
+            ? "destructive"
+            : "outline"
       }
       onClick={toggleDeafen}
       aria-label={isDeafened ? "Undeafen" : "Deafen"}

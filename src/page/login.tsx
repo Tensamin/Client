@@ -43,7 +43,7 @@ export default function Page() {
         //window.location.reload();
       }
     },
-    [set]
+    [set],
   );
 
   useEffect(() => {
@@ -89,7 +89,7 @@ export default function Page() {
         setLoading(false);
       }
     },
-    [login]
+    [login],
   );
 
   const handleDrop = useCallback(
@@ -120,7 +120,7 @@ export default function Page() {
         setLoading(false);
       }
     },
-    [login]
+    [login],
   );
 
   const handleSubmit = useCallback(
@@ -137,7 +137,7 @@ export default function Page() {
         const uuidData = await uuidResponse.json();
         if (uuidData.type !== "success") {
           throw new Error(
-            uuidData.log.message || "Failed to retrieve user ID."
+            uuidData.log.message || "Failed to retrieve user ID.",
           );
         }
         const uuid: string = uuidData.data.user_id;
@@ -148,7 +148,7 @@ export default function Page() {
         debugLog("LOGIN_PAGE", "LOGIN_ERROR", err);
       }
     },
-    [login, privateKey, debugLog]
+    [login, privateKey, debugLog],
   );
 
   return (
@@ -178,7 +178,7 @@ export default function Page() {
                   className={`${
                     hover ? "opacity-60" : "opacity-100"
                   } transition-opacity duration-300 ease-in-out flex flex-col gap-10 items-center justify-center w-full h-full border-dashed rounded-xl cursor-pointer select-none text-sm md:py-0 py-15 ${buttonVariants(
-                    { variant: "outline" }
+                    { variant: "outline" },
                   )}`}
                   onClick={() => tuFileRef.current?.click()}
                   onDrop={handleDrop}
