@@ -14,11 +14,8 @@ import { v7 } from "uuid";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
 // Lib Imports
-import {
-  AdvancedSuccessMessage,
-  AdvancedSuccessMessageData,
-  UserState,
-} from "@/lib/types";
+import { UserState } from "@/lib/types";
+import * as CommunicationValue from "@/lib/communicationValues";
 import { RetryCount, responseTimeout } from "@/lib/utils";
 import { client_wss } from "@/lib/endpoints";
 
@@ -33,14 +30,14 @@ import { Loading } from "@/components/loading";
 // Main
 type SocketContextType = {
   readyState: ReadyState;
-  lastMessage: AdvancedSuccessMessage | null;
+  lastMessage: CommunicationValue.Parent;
   ownPing: number;
   iotaPing: number;
   send: (
     requestType: string,
-    data?: AdvancedSuccessMessageData,
-    noResponse?: boolean,
-  ) => Promise<AdvancedSuccessMessage>;
+    data?: unknown,
+    noResponse?: boolean
+  ) => Promise<CommunicationValue.DataContainer>;
   isReady: boolean;
   initialUserState: UserState;
 };
@@ -59,23 +56,26 @@ export function SocketProvider({
   children: React.ReactNode;
 }>) {
   const pendingRequests = useRef(new Map());
-  const [isReady, setIsReady] = useState(false);
-  const [identified, setIdentified] = useState(false);
-  const [lastMessage, setLastMessage] = useState<AdvancedSuccessMessage | null>(
-    null,
-  );
-  const [initialUserState, setInitialUserState] = useState<UserState>("NONE");
-
-  const [ownPing, setOwnPing] = useState<number>(0);
-  const [iotaPing, setIotaPing] = useState<number>(0);
-  const [showContent, setShowContent] = useState(false);
 
   const { bypass } = useStorageContext();
   const { setPage } = usePageContext();
   const { privateKeyHash, ownId } = useCryptoContext();
 
-  const forceLoad = false;
+  const [isReady, setIsReady] = useState(false);
+  const [identified, setIdentified] = useState(false);
+  const [lastMessage, setLastMessage] = useState<CommunicationValue.Parent>({
+    id: "",
+    type: "",
+    data: {},
+  });
+  const [initialUserState, setInitialUserState] = useState<UserState>("NONE");
+  const [ownPing, setOwnPing] = useState<number>(0);
+  const [iotaPing, setIotaPing] = useState<number>(0);
+  const [showContent, setShowContent] = useState(false);
 
+  const actuallyBypass = bypass && !identified;
+
+  // Loading delay
   useEffect(() => {
     if (identified) {
       const timer = setTimeout(() => {
@@ -87,81 +87,86 @@ export function SocketProvider({
     }
   }, [identified]);
 
+  // Handle Incoming Messages
   const handleMessage = useCallback(async (message: MessageEvent) => {
-    let parsedMessage: AdvancedSuccessMessage = {
-      type: "",
-      data: {},
-      id: "",
-    };
     try {
-      try {
-        parsedMessage = JSON.parse(message.data);
-      } catch {
-        rawDebugLog(
-          "Socket Context",
-          "Received invalid JSON message",
-          { message },
-          "red",
-        );
-      }
-      if (parsedMessage.type !== "pong") {
-        rawDebugLog("Socket Context", "Received", {
-          type: parsedMessage.type,
-          data: parsedMessage.data,
-        });
-      }
+      const parsedMessage: CommunicationValue.Parent = JSON.parse(message.data);
       setLastMessage(parsedMessage);
+
+      // Send Function
       const currentRequest = pendingRequests.current.get(parsedMessage.id);
       if (currentRequest) {
         clearTimeout(currentRequest.timeoutId);
         pendingRequests.current.delete(parsedMessage.id);
-        currentRequest.resolve(parsedMessage);
+        if (parsedMessage.type.startsWith("error")) {
+          currentRequest.reject(parsedMessage);
+          rawDebugLog("Socket Context", "Received error", parsedMessage, "red");
+        } else {
+          currentRequest.resolve(parsedMessage);
+        }
+      }
+
+      // Log Message
+      if (
+        parsedMessage.type !== "pong" &&
+        !parsedMessage.type.startsWith("error")
+      ) {
+        rawDebugLog("Socket Context", "Received", {
+          type: parsedMessage.type,
+          data: parsedMessage.data,
+        });
       }
     } catch (error: unknown) {
       rawDebugLog("Socket Context", "Unknown error occured", error, "red");
     }
   }, []);
 
+  // Init WebSocket
   const { sendMessage: sendRaw, readyState } = useWebSocket(client_wss, {
     onOpen: () =>
       rawDebugLog("Socket Context", "Connected to Omikron", "", "green"),
     onClose: () => {
       rawDebugLog("Socket Context", "Disconnected from Omikron", "", "red");
+
+      // Clear pending requests
       pendingRequests.current.forEach(({ reject, timeoutId }) => {
         clearTimeout(timeoutId);
         reject(
-          new Error("Disconnected before a response for `send` was received"),
+          new Error("Disconnected before a response for `send` was received")
         );
       });
+
+      // Reset state
       pendingRequests.current.clear();
       setIdentified(false);
       setIsReady(false);
       setInitialUserState("NONE");
     },
     onMessage: handleMessage,
-    shouldReconnect: () => !forceLoad,
+    shouldReconnect: () => !actuallyBypass,
     share: true,
     reconnectAttempts: RetryCount,
-    reconnectInterval: 500,
+    reconnectInterval: 3000,
     onReconnectStop: () => {
       setPage(
         "error",
         "Could not connect to Omikron",
-        "Either your internet connection or the Omikron is down. Check our status page and try again later.",
+        "Either your internet connection or the Omikron is down. Check our status page and try again later."
       );
     },
   });
 
   const connected = readyState === ReadyState.OPEN;
 
+  // Send Function
   const send = useCallback(
     async (
       requestType: string,
-      data: AdvancedSuccessMessageData = {},
-      noResponse = false,
-    ): Promise<AdvancedSuccessMessage> => {
+      data: unknown = {},
+      noResponse = false
+    ): Promise<CommunicationValue.DataContainer> => {
       if (
-        !forceLoad &&
+        !actuallyBypass &&
         readyState !== ReadyState.CLOSED &&
         readyState !== ReadyState.CLOSING
       ) {
@@ -184,12 +189,12 @@ export function SocketProvider({
               "Socket Context",
               "An unknown error occured",
               error,
-              "red",
+              "red"
             );
           }
           return {
             id: "",
-            type: "error",
+            type: "success",
             data: {},
           };
         }
@@ -209,7 +214,7 @@ export function SocketProvider({
               "Socket Context",
               "Request timed out",
               { id, type: requestType, data },
-              "red",
+              "red"
             );
             reject();
           }, responseTimeout);
@@ -231,30 +236,27 @@ export function SocketProvider({
               "Socket Context",
               "An unkown error occured",
               error,
-              "red",
+              "red"
             );
             reject(error);
           }
         });
       } else {
-        return {
-          id: "",
-          type: "error",
-          data: {},
-        };
+        throw new Error("Socket is not ready");
       }
     },
-    [readyState, forceLoad, sendRaw],
+    [readyState, actuallyBypass, sendRaw]
   );
 
+  // Pings
   const sendPing = useEffectEvent(async () => {
     const originalNow = Date.now();
-    const data = await send("ping", { last_ping: originalNow });
-    if (!data.type.startsWith("error")) {
-      const travelTime = Date.now() - originalNow;
-      setOwnPing(travelTime);
-      setIotaPing(data.data.ping_iota || 0);
-    }
+    const data = (await send("ping", {
+      last_ping: originalNow,
+    })) as CommunicationValue.ping;
+    const travelTime = Date.now() - originalNow;
+    setOwnPing(travelTime);
+    setIotaPing(data.ping_iota || 0);
   });
 
   useEffect(() => {
@@ -263,33 +265,23 @@ export function SocketProvider({
         user_id: ownId,
         private_key_hash: privateKeyHash,
       })
-        .then((data) => {
-          if (!data.type.startsWith("error")) {
-            setIdentified(true);
-            setIsReady(true);
-            setInitialUserState(
-              (data.data.user_status as UserState) || "ONLINE",
-            );
-            rawDebugLog(
-              "Socket Context",
-              "Successfully identified with Omikron",
-              "",
-              "green",
-            );
-          } else {
-            setPage(
-              "error",
-              "Identification failed",
-              "This could be a broken Omikron or an unkown error.",
-            );
-          }
+        .then((raw) => {
+          const data = raw as CommunicationValue.identification;
+          setIdentified(true);
+          setIsReady(true);
+          setInitialUserState(data.user_status);
+          rawDebugLog(
+            "Socket Context",
+            "Successfully identified with Omikron",
+            "",
+            "green"
+          );
         })
-        .catch((err) => {
-          rawDebugLog("Socket Context", "Identification failed", err, "red");
+        .catch(() => {
           setPage(
             "error",
             "Identification failed",
-            "This could be a broken Omikron or an unkown error.",
+            "This could be a broken Omikron or an unkown error."
           );
         });
     }
@@ -306,8 +298,6 @@ export function SocketProvider({
     };
   }, [isReady]);
 
-  const actuallyBypass = bypass && !identified;
-
   if (actuallyBypass) {
     return (
       <SocketContext.Provider
@@ -319,7 +309,11 @@ export function SocketProvider({
             data: {},
           }),
           isReady: false,
-          lastMessage: null,
+          lastMessage: {
+            id: "",
+            type: "",
+            data: {},
+          },
           ownPing: 0,
           iotaPing: 0,
           initialUserState: "NONE",

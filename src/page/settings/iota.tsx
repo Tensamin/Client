@@ -7,6 +7,7 @@ import * as Icon from "lucide-react";
 
 // Lib Imports
 import { cn } from "@/lib/utils";
+import * as CommunicationValue from "@/lib/communicationValues";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
@@ -70,8 +71,9 @@ export default function Page() {
 
   const loadRemoteSettings = useEffectEvent(() => {
     setLoading(true);
-    send("settings_list").then((data) => {
-      setSettings(data.data.settings ?? []);
+    send("settings_list").then((raw) => {
+      const data = raw as CommunicationValue.settings_list;
+      setSettings(data.settings);
       setLoading(false);
     });
   });
@@ -107,10 +109,11 @@ export default function Page() {
                     toast.promise(
                       send("settings_load", {
                         settings_name: value,
-                      }).then((settingsData) => {
-                        if (!settingsData.data.payload) return;
+                      }).then((raw) => {
+                        const settingsData =
+                          raw as CommunicationValue.settings_load;
                         const payload: StoredSettings = JSON.parse(
-                          settingsData.data.payload as string,
+                          settingsData.payload,
                         );
                         Object.keys(payload).forEach((key) => {
                           if (

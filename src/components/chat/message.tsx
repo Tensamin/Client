@@ -19,13 +19,7 @@ import {
 } from "@/components/ui/context-menu";
 
 // Types
-import {
-  ErrorType,
-  Message,
-  MessageGroup as MessageGroupType,
-  User,
-  systemUser,
-} from "@/lib/types";
+import { Message, MessageGroup as MessageGroupType, User } from "@/lib/types";
 import { UserAvatar } from "@/components/modals/raw";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "../markdown/text";
@@ -36,7 +30,6 @@ import { Text } from "../markdown/text";
 export function MessageGroup({ data }: { data: MessageGroupType }) {
   const { get, fetchedUsers, setFailedMessagesAmount } = useUserContext();
   const cachedSender = useMemo(() => {
-    if (data.sender === 0) return systemUser;
     if (!data.sender) return null;
     return fetchedUsers.get(data.sender) ?? null;
   }, [data.sender, fetchedUsers]);
@@ -48,7 +41,7 @@ export function MessageGroup({ data }: { data: MessageGroupType }) {
 
   useEffect(() => {
     if (!data.sender || data.sender === 0) {
-      setSender(systemUser);
+      setSender(null);
       return;
     }
 
@@ -79,7 +72,7 @@ export function MessageGroup({ data }: { data: MessageGroupType }) {
 
   return (
     <div className="flex gap-2 pl-1 w-full items-start pb-4.25">
-      {data.avatar !== false && (
+      {data.showAvatar !== false && (
         <UserAvatar
           icon={sender?.avatar || undefined}
           title={sender?.display || ""}
@@ -88,7 +81,7 @@ export function MessageGroup({ data }: { data: MessageGroupType }) {
         />
       )}
       <div className="flex flex-col w-full">
-        {data.display !== false && (
+        {data.showName !== false && (
           <span className="font-medium text-md select-none pb-px">
             {sender?.display ?? <Skeleton className="h-4 w-24 rounded-md" />}
           </span>
@@ -154,7 +147,7 @@ function FinalMessage({ message: data }: { message: Message }) {
         if (cancelled) return;
         // @ts-expect-error Idk TypeScript is dumb
         setFailedMessagesAmount((prev: number) => prev + 1);
-        setContent((err as ErrorType).message);
+        setContent(String(err));
       } finally {
         if (!cancelled) {
           setIsDecrypting(false);

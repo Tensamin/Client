@@ -1,3 +1,7 @@
+export type UserId = UnixTimestamp;
+export type UnixTimestamp = number;
+export type CallId = string;
+
 export type RawMessage = {
   sent_by_self?: boolean;
   avatar?: boolean;
@@ -10,23 +14,23 @@ export type RawMessage = {
 
 export type Message = {
   send_to_server: boolean;
-  sender: number;
-  avatar?: boolean;
-  display?: boolean;
+  sender: UserId;
   timestamp: number;
-  tint?: string;
   files?: File[];
   content: string;
+  showAvatar?: boolean;
+  showName?: boolean;
+  tint?: string;
 };
 
 export type MessageGroup = {
   id: string;
-  sender: number;
-  avatar?: boolean;
-  display?: boolean;
+  sender: UserId;
   timestamp: number;
-  tint?: string;
   messages: Message[];
+  showAvatar?: boolean;
+  showName?: boolean;
+  tint?: string;
 };
 
 export type Messages = {
@@ -78,50 +82,6 @@ export type UserState =
   | "USER_OFFLINE"
   | "IOTA_OFFLINE";
 
-export type AdvancedSuccessMessageData = {
-  message?: string | null;
-  send_time?: string | null;
-  content?: string | null;
-  messages?: RawMessage[] | null;
-  user_id?: number | null;
-  user_ids?: Conversation[] | null;
-  private_key_hash?: string | null;
-  last_ping?: number | null;
-  ping_iota?: number | null;
-  chat_partner_id?: number | null;
-  loaded_messages?: number | null;
-  message_amount?: number | null;
-  communities?: Community[] | null;
-  user_states?: Record<number, string> | null;
-  user_state?: string | null;
-  amount?: number | null;
-  offset?: number | null;
-  settings?: string[] | null;
-  user_status?: string | null;
-  receiver_id?: number | null;
-  sender_id?: number | null;
-  call_id?: string | null;
-  call_state?: string | null;
-  receiver?: number | null;
-  settings_name?: string | null;
-  token?: string | null;
-  call_secret?: string | null;
-  call_secret_sha?: string | null;
-  call_token?: string | null;
-  payload?:
-    | RTCIceCandidate
-    | RTCSessionDescriptionInit
-    | StoredSettings
-    | string
-    | null;
-  about?: {
-    [key: string]: {
-      state: string;
-      streaming: boolean;
-    };
-  } | null;
-};
-
 export type Language = Record<string, string>;
 export type Value =
   | string
@@ -135,28 +95,8 @@ export type StoredSettings = {
   [key: string]: Value;
 };
 
-export type AdvancedSuccessMessage = {
-  type: string;
-  data: AdvancedSuccessMessageData;
-  id: string;
-};
-
-export type File = {
-  name: string;
-  id: string;
-  type:
-    | "image"
-    | "image_top_right"
-    | "video"
-    | "audio"
-    | "json"
-    | "txt"
-    | "pdf"
-    | "file";
-};
-
 export type User = {
-  id: number;
+  id: UserId;
   username: string;
   display: string;
   avatar?: string;
@@ -170,42 +110,16 @@ export type User = {
   //badges?: string[];
 };
 
-export type ErrorType = {
-  name: string;
-  message: string;
-};
-
 export type Conversation = {
-  user_id: number;
-  calls?: string[];
-  last_message_at: number;
+  user_id: UserId;
+  calls?: CallId[];
+  last_message_at: UnixTimestamp;
 };
 
 export type Community = {
   community_address: string;
   community_title: string;
   position: string;
-};
-
-export type CallUser = {
-  state: string;
-  active: boolean;
-  stream?: MediaStream;
-};
-
-export const systemUser: User = {
-  id: 0,
-  username: "SYSTEM",
-  public_key: "",
-  display: "Tensamin",
-  avatar: "/assets/images/systemUser.webp",
-  about: "",
-  loading: false,
-  state: "NONE",
-  status: "",
-  sub_end: 0,
-  sub_level: 0,
-  //badges: ["System"],
 };
 
 export const fallbackUser: User = {
@@ -220,13 +134,4 @@ export const fallbackUser: User = {
   status: "",
   state: "NONE",
   loading: true,
-};
-
-export type OfflineData = {
-  storedConversations: Conversation[];
-  storedCommunities: Community[];
-};
-
-export type UserAudioSettings = {
-  [key: string]: number;
 };

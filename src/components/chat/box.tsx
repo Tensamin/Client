@@ -199,8 +199,8 @@ export function Box() {
           const newGroup: MessageGroupType = {
             id: `${newMsg.sender}-${newMsg.timestamp}-${nextIdRef.current}-rt`,
             sender: newMsg.sender,
-            avatar: newMsg.avatar,
-            display: newMsg.display,
+            showAvatar: newMsg.showAvatar,
+            showName: newMsg.showName,
             tint: newMsg.tint,
             timestamp: newMsg.timestamp,
             messages: [newMsg],

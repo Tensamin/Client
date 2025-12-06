@@ -16,21 +16,14 @@ import { useTheme } from "next-themes";
 import { handleError } from "@/lib/utils";
 import { generateColors } from "@/lib/theme";
 
-// Context Imports
-import { Community, Conversation } from "@/lib/types";
-
 // Components
 import { RawLoading } from "@/components/loading";
 
 // Types
-import { OfflineData, StoredSettings, Value } from "@/lib/types";
+import { StoredSettings, Value } from "@/lib/types";
 
 type DBType = IDBPDatabase<{
   data: {
-    key: string;
-    value: Value;
-  };
-  offline: {
     key: string;
     value: Value;
   };
@@ -45,9 +38,6 @@ function createDBPromise() {
     upgrade(db) {
       if (!db.objectStoreNames.contains("data")) {
         db.createObjectStore("data", { keyPath: "key" });
-      }
-      if (!db.objectStoreNames.contains("offline")) {
-        db.createObjectStore("offline", { keyPath: "key" });
       }
     },
   });
@@ -102,10 +92,6 @@ export function StorageProvider({
 }>) {
   const [failed, setFailed] = useState(false);
   const [userData, setUserData] = useState<StoredSettings>({});
-  const [offlineData, setOfflineData] = useState<OfflineData>({
-    storedConversations: [],
-    storedCommunities: [],
-  });
   const [bypass, setBypass] = useState(false);
   const [ready, setReady] = useState(false);
   const [isElectron, setIsElectron] = useState(false);
@@ -116,6 +102,7 @@ export function StorageProvider({
 
   const { resolvedTheme, systemTheme } = useTheme();
 
+  // Check if running in Electron
   useEffect(() => {
     // @ts-expect-error ElectronAPI only available in Electron
     if (window.electronAPI) {
@@ -132,42 +119,11 @@ export function StorageProvider({
     try {
       const userData = await db.getAll("data");
       const loadedUserData: StoredSettings = {};
-      const offlineData = await db.getAll("offline");
-      const loadedOfflineData: OfflineData = {
-        storedConversations: [],
-        storedCommunities: [],
-      };
       userData.forEach((entry) => {
         loadedUserData[entry.key] = entry.value;
       });
 
-      if (loadedUserData.audioThreshold === undefined) {
-        loadedUserData.audioThreshold = -40;
-        db.put("data", { key: "audioThreshold", value: -40 });
-      }
-      if (loadedUserData.enableAudioGate === undefined) {
-        console.log("Storage: Defaulting enableAudioGate to true");
-        loadedUserData.enableAudioGate = true;
-        db.put("data", { key: "enableAudioGate", value: true });
-      }
-
       setUserData(loadedUserData);
-      offlineData.forEach((entry) => {
-        switch (entry.key) {
-          case "storedConversations":
-            entry.value.forEach((conversation: Conversation) => {
-              loadedOfflineData.storedConversations.push(conversation);
-            });
-            break;
-          case "storedCommunities":
-            entry.value.forEach((community: Community) => {
-              loadedOfflineData.storedCommunities.push(community);
-            });
-            break;
-        }
-      });
-      setOfflineData(loadedOfflineData);
-
       setRawThemeTint((loadedUserData.themeTint as string) || null);
       setRawThemeCSS((loadedUserData.themeCSS as string) || null);
       setRawThemeTintType((loadedUserData.themeTintType as string) || null);
@@ -278,11 +234,6 @@ export function StorageProvider({
     try {
       await db.clear("data");
       setUserData({});
-      await db.clear("offline");
-      setOfflineData({
-        storedConversations: [],
-        storedCommunities: [],
-      });
     } catch (err: unknown) {
       handleError("STORAGE_CONTEXT", "ERROR_CLEARING_DATABASE_UNKNOWN", err);
     }
@@ -302,36 +253,7 @@ export function StorageProvider({
     })();
   }, [dbPromise, loadData, setFailed]);
 
-  const setOfflineConversations = useCallback(
-    (conversations: Conversation[]) => {
-      if (!db) return;
-      db.put("offline", {
-        key: "storedConversations",
-        value: conversations,
-      });
-    },
-    [db],
-  );
-
-  const setOfflineCommunities = useCallback(
-    (communities: Community[]) => {
-      if (!db) return;
-      db.put("offline", {
-        key: "storedCommunities",
-        value: communities,
-      });
-    },
-    [db],
-  );
-
-  function debugLog(
-    sender: string,
-    message: string,
-    extraInfo?: unknown,
-  ): void {
-    rawDebugLog(sender, message, extraInfo);
-  }
-
+  // global bypassLockScreen() function
   if (typeof window !== "undefined") {
     // @ts-expect-error window does not have bypassLockScreen
     window.bypassLockScreen = () => {
@@ -360,16 +282,12 @@ export function StorageProvider({
         set,
         clearAll,
         data: userData,
-        offlineData,
-        debugLog,
         setThemeCSS,
         setThemeTint,
         setThemeTintType,
         bypass,
         isElectron,
         setBypass,
-        setOfflineCommunities,
-        setOfflineConversations,
       }}
     >
       {children}
@@ -389,14 +307,10 @@ type StorageContextType = {
   set: (key: string, value: Value) => void;
   clearAll: () => void;
   data: StoredSettings;
-  offlineData: OfflineData;
-  debugLog: (sender: string, message: string, extraInfo?: unknown) => void;
   setThemeCSS: (css: string) => void;
   setThemeTint: (tint: string) => void;
   setThemeTintType: (tintType: string) => void;
   bypass: boolean;
   isElectron: boolean;
   setBypass: (bypass: boolean) => void;
-  setOfflineCommunities: (communities: Community[]) => void;
-  setOfflineConversations: (conversations: Conversation[]) => void;
 };

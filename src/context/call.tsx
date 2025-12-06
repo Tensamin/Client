@@ -27,6 +27,7 @@ import * as Icon from "lucide-react";
 
 // Lib Imports
 import { audioService } from "@/lib/audioService";
+import * as CommunicationValue from "@/lib/communicationValues";
 
 // Context Imports
 import { useStorageContext, rawDebugLog } from "@/context/storage";
@@ -49,7 +50,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 // Types
-import { User, UserAudioSettings } from "@/lib/types";
+import { User } from "@/lib/types";
 import { UserAvatar } from "@/components/modals/raw";
 
 // Main Contexts
@@ -160,17 +161,13 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [newCaller, setNewCaller] = useState<User | null>(null);
   useEffect(() => {
     if (lastMessage?.type === "call_invite") {
-      rawDebugLog("Call Context", "Incoming Invite", lastMessage?.data);
-      if (!lastMessage.data.sender_id || !lastMessage.data.call_id) {
-        toast.error("Failed joining call");
-        return;
-      }
+      const data = lastMessage.data as CommunicationValue.call_invite;
+      rawDebugLog("Call Context", "Incoming Invite", data);
       setNewCallData({
-        call_id: lastMessage.data.call_id,
-        sender_id: lastMessage.data.sender_id,
+        call_id: data.call_id,
+        sender_id: data.sender_id,
       });
-      if (!lastMessage.data?.sender_id) return;
-      get(lastMessage.data.sender_id, false).then((user) => {
+      get(data.sender_id, false).then((user) => {
         setNewCaller(user);
         setNewCallWidgetOpen(true);
       });
@@ -183,13 +180,16 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       rawDebugLog("Call Context", "Getting call token", { callId });
       return send("call_token", {
         call_id: callId,
-      }).then((data) => {
-        rawDebugLog("Call Context", "Got call token", { callId, data });
-        if (!data.type.startsWith("error")) {
-          return data.data.call_token ?? "error";
-        }
-        return "error";
-      });
+      })
+        .then((raw) => {
+          const data = raw as CommunicationValue.call_token;
+          rawDebugLog("Call Context", "Got call token", { callId, data });
+          return data.call_token;
+        })
+        .catch(() => {
+          toast.error("Failed to get call token");
+          return "";
+        });
     },
     [send],
   );
@@ -297,13 +297,13 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
             send("call_invite", {
               receiver_id: currentReceiverId,
               call_id: callId,
-            }).then((data) => {
-              if (!data.type.startsWith("error")) {
+            })
+              .then(() => {
                 toast.success("Call invite sent successfully");
-              } else {
+              })
+              .catch(() => {
                 toast.error("Failed to send call invite");
-              }
-            });
+              });
           }
           setDontSendInvite(false);
 
@@ -345,7 +345,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   const [isDeafened, setIsDeafened] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
 
-  const storedUserVolumes = data.call_userVolumes as UserAudioSettings | null;
+  const storedUserVolumes = data.call_userVolumes as number[] | null;
 
   // User Volume Management
   useEffect(() => {
@@ -354,7 +354,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       identity: string;
       setVolume: (volume: number) => void;
     }) => {
-      const storedVolume = storedUserVolumes?.[participant.identity];
+      const storedVolume = storedUserVolumes?.[Number(participant.identity)];
       if (storedVolume) {
         participant.setVolume(storedVolume as number);
       }

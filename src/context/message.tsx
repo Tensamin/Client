@@ -11,6 +11,9 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+// Lib Imports
+import * as CommunicationValue from "@/lib/communicationValues";
+
 // Context Imports
 import { useSocketContext } from "@/context/socket";
 import { usePageContext } from "@/context/page";
@@ -22,23 +25,15 @@ import { useStorageContext } from "@/context/storage";
 import { UserAvatar } from "@/components/modals/raw";
 
 // Types
-import {
-  AdvancedSuccessMessage,
-  File,
-  Message,
-  MessageGroup,
-  Messages,
-} from "@/lib/types";
+import { Message, MessageGroup, Messages } from "@/lib/types";
+import { DataContainer } from "@/lib/communicationValues";
 
 const GROUP_WINDOW_MS = 60 * 1000;
 
 // Main
 type MessageContextType = {
   getMessages: (loaded: number, amount: number) => Promise<Messages>;
-  sendMessage: (
-    message: Message,
-    files?: File[],
-  ) => Promise<AdvancedSuccessMessage>;
+  sendMessage: (message: Message, files?: File[]) => Promise<DataContainer>;
   addRealtimeMessageToBox: Message | null;
   setAddRealtimeMessageToBox: (message: Message | null) => void;
 };
@@ -67,26 +62,23 @@ export function MessageProvider({
 
   useEffect(() => {
     if (!lastMessage || lastMessage.type !== "message_live") return;
+    const data = lastMessage.data as CommunicationValue.message_live;
+    const messageId = `${lastMessage.id}-${data.sender_id}-${data.send_time}`;
 
-    // Create a unique identifier for this message to prevent duplicates
-    const messageId = `${lastMessage.id}-${lastMessage.data.sender_id}-${lastMessage.data.send_time}`;
     if (processedMessageRef.current === messageId) return;
     processedMessageRef.current = messageId;
 
-    if (lastMessage.data.sender_id === currentReceiverId) {
+    if (data.sender_id === currentReceiverId) {
       setAddRealtimeMessageToBox({
         send_to_server: false,
-        sender: lastMessage.data.sender_id ?? "",
-        content: lastMessage.data.message ?? "",
-        timestamp: Number(lastMessage.data.send_time) ?? 0,
-        avatar: true,
-        display: true,
+        sender: data.sender_id ?? "",
+        content: data.message ?? "",
+        timestamp: Number(data.send_time) ?? 0,
+        showAvatar: true,
+        showName: true,
       });
     } else {
-      newUserNotification(
-        lastMessage.data.sender_id ?? 0,
-        lastMessage.data.message ?? "",
-      );
+      newUserNotification(data.sender_id, data.message);
     }
   }, [currentReceiverId, lastMessage, newUserNotification]);
 
@@ -110,8 +102,8 @@ export function MessageProvider({
           grouped.push({
             id: `${message.sender}-${message.timestamp}`,
             sender: message.sender,
-            avatar: message.avatar,
-            display: message.display,
+            showAvatar: message.showAvatar,
+            showName: message.showName,
             timestamp: message.timestamp,
             tint: message.tint,
             messages: [message],
@@ -133,26 +125,13 @@ export function MessageProvider({
         user_id: Number(id),
         amount: amount,
         offset: loaded,
-      }).then((data) => {
-        if (data.type === "error") throw new Error();
-        if (
-          (data.data.messages?.length === 0 || !data.data.messages) &&
-          loaded === 0
-        ) {
-          const emptyStateMessage: Message = {
-            send_to_server: false,
-            sender: 0,
-            avatar: true,
-            display: true,
-            tint: "var(--primary)",
-            timestamp: Date.now(),
-            content: "NO_MESSAGES_WITH_USER",
-          };
-
-          return groupMessages([emptyStateMessage]);
+      }).then((raw) => {
+        const data = raw as CommunicationValue.messages_get;
+        if ((data.messages?.length === 0 || !data.messages) && loaded === 0) {
+          return groupMessages([]);
         }
-        if (!data.data.messages) return [];
-        const sorted = [...data.data.messages]
+        if (!data.messages) return [];
+        const sorted = [...data.messages]
           .map((m) => {
             return {
               send_to_server: false,
@@ -175,10 +154,7 @@ export function MessageProvider({
   );
 
   const sendMessage = useCallback(
-    async (
-      message: Message,
-      files?: File[],
-    ): Promise<AdvancedSuccessMessage> => {
+    async (message: Message, files?: File[]): Promise<DataContainer> => {
       if (!isReady)
         throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
       if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");

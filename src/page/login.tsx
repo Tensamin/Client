@@ -1,7 +1,7 @@
 "use client";
 
 // Package Imports
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import * as Icon from "lucide-react";
 import { Ring } from "ldrs/react";
 import { toast } from "sonner";
@@ -29,7 +29,7 @@ export default function Page() {
 
   const tuFileRef = React.useRef<HTMLInputElement>(null);
 
-  const { set, data } = useStorageContext();
+  const { set } = useStorageContext();
   const { pageData, setPage } = usePageContext();
   rawDebugLog("Login Page", "Reason for login", pageData, "yellow");
 
@@ -40,25 +40,11 @@ export default function Page() {
       if (id === 0 || privateKey === "") {
         toast.error("Empty Credentials Provided.");
       } else {
-        //window.location.reload();
+        window.location.reload();
       }
     },
     [set],
   );
-
-  useEffect(() => {
-    if (
-      data.privateKey === "" ||
-      !data.privateKey ||
-      data.id === "" ||
-      !data.id
-    ) {
-      console.log(data.id);
-      console.log(data.privateKey);
-    } else {
-      window.location.reload();
-    }
-  }, [data.id, data.privateKey]);
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,7 +66,7 @@ export default function Page() {
         if (!id || !nextPrivateKey) throw new Error();
 
         const buf = Buffer.from(nextPrivateKey, "base64");
-        if (buf.length !== 72)
+        if (buf.length !== 56)
           toast.warning("Your private key has an unusual length.");
         await login(Number(id), nextPrivateKey);
       } catch {

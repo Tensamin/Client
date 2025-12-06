@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 // Context Imports
 import { useSocketContext } from "@/context/socket";
 import { useUserContext } from "@/context/user";
-import { useStorageContext } from "@/context/storage";
+import { rawDebugLog } from "@/context/storage";
 
 // Components
 import { Input } from "@/components/ui/input";
@@ -44,7 +44,6 @@ export default function Page() {
   const { send } = useSocketContext();
   const { refetchConversations, ownId, appUpdateInformation } =
     useUserContext();
-  const { debugLog } = useStorageContext();
 
   const [open, setOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
@@ -61,24 +60,22 @@ export default function Page() {
               "Failed to add conversation (the user probably does not exist)",
             );
           } else {
-            await send("add_chat", {
+            send("add_chat", {
               user_id: data.data.user_id,
-            }).then(async (data) => {
-              if (!data.type.startsWith("error")) {
-                await refetchConversations();
-              }
+            }).then(() => {
+              refetchConversations();
             });
           }
         });
     } catch (err: unknown) {
       toast.error("Failed to add conversation");
-      debugLog("HOME_PAGE", "ADD_CONVERSATION_ERROR", err);
+      rawDebugLog("Homepage", "Failed to add conversation", err, "red");
     } finally {
       setOpen(false);
       setNewUsername("");
       setLoading(false);
     }
-  }, [newUsername, refetchConversations, send, debugLog]);
+  }, [newUsername, refetchConversations, send]);
 
   const [updateLoading, setUpdateLoading] = useState(false);
   const [extraInfo, setExtraInfo] = useState<string | null>(null);

@@ -15,23 +15,21 @@ import { toast } from "sonner";
 // Lib Imports
 import { user } from "@/lib/endpoints";
 import {
-  AdvancedSuccessMessage,
-  AdvancedSuccessMessageData,
   Community,
   Conversation,
-  ErrorType,
   User,
   UserState,
   UpdateLogPayload,
   UpdatePayload,
 } from "@/lib/types";
 import { getDisplayFromUsername } from "@/lib/utils";
+import * as CommunicationValue from "@/lib/communicationValues";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
 import { usePageContext } from "@/context/page";
 import { useCryptoContext } from "@/context/crypto";
-import { rawDebugLog, useStorageContext } from "@/context/storage";
+import { rawDebugLog } from "@/context/storage";
 
 // Types
 type UserContextType = {
@@ -78,33 +76,19 @@ export function UserProvider({
   const fetchedUsersRef = useRef(fetchedUsers);
   const prevLastMessageRef = useRef<unknown>(null);
 
-  const { offlineData, setOfflineCommunities, setOfflineConversations } =
-    useStorageContext();
   const { ownId, get_shared_secret, privateKey } = useCryptoContext();
   const { send, isReady, lastMessage, initialUserState } = useSocketContext();
   const { page, pageData } = usePageContext();
   const currentReceiverId: number = page === "chat" ? Number(pageData) || 0 : 0;
   const [currentReceiverSharedSecret, setCurrentReceiverSharedSecret] =
     useState<string>("");
-  const [conversations, setConversationsState] = useState<Conversation[]>(
-    offlineData.storedConversations,
-  );
-  const [communities, setCommunitiesState] = useState<Community[]>(
-    offlineData.storedCommunities,
-  );
+  const [conversations, setConversationsState] = useState<Conversation[]>([]);
+  const [communities, setCommunitiesState] = useState<Community[]>([]);
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
   const [reloadUsers, setReloadUsers] = useState<boolean>(false);
   const [ownState, setOwnState] = useState<UserState>(initialUserState);
   const [ownUserHasPremium, setOwnUserHasPremium] = useState<boolean>(false);
   const [ownUserData, setOwnUserData] = useState<User | null>(null);
-
-  const setCommunitiesAndSync = useCallback(
-    (next: Community[]) => {
-      setCommunitiesState(next);
-      setOfflineCommunities(next);
-    },
-    [setOfflineCommunities],
-  );
 
   const updateFetchedUsers = useCallback(
     (updater: (next: Map<number, User>) => void) => {
@@ -172,14 +156,12 @@ export function UserProvider({
           draft.set(id, newUser);
         });
         return newUser;
-      } catch (err: unknown) {
-        const error = err as ErrorType;
-
+      } catch (error: unknown) {
         const currentExisting = fetchedUsersRef.current.get(id);
         if (currentExisting) {
           const failedUser: User = {
             ...currentExisting,
-            about: error.message,
+            about: String(error),
             loading: false,
           };
           updateFetchedUsers((draft) => {
@@ -193,7 +175,7 @@ export function UserProvider({
           username: "failed",
           display: "Failed to load",
           avatar: undefined,
-          about: error.message,
+          about: String(error),
           status: "",
           sub_level: 0,
           sub_end: 0,
@@ -210,7 +192,6 @@ export function UserProvider({
   const setConversationsAndSync = useCallback(
     (next: Conversation[]) => {
       setConversationsState(next);
-      setOfflineConversations(next);
 
       next.forEach((c) => {
         if (c.user_id && c.user_id !== 0) {
@@ -218,7 +199,7 @@ export function UserProvider({
         }
       });
     },
-    [setOfflineConversations, get],
+    [get],
   );
 
   // Get own user
@@ -230,13 +211,20 @@ export function UserProvider({
   }, [ownId, get, setOwnUserData, setOwnUserHasPremium]);
 
   const refetchConversations = useCallback(async () => {
-    await send("get_chats").then((data) => {
-      if (!data.type.startsWith("error")) {
-        setConversationsAndSync(data.data.user_ids || []);
-      } else {
+    await send("get_chats")
+      .then((raw) => {
+        const data = raw as CommunicationValue.get_chats;
+        setConversationsAndSync(data.user_ids || []);
+      })
+      .catch((err) => {
         toast.error("Failed to get conversations");
-      }
-    });
+        rawDebugLog(
+          "User Context",
+          "Failed to refetch conversations",
+          err,
+          "red",
+        );
+      });
   }, [send, setConversationsAndSync]);
 
   useEffect(() => {
@@ -290,84 +278,81 @@ export function UserProvider({
   useEffect(() => {
     if (!isReady) return;
 
-    send("get_chats").then((data) => {
-      if (!data.type.startsWith("error")) {
-        setConversationsAndSync(data.data.user_ids || []);
-      } else {
-        setConversationsAndSync([
-          {
-            user_id: 0,
-            calls: [],
-            last_message_at: 0,
-          },
-        ]);
+    send("get_chats")
+      .then((raw) => {
+        const data = raw as CommunicationValue.get_chats;
+        setConversationsAndSync(data.user_ids || []);
+      })
+      .catch(() => {
         toast.error("Failed to get conversations");
-      }
-    });
+      });
   }, [isReady, send, setConversationsAndSync]);
 
   useEffect(() => {
     if (!isReady) return;
 
-    send("get_communities").then((data) => {
-      if (!data.type.startsWith("error")) {
-        setCommunitiesAndSync(data.data.communities || []);
-      } else {
-        setCommunitiesAndSync([
-          {
-            community_address: "error",
-            community_title: "Failed to get communities",
-            position: "0",
-          },
-        ]);
+    send("get_communities")
+      .then((raw) => {
+        const data = raw as CommunicationValue.get_communities;
+        setCommunitiesState(data.communities || []);
+      })
+      .catch(() => {
         toast.error("Failed to get communities");
-      }
-    });
-  }, [isReady, send, setCommunitiesAndSync]);
+      });
+  }, [isReady, send]);
 
   const handleSocketMessage = useEffectEvent(
-    async (message: AdvancedSuccessMessage) => {
-      if (message.type === "client_changed") {
-        const data = message.data as AdvancedSuccessMessageData;
-        if (!data.user_id || !data.user_state) return;
-        const user = await get(data.user_id, true);
-        updateFetchedUsers((draft) => {
-          draft.set(user.id, {
-            ...user,
-            state: data.user_state || "NONE",
+    async (
+      message: CommunicationValue.Parent<
+        CommunicationValue.client_changed | CommunicationValue.get_states
+      >,
+    ) => {
+      switch (message.type) {
+        case "client_changed": {
+          const data = message.data as CommunicationValue.client_changed;
+
+          const user = await get(data.user_id, true);
+          updateFetchedUsers((draft) => {
+            draft.set(user.id, {
+              ...user,
+              state: data.user_state || "NONE",
+            });
           });
-        });
-      }
+          return;
+        }
+        case "get_states": {
+          const data = message.data as CommunicationValue.get_states;
 
-      if (message.type === "get_states") {
-        const data = message.data as AdvancedSuccessMessageData;
+          updateFetchedUsers((draft) => {
+            Object.entries(data.user_states).forEach(
+              ([stringId, nextState]) => {
+                const id = Number(stringId);
+                const existingUser = draft.get(id);
+                if (existingUser) {
+                  draft.set(id, { ...existingUser, state: nextState });
+                  return;
+                }
 
-        updateFetchedUsers((draft) => {
-          Object.entries(data.user_states ?? {}).forEach(
-            ([stringId, nextState]) => {
-              const id = Number(stringId);
-              const existingUser = draft.get(id);
-              if (existingUser) {
-                draft.set(id, { ...existingUser, state: nextState });
-                return;
-              }
-
-              draft.set(id, {
-                id,
-                username: "",
-                display: "",
-                avatar: undefined,
-                about: "",
-                status: "",
-                sub_level: 0,
-                sub_end: 0,
-                public_key: "",
-                state: nextState,
-                loading: true,
-              });
-            },
-          );
-        });
+                draft.set(id, {
+                  id,
+                  username: "",
+                  display: "",
+                  avatar: undefined,
+                  about: "",
+                  status: "",
+                  sub_level: 0,
+                  sub_end: 0,
+                  public_key: "",
+                  state: nextState,
+                  loading: true,
+                });
+              },
+            );
+          });
+          return;
+        }
+        default:
+          return;
       }
     },
   );
@@ -375,7 +360,10 @@ export function UserProvider({
   useEffect(() => {
     if (!lastMessage || lastMessage === prevLastMessageRef.current) return;
     prevLastMessageRef.current = lastMessage;
-    void handleSocketMessage(lastMessage);
+    const data = lastMessage as CommunicationValue.Parent<
+      CommunicationValue.client_changed | CommunicationValue.get_states
+    >;
+    void handleSocketMessage(data);
   }, [lastMessage]);
 
   const doCustomEdit = useCallback(
@@ -468,7 +456,7 @@ export function UserProvider({
         conversations,
         communities,
         setConversations: setConversationsAndSync,
-        setCommunities: setCommunitiesAndSync,
+        setCommunities: setCommunitiesState,
         refetchConversations,
         reloadUsers,
         setReloadUsers,

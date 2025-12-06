@@ -250,14 +250,14 @@ function UserInInviteSelection({
         send("call_invite", {
           receiver_id: userId,
           call_id: callId,
-        }).then((data) => {
-          if (!data.type.startsWith("error")) {
+        })
+          .then(() => {
             toast.success("Call invite sent successfully");
-          } else {
+            onClose();
+          })
+          .catch(() => {
             toast.error("Failed to send call invite");
-          }
-          onClose();
-        });
+          });
       }}
     >
       <UserAvatar

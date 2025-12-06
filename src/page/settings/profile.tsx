@@ -9,7 +9,7 @@ import { change } from "@/lib/endpoints";
 import { convertStringToInitials, getColorFor } from "@/lib/utils";
 
 // Context Imports
-import { useStorageContext } from "@/context/storage";
+import { rawDebugLog } from "@/context/storage";
 import { useSocketContext } from "@/context/socket";
 import { useUserContext } from "@/context/user";
 import { useCryptoContext } from "@/context/crypto";
@@ -45,7 +45,6 @@ type FormState = {
 const profileFormCache = new Map<number, FormState>();
 
 export default function Page() {
-  const { debugLog } = useStorageContext();
   const { send } = useSocketContext();
   const { ownId, get, doCustomEdit, ownState, setOwnState } = useUserContext();
   const { privateKeyHash } = useCryptoContext();
@@ -234,7 +233,7 @@ export default function Page() {
             });
             if (!res.ok) throw new Error("request_failed");
             const data = await res.json();
-            debugLog("PROFILE_PAGE", "DATA_PROFILE_PAGE_UPDATE", data);
+            rawDebugLog("Profile Page", "Profile updated", data, "green");
             if (data?.type === "error") throw new Error("api_error");
 
             doCustomEdit(ownId, { ...data.data, state: ownState });
@@ -246,7 +245,7 @@ export default function Page() {
 
             toast.success("Profile updated successfully!");
           } catch (err: unknown) {
-            debugLog("PROFILE_PAGE", "ERROR_PROFILE_PAGE_UPDATE_FAILED", err);
+            rawDebugLog("Profile Page", "Failed to update profile", err, "red");
             toast.error("Failed to update profile.");
           } finally {
             setLoading(false);
