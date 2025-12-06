@@ -59,12 +59,6 @@ export default function Page() {
       work: "Made our logo and some icons as well as help with design desicions.",
       picture: "https://github.com/tommy2kk.png",
     },
-    {
-      name: "t3kkm0tt",
-      website: "https://t3kkm0tt.github.io/",
-      work: "Helped with testing the aur packages. Helped during developement.",
-      picture: "http://github.com/t3kkm0tt.png",
-    },
   ];
 
   return (

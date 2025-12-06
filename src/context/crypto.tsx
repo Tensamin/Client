@@ -28,12 +28,12 @@ type CryptoContextType = {
   encrypt: (message: string, password: string) => Promise<BasicSuccessMessage>;
   decrypt: (
     encryptedMessage: string,
-    password: string,
+    password: string
   ) => Promise<BasicSuccessMessage>;
   get_shared_secret: (
     own_private_key: string,
     own_public_key: string,
-    other_public_key: string,
+    other_public_key: string
   ) => Promise<BasicSuccessMessage>;
   privateKey: string;
   privateKeyHash: string;
@@ -44,12 +44,12 @@ type ApiRef = {
   encrypt: (message: string, password: string) => Promise<BasicSuccessMessage>;
   decrypt: (
     encryptedMessage: string,
-    password: string,
+    password: string
   ) => Promise<BasicSuccessMessage>;
   get_shared_secret: (
     own_private_key: string,
     own_public_key: string,
-    other_public_key: string,
+    other_public_key: string
   ) => Promise<BasicSuccessMessage>;
 };
 
@@ -72,6 +72,7 @@ export function CryptoProvider({
   const [isReady, setIsReady] = useState(false);
   const [privateKey, setPrivateKey] = useState("");
   const [privateKeyHash, setPrivateKeyHash] = useState("");
+  const [ownUuid, setOwnUuid] = useState("");
 
   const { setPage, page } = usePageContext();
   const { data, bypass } = useStorageContext();
@@ -81,34 +82,34 @@ export function CryptoProvider({
       if (!apiRef.current) throw apiNotInitializedError;
       return await apiRef.current.encrypt(message, password);
     },
-    [],
+    []
   );
 
   const decrypt = useCallback(
     async (
       encryptedMessage: string,
-      password: string,
+      password: string
     ): Promise<BasicSuccessMessage> => {
       if (!apiRef.current) throw apiNotInitializedError;
       return await apiRef.current.decrypt(encryptedMessage, password);
     },
-    [],
+    []
   );
 
   const get_shared_secret = useCallback(
     async (
       own_private_key: string,
       own_public_key: string,
-      other_public_key: string,
+      other_public_key: string
     ): Promise<BasicSuccessMessage> => {
       if (!apiRef.current) throw apiNotInitializedError;
       return await apiRef.current.get_shared_secret(
         own_private_key,
         own_public_key,
-        other_public_key,
+        other_public_key
       );
     },
-    [],
+    []
   );
 
   useEffect(() => {
@@ -129,10 +130,12 @@ export function CryptoProvider({
       data.privateKey !== ""
     ) {
       const privateKeyValue = String(data.privateKey);
+      const ownUuidValue = typeof data.uuid === "string" ? data.uuid : "";
 
       Promise.resolve().then(() => {
         if (cancelled) return;
         setPrivateKey(privateKeyValue);
+        setOwnUuid(ownUuidValue);
       });
 
       sha256(privateKeyValue)
@@ -165,7 +168,7 @@ export function CryptoProvider({
       new URL("../worker/encryption.ts", import.meta.url),
       {
         type: "module",
-      },
+      }
     );
     apiRef.current = Comlink.wrap(worker);
 
@@ -188,7 +191,7 @@ export function CryptoProvider({
         get_shared_secret,
         privateKey,
         privateKeyHash,
-        ownUuid: "",
+        ownUuid,
       }}
     >
       {children}

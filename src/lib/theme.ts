@@ -379,9 +379,9 @@ export function generateColors(
         popover: toneIsHard ? 0.2 : 0.18,
         secondary: toneIsHard ? 0.3 : 0.27,
         muted: toneIsHard ? 0.25 : 0.22,
-        border: toneIsHard ? 0.3 : 0.26,
+        border: toneIsHard ? 0.26 : 0.22,
         sidebar: toneIsHard ? 0.13 : 0.11,
-        input: toneIsHard ? 0.34 : 0.3,
+        input: toneIsHard ? 0.30 : 0.26,
       };
 
   const background = toGamut({
@@ -445,7 +445,7 @@ export function generateColors(
   });
   const sidebarAccentFg = pickTextOn(sidebarAccent);
   const sidebarBorder = toGamut({
-    l: clamp(sidebar.l + (schemeIsLight ? -0.06 : 0.12), 0, 1),
+    l: clamp(sidebar.l + (schemeIsLight ? -0.06 : 0.09), 0, 1),
     c: borderChroma,
     h: sidebar.h,
   });
