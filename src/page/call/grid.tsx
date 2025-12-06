@@ -121,7 +121,7 @@ export function CallGrid({
                   "w-full h-full relative border-0 flex justify-center items-center"
                 }
               >
-                <TileContent index={index} />
+                <TileContent />
               </ParticipantTile>
             </div>
           ))}

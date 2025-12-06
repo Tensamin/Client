@@ -442,7 +442,7 @@ function ScreenSharePickerDialog({
                   />
                   <div className="flex items-center gap-2 mt-2 justify-center">
                     {source.appIcon && source.appIcon.endsWith("=") && (
-                      <img src={source.appIcon} className="w-6 h-6" />
+                      <img src={source.appIcon} className="w-6 h-6" alt={source.name || "Source"} />
                     )}
                     <p className="text-center mt-2 text-sm truncate">
                       {source.name}

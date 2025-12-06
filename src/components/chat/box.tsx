@@ -283,7 +283,6 @@ export function Box() {
   if (isError) {
     return (
       <div className="flex flex-col gap-5 h-full items-center justify-center text-sm">
-        {/* eslint-disable-next-line */}
         <img
           //width={220}
           //height={220}

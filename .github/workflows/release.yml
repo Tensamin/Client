@@ -7,21 +7,7 @@ permissions:
   contents: write
 
 jobs:
-  publish-web-app:
-    name: Build & Publish Web App
-    runs-on: ubuntu-latest
-    steps:
-      - name: Update on methanium
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWD }}
-          port: ${{ secrets.SSH_PORT }}
-          script: cd /home/${{ secrets.SSH_USER }}/Tensamin/Release && ./update.sh
-
   build:
-    needs: publish-web-app
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -61,6 +47,19 @@ jobs:
         run: bun run ${{ runner.os == 'Windows' && 'build:win' || 'build' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-web-app:
+    name: Build & Publish Web App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update on methanium
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: cd /home/${{ secrets.SSH_USER }}/Tensamin/Release && ./update.sh
 
   publish-aur-bin-flake:
     name: Publish (aur-bin, flake)

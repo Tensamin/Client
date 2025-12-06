@@ -125,7 +125,6 @@ export function RawLoading({
       <FixedWindowControls />
       <div className="bg-background w-full h-screen flex flex-col justify-center items-center gap-10">
         {isError ? (
-          // eslint-disable-next-line
           <img
             src="/assets/images/logo.png"
             //width={75}

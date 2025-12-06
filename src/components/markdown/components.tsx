@@ -149,7 +149,6 @@ export const Img = ({ className, alt, src, ...props }: ImgProps) => {
   }
 
   return (
-    // eslint-disable-next-line
     <img
       src={src}
       alt={alt ?? ""}
