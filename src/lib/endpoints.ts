@@ -1,6 +1,6 @@
 const authServer =
   process.env.NODE_ENV === "development"
-    ? "https://dev-auth.tensamin.net"
+    ? "http://localhost:9187"
     : "https://auth.tensamin.net";
 
 export const username_to_id = authServer + "/api/get/id/";

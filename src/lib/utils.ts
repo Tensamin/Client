@@ -56,7 +56,7 @@ export async function sha256(content: string | BufferSource) {
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
-    undefined
+    undefined,
   );
 
   React.useEffect(() => {
@@ -105,27 +105,6 @@ export function convertStringToInitials(content: string) {
   }
 }
 
-export function errorMessageToInfo(error: string) {
-  switch (error) {
-    case "NONE":
-      return "No errors detected.";
-    case "ERROR_INVALID_PRIVATE_KEY":
-      return "The provided private key is invalid.";
-    case "ERROR_INVALID_PRIVATE_KEY_EXTRA":
-      return "This may be an issue on our side unless you recently changed your private key. \n Consider checking our status page or your login details.";
-    case "ERROR_NO_IOTA":
-      return "Unable to connect to the Iota.";
-    case "ERROR_NO_IOTA_EXTRA":
-      return "Check your Iota's connectivity and ensure it's online. \n If the problem persists check for updates or restart your Iota.";
-    case "ERROR_INVALID_USER_ID":
-      return "Failed to parse user ID.";
-    case "ERROR_INVALID_USER_ID_EXTRA":
-      return "This is most likely an issue in your .tu file.";
-    default:
-      return error;
-  }
-}
-
 export function formatRawMessage(input: string) {
   const formatted = input.toLowerCase().replaceAll("_", " ");
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
@@ -144,3 +123,13 @@ export function getCreationString(creationTimestamp: UnixTimestamp) {
     return `${Math.floor(diffSecs / 2592000)} months ago`;
   return `${Math.floor(diffSecs / 31536000)} years ago`;
 }
+
+export const progressBar = {
+  storage: 20,
+  crypto: 30,
+  socket: 100,
+  socket_connecting: 50,
+  socket_indentify: 60,
+  socket_base: 40,
+  DELAY: 250,
+};

@@ -13,7 +13,7 @@ import { openDB, IDBPDatabase } from "idb";
 import { useTheme } from "next-themes";
 
 // Lib Imports
-import { handleError } from "@/lib/utils";
+import { handleError, progressBar } from "@/lib/utils";
 import { generateColors } from "@/lib/theme";
 
 // Components
@@ -299,6 +299,7 @@ export function StorageProvider({
       addBypassButton={false}
       addClearButton={false}
       message=""
+      progress={progressBar.storage}
     />
   );
 }

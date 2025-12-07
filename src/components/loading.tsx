@@ -24,8 +24,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { MotionDivWrapper } from "@/components/animation/presence";
-import { errorMessageToInfo } from "@/lib/utils";
 import { FixedWindowControls } from "./windowControls";
+import { progressBar } from "@/lib/utils";
 
 // Main
 function ClearButton() {
@@ -145,7 +145,10 @@ export function RawLoading({
               className="h-full bg-primary absolute left-0 top-0"
               initial={{ width: "0%" }}
               animate={{ width: `${progress ?? 0}%` }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
+              transition={{
+                duration: progressBar.DELAY / 1000,
+                ease: "easeInOut",
+              }}
             />
           </div>
         )}
@@ -155,12 +158,12 @@ export function RawLoading({
               messageSize === "small" ? "text-lg" : "text-2xl"
             } font-semibold text-foreground text-center`}
           >
-            {errorMessageToInfo(message)}
+            {message}
           </p>
         ) : null}
         {(isError || debug) && typeof extra !== "undefined" ? (
           <p className="text-md font-medium text-muted-foreground text-center whitespace-pre-wrap">
-            {errorMessageToInfo(extra)}
+            {extra}
           </p>
         ) : null}
       </div>

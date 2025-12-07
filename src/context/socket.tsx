@@ -16,7 +16,7 @@ import useWebSocket, { ReadyState } from "react-use-websocket";
 // Lib Imports
 import { UserState } from "@/lib/types";
 import * as CommunicationValue from "@/lib/communicationValues";
-import { RetryCount, responseTimeout } from "@/lib/utils";
+import { RetryCount, progressBar, responseTimeout } from "@/lib/utils";
 import { client_wss } from "@/lib/endpoints";
 
 // Context Imports
@@ -36,7 +36,7 @@ type SocketContextType = {
   send: (
     requestType: string,
     data?: unknown,
-    noResponse?: boolean
+    noResponse?: boolean,
   ) => Promise<CommunicationValue.DataContainer>;
   isReady: boolean;
   initialUserState: UserState;
@@ -80,7 +80,7 @@ export function SocketProvider({
     if (identified) {
       const timer = setTimeout(() => {
         setShowContent(true);
-      }, 500);
+      }, progressBar.DELAY);
       return () => clearTimeout(timer);
     } else {
       setShowContent(false);
@@ -132,7 +132,7 @@ export function SocketProvider({
       pendingRequests.current.forEach(({ reject, timeoutId }) => {
         clearTimeout(timeoutId);
         reject(
-          new Error("Disconnected before a response for `send` was received")
+          new Error("Disconnected before a response for `send` was received"),
         );
       });
 
@@ -151,7 +151,7 @@ export function SocketProvider({
       setPage(
         "error",
         "Could not connect to Omikron",
-        "Either your internet connection or the Omikron is down. Check our status page and try again later."
+        "Either your internet connection or the Omikron is down. Check our status page and try again later.",
       );
     },
   });
@@ -163,7 +163,7 @@ export function SocketProvider({
     async (
       requestType: string,
       data: unknown = {},
-      noResponse = false
+      noResponse = false,
     ): Promise<CommunicationValue.DataContainer> => {
       if (
         !actuallyBypass &&
@@ -189,7 +189,7 @@ export function SocketProvider({
               "Socket Context",
               "An unknown error occured",
               error,
-              "red"
+              "red",
             );
           }
           return {
@@ -214,7 +214,7 @@ export function SocketProvider({
               "Socket Context",
               "Request timed out",
               { id, type: requestType, data },
-              "red"
+              "red",
             );
             reject();
           }, responseTimeout);
@@ -236,7 +236,7 @@ export function SocketProvider({
               "Socket Context",
               "An unkown error occured",
               error,
-              "red"
+              "red",
             );
             reject(error);
           }
@@ -245,7 +245,7 @@ export function SocketProvider({
         throw new Error("Socket is not ready");
       }
     },
-    [readyState, actuallyBypass, sendRaw]
+    [readyState, actuallyBypass, sendRaw],
   );
 
   // Pings
@@ -274,7 +274,7 @@ export function SocketProvider({
             "Socket Context",
             "Successfully identified with Omikron",
             "",
-            "green"
+            "green",
           );
         })
         .catch((raw) => {
@@ -284,21 +284,21 @@ export function SocketProvider({
               setPage(
                 "error",
                 "Invalid Private Key",
-                "Your private key is invalid. Try logging in again. \n If the issue persists, you may need to regenerate your private key."
+                "Your private key is invalid. Try logging in again. \n If the issue persists, you may need to regenerate your private key.",
               );
               return;
             case "error_no_iota":
               setPage(
                 "error",
                 "Iota Offline",
-                "Your Iota appears to be offline. Check your Iota's internet connection or restart it."
+                "Your Iota appears to be offline. Check your Iota's internet connection or restart it.",
               );
               return;
             default:
               setPage(
                 "error",
                 "Identification Failed",
-                "This could be a broken Omikron or an unkown error."
+                "This could be a broken Omikron or an unkown error.",
               );
               return;
           }
@@ -363,18 +363,30 @@ export function SocketProvider({
             </SocketContext.Provider>
           );
         }
-        return <Loading message="Connected" progress={100} />;
+        return <Loading message="Connected" progress={progressBar.socket} />;
       }
-      return <Loading message="Identifying" progress={80} />;
+      return (
+        <Loading
+          message="Identifying"
+          progress={progressBar.socket_indentify}
+        />
+      );
     case ReadyState.CONNECTING:
-      return <Loading message="Connecting" progress={40} />;
+      return (
+        <Loading
+          message="Connecting"
+          progress={progressBar.socket_connecting}
+        />
+      );
     case ReadyState.CLOSING:
-      return <Loading message="Closing" progress={100} />;
+      return <Loading message="Closing" progress={progressBar.socket} />;
     case ReadyState.CLOSED:
-      return <Loading message="Closed" progress={0} />;
+      return <Loading message="Closed" progress={progressBar.socket_base} />;
     case ReadyState.UNINSTANTIATED:
-      return <Loading message="Uninstantiated" progress={0} />;
+      return (
+        <Loading message="Uninstantiated" progress={progressBar.socket_base} />
+      );
     default:
-      return <Loading message="Loading" progress={0} />;
+      return <Loading message="Loading" progress={progressBar.socket_base} />;
   }
 }

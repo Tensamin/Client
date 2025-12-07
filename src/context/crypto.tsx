@@ -12,7 +12,7 @@ import {
 import * as Comlink from "comlink";
 
 // Lib Imports
-import { sha256 } from "@/lib/utils";
+import { progressBar, sha256 } from "@/lib/utils";
 
 // Context Imports
 import { usePageContext } from "@/context/page";
@@ -222,6 +222,6 @@ export function CryptoProvider({
       {children}
     </CryptoContext.Provider>
   ) : (
-    <Loading message="CRYPTO_CONTEXT_LOADING" progress={20} />
+    <Loading message="CRYPTO_CONTEXT_LOADING" progress={progressBar.crypto} />
   );
 }
