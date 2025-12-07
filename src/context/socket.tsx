@@ -277,12 +277,31 @@ export function SocketProvider({
             "green"
           );
         })
-        .catch(() => {
-          setPage(
-            "error",
-            "Identification failed",
-            "This could be a broken Omikron or an unkown error."
-          );
+        .catch((raw) => {
+          const data = raw as CommunicationValue.Error | Error;
+          switch (data instanceof Error ? "error" : data.type) {
+            case "error_invalid_private_key":
+              setPage(
+                "error",
+                "Invalid Private Key",
+                "Your private key is invalid. Try logging in again. \n If the issue persists, you may need to regenerate your private key."
+              );
+              return;
+            case "error_no_iota":
+              setPage(
+                "error",
+                "Iota Offline",
+                "Your Iota appears to be offline. Check your Iota's internet connection or restart it."
+              );
+              return;
+            default:
+              setPage(
+                "error",
+                "Identification Failed",
+                "This could be a broken Omikron or an unkown error."
+              );
+              return;
+          }
         });
     }
   }, [connected, privateKeyHash, setPage, identified, ownId, send]);

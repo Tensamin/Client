@@ -91,6 +91,7 @@ export function UserModal({
               <RawModal.Profile
                 key={id}
                 {...props}
+                creationTimestamp={user.id}
                 description={user.about || ""}
                 state={user.state || "NONE"}
               />
@@ -103,6 +104,7 @@ export function UserModal({
         <RawModal.Profile
           key={id}
           {...props}
+          creationTimestamp={user.id}
           description={user.about || ""}
           state={user.state || "NONE"}
         />

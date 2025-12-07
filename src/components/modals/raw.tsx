@@ -9,6 +9,7 @@ import {
   convertStringToInitials,
   formatRawMessage,
   getColorFor,
+  getCreationString,
 } from "@/lib/utils";
 
 // Context Imports
@@ -43,7 +44,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { LoadingIcon } from "../loading";
-import { AvatarSizes } from "@/lib/types";
+import { AvatarSizes, UnixTimestamp } from "@/lib/types";
 
 // Main
 export function UserAvatar({
@@ -228,6 +229,7 @@ export function MediumModal({
 }
 
 export function Profile({
+  creationTimestamp,
   title,
   description,
   status,
@@ -236,6 +238,7 @@ export function Profile({
   badges,
   loading,
 }: {
+  creationTimestamp: UnixTimestamp;
   title: string;
   description: string;
   status?: string;
@@ -271,11 +274,16 @@ export function Profile({
           </p>
         </div>
       </CardHeader>
-      {description && description !== "" && (
-        <CardContent className="whitespace-pre-wrap p-2 border border-input bg-input/40 text-sm rounded-xl">
-          <Text text={description} />
-        </CardContent>
-      )}
+      <CardContent className="flex flex-col gap-2 px-0">
+        {description && description !== "" && (
+          <div className="whitespace-pre-wrap p-2 border border-input bg-input/40 text-sm rounded-xl w-full">
+            <Text text={description} />
+          </div>
+        )}
+        <div className="whitespace-pre-wrap p-2 border border-input bg-input/40 text-xs rounded-xl w-full">
+          Created {getCreationString(creationTimestamp)}
+        </div>
+      </CardContent>
       {badges && badges.length > 0 && (
         <CardFooter>
           <div className="flex flex-wrap gap-2">

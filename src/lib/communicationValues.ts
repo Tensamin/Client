@@ -60,6 +60,11 @@ export type settings_load = {
   payload: string;
 };
 
+export type Error = {
+  id: string;
+  type: "error" | "error_invalid_private_key" | "error_no_iota";
+  data: DataContainer;
+};
 export type DataContainer = unknown;
 export type Parent<T = DataContainer> = {
   id: string;

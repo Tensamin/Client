@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import * as React from "react";
+import { UnixTimestamp } from "./types";
 
 const MOBILE_BREAKPOINT = 768;
 export const RetryCount = 10;
@@ -55,7 +56,7 @@ export async function sha256(content: string | BufferSource) {
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
-    undefined,
+    undefined
   );
 
   React.useEffect(() => {
@@ -128,4 +129,18 @@ export function errorMessageToInfo(error: string) {
 export function formatRawMessage(input: string) {
   const formatted = input.toLowerCase().replaceAll("_", " ");
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
+export function getCreationString(creationTimestamp: UnixTimestamp) {
+  const now = new Date();
+  const diffMs = now.getTime() - creationTimestamp;
+  const diffSecs = Math.floor(diffMs / 1000);
+
+  if (diffSecs < 60) return "just now";
+  if (diffSecs < 3600) return `${Math.floor(diffSecs / 60)} minutes ago`;
+  if (diffSecs < 86400) return `${Math.floor(diffSecs / 3600)} hours ago`;
+  if (diffSecs < 2592000) return `${Math.floor(diffSecs / 86400)} days ago`;
+  if (diffSecs < 31536000)
+    return `${Math.floor(diffSecs / 2592000)} months ago`;
+  return `${Math.floor(diffSecs / 31536000)} years ago`;
 }
