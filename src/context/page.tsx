@@ -10,6 +10,7 @@ import {
   useState,
   useTransition,
 } from "react";
+import * as Icon from "lucide-react";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
@@ -112,7 +113,17 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
     return (
       <PageContext.Provider value={contextValues}>
         <CryptoProvider>
-          <Toaster position="top-right" richColors expand />
+          <Toaster
+            position="top-right"
+            expand
+            icons={{
+              success: <Icon.Check size={19} />,
+              error: <Icon.X size={19} />,
+              warning: <Icon.AlertTriangle size={19} />,
+              info: <Icon.Book size={19} />,
+              loading: <Icon.Loader size={19} className="animate-spin" />,
+            }}
+          />
           {page === "login" && <LoginPage key={`login-${pageInstance}`} />}
           {page === "signup" && <SignupPage key={`signup-${pageInstance}`} />}
         </CryptoProvider>
@@ -121,7 +132,17 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <PageContext.Provider value={contextValues}>
-      <Toaster position="top-right" richColors expand />
+      <Toaster
+        position="top-right"
+        expand
+        icons={{
+          success: <Icon.Check size={19} />,
+          error: <Icon.X size={19} />,
+          warning: <Icon.AlertTriangle size={19} />,
+          info: <Icon.Book size={19} />,
+          loading: <Icon.Loader size={19} className="animate-spin" />,
+        }}
+      />
       <CryptoProvider>
         <SocketProvider>
           <UserProvider>
