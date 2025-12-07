@@ -17,7 +17,7 @@ export function PageDiv({
   return scroll ? (
     <ScrollArea
       className={cn(
-        "rounded-lg border p-2 bg-card/46 flex flex-col",
+        "rounded-lg border p-2 bg-sidebar/46 flex flex-col",
         className,
       )}
     >
@@ -26,7 +26,7 @@ export function PageDiv({
   ) : (
     <div
       className={cn(
-        "rounded-lg border p-2 bg-card/46 overflow-y-auto overflow-x-hidden",
+        "rounded-lg border p-2 bg-sidebar/46 overflow-y-auto overflow-x-hidden",
         className,
       )}
     >
@@ -41,7 +41,10 @@ export function PageInput({
   ...props
 }: React.ComponentProps<"input">) {
   return (
-    <Input className={cn("dark:bg-card/46 bg-card/46", className)} {...props}>
+    <Input
+      className={cn("dark:bg-sidebar/46 bg-sidebar/46", className)}
+      {...props}
+    >
       {children}
     </Input>
   );
@@ -54,7 +57,7 @@ export function PageTextarea({
   return (
     <Textarea
       className={cn(
-        "dark:bg-card/46 bg-card/46 dark:border-border border-border border resize-none rounded-lg focus-visible:ring-0",
+        "dark:bg-sidebar/46 bg-sidebar/46 dark:border-border border-border border resize-none rounded-lg focus-visible:ring-0",
         className,
       )}
       {...props}

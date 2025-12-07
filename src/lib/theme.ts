@@ -79,20 +79,11 @@ const hexToRgb01 = (hex: string): [number, number, number] => {
   return [r, g, b];
 };
 
-const rgb01ToHex = (r: number, g: number, b: number) => {
-  const to8 = (v: number) =>
-    clamp(Math.round(v * 255), 0, 255)
-      .toString(16)
-      .padStart(2, "0");
-  return `#${to8(r)}${to8(g)}${to8(b)}`;
-};
-
 const srgbToLinear = (x: number) =>
   x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
 const linearToSrgb = (x: number) =>
   x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
 
-// sRGB (linear) -> OKLab (via LMS), constants from Bjorn Ottosson
 const rgb01ToOklab = (r: number, g: number, b: number) => {
   const rl = srgbToLinear(r);
   const gl = srgbToLinear(g);
@@ -151,7 +142,6 @@ const inGamut = (r: number, g: number, b: number) =>
   r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1;
 
 const toGamut = (lch: LCH): LCH => {
-  // Reduce chroma until within sRGB gamut
   if (lch.c <= 0) return { ...lch, c: 0 };
   let lo = 0;
   let hi = lch.c;
@@ -171,12 +161,6 @@ const oklchToString = (lch: LCH) => {
   return `oklch(${l} ${c} ${h})`;
 };
 
-const oklchToHex = (lch: LCH) => {
-  const inRgb = oklchToRgb01(toGamut(lch));
-  return rgb01ToHex(inRgb[0], inRgb[1], inRgb[2]);
-};
-
-// Relative luminance for contrast decisions (sRGB)
 const relLum = (r: number, g: number, b: number) => {
   const rs = srgbToLinear(r);
   const gs = srgbToLinear(g);
@@ -203,8 +187,6 @@ const pickTextOn = (bg: LCH): { hex: string; oklch: string } => {
   return { hex: textHex, oklch: oklchToString(textLch) };
 };
 
-// --- Palette helpers ---
-
 const withTone = (base: LCH, lTarget: number, cMul: number): LCH => {
   return {
     l: clamp(lTarget, 0, 1),
@@ -219,7 +201,6 @@ const rotateHue = (h: number, deg: number) => {
   return v;
 };
 
-// Extract current variables from stylesheets (:root or .dark)
 const readThemeFromCSS = (scheme: Scheme): Partial<ThemeMap> => {
   const result: Partial<ThemeMap> = {};
   if (typeof document === "undefined") return result;
@@ -228,7 +209,6 @@ const readThemeFromCSS = (scheme: Scheme): Partial<ThemeMap> => {
   for (const sheet of Array.from(document.styleSheets)) {
     let rules: CSSRuleList;
     try {
-      // Cross-origin stylesheets may throw
       rules = sheet.cssRules;
     } catch {
       continue;
@@ -256,11 +236,8 @@ const readThemeFromCSS = (scheme: Scheme): Partial<ThemeMap> => {
   return result;
 };
 
-// Choose output formatter based on scheme (match your CSS usage)
-const formatOut = (scheme: Scheme, lch: LCH) =>
-  scheme === "light" ? oklchToString(lch) : oklchToHex(lch);
+const formatOut = (scheme: Scheme, lch: LCH) => oklchToString(lch);
 
-// Build chart colors around the brand hue
 const buildCharts = (base: LCH, scheme: Scheme, tone: Tone): ChartMap => {
   const offsets = [0, 60, 200, 280, 330];
   const lTargets =
@@ -285,7 +262,6 @@ const buildCharts = (base: LCH, scheme: Scheme, tone: Tone): ChartMap => {
   return out;
 };
 
-// Main API
 export function generateColors(
   hex: string,
   type: Tone,
@@ -293,10 +269,8 @@ export function generateColors(
 ): ThemeMap {
   const schemeIsLight = colorScheme === "light";
   const toneIsHard = type === "hard";
-  // Baseline from CSS (if readable) with fallbacks
   const baseline = readThemeFromCSS(schemeIsLight ? "light" : "dark");
 
-  // Base brand as OKLCH
   const baseHex = normalizeHex(hex);
   const baseLch = rgb01ToOklch(...hexToRgb01(baseHex));
   const cBoost = toneIsHard ? 1.1 : 0.95;
@@ -313,7 +287,7 @@ export function generateColors(
     withTone({ ...baseLch, c: baseLch.c * cBoost }, primaryL, 1),
   );
 
-  // Ring (low-chroma brand)
+  // Ring
   const ringL = schemeIsLight ? 0.82 : 0.66;
   const ring: LCH = toGamut({
     l: ringL,
@@ -321,7 +295,7 @@ export function generateColors(
     h: primary.h,
   });
 
-  // Accent (pastel brand surface)
+  // Accent
   const accentL = schemeIsLight ? 0.995 : 0.28;
   const accent: LCH = toGamut({
     l: accentL,
@@ -333,14 +307,14 @@ export function generateColors(
   const primaryFg = pickTextOn(primary);
   const accentFg = pickTextOn(accent);
 
-  // Sidebar primary mirrors brand
+  // Sidebar
   const sidebarPrimary = primary;
   const sidebarPrimaryFg = pickTextOn(sidebarPrimary);
 
   // Charts
   const charts = buildCharts(primary, colorScheme, type);
 
-  // Surfaces and structural colors
+  // Surfaces
   const neutralHue = rotateHue(baseLch.h, toneIsHard ? -6 : 0);
   const neutralChroma = clamp(
     baseLch.c *
@@ -350,9 +324,9 @@ export function generateColors(
   );
   const subtlerChroma = clamp(neutralChroma * 0.5, 0.006, 0.026);
   const borderChroma = clamp(
-    neutralChroma * (schemeIsLight ? 0.65 : 0.55),
-    schemeIsLight ? 0.01 : 0.024,
-    schemeIsLight ? 0.052 : 0.09,
+    neutralChroma * (schemeIsLight ? 0.45 : 0.35),
+    schemeIsLight ? 0.006 : 0.012,
+    schemeIsLight ? 0.03 : 0.06,
   );
   const sidebarChroma = clamp(neutralChroma * 1.05, 0.014, 0.07);
   const inputChroma = clamp(
@@ -374,13 +348,13 @@ export function generateColors(
         input: toneIsHard ? 0.88 : 0.902,
       }
     : {
-        background: toneIsHard ? 0.18 : 0.15,
+        background: toneIsHard ? 0.13 : 0.11,
         card: toneIsHard ? 0.215 : 0.19,
         popover: toneIsHard ? 0.2 : 0.18,
         secondary: toneIsHard ? 0.3 : 0.27,
         muted: toneIsHard ? 0.25 : 0.22,
         border: toneIsHard ? 0.26 : 0.22,
-        sidebar: toneIsHard ? 0.13 : 0.11,
+        sidebar: toneIsHard ? 0.18 : 0.15,
         input: toneIsHard ? 0.3 : 0.26,
       };
 
@@ -434,8 +408,10 @@ export function generateColors(
   });
   const sidebar = toGamut({
     l: surfaceLevels.sidebar,
-    c: sidebarChroma,
-    h: rotateHue(baseLch.h, toneIsHard ? -28 : -20),
+    c: schemeIsLight ? sidebarChroma : neutralChroma,
+    h: schemeIsLight
+      ? rotateHue(baseLch.h, toneIsHard ? -28 : -20)
+      : neutralHue,
   });
   const sidebarFg = pickTextOn(sidebar);
   const sidebarAccent = toGamut({
@@ -460,40 +436,31 @@ export function generateColors(
     h: 25,
   });
 
-  // Compose theme: keep neutrals from baseline, override brand-driven vars
   const overrides: Partial<ThemeMap> = {
-    "--background": formatOut(colorScheme, sidebar),
-    "--foreground": schemeIsLight ? sidebarFg.oklch : sidebarFg.hex,
+    "--background": formatOut(colorScheme, background),
+    "--foreground": backgroundFg.oklch,
     "--card": formatOut(colorScheme, card),
-    "--card-foreground": schemeIsLight ? cardFg.oklch : cardFg.hex,
+    "--card-foreground": cardFg.oklch,
     "--popover": formatOut(colorScheme, popover),
-    "--popover-foreground": schemeIsLight ? popoverFg.oklch : popoverFg.hex,
+    "--popover-foreground": popoverFg.oklch,
     "--secondary": formatOut(colorScheme, secondary),
-    "--secondary-foreground": schemeIsLight
-      ? secondaryFg.oklch
-      : secondaryFg.hex,
+    "--secondary-foreground": secondaryFg.oklch,
     "--muted": formatOut(colorScheme, muted),
     "--muted-foreground": formatOut(colorScheme, mutedForeground),
     "--border": formatOut(colorScheme, border),
     "--input": formatOut(colorScheme, input),
     "--destructive": formatOut(colorScheme, destructive),
     "--primary": formatOut(colorScheme, primary),
-    "--primary-foreground": schemeIsLight ? primaryFg.oklch : primaryFg.hex,
+    "--primary-foreground": primaryFg.oklch,
     "--ring": formatOut(colorScheme, ring),
     "--accent": formatOut(colorScheme, accent),
-    "--accent-foreground": schemeIsLight ? accentFg.oklch : accentFg.hex,
-    "--sidebar": formatOut(colorScheme, background),
-    "--sidebar-foreground": schemeIsLight
-      ? backgroundFg.oklch
-      : backgroundFg.hex,
+    "--accent-foreground": accentFg.oklch,
+    "--sidebar": formatOut(colorScheme, sidebar),
+    "--sidebar-foreground": sidebarFg.oklch,
     "--sidebar-primary": formatOut(colorScheme, sidebarPrimary),
-    "--sidebar-primary-foreground": schemeIsLight
-      ? sidebarPrimaryFg.oklch
-      : sidebarPrimaryFg.hex,
+    "--sidebar-primary-foreground": sidebarPrimaryFg.oklch,
     "--sidebar-accent": formatOut(colorScheme, sidebarAccent),
-    "--sidebar-accent-foreground": schemeIsLight
-      ? sidebarAccentFg.oklch
-      : sidebarAccentFg.hex,
+    "--sidebar-accent-foreground": sidebarAccentFg.oklch,
     "--sidebar-border": formatOut(colorScheme, sidebarBorder),
     "--sidebar-ring": formatOut(colorScheme, sidebarRing),
     ...charts,
