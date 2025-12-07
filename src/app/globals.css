@@ -120,7 +120,7 @@
   body {
     @apply bg-background text-foreground;
   }
-  * {
+  div {
     @apply text-foreground;
   }
   ::selection {

@@ -85,12 +85,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [dontSendInvite, setDontSendInvite] = useState(false);
   const [callId, setCallId] = useState("");
 
-  // Connect function
+  // Connect functions
   const connectPromiseRef = useRef<{
     resolve: (() => void) | null;
     reject: ((error?: { message: string }) => void) | null;
   } | null>(null);
-
   const performConnect = useCallback(
     (token: string, callId: string) => {
       rawDebugLog("Call Context", "Connecting...");
@@ -99,7 +98,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       setCallId(callId);
       setShouldConnect(true);
 
-      // If there is a pending connect promise, cancel it
+      // Cancel pending connect
       if (connectPromiseRef.current && connectPromiseRef.current.reject) {
         connectPromiseRef.current.reject({
           message: "replaced by new connect",
@@ -112,13 +111,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     },
     [setToken],
   );
-
   const [switchCallDialogOpen, setSwitchCallDialogOpen] = useState(false);
   const [pendingCall, setPendingCall] = useState<{
     token: string;
     callId: string;
   } | null>(null);
-
   const connect = useCallback(
     (token: string, newCallId: string) => {
       if (shouldConnect && callId !== newCallId) {
@@ -131,6 +128,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     [shouldConnect, callId, performConnect],
   );
 
+  // Handle call switching
   const handleSwitchCall = useCallback(() => {
     if (pendingCall) {
       performConnect(pendingCall.token, pendingCall.callId);
@@ -378,6 +376,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         !localTrack
       ) {
         try {
+          // Setup audio track
           const enableNoiseSuppression =
             (data.call_enableNoiseSuppression as boolean) ?? true;
 
@@ -397,13 +396,12 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          // Only apply custom noise processor when noise suppression is enabled
+          // Apply noise suppression
           if (enableNoiseSuppression) {
             const audioContext = audioService.getAudioContext();
             createdTrack.setAudioContext(audioContext);
 
-            // Calculate threshold from sensitivity (0-1)
-            // Higher sensitivity = lower threshold (opens easier)
+            // Calc threshold
             // 0.0 -> -20dB
             // 0.5 -> -55dB
             // 1.0 -> -90dB
@@ -411,6 +409,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             const threshold = -20 - sensitivity * 70;
             const inputGain = (data.call_inputGain as number) ?? 1.0;
 
+            // Set processor
             const processor = audioService.getProcessor({
               enableNoiseGate: (data.call_enableNoiseGate as boolean) ?? true,
               algorithm: "rnnoise",
@@ -421,12 +420,13 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             await createdTrack.setProcessor(processor);
           }
 
+          // Publish track
           await localParticipant.publishTrack(createdTrack);
           setLocalTrack(createdTrack);
           setIsMuted(createdTrack.isMuted);
         } catch (error) {
-          rawDebugLog("Sub Call Context", "INIT_AUDIO_ERROR", error);
-          toast.error("Failed to initialize microphone.");
+          rawDebugLog("Sub Call Context", "Failed to initialize audio", error, "red");
+          toast.error("Failed to initialize audio.");
           if (createdTrack) createdTrack.stop();
         }
       }

@@ -8,6 +8,48 @@ import type { editor } from "monaco-editor";
 import { useStorageContext } from "@/context/storage";
 import { Button } from "@/components/ui/button";
 
+function labToHex(labColor: string): string {
+  // Parse LAB string
+  const match = labColor.match(/lab\(([\d.]+)%\s+([\d.-]+)\s+([\d.-]+)\)/);
+  if (!match) throw new Error("Invalid LAB format");
+
+  const L = (parseFloat(match[1]) / 100) * 100;
+  const a = parseFloat(match[2]);
+  const b = parseFloat(match[3]);
+
+  // LAB to XYZ
+  const fx = (L + 16) / 116;
+  const fy = a / 500 + fx;
+  const fz = fx - b / 200;
+
+  const xr = fy * fy * fy > 0.008856 ? fy * fy * fy : (fy - 16 / 116) / 7.787;
+  const yr = L > 8 ? ((L + 16) / 116) ** 3 : L / 903.3;
+  const zr = fz * fz * fz > 0.008856 ? fz * fz * fz : (fz - 16 / 116) / 7.787;
+
+  const x = xr * 0.95047;
+  const y = yr * 1.0;
+  const z = zr * 1.08883;
+
+  // XYZ to RGB
+  let r = x * 3.2406 + y * -1.5372 + z * -0.4986;
+  let g = x * -0.9689 + y * 1.8758 + z * 0.0415;
+  let b_val = x * 0.0557 + y * -0.204 + z * 1.057;
+
+  // Gamma correction
+  r = r > 0.0031308 ? 1.055 * r ** (1 / 2.4) - 0.055 : 12.92 * r;
+  g = g > 0.0031308 ? 1.055 * g ** (1 / 2.4) - 0.055 : 12.92 * g;
+  b_val =
+    b_val > 0.0031308 ? 1.055 * b_val ** (1 / 2.4) - 0.055 : 12.92 * b_val;
+
+  // RGB to Hex
+  const toHex = (val: number) =>
+    Math.round(Math.max(0, Math.min(255, val * 255)))
+      .toString(16)
+      .padStart(2, "0");
+
+  return `#${toHex(r)}${toHex(g)}${toHex(b_val)}`;
+}
+
 export function CodeEditor({
   text,
   onSubmit,
@@ -34,8 +76,10 @@ export function CodeEditor({
       inherit: true,
       rules: [],
       colors: {
-        "editor.background": css.getPropertyValue("--card").trim(),
-        "editor.foreground": css.getPropertyValue("--card-foreground").trim(),
+        "editor.background": labToHex(css.getPropertyValue("--card").trim()),
+        "editor.foreground": labToHex(
+          css.getPropertyValue("--card-foreground").trim()
+        ),
       },
     });
 
