@@ -1,26 +1,25 @@
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
-import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import type { ForgeConfig } from "@electron-forge/shared-types";
+import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import fs from "fs/promises";
-import path from "path";
 import os from "os";
+import path from "path";
 
-import { MakerSquirrel } from "@electron-forge/maker-squirrel";
-import { MakerDMG } from "@electron-forge/maker-dmg";
-import { MakerZIP } from "@electron-forge/maker-zip";
 import { MakerDeb, MakerDebConfig } from "@electron-forge/maker-deb";
+import { MakerDMG } from "@electron-forge/maker-dmg";
 import { MakerRpm, MakerRpmConfig } from "@electron-forge/maker-rpm";
+import { MakerSquirrel } from "@electron-forge/maker-squirrel";
+import { MakerZIP } from "@electron-forge/maker-zip";
 
 import { PublisherGithub } from "@electron-forge/publisher-github";
 
-import packageJson from "../package.json" assert { type: "json" };
-import actPackageJson from "./package.json" assert { type: "json" };
+import packageJson from "./package.json" assert { type: "json" };
 
 const linuxPackageProps = {
   options: {
     name: packageJson.name,
     genericName: "Chat Application",
-    version: actPackageJson.version,
+    version: packageJson.version,
     description: packageJson.description,
     categories: ["Network", "Office", "Utility"],
     maintainer: packageJson.author.name,
@@ -33,7 +32,7 @@ const linuxPackageProps = {
 const config: ForgeConfig = {
   packagerConfig: {
     executableName: packageJson.name,
-    appVersion: actPackageJson.version,
+    appVersion: packageJson.version,
     icon: "./assets/icon/icon",
     asar: true,
     ignore: ["forge.config.ts", "bun.lock", "shell.nix", "aur"],
@@ -42,7 +41,7 @@ const config: ForgeConfig = {
   makers: [
     new MakerSquirrel({
       name: packageJson.name,
-      version: actPackageJson.version,
+      version: packageJson.version,
       authors: packageJson.author.name,
       description: packageJson.description,
       setupExe: `${packageJson.productName}.exe`,

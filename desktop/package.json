@@ -3,6 +3,7 @@
   "productName": "Tensamin",
   "version": "0.1.17",
   "description": "Privacy-focused chat app",
+  "homepage": "https://tensamin.net",
   "author": {
     "name": "Methanium",
     "url": "https://methanium.net",
@@ -17,11 +18,11 @@
   "type": "module",
   "scripts": {
     "dev": "bun run prep && NODE_ENV=development electron-forge start",
-    "prep": "rm -rf build && mkdir build && cp -r ../dist/* ./build/ && cp main.ts build/ && cp preload.js build/",
-    "build": "bun run prep && electron-forge publish",
+    "prep": "rm -rf build && mkdir build && cp -r ../out/* ./build/ && cp ./main.ts ./build/ && cp ./preload.js ./build/",
+    "publish": "bun run prep && electron-forge publish",
+    "publish:win": "powershell -NoLogo -NoProfile -Command \"New-Item -ItemType Directory -Force -Path build | Out-Null; Copy-Item ..\\out\\* .\\build\\ -Recurse -Force; Copy-Item main.ts build\\; Copy-Item preload.js build\\; electron-forge publish\"",
     "build:git": "bun run prep && electron-forge make --targets @electron-forge/maker-deb",
-    "build:win": "powershell -NoLogo -NoProfile -Command \"New-Item -ItemType Directory -Force -Path build | Out-Null; Copy-Item ..\\dist\\* .\\build\\ -Recurse -Force; Copy-Item main.ts build\\; Copy-Item preload.js build\\; electron-forge publish\"",
-    "test": "bunx @electron/asar extract ./out/Tensamin-linux-x64/resources/app.asar ./packageTest"
+    "extract": "bunx @electron/asar extract ./out/Tensamin-linux-x64/resources/app.asar ./extracted"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1"
