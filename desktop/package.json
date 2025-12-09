@@ -18,9 +18,9 @@
   "type": "module",
   "scripts": {
     "dev": "bun run prep && NODE_ENV=development electron-forge start",
-    "prep": "rm -rf build && mkdir build && cp -r ../out/* ./build/ && cp ./main.ts ./build/ && cp ./preload.js ./build/",
+    "prep": "rm -rf build && mkdir build && cp -r ../web/out/* ./build/ && cp ./main.ts ./build/ && cp ./preload.js ./build/",
     "publish": "bun run prep && electron-forge publish",
-    "publish:win": "powershell -NoLogo -NoProfile -Command \"New-Item -ItemType Directory -Force -Path build | Out-Null; Copy-Item ..\\out\\* .\\build\\ -Recurse -Force; Copy-Item main.ts build\\; Copy-Item preload.js build\\; electron-forge publish\"",
+    "publish:win": "powershell -NoLogo -NoProfile -Command \"New-Item -ItemType Directory -Force -Path build | Out-Null; Copy-Item ..\\web\\out\\* .\\build\\ -Recurse -Force; Copy-Item main.ts build\\; Copy-Item preload.js build\\; electron-forge publish\"",
     "build:git": "bun run prep && electron-forge make --targets @electron-forge/maker-deb",
     "extract": "bunx @electron/asar extract ./out/Tensamin-linux-x64/resources/app.asar ./extracted"
   },
