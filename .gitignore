@@ -1,14 +1,10 @@
 # Dependencies
 /node_modules/
-/desktop/node_modules/
 
 # Build
 /dist/
 /.next/
 /out/
-/desktop/out/
-/desktop/build/
-/desktop/packageTest/
 
 # Environment
 .env*

@@ -3,7 +3,7 @@
 }:
 
 (pkgs.buildFHSEnv {
-  name = "electron-dev-env";
+  name = "tensamin-desktop-dev";
   targetPkgs =
     pkgs: with pkgs; [
       nodejs
