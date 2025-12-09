@@ -50,7 +50,7 @@ jobs:
 
       - name: Build App
         working-directory: ./desktop
-        run: bun run ${{ runner.os == 'Windows' && 'build:win' || 'build' }}
+        run: bun run ${{ runner.os == 'Windows' && 'publish:win' || 'publish' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
