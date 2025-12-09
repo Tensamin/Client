@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnp
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+web-build/
+
+# Native builds
+ios/
+android/
+.kotlin/
+
+# Generated files
+expo-env.d.ts
+next-env.d.ts
+*.tsbuildinfo
+.metro-health-check*
+
+# Debug logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Environment
+.env*
+.expo/
+
+# Examples/test
+app-example
+packageTest/

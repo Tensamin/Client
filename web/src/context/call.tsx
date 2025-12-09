@@ -425,7 +425,12 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           setLocalTrack(createdTrack);
           setIsMuted(createdTrack.isMuted);
         } catch (error) {
-          rawDebugLog("Sub Call Context", "Failed to initialize audio", error, "red");
+          rawDebugLog(
+            "Sub Call Context",
+            "Failed to initialize audio",
+            error,
+            "red",
+          );
           toast.error("Failed to initialize audio.");
           if (createdTrack) createdTrack.stop();
         }

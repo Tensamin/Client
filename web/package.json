@@ -1,25 +1,10 @@
 {
   "name": "tensamin",
-  "productName": "Tensamin",
-  "description": "True E2EE, decentralized messages. Open source and privacy first.",
   "version": "0.1.17",
-  "homepage": "https://tensamin.net",
-  "author": {
-    "name": "Methanium",
-    "url": "https://methanium.net",
-    "email": "admin@methanium.net"
-  },
-  "repository": {
-    "url": "https://github.com/Tensamin/Frontend.git",
-    "type": "git"
-  },
-  "main": "src/electron.ts",
   "scripts": {
-    "format": "bunx prettier --write .",
     "lint": "eslint",
     "dev": "next dev",
-    "build": "next telemetry disable && next build",
-    "build:electron": "cd desktop && bun run build && cd .."
+    "build": "next telemetry disable && next build"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.16",

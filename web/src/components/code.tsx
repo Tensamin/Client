@@ -78,7 +78,7 @@ export function CodeEditor({
       colors: {
         "editor.background": labToHex(css.getPropertyValue("--card").trim()),
         "editor.foreground": labToHex(
-          css.getPropertyValue("--card-foreground").trim()
+          css.getPropertyValue("--card-foreground").trim(),
         ),
       },
     });
