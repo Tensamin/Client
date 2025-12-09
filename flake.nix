@@ -90,7 +90,7 @@
           '';
 
           meta = with pkgs.lib; {
-            description = "True E2EE, decentralized messages. Open source and privacy first.";
+            description = "Privacy-focused chat app";
             homepage = "https://github.com/Tensamin/Frontend";
             license = licenses.unfree;
             platforms = [ "x86_64-linux" ];

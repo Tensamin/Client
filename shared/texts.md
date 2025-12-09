@@ -1,6 +1,6 @@
 ## App Description:
 
-- Create communities. Message, call, organize together.
+- Privacy-focused chat app
 
 ## Product Description:
 
