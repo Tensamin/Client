@@ -14,7 +14,7 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-          - os: macos-13
+          - os: macos-15-intel
             arch: x64
           - os: macos-latest
             arch: arm64
@@ -36,10 +36,16 @@ jobs:
 
       - name: Set up build process
         run: |
+          cd web
           bun install
-          cd desktop && bun install
+          cd ..
+
+          cd desktop
+          bun install
+          cd ..
 
       - name: Build Frontend
+        working-directory: ./web
         run: bun run build
 
       - name: Build App
