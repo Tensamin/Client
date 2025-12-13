@@ -1,14 +1,18 @@
 // Package Imports
-import { FocusLayout, ParticipantTile } from "@livekit/components-react";
-import { Track } from "livekit-client";
 import type {
   ParticipantClickEvent,
   TrackReferenceOrPlaceholder,
 } from "@livekit/components-core";
 import { isTrackReference } from "@livekit/components-core";
+import { FocusLayout, ParticipantTile } from "@livekit/components-react";
+import { Track } from "livekit-client";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+// Lib Imports
+import { calculateOptimalLayout } from "@/lib/utils";
 
 // Components
-import { TileContent, FocusDuplicateOverlay } from "@/page/call";
+import { FocusDuplicateOverlay, TileContent } from "@/page/call";
 
 // Helper Functions
 function getTrackKey(track: TrackReferenceOrPlaceholder) {
@@ -34,19 +38,56 @@ export function CallFocus({
   focusedTrackSid: string | null;
   onParticipantClick: (event: ParticipantClickEvent) => void;
 }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        setContainerSize({ width, height });
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const layout = useMemo(() => {
+    if (containerSize.width === 0 || containerSize.height === 0) {
+      return { width: 0, height: 0, cols: 1 };
+    }
+    return calculateOptimalLayout(
+      1,
+      containerSize.width,
+      containerSize.height,
+      16 // gap-4
+    );
+  }, [containerSize]);
+
+  console.log(layout);
+
   if (!focusedTrackRef) return;
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-6 py-6">
+    <div
+      className="flex h-full flex-col items-center justify-center gap-3"
+      ref={containerRef}
+    >
       <FocusLayout
         trackRef={focusedTrackRef}
         onParticipantClick={onParticipantClick}
-        className="relative aspect-video w-full max-w-5xl border-0"
+        className="relative aspect-video border-0"
+        style={{
+          width: layout.width / 1.2,
+          height: layout.height / 1.2,
+        }}
       >
         <TileContent hideBadges />
       </FocusLayout>
       <div className="w-full max-w-5xl">
-        <div className="h-32 flex items-center justify-center gap-3 overflow-x-auto px-2">
+        <div className="h-30 flex items-center justify-center gap-3 overflow-x-auto px-2">
           {participantTracks.map((track) => (
             <ParticipantTile
               key={getTrackKey(track)}

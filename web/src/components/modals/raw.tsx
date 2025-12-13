@@ -1,8 +1,9 @@
 // Package Imports
+import type { TrackReference } from "@livekit/components-core";
+import { VideoTrack } from "@livekit/components-react";
+import { AnimatePresence, motion } from "framer-motion";
 import * as Icon from "lucide-react";
 import { useState } from "react";
-import { VideoTrack } from "@livekit/components-react";
-import type { TrackReference } from "@livekit/components-core";
 
 // Lib Imports
 import {
@@ -16,35 +17,35 @@ import {
 import { useCallContext } from "@/context/call";
 
 // Components
+import { Text } from "@/components/markdown/text";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
-import { Text } from "@/components/markdown/text";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { LoadingIcon } from "../loading";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { AvatarSizes, UnixTimestamp } from "@/lib/types";
+import { LoadingIcon } from "../loading";
 
 // Main
 export function UserAvatar({
@@ -299,6 +300,13 @@ export function Profile({
   );
 }
 
+const fadeAnimation = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  transition: { duration: 0.1 },
+};
+
 export function CallModal({
   overwriteSize,
   title,
@@ -341,24 +349,29 @@ export function CallModal({
   ) : (
     <Card className="relative w-full h-full bg-input/30">
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
-        {isScreenShare && screenShareTrackRef ? (
-          <div className="absolute inset-0 z-0">
-            <VideoTrack
-              trackRef={screenShareTrackRef}
-              className="rounded-xl h-full w-full object-contain bg-black"
-            />
-          </div>
-        ) : (
-          <div className="w-full h-full flex justify-center items-center">
-            <UserAvatar
-              icon={icon}
-              title={title}
-              size={overwriteSize ? overwriteSize : "jumbo"}
-              state={undefined}
-              border
-            />
-          </div>
-        )}
+        <AnimatePresence>
+          {isScreenShare && screenShareTrackRef ? (
+            <motion.div {...fadeAnimation} className="absolute inset-0 z-0">
+              <VideoTrack
+                trackRef={screenShareTrackRef}
+                className="rounded-xl h-full w-full object-contain bg-black"
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              {...fadeAnimation}
+              className="w-full h-full flex justify-center items-center"
+            >
+              <UserAvatar
+                icon={icon}
+                title={title}
+                size={overwriteSize ? overwriteSize : "jumbo"}
+                state={undefined}
+                border
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
         {!hideBadges && (
           <div className="absolute h-full w-full flex items-end justify-start p-2 gap-2 pointer-events-none z-30">
             <Badge

@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
 import * as React from "react";
+import { twMerge } from "tailwind-merge";
 import { UnixTimestamp } from "./types";
 
 const MOBILE_BREAKPOINT = 768;
@@ -56,7 +56,7 @@ export async function sha256(content: string | BufferSource) {
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
-    undefined,
+    undefined
   );
 
   React.useEffect(() => {
@@ -133,3 +133,49 @@ export const progressBar = {
   socket_base: 40,
   DELAY: 250,
 };
+
+export function calculateOptimalLayout(
+  count: number,
+  containerWidth: number,
+  containerHeight: number,
+  gap: number = 16,
+  aspectRatio: number = 16 / 9
+) {
+  if (count === 0) return { width: 0, height: 0, cols: 0 };
+
+  let bestWidth = 0;
+  let bestHeight = 0;
+  let bestCols = 1;
+
+  // Try all possible column counts
+  for (let cols = 1; cols <= count; cols++) {
+    const rows = Math.ceil(count / cols);
+
+    // Calculate max width based on column constraints
+    const maxW = (containerWidth - (cols - 1) * gap) / cols;
+
+    // Calculate max height based on row constraints
+    const maxH = (containerHeight - (rows - 1) * gap) / rows;
+
+    if (maxW <= 0 || maxH <= 0) continue;
+
+    // Determine dimensions based on aspect ratio
+    let w = maxW;
+    let h = w / aspectRatio;
+
+    // Check if height fits, if not, scale down
+    if (h > maxH) {
+      h = maxH;
+      w = h * aspectRatio;
+    }
+
+    // Maximize area
+    if (w > bestWidth) {
+      bestWidth = w;
+      bestHeight = h;
+      bestCols = cols;
+    }
+  }
+
+  return { width: bestWidth, height: bestHeight, cols: bestCols };
+}

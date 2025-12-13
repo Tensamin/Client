@@ -1,19 +1,19 @@
 "use client";
 
 // Package Imports
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Track } from "livekit-client";
-import {
-  useTracks,
-  useMaybeTrackRefContext,
-  useIsSpeaking,
-} from "@livekit/components-react";
-import { isTrackReference } from "@livekit/components-core";
 import type {
-  TrackReferenceOrPlaceholder,
   ParticipantClickEvent,
+  TrackReferenceOrPlaceholder,
 } from "@livekit/components-core";
+import { isTrackReference } from "@livekit/components-core";
+import {
+  useIsSpeaking,
+  useMaybeTrackRefContext,
+  useTracks,
+} from "@livekit/components-react";
+import { Track } from "livekit-client";
 import * as Icon from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
@@ -25,6 +25,14 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import {
+  CallUserModal,
+  DeafButton,
+  MuteButton,
+  ScreenShareButton,
+} from "@/components/modals/call";
+import { UserAvatar } from "@/components/modals/raw";
+import { Button } from "@/components/ui/button";
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -32,26 +40,25 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { CallUserModal } from "@/components/modals/call";
-import { CallGrid } from "./call/grid";
-import { CallFocus } from "./call/focus";
-import { Button } from "@/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { UserAvatar } from "@/components/modals/raw";
-import {
-  DeafButton,
-  MuteButton,
-  ScreenShareButton,
-} from "@/components/modals/call";
 import { useSocketContext } from "@/context/socket";
+import { CallFocus } from "./call/focus";
+import { CallGrid } from "./call/grid";
 
 // Helper Functions
 function mergeParticipantTracks(
-  tracks: TrackReferenceOrPlaceholder[],
+  tracks: TrackReferenceOrPlaceholder[]
 ): TrackReferenceOrPlaceholder[] {
   const merged = new Map<string, TrackReferenceOrPlaceholder>();
 
@@ -94,11 +101,11 @@ export default function Page() {
       { source: Track.Source.Camera, withPlaceholder: true },
       { source: Track.Source.ScreenShare, withPlaceholder: false },
     ],
-    { onlySubscribed: false },
+    { onlySubscribed: false }
   );
   const participantTracks = useMemo(
     () => mergeParticipantTracks(trackReferences),
-    [trackReferences],
+    [trackReferences]
   );
 
   // focus stuff
@@ -112,7 +119,7 @@ export default function Page() {
     return participantTracks.find(
       (track) =>
         isTrackReference(track) &&
-        track.publication?.trackSid === focusedTrackSid,
+        track.publication?.trackSid === focusedTrackSid
     );
   }, [participantTracks, focusedTrackSid]);
 
@@ -132,19 +139,19 @@ export default function Page() {
       const fallbackTrack = participantTracks.find(
         (track) =>
           isTrackReference(track) &&
-          track.participant.identity === participantIdentity,
+          track.participant.identity === participantIdentity
       );
 
       return fallbackTrack?.publication?.trackSid ?? null;
     },
-    [participantTracks],
+    [participantTracks]
   );
 
   const handleParticipantClick = useCallback(
     (event: ParticipantClickEvent) => {
       const trackSid = resolveTrackSid(
         event.participant.identity,
-        event.track?.trackSid,
+        event.track?.trackSid
       );
       if (!trackSid) {
         return;
@@ -152,12 +159,12 @@ export default function Page() {
 
       setFocusedTrackSid((current) => (current === trackSid ? null : trackSid));
     },
-    [resolveTrackSid],
+    [resolveTrackSid]
   );
 
   const [open, setOpen] = useState(false);
   return (
-    <div className="flex flex-col w-full h-full py-5 gap-5">
+    <div className="flex flex-col w-full h-full gap-5 relative pb-11">
       <div className="flex-1">
         {focusedTrackRef ? (
           <CallFocus
@@ -174,7 +181,7 @@ export default function Page() {
           />
         )}
       </div>
-      <div className="flex justify-center">
+      <div className="absolute bottom-3 left-0 flex justify-center w-full">
         <div className="flex gap-3 bg-card p-1.5 rounded-lg border">
           {/* Mute Button */}
           <MuteButton ghostMode className="w-10" />
@@ -278,20 +285,29 @@ export function TileContent({
 }: { hideBadges?: boolean; small?: boolean } = {}) {
   const isSpeaking = useIsSpeaking();
   return (
-    <div className="aspect-video relative w-full max-h-full">
-      <div
-        className={`absolute inset-0 rounded-xl transition-all ease-in-out duration-400 pointer-events-none z-20 ${
-          isSpeaking && "ring-3 ring-primary ring-inset"
-        }`}
-      />
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div className="aspect-video relative w-full max-h-full">
+          <div
+            className={`absolute inset-0 rounded-xl transition-all ease-in-out duration-400 pointer-events-none z-20 ${
+              isSpeaking && "ring-3 ring-primary ring-inset"
+            }`}
+          />
 
-      <div className="w-full h-full flex items-center justify-center rounded-xl z-10">
-        <CallUserModal
-          overwriteSize={small ? "extraLarge" : undefined}
-          hideBadges={hideBadges}
-        />
-      </div>
-    </div>
+          <div className="w-full h-full flex items-center justify-center rounded-xl z-10">
+            <CallUserModal
+              overwriteSize={small ? "extraLarge" : undefined}
+              hideBadges={hideBadges}
+            />
+          </div>
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuGroup>
+          <ContextMenuItem>Alarm</ContextMenuItem>
+        </ContextMenuGroup>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
@@ -311,7 +327,7 @@ export function FocusDuplicateOverlay({
   }
 
   return (
-    <div className="absolute inset-0 bg-black/65 z-20 text-white flex items-center justify-center">
+    <div className="absolute inset-0 bg-black/65 z-20 text-white flex items-center justify-center pointer-events-none">
       <Icon.ScanEye className="h-6 w-6" />
     </div>
   );

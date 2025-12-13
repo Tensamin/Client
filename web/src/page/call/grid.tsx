@@ -1,64 +1,17 @@
 // Package Imports
-import { ParticipantTile } from "@livekit/components-react";
 import type {
   ParticipantClickEvent,
   TrackReferenceOrPlaceholder,
 } from "@livekit/components-core";
 import { getTrackReferenceId } from "@livekit/components-core";
+import { ParticipantTile } from "@livekit/components-react";
 
 // Lib Imports
-import { cn } from "@/lib/utils";
+import { calculateOptimalLayout, cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 // Components
 import { TileContent } from "@/page/call";
-
-// Helper Functions
-function calculateOptimalLayout(
-  count: number,
-  containerWidth: number,
-  containerHeight: number,
-  gap: number = 16,
-  aspectRatio: number = 16 / 9,
-) {
-  if (count === 0) return { width: 0, height: 0, cols: 0 };
-
-  let bestWidth = 0;
-  let bestHeight = 0;
-  let bestCols = 1;
-
-  // Try all possible column counts
-  for (let cols = 1; cols <= count; cols++) {
-    const rows = Math.ceil(count / cols);
-
-    // Calculate max width based on column constraints
-    const maxW = (containerWidth - (cols - 1) * gap) / cols;
-
-    // Calculate max height based on row constraints
-    const maxH = (containerHeight - (rows - 1) * gap) / rows;
-
-    if (maxW <= 0 || maxH <= 0) continue;
-
-    // Determine dimensions based on aspect ratio
-    let w = maxW;
-    let h = w / aspectRatio;
-
-    // Check if height fits, if not, scale down
-    if (h > maxH) {
-      h = maxH;
-      w = h * aspectRatio;
-    }
-
-    // Maximize area
-    if (w > bestWidth) {
-      bestWidth = w;
-      bestHeight = h;
-      bestCols = cols;
-    }
-  }
-
-  return { width: bestWidth, height: bestHeight, cols: bestCols };
-}
 
 // Main
 export function CallGrid({
@@ -102,7 +55,7 @@ export function CallGrid({
     <div className={cn("h-full w-full relative", className)}>
       <div
         ref={containerRef}
-        className="absolute inset-0 flex items-center justify-center py-6 overflow-hidden"
+        className="absolute inset-0 flex items-center justify-center py-7 overflow-hidden"
       >
         <div className="flex flex-wrap justify-center gap-4 max-w-full max-h-full">
           {participantTracks.map((track) => (
