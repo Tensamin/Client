@@ -3,21 +3,21 @@
 // Package Imports
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
-  useCallback,
-  useEffectEvent,
 } from "react";
-import { v7 } from "uuid";
 import useWebSocket, { ReadyState } from "react-use-websocket";
+import { v7 } from "uuid";
 
 // Lib Imports
-import { UserState } from "@/lib/types";
 import * as CommunicationValue from "@/lib/communicationValues";
-import { RetryCount, progressBar, responseTimeout } from "@/lib/utils";
 import { client_wss } from "@/lib/endpoints";
+import { UserState } from "@/lib/types";
+import { RetryCount, progressBar, responseTimeout } from "@/lib/utils";
 
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
@@ -102,7 +102,7 @@ export function SocketProvider({
           currentRequest.reject(parsedMessage);
           rawDebugLog("Socket Context", "Received error", parsedMessage, "red");
         } else {
-          currentRequest.resolve(parsedMessage);
+          currentRequest.resolve(parsedMessage.data);
         }
       }
 

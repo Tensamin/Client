@@ -3,32 +3,32 @@
 // Package Imports
 import {
   createContext,
-  useContext,
-  useState,
-  useRef,
-  useEffect,
   useCallback,
+  useContext,
+  useEffect,
   useEffectEvent,
+  useRef,
+  useState,
 } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
+import * as CommunicationValue from "@/lib/communicationValues";
 import { user } from "@/lib/endpoints";
 import {
   Community,
   Conversation,
-  User,
-  UserState,
   UpdateLogPayload,
   UpdatePayload,
+  User,
+  UserState,
 } from "@/lib/types";
 import { getDisplayFromUsername } from "@/lib/utils";
-import * as CommunicationValue from "@/lib/communicationValues";
 
 // Context Imports
-import { useSocketContext } from "@/context/socket";
-import { usePageContext } from "@/context/page";
 import { useCryptoContext } from "@/context/crypto";
+import { usePageContext } from "@/context/page";
+import { useSocketContext } from "@/context/socket";
 import { rawDebugLog } from "@/context/storage";
 
 // Types
