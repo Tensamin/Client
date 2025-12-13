@@ -1,53 +1,44 @@
 // Package Imports
-import * as Icon from "lucide-react";
+import { isTrackReference } from "@livekit/components-core";
 import {
-  useRoomInfo,
-  useParticipantInfo,
   useConnectionQualityIndicator,
   useConnectionState,
   useLocalParticipant,
-  useTracks,
-  useParticipantContext,
   useMaybeTrackRefContext,
+  useParticipantContext,
+  useParticipantInfo,
+  useRoomInfo,
+  useTracks,
   VideoTrack,
 } from "@livekit/components-react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { useEffect, useState } from "react";
 import {
   ConnectionQuality,
   ConnectionState,
+  LocalVideoTrack,
   ParticipantEvent,
   Track,
-  LocalVideoTrack,
   VideoPresets,
 } from "livekit-client";
-import { isTrackReference } from "@livekit/components-core";
+import * as Icon from "lucide-react";
+import { useEffect, useState } from "react";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
+import { v7 } from "uuid";
 
 // Lib Imports
+import { AvatarSizes } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 // Context Imports
 import { useCallContext, useSubCallContext } from "@/context/call";
 import { usePageContext } from "@/context/page";
 import { rawDebugLog, useStorageContext } from "@/context/storage";
+import { useUserContext } from "@/context/user";
 
 // Components
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { UserModal } from "@/components/modals/user";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
@@ -55,19 +46,70 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Menubar,
-  MenubarMenu,
   MenubarContent,
   MenubarItem,
-  MenubarTrigger,
+  MenubarMenu,
   MenubarSub,
   MenubarSubContent,
   MenubarSubTrigger,
+  MenubarTrigger,
 } from "@/components/ui/menubar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MotionDivWrapper } from "../animation/presence";
 import { LoadingIcon } from "../loading";
-import { AvatarSizes } from "@/lib/types";
+import { CallButton } from "./raw";
 
 // Main
+export function CallButtonWrapper() {
+  const { currentReceiverId, conversations } = useUserContext();
+  const { getCallToken, connect, outerState } = useCallContext();
+
+  const currentUserAlreadyHasACall = conversations.find(
+    (conv) =>
+      conv.user_id === currentReceiverId && (conv.calls?.length ?? 0) > 0
+  );
+
+  return currentUserAlreadyHasACall ? (
+    <MotionDivWrapper key="call-button">
+      <CallButton
+        key="call-button"
+        calls={
+          conversations.find((conv) => conv?.user_id === currentReceiverId)
+            ?.calls ?? []
+        }
+      />
+    </MotionDivWrapper>
+  ) : (
+    <MotionDivWrapper key="call-button">
+      <Button
+        className="h-9 w-9"
+        variant="outline"
+        onClick={() => {
+          const callId = v7();
+          getCallToken(callId).then((token) => {
+            connect(token, callId);
+          });
+        }}
+        disabled={outerState === "CONNECTED" || outerState === "CONNECTING"}
+      >
+        <Icon.Phone />
+      </Button>
+    </MotionDivWrapper>
+  );
+}
+
 export function CallUserModal({
   hideBadges,
   overwriteSize,
@@ -194,9 +236,7 @@ export function VoiceActions() {
   });
   const trackRef = screenShareTrackRefs.find(
     (ref) =>
-      ref &&
-      ref.participant?.isLocal &&
-      ref.source === Track.Source.ScreenShare,
+      ref && ref.participant?.isLocal && ref.source === Track.Source.ScreenShare
   );
   const isScreenShare = isScreenShareEnabled || !!trackRef;
 
@@ -359,8 +399,8 @@ export function MuteButton({
             ? "ghost"
             : "destructive"
           : isMicrophoneEnabled
-            ? "outline"
-            : "destructive"
+          ? "outline"
+          : "destructive"
       }
       onClick={toggleMute}
       aria-label={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
@@ -494,7 +534,7 @@ export function ScreenShareButton({
             const allowed = await window.electronAPI.getScreenAccess();
             if (!allowed) {
               toast.error(
-                "Screen capture permission denied. Please allow screen access in your system settings.",
+                "Screen capture permission denied. Please allow screen access in your system settings."
               );
               setLoading(false);
               return;
@@ -566,8 +606,8 @@ export function ScreenShareButton({
                     ? "default"
                     : "ghost"
                   : isScreenShareEnabled
-                    ? "default"
-                    : "outline"
+                  ? "default"
+                  : "outline"
               }
             >
               {isScreenShareEnabled ? (
@@ -626,8 +666,8 @@ export function DeafButton({
             ? "destructive"
             : "ghost"
           : isDeafened
-            ? "destructive"
-            : "outline"
+          ? "destructive"
+          : "outline"
       }
       onClick={toggleDeafen}
       aria-label={isDeafened ? "Undeafen" : "Deafen"}

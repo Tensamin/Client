@@ -2,18 +2,18 @@
 import { useEffect, useState } from "react";
 
 // Context Imports
-import { useUserContext } from "@/context/user";
 import { usePageContext } from "@/context/page";
+import { useUserContext } from "@/context/user";
 
 // Components
 import * as RawModal from "@/components/modals/raw";
-import { AvatarSizes, fallbackUser } from "@/lib/types";
 import {
   ContextMenu,
-  ContextMenuTrigger,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { AvatarSizes, fallbackUser } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 
 // Main
@@ -51,6 +51,7 @@ export function UserModal({
     state: user.id === ownId ? ownState : user.state,
   };
 
+  const [profilePictureOpen, setProfilePictureOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   switch (size) {
     case "big":
@@ -74,6 +75,9 @@ export function UserModal({
               <ContextMenuItem onSelect={() => setProfileOpen(true)}>
                 View Profile
               </ContextMenuItem>
+              <ContextMenuItem onSelect={() => setProfilePictureOpen(true)}>
+                View Profile Picture
+              </ContextMenuItem>
               <ContextMenuItem disabled variant="destructive">
                 Delete Conversation
               </ContextMenuItem>
@@ -83,17 +87,42 @@ export function UserModal({
           <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
             <DialogContent
               aria-describedby={undefined}
-              className="w-auto rounded-3xl scale-115"
+              className="w-auto rounded-3xl"
             >
               <DialogHeader>
                 <DialogTitle>{user.display}&apos;s Profile</DialogTitle>
               </DialogHeader>
-              <RawModal.Profile
+              <div className="scale-125 m-10">
+                <RawModal.Profile
+                  key={id}
+                  {...props}
+                  creationTimestamp={user.id}
+                  description={user.about || ""}
+                  state={user.state || "NONE"}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
+            open={profilePictureOpen}
+            onOpenChange={setProfilePictureOpen}
+          >
+            <DialogContent
+              aria-describedby={undefined}
+              className="w-auto rounded-3xl scale-115"
+            >
+              <DialogHeader>
+                <DialogTitle>{user.display}&apos;s Profile Picture</DialogTitle>
+              </DialogHeader>
+              <RawModal.UserAvatar
+                className="size-80"
                 key={id}
-                {...props}
-                creationTimestamp={user.id}
-                description={user.about || ""}
-                state={user.state || "NONE"}
+                border
+                size="gigantica"
+                title={user.display}
+                icon={user.avatar}
+                loading={user.loading}
               />
             </DialogContent>
           </Dialog>

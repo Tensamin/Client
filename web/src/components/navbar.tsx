@@ -1,45 +1,36 @@
 // Package Imports
-import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { v7 } from "uuid";
 import * as Icon from "lucide-react";
+import { useEffect, useState } from "react";
 
 // Context Imports
 import { usePageContext } from "@/context/page";
 import { useUserContext } from "@/context/user";
-import { useCallContext } from "@/context/call";
 
 // Components
+import { MotionDivWrapper } from "@/components/animation/presence";
+import { Button } from "@/components/ui/button";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { Button } from "@/components/ui/button";
 import { WindowControls } from "@/components/windowControls";
-import { MotionDivWrapper } from "@/components/animation/presence";
-import { CallButton } from "@/components/modals/raw";
+import { CallButtonWrapper } from "./modals/call";
 
 // Main
 export function Navbar() {
   const { setPage, page } = usePageContext();
-  const { failedMessagesAmount, currentReceiverId, get, conversations } =
-    useUserContext();
-  const { outerState, getCallToken, connect } = useCallContext();
+  const { failedMessagesAmount, currentReceiverId, get } = useUserContext();
   const [receiverUsername, setReceiverUsername] = useState("");
 
   useEffect(() => {
     if (currentReceiverId) {
       get(currentReceiverId, false).then((user) =>
-        setReceiverUsername(user.display),
+        setReceiverUsername(user.display)
       );
     }
   }, [currentReceiverId, get]);
-
-  const currentUserAlreadyHasACall = conversations.find(
-    (conv) =>
-      conv.user_id === currentReceiverId && (conv.calls?.length ?? 0) > 0,
-  );
 
   return (
     <div className="w-full my-2 h-9 flex gap-2 items-center bg-sidebar shrink-0 pr-2">
@@ -96,37 +87,7 @@ export function Navbar() {
         )}
 
         {/* Call Button */}
-        {page === "chat" &&
-          (currentUserAlreadyHasACall ? (
-            <MotionDivWrapper key="call-button">
-              <CallButton
-                key="call-button"
-                calls={
-                  conversations.find(
-                    (conv) => conv?.user_id === currentReceiverId,
-                  )?.calls ?? []
-                }
-              />
-            </MotionDivWrapper>
-          ) : (
-            <MotionDivWrapper key="call-button">
-              <Button
-                className="h-9 w-9"
-                variant="outline"
-                onClick={() => {
-                  const callId = v7();
-                  getCallToken(callId).then((token) => {
-                    connect(token, callId);
-                  });
-                }}
-                disabled={
-                  outerState === "CONNECTED" || outerState === "CONNECTING"
-                }
-              >
-                <Icon.Phone />
-              </Button>
-            </MotionDivWrapper>
-          ))}
+        {page === "chat" && <CallButtonWrapper />}
 
         {/* Electron Window Controls */}
         <WindowControls key="electron-window-controls" />
