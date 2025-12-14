@@ -1,9 +1,5 @@
 // Package Imports
-import type { TrackReference } from "@livekit/components-core";
-import { VideoTrack } from "@livekit/components-react";
-import { AnimatePresence, motion } from "framer-motion";
 import * as Icon from "lucide-react";
-import { useMemo, useState } from "react";
 
 // Lib Imports
 import {
@@ -13,31 +9,16 @@ import {
   getCreationString,
 } from "@/lib/utils";
 
-// Context Imports
-import { useCallContext, useSubCallContext } from "@/context/call";
-
 // Components
 import { Text } from "@/components/markdown/text";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -45,7 +26,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { AvatarSizes, UnixTimestamp } from "@/lib/types";
-import { LoadingIcon } from "../loading";
 
 // Main
 export function UserAvatar({
@@ -297,269 +277,5 @@ export function Profile({
         </CardFooter>
       )}
     </Card>
-  );
-}
-
-const fadeAnimation = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-  transition: { duration: 0.1 },
-};
-
-export function CallModal({
-  overwriteSize,
-  title,
-  icon,
-  loading,
-  muted,
-  deafened,
-  screenShareTrackRef,
-  hideBadges,
-  inGridView,
-}: Readonly<{
-  overwriteSize?: AvatarSizes;
-  title: string;
-  icon?: string;
-  loading: boolean;
-  muted?: boolean;
-  deafened?: boolean;
-  screenShareTrackRef?: TrackReference;
-  hideBadges?: boolean;
-  inGridView?: boolean;
-}>) {
-  const { isWatching } = useSubCallContext();
-
-  const isScreenShare = !!screenShareTrackRef;
-  const isLocal = screenShareTrackRef?.participant?.isLocal;
-  const trackId = screenShareTrackRef?.publication?.trackSid || "";
-  const currentIsWatching = isLocal ? true : (isWatching[trackId] ?? false);
-
-  const metadata = screenShareTrackRef?.participant?.metadata;
-  const previewImage = useMemo(() => {
-    if (!metadata) return null;
-    try {
-      return JSON.parse(metadata).stream_preview;
-    } catch {
-      return null;
-    }
-  }, [metadata]);
-
-  return loading ? (
-    <Card className="relative w-full h-full bg-input/30">
-      <CardContent className="w-full h-full flex flex-col items-center justify-center">
-        <div className="w-full h-full flex justify-center items-center">
-          <UserAvatar
-            title={title}
-            size={overwriteSize ? overwriteSize : "jumbo"}
-            border
-            loading
-          />
-        </div>
-        {!hideBadges && (
-          <div className="absolute h-full w-full flex items-end justify-start p-4 z-30">
-            <Badge className="select-none">...</Badge>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  ) : (
-    <Card className="relative w-full h-full bg-input/30">
-      <CardContent className="w-full h-full flex flex-col items-center justify-center">
-        <AnimatePresence>
-          {isScreenShare && screenShareTrackRef ? (
-            currentIsWatching ? (
-              <motion.div {...fadeAnimation} className="absolute inset-0 z-0">
-                <VideoTrack
-                  trackRef={screenShareTrackRef}
-                  className="rounded-xl h-full w-full object-contain bg-black"
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                {...fadeAnimation}
-                className="absolute inset-0 z-0 flex items-center justify-center rounded-xl overflow-hidden"
-              >
-                {previewImage && (
-                  <img
-                    src={previewImage}
-                    alt="Stream Preview"
-                    className="absolute inset-0 w-full h-full object-contain opacity-50 bg-black z-0"
-                  />
-                )}
-                {inGridView && (
-                  <Button className="z-10">
-                    <Icon.Monitor />
-                    Watch Stream
-                  </Button>
-                )}
-              </motion.div>
-            )
-          ) : (
-            <motion.div
-              {...fadeAnimation}
-              className="w-full h-full flex justify-center items-center"
-            >
-              <UserAvatar
-                icon={icon}
-                title={title}
-                size={overwriteSize ? overwriteSize : "jumbo"}
-                state={undefined}
-                border
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {!hideBadges && (
-          <div className="absolute h-full w-full flex items-end justify-start p-2 gap-2 pointer-events-none z-30">
-            <Badge
-              variant="outline"
-              className="h-5.5 select-none bg-background/75 border-input"
-            >
-              {isScreenShare ? `${title}'s screen` : title}
-            </Badge>
-            {muted && (
-              <Badge className="h-5.5 select-none bg-background/75 border-input">
-                <Icon.MicOff color="var(--foreground)" />
-              </Badge>
-            )}
-            {deafened && (
-              <Badge className="h-5.5 select-none bg-background/75 border-input">
-                <Icon.HeadphoneOff color="var(--foreground)" />
-              </Badge>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-export function CallInteraction({
-  callId,
-  onClose,
-}: {
-  callId: string;
-  onClose: () => void;
-}) {
-  const { getCallToken, connect, setDontSendInvite } = useCallContext();
-  const [loading, setLoading] = useState(false);
-
-  return (
-    <div className="flex flex-col gap-3">
-      <p>{displayCallId(callId)}</p>
-      <Button
-        disabled={loading}
-        onClick={() => {
-          getCallToken(callId).then((token) => {
-            setDontSendInvite(true);
-            setLoading(true);
-            connect(token, callId).then(() => {
-              setLoading(false);
-              onClose();
-            });
-          });
-        }}
-      >
-        {loading ? (
-          <>
-            <LoadingIcon invert />
-            <p>Connecting...</p>
-          </>
-        ) : (
-          "Connect"
-        )}
-      </Button>
-    </div>
-  );
-}
-
-export function CallButton({
-  calls,
-  moreRounded,
-}: {
-  calls: string[];
-  moreRounded?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(calls[0] || "");
-
-  return (
-    <CallButtonPopover open={open} setOpen={setOpen} callId={value}>
-      {calls.length === 1 ? (
-        <Button className="w-9 h-9">
-          <Icon.Phone />
-        </Button>
-      ) : calls.length > 2 ? (
-        <Select
-          value=""
-          onValueChange={(value) => {
-            setOpen(true);
-            setValue(value);
-          }}
-        >
-          <SelectTrigger className={moreRounded ? "rounded-xl" : "rounded-lg"}>
-            <Icon.Phone color="var(--foreground)" scale={80} />
-          </SelectTrigger>
-          <SelectContent>
-            {calls.map((callId, index) => (
-              <SelectItem key={`${callId}-${index}`} value={callId}>
-                {displayCallId(callId)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : null}
-    </CallButtonPopover>
-  );
-}
-
-export function CallButtonPopover({
-  callId,
-  children,
-  open,
-  setOpen,
-}: {
-  callId: string;
-  children: React.ReactNode;
-  open: boolean;
-  setOpen: (open: boolean) => void;
-}) {
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild className="ml-auto">
-        <p>{children}</p>
-      </PopoverTrigger>
-      <PopoverContent>
-        <CallInteraction
-          onClose={() => {
-            setOpen(false);
-          }}
-          callId={callId}
-        />
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function displayCallId(callId: string) {
-  const hex = callId.replace(/-/g, "");
-
-  const int = BigInt(`0x${hex}`);
-  const chars =
-    "!#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~";
-  let result = "";
-  let n = int;
-
-  while (n > BigInt(0)) {
-    result = chars[Number(n % BigInt(85))] + result;
-    n = n / BigInt(85);
-  }
-
-  return (
-    result
-      .replaceAll(/[^a-zA-Z0-9]/g, "")
-      .slice(4, 12)
-      .toUpperCase() || "0"
   );
 }

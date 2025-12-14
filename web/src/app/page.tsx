@@ -1,8 +1,8 @@
 "use client";
 
 // Package Imports
-import { useState, useTransition, ViewTransition } from "react";
 import { motion } from "framer-motion";
+import { useState, useTransition, ViewTransition } from "react";
 
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
@@ -10,17 +10,17 @@ import { usePageContext } from "@/context/page";
 
 // Components
 import { PageTransition } from "@/components/animation/page-transition";
-import { Button } from "@/components/ui/button";
-import { Navbar } from "@/components/navbar";
-import { UserModal } from "@/components/modals/user";
-import { VoiceActions } from "@/components/modals/call";
 import { Communities, Conversations } from "@/components/modals/category";
+import { UserModal } from "@/components/modals/user";
+import { Navbar } from "@/components/navbar";
+import { Button } from "@/components/ui/button";
+import { VoiceActions } from "@/special/call/components/voice-actions";
 
 // Pages
+import ChatPage from "@/page/chat";
 import HomePage from "@/page/home";
 import SettingsPage from "@/page/settings";
-import ChatPage from "@/page/chat";
-import CallPage from "@/page/call";
+import CallPage from "@/special/call/layout/page";
 
 export default function Page() {
   const [, startTransition] = useTransition();

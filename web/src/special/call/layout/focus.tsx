@@ -1,8 +1,5 @@
 // Package Imports
-import type {
-  ParticipantClickEvent,
-  TrackReferenceOrPlaceholder,
-} from "@livekit/components-core";
+import type { TrackReferenceOrPlaceholder } from "@livekit/components-core";
 import { isTrackReference } from "@livekit/components-core";
 import {
   FocusLayout,
@@ -17,7 +14,7 @@ import { calculateOptimalLayout } from "@/lib/utils";
 
 // Components
 import { UserAvatar } from "@/components/modals/raw";
-import { FocusDuplicateOverlay, TileContent } from "@/page/call";
+import { FocusDuplicateOverlay, TileContent } from "../modals/wrapper";
 
 // Helper Functions
 function getTrackKey(track: TrackReferenceOrPlaceholder) {
@@ -31,18 +28,17 @@ function getTrackKey(track: TrackReferenceOrPlaceholder) {
   return `${track.participant.identity}-${track.source ?? Track.Source.Camera}`;
 }
 
+// Context
+import { useCallPageContext } from "../context";
+
 // Main
-export function CallFocus({
-  focusedTrackRef,
-  participantTracks,
-  focusedTrackSid,
-  onParticipantClick,
-}: {
-  focusedTrackRef?: TrackReferenceOrPlaceholder;
-  participantTracks: TrackReferenceOrPlaceholder[];
-  focusedTrackSid: string | null;
-  onParticipantClick: (event: ParticipantClickEvent) => void;
-}) {
+export function CallFocus() {
+  const {
+    focusedTrackRef,
+    participantTracks,
+    focusedTrackSid,
+    handleParticipantClick,
+  } = useCallPageContext();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
@@ -91,7 +87,7 @@ export function CallFocus({
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
         <FocusLayout
           trackRef={focusedTrackRef}
-          onParticipantClick={onParticipantClick}
+          onParticipantClick={handleParticipantClick}
           className="relative border-0"
           style={{
             width: layout.width,
@@ -118,7 +114,7 @@ export function CallFocus({
                 key={getTrackKey(track)}
                 trackRef={track}
                 disableSpeakingIndicator
-                onParticipantClick={onParticipantClick}
+                onParticipantClick={handleParticipantClick}
                 className="relative h-full aspect-video flex-none rounded-lg"
               >
                 {/* CallModal from @/.../raw.tsx */}
