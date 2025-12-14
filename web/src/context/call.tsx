@@ -7,12 +7,15 @@ import {
   useConnectionState,
   useLocalParticipant,
   useRoomContext,
+  useTracks,
 } from "@livekit/components-react";
 import {
   ConnectionState,
   createLocalAudioTrack,
   LocalAudioTrack,
+  LocalVideoTrack,
   RoomEvent,
+  Track,
 } from "livekit-client";
 import * as Icon from "lucide-react";
 import {
@@ -53,9 +56,93 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { UserAvatar } from "@/components/modals/raw";
 import { User } from "@/lib/types";
 
-// Main Contexts
+// Main
 const SubCallContext = createContext<SubCallContextValue | null>(null);
 const CallContext = createContext<CallContextValue | null>(null);
+
+// Stream Preview
+async function captureScreenShareFrame(
+  track: LocalVideoTrack,
+): Promise<string | null> {
+  const video = document.createElement("video");
+  video.muted = true;
+  video.srcObject = new MediaStream([track.mediaStreamTrack]);
+  await video.play();
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1280;
+  canvas.height = 720;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL("image/webp", 0.4);
+
+  // Cleanup
+  video.pause();
+  video.srcObject = null;
+
+  return dataUrl;
+}
+
+function ScreenSharePreviewManager() {
+  const { localParticipant } = useLocalParticipant();
+  const tracks = useTracks([Track.Source.ScreenShare], {
+    onlySubscribed: false,
+  });
+  const localScreenShare = tracks.find((t) => t.participant.isLocal);
+  const screenShareTrack = localScreenShare?.publication?.track;
+
+  const localParticipantRef = useRef(localParticipant);
+  useEffect(() => {
+    localParticipantRef.current = localParticipant;
+  }, [localParticipant]);
+
+  useEffect(() => {
+    if (!screenShareTrack || !(screenShareTrack instanceof LocalVideoTrack))
+      return;
+
+    const updatePreview = async () => {
+      const participant = localParticipantRef.current;
+      if (!participant) return;
+
+      const preview = await captureScreenShareFrame(screenShareTrack);
+      if (preview) {
+        const currentMetadata = participant.metadata
+          ? JSON.parse(participant.metadata)
+          : {};
+        if (currentMetadata.stream_preview !== preview) {
+          participant.setMetadata(
+            JSON.stringify({ ...currentMetadata, stream_preview: preview }),
+          );
+        }
+      }
+    };
+
+    // Initial update
+    updatePreview();
+
+    // Update every minute
+    const interval = setInterval(updatePreview, 60000);
+
+    return () => {
+      clearInterval(interval);
+      // Clean up metadata when screen share stops
+      const participant = localParticipantRef.current;
+      if (participant) {
+        const currentMetadata = participant.metadata
+          ? JSON.parse(participant.metadata)
+          : {};
+        if (currentMetadata.stream_preview) {
+          delete currentMetadata.stream_preview;
+          participant.setMetadata(JSON.stringify(currentMetadata));
+        }
+      }
+    };
+  }, [screenShareTrack]);
+
+  return null;
+}
 
 export function useCallContext() {
   const context = useContext(CallContext);
@@ -114,7 +201,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         connectPromiseRef.current = { resolve, reject };
       });
     },
-    [setToken]
+    [setToken],
   );
   const [switchCallDialogOpen, setSwitchCallDialogOpen] = useState(false);
   const [pendingCall, setPendingCall] = useState<{
@@ -130,7 +217,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }
       return performConnect(token, newCallId);
     },
-    [shouldConnect, callId, performConnect]
+    [shouldConnect, callId, performConnect],
   );
 
   // Handle call switching
@@ -194,7 +281,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           return "";
         });
     },
-    [send]
+    [send],
   );
 
   const handleAcceptCall = useCallback(() => {
@@ -329,6 +416,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         }}
       >
         <RoomAudioRenderer />
+        <ScreenSharePreviewManager />
         <SubCallProvider>{children}</SubCallProvider>
       </LiveKitRoom>
     </CallContext.Provider>
@@ -347,6 +435,19 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   const [localTrack, setLocalTrack] = useState<LocalAudioTrack | null>(null);
   const [isDeafened, setIsDeafened] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [isWatching, setIsWatching] = useState<Record<string, boolean>>({});
+
+  const startWatching = useCallback((identity: string) => {
+    setIsWatching((prev) => ({ ...prev, [identity]: true }));
+  }, []);
+
+  const stopWatching = useCallback((identity: string) => {
+    setIsWatching((prev) => {
+      const newWatching = { ...prev };
+      delete newWatching[identity];
+      return newWatching;
+    });
+  }, []);
 
   const storedUserVolumes = data.call_userVolumes as number[] | null;
 
@@ -367,6 +468,36 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
     };
   }, [room, storedUserVolumes]);
+
+  // Join & Leave Sounds
+  useEffect(() => {
+    if (!room) return;
+
+    const playSound = (path: string) => {
+      const audio = new Audio(path);
+      audio.volume = 0.5;
+      audio.play().catch(() => {});
+    };
+
+    const handleParticipantConnected = () => {
+      playSound("/assets/sounds/call_join.wav");
+    };
+
+    const handleParticipantDisconnected = () => {
+      playSound("/assets/sounds/call_leave.wav");
+    };
+
+    room.on(RoomEvent.ParticipantConnected, handleParticipantConnected);
+    room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
+
+    return () => {
+      room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
+      room.off(
+        RoomEvent.ParticipantDisconnected,
+        handleParticipantDisconnected,
+      );
+    };
+  }, [room]);
 
   // Custom Audio Init for Noise Suppression
   useEffect(() => {
@@ -434,7 +565,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             "Sub Call Context",
             "Failed to initialize audio",
             error,
-            "red"
+            "red",
           );
           toast.error("Failed to initialize audio.");
           if (createdTrack) createdTrack.stop();
@@ -465,7 +596,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         : {};
       localParticipant
         .setMetadata(
-          JSON.stringify({ ...currentMetadata, deafened: isDeafened })
+          JSON.stringify({ ...currentMetadata, deafened: isDeafened }),
         )
         .catch(() => {});
     }
@@ -558,6 +689,10 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         toggleDeafen,
         isMuted,
         connectionState,
+        isWatching,
+        setIsWatching,
+        startWatching,
+        stopWatching,
       }}
     >
       {children}
@@ -581,7 +716,11 @@ type CallContextValue = {
 type SubCallContextValue = {
   toggleMute: () => void;
   isDeafened: boolean;
-  toggleDeafen: () => void;
   isMuted: boolean;
   connectionState: ConnectionState;
+  toggleDeafen: () => void;
+  isWatching: Record<string, boolean>;
+  setIsWatching: (watching: Record<string, boolean>) => void;
+  startWatching: (identity: string) => void;
+  stopWatching: (identity: string) => void;
 };

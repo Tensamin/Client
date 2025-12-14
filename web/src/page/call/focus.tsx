@@ -67,7 +67,7 @@ export function CallFocus({
       1,
       containerSize.width,
       Math.max(0, containerSize.height - 200),
-      16 // gap-4
+      16, // gap-4
     );
   }, [containerSize]);
 

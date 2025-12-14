@@ -2,16 +2,17 @@
 
 // Package Imports
 import type {
-    ParticipantClickEvent,
-    TrackReferenceOrPlaceholder,
+  ParticipantClickEvent,
+  TrackReferenceOrPlaceholder,
 } from "@livekit/components-core";
 import { isTrackReference } from "@livekit/components-core";
 import {
-    useConnectionState,
-    useIsSpeaking,
-    useLocalParticipant,
-    useMaybeTrackRefContext,
-    useTracks,
+  useConnectionState,
+  useIsSpeaking,
+  useLocalParticipant,
+  useMaybeTrackRefContext,
+  useParticipantContext,
+  useTracks,
 } from "@livekit/components-react";
 import { ConnectionState, Track } from "livekit-client";
 import * as Icon from "lucide-react";
@@ -22,37 +23,37 @@ import { toast } from "sonner";
 import { User } from "@/lib/types";
 
 // Context Imports
-import { useCallContext } from "@/context/call";
+import { useCallContext, useSubCallContext } from "@/context/call";
 import { useUserContext } from "@/context/user";
 
 // Components
 import {
-    CallUserModal,
-    DeafButton,
-    MuteButton,
-    ScreenShareButton,
+  CallUserModal,
+  DeafButton,
+  MuteButton,
+  ScreenShareButton,
 } from "@/components/modals/call";
 import { UserAvatar } from "@/components/modals/raw";
 import { Button } from "@/components/ui/button";
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuGroup,
-    ContextMenuItem,
-    ContextMenuTrigger,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSocketContext } from "@/context/socket";
 import { CallFocus } from "./call/focus";
@@ -60,7 +61,7 @@ import { CallGrid } from "./call/grid";
 
 // Helper Functions
 function mergeParticipantTracks(
-  tracks: TrackReferenceOrPlaceholder[]
+  tracks: TrackReferenceOrPlaceholder[],
 ): TrackReferenceOrPlaceholder[] {
   const merged = new Map<string, TrackReferenceOrPlaceholder>();
 
@@ -96,6 +97,7 @@ function getTrackPriority(track: TrackReferenceOrPlaceholder) {
 export default function Page() {
   const { conversations } = useUserContext();
   const { disconnect } = useCallContext();
+  const { startWatching, stopWatching } = useSubCallContext();
 
   // track management
   const trackReferences = useTracks(
@@ -103,11 +105,11 @@ export default function Page() {
       { source: Track.Source.Camera, withPlaceholder: true },
       { source: Track.Source.ScreenShare, withPlaceholder: false },
     ],
-    { onlySubscribed: false }
+    { onlySubscribed: false },
   );
   const participantTracks = useMemo(
     () => mergeParticipantTracks(trackReferences),
-    [trackReferences]
+    [trackReferences],
   );
 
   // focus stuff
@@ -143,7 +145,7 @@ export default function Page() {
     return participantTracks.find(
       (track) =>
         isTrackReference(track) &&
-        track.publication?.trackSid === focusedTrackSid
+        track.publication?.trackSid === focusedTrackSid,
     );
   }, [participantTracks, focusedTrackSid]);
 
@@ -163,27 +165,28 @@ export default function Page() {
       const fallbackTrack = participantTracks.find(
         (track) =>
           isTrackReference(track) &&
-          track.participant.identity === participantIdentity
+          track.participant.identity === participantIdentity,
       );
 
       return fallbackTrack?.publication?.trackSid ?? null;
     },
-    [participantTracks]
+    [participantTracks],
   );
 
   const handleParticipantClick = useCallback(
     (event: ParticipantClickEvent) => {
       const trackSid = resolveTrackSid(
         event.participant.identity,
-        event.track?.trackSid
+        event.track?.trackSid,
       );
       if (!trackSid) {
         return;
       }
 
+      startWatching(event.participant.identity);
       setFocusedTrackSid((current) => (current === trackSid ? null : trackSid));
     },
-    [resolveTrackSid]
+    [resolveTrackSid, startWatching],
   );
 
   const [open, setOpen] = useState(false);
@@ -248,9 +251,16 @@ export default function Page() {
           <Button
             className="w-10 h-9"
             variant="destructive"
-            onClick={() => disconnect()}
+            onClick={() => {
+              if (focusedTrackRef) {
+                setFocusedTrackSid(null);
+                stopWatching(focusedTrackRef.participant.identity);
+              } else {
+                disconnect();
+              }
+            }}
           >
-            <Icon.LogOut />
+            {focusedTrackRef ? <Icon.X /> : <Icon.LogOut />}
           </Button>
         </div>
       </div>
@@ -302,12 +312,20 @@ function UserInInviteSelection({
     </CommandItem>
   );
 }
-
 export function TileContent({
   hideBadges,
   small,
-}: { hideBadges?: boolean; small?: boolean } = {}) {
+  inGridView,
+}: { hideBadges?: boolean; small?: boolean; inGridView?: boolean } = {}) {
   const isSpeaking = useIsSpeaking();
+  const participant = useParticipantContext();
+  const { startWatching, stopWatching, isWatching } = useSubCallContext();
+
+  const identity = participant.identity;
+  const isWatchingUser = isWatching[identity];
+  const hasScreenShare =
+    participant.getTrackPublication(Track.Source.ScreenShare) !== undefined;
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -320,6 +338,7 @@ export function TileContent({
 
           <div className="w-full h-full flex items-center justify-center rounded-xl z-10">
             <CallUserModal
+              inGridView={inGridView}
               overwriteSize={small ? "extraLarge" : undefined}
               hideBadges={hideBadges}
             />
@@ -328,7 +347,19 @@ export function TileContent({
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuGroup>
-          <ContextMenuItem>Alarm</ContextMenuItem>
+          <ContextMenuItem
+            disabled={!hasScreenShare || isWatchingUser}
+            onSelect={() => startWatching(identity)}
+          >
+            Start Watching
+          </ContextMenuItem>
+          <ContextMenuItem
+            variant="destructive"
+            disabled={!isWatchingUser}
+            onSelect={() => stopWatching(identity)}
+          >
+            Stop Watching
+          </ContextMenuItem>
         </ContextMenuGroup>
       </ContextMenuContent>
     </ContextMenu>
