@@ -3,7 +3,7 @@ import type { TrackReference } from "@livekit/components-core";
 import { VideoTrack } from "@livekit/components-react";
 import { AnimatePresence, motion } from "framer-motion";
 import * as Icon from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 // Lib Imports
 import {
@@ -14,7 +14,7 @@ import {
 } from "@/lib/utils";
 
 // Context Imports
-import { useCallContext } from "@/context/call";
+import { useCallContext, useSubCallContext } from "@/context/call";
 
 // Components
 import { Text } from "@/components/markdown/text";
@@ -316,6 +316,7 @@ export function CallModal({
   deafened,
   screenShareTrackRef,
   hideBadges,
+  inGridView,
 }: Readonly<{
   overwriteSize?: AvatarSizes;
   title: string;
@@ -325,8 +326,24 @@ export function CallModal({
   deafened?: boolean;
   screenShareTrackRef?: TrackReference;
   hideBadges?: boolean;
+  inGridView?: boolean;
 }>) {
+  const { isWatching } = useSubCallContext();
+
   const isScreenShare = !!screenShareTrackRef;
+  const isLocal = screenShareTrackRef?.participant?.isLocal;
+  const trackId = screenShareTrackRef?.publication?.trackSid || "";
+  const currentIsWatching = isLocal ? true : (isWatching[trackId] ?? false);
+
+  const metadata = screenShareTrackRef?.participant?.metadata;
+  const previewImage = useMemo(() => {
+    if (!metadata) return null;
+    try {
+      return JSON.parse(metadata).stream_preview;
+    } catch {
+      return null;
+    }
+  }, [metadata]);
 
   return loading ? (
     <Card className="relative w-full h-full bg-input/30">
@@ -351,12 +368,33 @@ export function CallModal({
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
         <AnimatePresence>
           {isScreenShare && screenShareTrackRef ? (
-            <motion.div {...fadeAnimation} className="absolute inset-0 z-0">
-              <VideoTrack
-                trackRef={screenShareTrackRef}
-                className="rounded-xl h-full w-full object-contain bg-black"
-              />
-            </motion.div>
+            currentIsWatching ? (
+              <motion.div {...fadeAnimation} className="absolute inset-0 z-0">
+                <VideoTrack
+                  trackRef={screenShareTrackRef}
+                  className="rounded-xl h-full w-full object-contain bg-black"
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                {...fadeAnimation}
+                className="absolute inset-0 z-0 flex items-center justify-center rounded-xl overflow-hidden"
+              >
+                {previewImage && (
+                  <img
+                    src={previewImage}
+                    alt="Stream Preview"
+                    className="absolute inset-0 w-full h-full object-contain opacity-50 bg-black z-0"
+                  />
+                )}
+                {inGridView && (
+                  <Button className="z-10">
+                    <Icon.Monitor />
+                    Watch Stream
+                  </Button>
+                )}
+              </motion.div>
+            )
           ) : (
             <motion.div
               {...fadeAnimation}

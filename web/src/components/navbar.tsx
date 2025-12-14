@@ -27,7 +27,7 @@ export function Navbar() {
   useEffect(() => {
     if (currentReceiverId) {
       get(currentReceiverId, false).then((user) =>
-        setReceiverUsername(user.display)
+        setReceiverUsername(user.display),
       );
     }
   }, [currentReceiverId, get]);

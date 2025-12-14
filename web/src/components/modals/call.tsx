@@ -78,7 +78,7 @@ export function CallButtonWrapper() {
 
   const currentUserAlreadyHasACall = conversations.find(
     (conv) =>
-      conv.user_id === currentReceiverId && (conv.calls?.length ?? 0) > 0
+      conv.user_id === currentReceiverId && (conv.calls?.length ?? 0) > 0,
   );
 
   return currentUserAlreadyHasACall ? (
@@ -113,7 +113,12 @@ export function CallButtonWrapper() {
 export function CallUserModal({
   hideBadges,
   overwriteSize,
-}: { hideBadges?: boolean; overwriteSize?: AvatarSizes } = {}) {
+  inGridView,
+}: {
+  hideBadges?: boolean;
+  overwriteSize?: AvatarSizes;
+  inGridView?: boolean;
+} = {}) {
   const { identity, metadata } = useParticipantInfo();
   const participant = useParticipantContext();
   const trackRef = useMaybeTrackRefContext();
@@ -159,6 +164,7 @@ export function CallUserModal({
       id={Number(identity)}
       overwriteSize={overwriteSize}
       extraProps={{
+        inGridView,
         muted,
         deafened,
         screenShareTrackRef,
@@ -236,7 +242,9 @@ export function VoiceActions() {
   });
   const trackRef = screenShareTrackRefs.find(
     (ref) =>
-      ref && ref.participant?.isLocal && ref.source === Track.Source.ScreenShare
+      ref &&
+      ref.participant?.isLocal &&
+      ref.source === Track.Source.ScreenShare,
   );
   const isScreenShare = isScreenShareEnabled || !!trackRef;
 
@@ -399,8 +407,8 @@ export function MuteButton({
             ? "ghost"
             : "destructive"
           : isMicrophoneEnabled
-          ? "outline"
-          : "destructive"
+            ? "outline"
+            : "destructive"
       }
       onClick={toggleMute}
       aria-label={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
@@ -534,7 +542,7 @@ export function ScreenShareButton({
             const allowed = await window.electronAPI.getScreenAccess();
             if (!allowed) {
               toast.error(
-                "Screen capture permission denied. Please allow screen access in your system settings."
+                "Screen capture permission denied. Please allow screen access in your system settings.",
               );
               setLoading(false);
               return;
@@ -606,8 +614,8 @@ export function ScreenShareButton({
                     ? "default"
                     : "ghost"
                   : isScreenShareEnabled
-                  ? "default"
-                  : "outline"
+                    ? "default"
+                    : "outline"
               }
             >
               {isScreenShareEnabled ? (
@@ -666,8 +674,8 @@ export function DeafButton({
             ? "destructive"
             : "ghost"
           : isDeafened
-          ? "destructive"
-          : "outline"
+            ? "destructive"
+            : "outline"
       }
       onClick={toggleDeafen}
       aria-label={isDeafened ? "Undeafen" : "Deafen"}

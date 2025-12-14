@@ -74,7 +74,7 @@ export function CallGrid({
                   "w-full h-full relative border-0 flex justify-center items-center"
                 }
               >
-                <TileContent />
+                <TileContent inGridView />
               </ParticipantTile>
             </div>
           ))}
