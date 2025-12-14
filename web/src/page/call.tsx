@@ -2,16 +2,18 @@
 
 // Package Imports
 import type {
-  ParticipantClickEvent,
-  TrackReferenceOrPlaceholder,
+    ParticipantClickEvent,
+    TrackReferenceOrPlaceholder,
 } from "@livekit/components-core";
 import { isTrackReference } from "@livekit/components-core";
 import {
-  useIsSpeaking,
-  useMaybeTrackRefContext,
-  useTracks,
+    useConnectionState,
+    useIsSpeaking,
+    useLocalParticipant,
+    useMaybeTrackRefContext,
+    useTracks,
 } from "@livekit/components-react";
-import { Track } from "livekit-client";
+import { ConnectionState, Track } from "livekit-client";
 import * as Icon from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -25,32 +27,32 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import {
-  CallUserModal,
-  DeafButton,
-  MuteButton,
-  ScreenShareButton,
+    CallUserModal,
+    DeafButton,
+    MuteButton,
+    ScreenShareButton,
 } from "@/components/modals/call";
 import { UserAvatar } from "@/components/modals/raw";
 import { Button } from "@/components/ui/button";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
 } from "@/components/ui/command";
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuGroup,
-  ContextMenuItem,
-  ContextMenuTrigger,
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuGroup,
+    ContextMenuItem,
+    ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSocketContext } from "@/context/socket";
 import { CallFocus } from "./call/focus";
@@ -110,6 +112,28 @@ export default function Page() {
 
   // focus stuff
   const [focusedTrackSid, setFocusedTrackSid] = useState<string | null>(null);
+
+  const { localParticipant } = useLocalParticipant();
+  const connectionState = useConnectionState();
+
+  useEffect(() => {
+    if (localParticipant && connectionState === ConnectionState.Connected) {
+      const currentMetadata = localParticipant.metadata
+        ? JSON.parse(localParticipant.metadata)
+        : {};
+
+      if (currentMetadata.watching_stream !== focusedTrackSid) {
+        localParticipant
+          .setMetadata(
+            JSON.stringify({
+              ...currentMetadata,
+              watching_stream: focusedTrackSid,
+            }),
+          )
+          .catch(() => {});
+      }
+    }
+  }, [focusedTrackSid, localParticipant, connectionState]);
 
   const focusedTrackRef = useMemo(() => {
     if (!focusedTrackSid) {
