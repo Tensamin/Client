@@ -85,6 +85,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [dontSendInvite, setDontSendInvite] = useState(false);
   const [callId, setCallId] = useState("");
 
+  const memorizedReceiverId = useRef<number | null>(null);
+  useEffect(() => {
+    memorizedReceiverId.current = currentReceiverId;
+  }, [currentReceiverId]);
+
   // Connect functions
   const connectPromiseRef = useRef<{
     resolve: (() => void) | null;
@@ -109,7 +114,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         connectPromiseRef.current = { resolve, reject };
       });
     },
-    [setToken],
+    [setToken]
   );
   const [switchCallDialogOpen, setSwitchCallDialogOpen] = useState(false);
   const [pendingCall, setPendingCall] = useState<{
@@ -125,7 +130,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }
       return performConnect(token, newCallId);
     },
-    [shouldConnect, callId, performConnect],
+    [shouldConnect, callId, performConnect]
   );
 
   // Handle call switching
@@ -189,7 +194,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           return "";
         });
     },
-    [send],
+    [send]
   );
 
   const handleAcceptCall = useCallback(() => {
@@ -293,7 +298,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           setOuterState("CONNECTED");
           if (!dontSendInvite) {
             send("call_invite", {
-              receiver_id: currentReceiverId,
+              receiver_id: memorizedReceiverId.current,
               call_id: callId,
             })
               .then(() => {
@@ -429,7 +434,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             "Sub Call Context",
             "Failed to initialize audio",
             error,
-            "red",
+            "red"
           );
           toast.error("Failed to initialize audio.");
           if (createdTrack) createdTrack.stop();
@@ -450,9 +455,18 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     audioElements.forEach((audio) => {
       audio.muted = isDeafened;
     });
-    if (localParticipant && shouldConnect && connectionState === "connected") {
+    if (
+      localParticipant &&
+      shouldConnect &&
+      connectionState === ConnectionState.Connected
+    ) {
+      const currentMetadata = localParticipant.metadata
+        ? JSON.parse(localParticipant.metadata)
+        : {};
       localParticipant
-        .setMetadata(JSON.stringify({ deafened: isDeafened }))
+        .setMetadata(
+          JSON.stringify({ ...currentMetadata, deafened: isDeafened })
+        )
         .catch(() => {});
     }
   }, [isDeafened, localParticipant, shouldConnect, connectionState]);
