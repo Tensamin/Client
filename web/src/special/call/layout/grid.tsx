@@ -1,8 +1,4 @@
 // Package Imports
-import type {
-  ParticipantClickEvent,
-  TrackReferenceOrPlaceholder,
-} from "@livekit/components-core";
 import { getTrackReferenceId } from "@livekit/components-core";
 import { ParticipantTile } from "@livekit/components-react";
 
@@ -10,19 +6,15 @@ import { ParticipantTile } from "@livekit/components-react";
 import { calculateOptimalLayout, cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+// Context
+import { useCallPageContext } from "../context";
+
 // Components
-import { TileContent } from "@/page/call";
+import { TileContent } from "../modals/wrapper";
 
 // Main
-export function CallGrid({
-  participantTracks,
-  onParticipantClick,
-  className,
-}: {
-  participantTracks: TrackReferenceOrPlaceholder[];
-  onParticipantClick: (event: ParticipantClickEvent) => void;
-  className?: string;
-}) {
+export function CallGrid({ className }: { className?: string }) {
+  const { participantTracks, handleParticipantClick } = useCallPageContext();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
@@ -69,7 +61,7 @@ export function CallGrid({
               <ParticipantTile
                 trackRef={track}
                 disableSpeakingIndicator
-                onParticipantClick={onParticipantClick}
+                onParticipantClick={handleParticipantClick}
                 className={
                   "w-full h-full relative border-0 flex justify-center items-center"
                 }

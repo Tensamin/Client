@@ -13,22 +13,18 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { AvatarSizes, fallbackUser } from "@/lib/types";
+import { fallbackUser } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 
 // Main
 export function UserModal({
   id,
   size,
-  overwriteSize,
   calls,
-  extraProps,
 }: {
   id: number;
   size: "big" | "medium" | "profile" | "call";
-  overwriteSize?: AvatarSizes;
   calls?: string[];
-  extraProps?: Record<string, unknown>;
 }) {
   const { get, ownState, ownId, fetchedUsers } = useUserContext();
   const { setPage } = usePageContext();
@@ -136,15 +132,6 @@ export function UserModal({
           creationTimestamp={user.id}
           description={user.about || ""}
           state={user.state || "NONE"}
-        />
-      );
-    case "call":
-      return (
-        <RawModal.CallModal
-          overwriteSize={overwriteSize}
-          key={id}
-          {...props}
-          {...extraProps}
         />
       );
     default:

@@ -1,9 +1,9 @@
 "use client";
 
 // Package Imports
+import * as Icon from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import * as Icon from "lucide-react";
 
 // Lib Imports
 import { username_to_id } from "@/lib/endpoints";
@@ -11,12 +11,22 @@ import { cn } from "@/lib/utils";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
-import { useUserContext } from "@/context/user";
 import { rawDebugLog } from "@/context/storage";
+import { useUserContext } from "@/context/user";
 
 // Components
-import { Input } from "@/components/ui/input";
+import { LoadingIcon } from "@/components/loading";
+import { Text } from "@/components/markdown/text";
+import { PageDiv } from "@/components/pageDiv";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -26,24 +36,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { LoadingIcon } from "@/components/loading";
-import { PageDiv } from "@/components/pageDiv";
-import { UserModal } from "@/components/modals/user";
-import {
-  CardContent,
-  CardDescription,
-  CardHeader,
-  Card,
-  CardTitle,
-  CardAction,
-} from "@/components/ui/card";
-import { Text } from "@/components/markdown/text";
+import { Input } from "@/components/ui/input";
 
 // Main
 export default function Page() {
   const { send } = useSocketContext();
-  const { refetchConversations, ownId, appUpdateInformation } =
-    useUserContext();
+  const { refetchConversations, appUpdateInformation } = useUserContext();
 
   const [open, setOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
@@ -133,7 +131,6 @@ export default function Page() {
           Add Community
         </Button>
       </div>
-      <UserModal size="profile" id={ownId} />
       <ContentForTesting />
       <div className="mt-auto">
         {appUpdateInformation && (
@@ -203,5 +200,5 @@ export default function Page() {
 }
 
 export function ContentForTesting() {
-  return <div>🗣️ TOOOOOOOOOM</div>;
+  return <div></div>;
 }

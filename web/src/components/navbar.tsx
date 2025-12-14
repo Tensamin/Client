@@ -16,7 +16,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { WindowControls } from "@/components/windowControls";
-import { CallButtonWrapper } from "./modals/call";
+import { CallButtonWrapper } from "@/special/call/components/call-button";
 
 // Main
 export function Navbar() {
