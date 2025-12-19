@@ -175,6 +175,33 @@
   animation: enterAnimation 0.15s ease-out forwards;
 }
 
+/* View Transition Animations for call view */
+::view-transition-old(call-view),
+::view-transition-new(call-view) {
+  animation-duration: 300ms;
+  animation-timing-function: ease-in-out;
+}
+
+::view-transition-old(call-view) {
+  animation-name: fade-out;
+}
+
+::view-transition-new(call-view) {
+  animation-name: fade-in;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
 @layer utilities {
   .electron-drag {
     -webkit-app-region: drag;
