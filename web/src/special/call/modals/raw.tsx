@@ -1,7 +1,6 @@
 // Package Imports
 import { TrackReference } from "@livekit/components-core";
 import { VideoTrack } from "@livekit/components-react";
-import { AnimatePresence, motion } from "framer-motion";
 import * as Icon from "lucide-react";
 import { useMemo } from "react";
 
@@ -16,14 +15,6 @@ import { UserAvatar } from "@/components/modals/raw";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-// Animation
-const fadeAnimation = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-  transition: { duration: 0.2 },
-};
 
 // Main
 export function CallModal({
@@ -52,7 +43,7 @@ export function CallModal({
   const isScreenShare = !!screenShareTrackRef;
   const isLocal = screenShareTrackRef?.participant?.isLocal;
   const trackId = screenShareTrackRef?.publication?.trackSid || "";
-  const currentIsWatching = isLocal ? true : (isWatching[trackId] ?? false);
+  const currentIsWatching = isLocal ? true : isWatching[trackId] ?? false;
 
   const metadata = screenShareTrackRef?.participant?.metadata;
   const previewImage = useMemo(() => {
@@ -85,50 +76,42 @@ export function CallModal({
   ) : (
     <Card className="relative w-full h-full bg-input/30">
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
-        <AnimatePresence>
-          {isScreenShare && screenShareTrackRef ? (
-            currentIsWatching ? (
-              <motion.div {...fadeAnimation} className="absolute inset-0 z-0">
-                <VideoTrack
-                  trackRef={screenShareTrackRef}
-                  className="rounded-xl h-full w-full object-contain bg-black"
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                {...fadeAnimation}
-                className="absolute inset-0 z-0 flex items-center justify-center rounded-xl overflow-hidden"
-              >
-                {previewImage && (
-                  <img
-                    src={previewImage}
-                    alt="Stream Preview"
-                    className="absolute inset-0 w-full h-full object-contain opacity-50 bg-black z-0"
-                  />
-                )}
-                {inGridView && (
-                  <Button className="z-10">
-                    <Icon.Monitor />
-                    Watch Stream
-                  </Button>
-                )}
-              </motion.div>
-            )
-          ) : (
-            <motion.div
-              {...fadeAnimation}
-              className="w-full h-full flex justify-center items-center"
-            >
-              <UserAvatar
-                icon={icon}
-                title={title}
-                size={overwriteSize ? overwriteSize : "jumbo"}
-                state={undefined}
-                border
+        {isScreenShare && screenShareTrackRef ? (
+          currentIsWatching ? (
+            <div className="absolute inset-0 z-0">
+              <VideoTrack
+                trackRef={screenShareTrackRef}
+                className="rounded-xl h-full w-full object-contain bg-black"
               />
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          ) : (
+            <div className="absolute inset-0 z-0 flex items-center justify-center rounded-xl overflow-hidden">
+              {previewImage && (
+                <img
+                  src={previewImage}
+                  alt="Stream Preview"
+                  className="absolute inset-0 w-full h-full object-contain opacity-50 bg-black z-0"
+                />
+              )}
+              {inGridView && (
+                <Button className="z-10">
+                  <Icon.Monitor />
+                  Watch Stream
+                </Button>
+              )}
+            </div>
+          )
+        ) : (
+          <div className="w-full h-full flex justify-center items-center">
+            <UserAvatar
+              icon={icon}
+              title={title}
+              size={overwriteSize ? overwriteSize : "jumbo"}
+              state={undefined}
+              border
+            />
+          </div>
+        )}
         {!hideBadges && (
           <div className="absolute h-full w-full flex items-end justify-start p-2 gap-2 pointer-events-none z-30">
             <Badge

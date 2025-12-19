@@ -44,23 +44,12 @@ function CallPageContent() {
   const { conversations } = useUserContext();
   const { disconnect } = useCallContext();
   const { stopWatching } = useSubCallContext();
-  const { participantTracks, focusedTrackRef, setFocusedTrackSid } =
-    useCallPageContext();
+  const { focusedTrackRef, setFocusedTrackSid } = useCallPageContext();
 
   const [open, setOpen] = useState(false);
 
   return (
     <div className="flex flex-col w-full h-full gap-5 relative pb-11">
-      {/* Participant Count Indicator */}
-      <div className="absolute top-3 left-3 z-10">
-        <div className="flex items-center gap-2 bg-card/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border">
-          <Icon.Users className="w-4 h-4" />
-          <span className="text-sm font-medium">
-            {participantTracks.length}{" "}
-            {participantTracks.length === 1 ? "participant" : "participants"}
-          </span>
-        </div>
-      </div>
       <div className="flex-1">
         {focusedTrackRef ? <CallFocus /> : <CallGrid className="h-full" />}
       </div>
