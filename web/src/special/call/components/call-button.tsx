@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 
 // Helper Functions
-function displayCallId(callId: string) {
+export function displayCallId(callId: string) {
   const hex = callId.replace(/-/g, "");
 
   const int = BigInt(`0x${hex}`);

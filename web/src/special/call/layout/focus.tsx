@@ -3,8 +3,7 @@ import type { TrackReferenceOrPlaceholder } from "@livekit/components-core";
 import { isTrackReference } from "@livekit/components-core";
 import {
   FocusLayout,
-  ParticipantTile,
-  useParticipants,
+  ParticipantTile
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -13,7 +12,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { calculateOptimalLayout } from "@/lib/utils";
 
 // Components
-import { UserAvatar } from "@/components/modals/raw";
 import { FocusDuplicateOverlay, TileContent } from "../modals/wrapper";
 
 // Helper Functions
@@ -38,6 +36,7 @@ export function CallFocus() {
     participantTracks,
     focusedTrackSid,
     handleParticipantClick,
+    hideParticipants,
   } = useCallPageContext();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -62,22 +61,12 @@ export function CallFocus() {
     return calculateOptimalLayout(
       1,
       containerSize.width,
-      Math.max(0, containerSize.height - 200),
-      16, // gap-4
+      hideParticipants
+        ? containerSize.height
+        : Math.max(0, containerSize.height - 230),
+      16 // gap-4
     );
-  }, [containerSize]);
-
-  const participants = useParticipants();
-  const viewers = useMemo(() => {
-    return participants.filter((p) => {
-      try {
-        const md = p.metadata ? JSON.parse(p.metadata) : {};
-        return md.watching_stream === focusedTrackSid;
-      } catch {
-        return false;
-      }
-    });
-  }, [participants, focusedTrackSid]);
+  }, [containerSize, hideParticipants]);
 
   if (!focusedTrackRef) return;
 
@@ -95,35 +84,26 @@ export function CallFocus() {
           }}
         >
           <TileContent hideBadges />
-          <div className="absolute bottom-2 left-2 flex -space-x-2 overflow-hidden p-1">
-            {viewers.map((p) => (
-              <UserAvatar
-                key={p.identity}
-                title={p.name || p.identity}
-                size="small"
-                border
-                className="ring-2 ring-background"
-              />
-            ))}
-          </div>
         </FocusLayout>
-        <div className="w-full max-w-5xl">
-          <div className="h-30 flex items-center justify-center gap-3 overflow-x-auto px-2">
-            {participantTracks.map((track) => (
-              <ParticipantTile
-                key={getTrackKey(track)}
-                trackRef={track}
-                disableSpeakingIndicator
-                onParticipantClick={handleParticipantClick}
-                className="relative h-full aspect-video flex-none rounded-lg"
-              >
-                {/* CallModal from @/.../raw.tsx */}
-                <TileContent small />
-                <FocusDuplicateOverlay focusedTrackSid={focusedTrackSid} />
-              </ParticipantTile>
-            ))}
+        {!hideParticipants && (
+          <div className="w-full max-w-5xl">
+            <div className="h-37 flex items-center justify-center gap-3 overflow-x-auto px-2">
+              {participantTracks.map((track) => (
+                <ParticipantTile
+                  key={getTrackKey(track)}
+                  trackRef={track}
+                  disableSpeakingIndicator
+                  onParticipantClick={handleParticipantClick}
+                  className="relative h-full aspect-video flex-none rounded-xl"
+                >
+                  {/* CallModal from @/.../raw.tsx */}
+                  <TileContent small />
+                  <FocusDuplicateOverlay focusedTrackSid={focusedTrackSid} />
+                </ParticipantTile>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -1,8 +1,10 @@
 "use client";
 
 // Package Imports
+import { useParticipants } from "@livekit/components-react";
+import { AnimatePresence } from "framer-motion";
 import * as Icon from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
@@ -14,7 +16,9 @@ import { useSocketContext } from "@/context/socket";
 import { useUserContext } from "@/context/user";
 
 // Components
+import { MotionDivWrapper } from "@/components/animation/presence";
 import { UserAvatar } from "@/components/modals/raw";
+import { UserModal } from "@/components/modals/user";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -24,17 +28,20 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import {
   CameraButton,
   DeafButton,
   MuteButton,
   ScreenShareButton,
 } from "../components/buttons";
+import { displayCallId } from "../components/call-button";
 import { CallPageProvider, useCallPageContext } from "../context";
 import { CallFocus } from "./focus";
 import { CallGrid } from "./grid";
@@ -44,12 +51,68 @@ function CallPageContent() {
   const { conversations } = useUserContext();
   const { disconnect } = useCallContext();
   const { stopWatching } = useSubCallContext();
-  const { focusedTrackRef, setFocusedTrackSid } = useCallPageContext();
+  const {
+    focusedTrackRef,
+    setFocusedTrackSid,
+    hideParticipants,
+    setHideParticipants,
+    focusedTrackSid,
+  } = useCallPageContext();
+  const { callId } = useCallContext();
 
   const [open, setOpen] = useState(false);
 
+  const participants = useParticipants();
+  const viewers = useMemo(() => {
+    return participants.filter((p) => {
+      try {
+        const md = p.metadata ? JSON.parse(p.metadata) : {};
+        return md.watching_stream === focusedTrackSid;
+      } catch {
+        return false;
+      }
+    });
+  }, [participants, focusedTrackSid]);
+
   return (
     <div className="flex flex-col w-full h-full gap-5 relative pb-11">
+      <div className="absolute pl-1 pt-1 h-6 top-0 left-0 flex gap-3 items-center">
+        {/* Information */}
+        <div>{displayCallId(callId)}</div>
+
+        <AnimatePresence>
+          {focusedTrackRef && (
+            <MotionDivWrapper fadeInFromTop className="flex gap-3 items-center">
+              {/* Separator */}
+              <div className="w-0.5 h-6 bg-border" />
+
+              {/* Viewers */}
+              <div className="flex -space-x-3 overflow-hidden z-30 items-center">
+                <AnimatePresence>
+                  {viewers.map((p) => (
+                    <MotionDivWrapper
+                      className="flex items-center justify-center"
+                      fadeInFromTop
+                      key={p.identity}
+                    >
+                      <UserModal
+                        className="scale-90"
+                        id={Number(p.identity)}
+                        size="avatar"
+                      />
+                    </MotionDivWrapper>
+                  ))}
+                </AnimatePresence>
+              </div>
+              {viewers.length > 0 && (
+                <span>
+                  {viewers.length} viewer{viewers.length !== 1 && "s"}
+                </span>
+              )}
+            </MotionDivWrapper>
+          )}
+        </AnimatePresence>
+      </div>
       <div className="flex-1">
         {focusedTrackRef ? <CallFocus /> : <CallGrid className="h-full" />}
       </div>
@@ -105,6 +168,24 @@ function CallPageContent() {
           >
             {focusedTrackRef ? <Icon.X /> : <Icon.LogOut />}
           </Button>
+          {/* More Options */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button className="w-10 h-9" variant="ghost">
+                <Icon.EllipsisVertical />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="flex flex-col gap-2 w-55">
+              <div className="flex justify-between">
+                <Label htmlFor="hide-participants">Hide Participants</Label>
+                <Switch
+                  id="hide-participants"
+                  checked={hideParticipants}
+                  onCheckedChange={setHideParticipants}
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </div>
