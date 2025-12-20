@@ -319,10 +319,10 @@ export function ScreenShareButton({
             </MenubarItem>
             <MenubarSub>
               <MenubarSubTrigger className="flex gap-2 items-center">
-                <Icon.Gem size={15} /> Change Quality
+                <Icon.Sparkles size={15} /> Change Quality
               </MenubarSubTrigger>
               <MenubarSubContent>
-                <MenubarItem disabled>Change in settings</MenubarItem>
+                <MenubarItem disabled>Work in progress</MenubarItem>
               </MenubarSubContent>
             </MenubarSub>
           </MenubarContent>

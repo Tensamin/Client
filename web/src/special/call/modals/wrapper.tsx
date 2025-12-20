@@ -150,7 +150,7 @@ export function FocusDuplicateOverlay({
   }
 
   return (
-    <div className="absolute inset-0 bg-black/65 z-20 text-white flex items-center justify-center pointer-events-none">
+    <div className="absolute inset-0 bg-black/65 z-20 text-white flex items-center justify-center pointer-events-none rounded-xl border">
       <Icon.ScanEye className="h-6 w-6" />
     </div>
   );

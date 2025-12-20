@@ -11,6 +11,7 @@ import { AvatarSizes } from "@/lib/types";
 import { useSubCallContext } from "@/context/call";
 
 // Components
+import { LoadingBlock } from "@/components/loading";
 import { UserAvatar } from "@/components/modals/raw";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export function CallModal({
   muted,
   deafened,
   screenShareTrackRef,
-  hideBadges,
+  hideBadges: isFocused,
   inGridView,
 }: Readonly<{
   overwriteSize?: AvatarSizes;
@@ -42,8 +43,8 @@ export function CallModal({
 
   const isScreenShare = !!screenShareTrackRef;
   const isLocal = screenShareTrackRef?.participant?.isLocal;
-  const trackId = screenShareTrackRef?.publication?.trackSid || "";
-  const currentIsWatching = isLocal ? true : isWatching[trackId] ?? false;
+  const currentIsWatching =
+    isWatching[screenShareTrackRef?.participant?.identity ?? ""] ?? false;
 
   const metadata = screenShareTrackRef?.participant?.metadata;
   const previewImage = useMemo(() => {
@@ -54,6 +55,56 @@ export function CallModal({
       return null;
     }
   }, [metadata]);
+
+  const renderScreenShareContent = () => {
+    // Own Screen Share
+    if (isLocal && (isFocused || inGridView)) {
+      return (
+        <div className="absolute inset-0 z-0 bg-black rounded-xl flex items-center justify-center">
+          Your stream is running. For a preview, look at the bottom of the
+          sidebar.
+        </div>
+      );
+    }
+
+    // Watching someone
+    if (currentIsWatching && !isLocal) {
+      return (
+        <div className="absolute inset-0 z-0 bg-black rounded-xl">
+          <VideoTrack
+            trackRef={screenShareTrackRef!}
+            className="rounded-xl h-full w-full object-contain bg-black"
+          />
+        </div>
+      );
+    }
+
+    // Preview
+    if (previewImage) {
+      return inGridView ? (
+        <>
+          <img
+            src={previewImage}
+            alt="Stream Preview"
+            className="absolute inset-0 w-full h-full object-contain opacity-50 bg-black z-0 rounded-xl"
+          />
+          <Button className="z-10">
+            <Icon.Monitor />
+            Watch Stream
+          </Button>
+        </>
+      ) : (
+        <img
+          src={previewImage}
+          alt="Stream Preview"
+          className="absolute inset-0 w-full h-full object-contain bg-black z-0 rounded-xl"
+        />
+      );
+    }
+
+    // Loading
+    return <LoadingBlock />;
+  };
 
   return loading ? (
     <Card className="relative w-full h-full bg-input/30">
@@ -66,7 +117,7 @@ export function CallModal({
             loading
           />
         </div>
-        {!hideBadges && (
+        {!isFocused && (
           <div className="absolute h-full w-full flex items-end justify-start p-4 z-30">
             <Badge className="select-none">...</Badge>
           </div>
@@ -76,43 +127,7 @@ export function CallModal({
   ) : (
     <Card className="relative w-full h-full bg-input/30">
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
-        {isScreenShare && screenShareTrackRef ? (
-          currentIsWatching ? (
-            <div className="absolute inset-0 z-0">
-              <VideoTrack
-                trackRef={screenShareTrackRef}
-                className="rounded-xl h-full w-full object-contain bg-black"
-              />
-            </div>
-          ) : (
-            <div className="absolute inset-0 z-0 flex items-center justify-center rounded-xl overflow-hidden">
-              {previewImage && (
-                <img
-                  src={previewImage}
-                  alt="Stream Preview"
-                  className="absolute inset-0 w-full h-full object-contain opacity-50 bg-black z-0"
-                />
-              )}
-              {inGridView && (
-                <Button className="z-10">
-                  <Icon.Monitor />
-                  Watch Stream
-                </Button>
-              )}
-            </div>
-          )
-        ) : (
-          <div className="w-full h-full flex justify-center items-center">
-            <UserAvatar
-              icon={icon}
-              title={title}
-              size={overwriteSize ? overwriteSize : "jumbo"}
-              state={undefined}
-              border
-            />
-          </div>
-        )}
-        {!hideBadges && (
+        {!isFocused && (
           <div className="absolute h-full w-full flex items-end justify-start p-2 gap-2 pointer-events-none z-30">
             <Badge
               variant="outline"
@@ -130,6 +145,19 @@ export function CallModal({
                 <Icon.HeadphoneOff color="var(--foreground)" />
               </Badge>
             )}
+          </div>
+        )}
+        {isScreenShare && screenShareTrackRef ? (
+          renderScreenShareContent()
+        ) : (
+          <div className="w-full h-full flex justify-center items-center">
+            <UserAvatar
+              icon={icon}
+              title={title}
+              size={overwriteSize ? overwriteSize : "jumbo"}
+              state={undefined}
+              border
+            />
           </div>
         )}
       </CardContent>

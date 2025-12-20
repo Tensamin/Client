@@ -1,31 +1,31 @@
 "use client";
 
 // Package Imports
-import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Ring, Hourglass } from "ldrs/react";
-import "ldrs/react/Ring.css";
+import { Hourglass, Ring } from "ldrs/react";
 import "ldrs/react/Hourglass.css";
+import "ldrs/react/Ring.css";
+import { useEffect, useState } from "react";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
 
 // Components
+import { MotionDivWrapper } from "@/components/animation/presence";
 import {
   AlertDialog,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogCancel,
   AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { MotionDivWrapper } from "@/components/animation/presence";
-import { FixedWindowControls } from "./windowControls";
 import { progressBar } from "@/lib/utils";
+import { FixedWindowControls } from "./windowControls";
 
 // Main
 function ClearButton() {
@@ -221,5 +221,13 @@ export function DelayedLoadingIcon({ invert }: { invert?: boolean }) {
         </MotionDivWrapper>
       )}
     </AnimatePresence>
+  );
+}
+
+export function LoadingBlock() {
+  return (
+    <div className="w-full h-full bg-background flex items-center justify-center">
+      <LoadingIcon invert />
+    </div>
   );
 }

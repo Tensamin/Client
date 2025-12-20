@@ -15,16 +15,19 @@ import {
 } from "@/components/ui/context-menu";
 import { fallbackUser } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 // Main
 export function UserModal({
   id,
   size,
   calls,
+  className,
 }: {
   id: number;
-  size: "big" | "medium" | "profile" | "call";
+  size: "big" | "medium" | "profile" | "call" | "avatar";
   calls?: string[];
+  className?: string;
 }) {
   const { get, ownState, ownId, fetchedUsers } = useUserContext();
   const { setPage } = usePageContext();
@@ -133,6 +136,23 @@ export function UserModal({
           description={user.about || ""}
           state={user.state || "NONE"}
         />
+      );
+    case "avatar":
+      return (
+        <Tooltip>
+          <TooltipTrigger>
+            <RawModal.UserAvatar
+              key={id}
+              border
+              className={className}
+              size="small"
+              title={user.display}
+              icon={user.avatar}
+              loading={user.loading}
+            />
+          </TooltipTrigger>
+          <TooltipContent>{user.display}</TooltipContent>
+        </Tooltip>
       );
     default:
       return null;
