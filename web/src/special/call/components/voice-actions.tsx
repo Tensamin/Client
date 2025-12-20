@@ -175,10 +175,7 @@ export function VoiceActions() {
             </p>
           </Button>
         </PopoverTrigger>
-        <PopoverContent
-          side="top"
-          className="ml-5 w-[350px] flex flex-col gap-2"
-        >
+        <PopoverContent side="top" className="ml-5 w-87.5 flex flex-col gap-2">
           <p className="font-medium">Connection Status</p>
           <Button
             onClick={() => {

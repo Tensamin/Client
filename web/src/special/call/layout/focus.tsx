@@ -1,10 +1,7 @@
 // Package Imports
 import type { TrackReferenceOrPlaceholder } from "@livekit/components-core";
 import { isTrackReference } from "@livekit/components-core";
-import {
-  FocusLayout,
-  ParticipantTile
-} from "@livekit/components-react";
+import { FocusLayout, ParticipantTile } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -64,7 +61,7 @@ export function CallFocus() {
       hideParticipants
         ? containerSize.height
         : Math.max(0, containerSize.height - 230),
-      16 // gap-4
+      16, // gap-4
     );
   }, [containerSize, hideParticipants]);
 

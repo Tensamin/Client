@@ -61,7 +61,7 @@ export function CallModal({
     if (isLocal && (isFocused || inGridView)) {
       return (
         <div className="absolute inset-0 z-0 bg-black rounded-xl flex items-center justify-center">
-          Your stream is running. For a preview, look at the bottom of the
+          Your screen is being shared. There is a preview at the bottom of the
           sidebar.
         </div>
       );

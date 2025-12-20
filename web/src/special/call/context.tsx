@@ -38,7 +38,7 @@ const CallPageContext = createContext<CallPageContextValue | null>(null);
 
 // Helper Functions
 function mergeParticipantTracks(
-  tracks: TrackReferenceOrPlaceholder[]
+  tracks: TrackReferenceOrPlaceholder[],
 ): TrackReferenceOrPlaceholder[] {
   const merged = new Map<string, TrackReferenceOrPlaceholder>();
 
@@ -80,11 +80,11 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
       { source: Track.Source.Camera, withPlaceholder: true },
       { source: Track.Source.ScreenShare, withPlaceholder: false },
     ],
-    { onlySubscribed: false }
+    { onlySubscribed: false },
   );
   const participantTracks = useMemo(
     () => mergeParticipantTracks(trackReferences),
-    [trackReferences]
+    [trackReferences],
   );
 
   // focus stuff
@@ -107,7 +107,7 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
             JSON.stringify({
               ...currentMetadata,
               watching_stream: focusedTrackSid,
-            })
+            }),
           )
           .catch(() => {});
       }
@@ -122,7 +122,7 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
     return participantTracks.find(
       (track) =>
         isTrackReference(track) &&
-        track.publication?.trackSid === focusedTrackSid
+        track.publication?.trackSid === focusedTrackSid,
     );
   }, [participantTracks, focusedTrackSid]);
 
@@ -142,19 +142,19 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
       const fallbackTrack = participantTracks.find(
         (track) =>
           isTrackReference(track) &&
-          track.participant.identity === participantIdentity
+          track.participant.identity === participantIdentity,
       );
 
       return fallbackTrack?.publication?.trackSid ?? null;
     },
-    [participantTracks]
+    [participantTracks],
   );
 
   const handleParticipantClick = useCallback(
     (event: ParticipantClickEvent) => {
       const trackSid = resolveTrackSid(
         event.participant.identity,
-        event.track?.trackSid
+        event.track?.trackSid,
       );
       if (!trackSid) {
         return;
@@ -163,7 +163,7 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
       startWatching(event.participant.identity);
       setFocusedTrackSid((current) => (current === trackSid ? null : trackSid));
     },
-    [resolveTrackSid, startWatching]
+    [resolveTrackSid, startWatching],
   );
 
   const value: CallPageContextValue = {
