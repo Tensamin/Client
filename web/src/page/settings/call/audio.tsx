@@ -1,6 +1,7 @@
 // Package Imports
 import { useMediaDeviceSelect } from "@livekit/components-react";
-import { useState, useEffect, useRef, useCallback } from "react";
+import type { AudioPipelineHandle } from "@tensamin/audio";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
@@ -9,10 +10,9 @@ import { useStorageContext } from "@/context/storage";
 import { audioService } from "@/lib/audioService";
 
 // Components
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -20,8 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SettingsPageTitle } from "@/page/settings";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { SettingsPageTitle } from "@/page/settings";
 
 // Icons
 import * as Icon from "lucide-react";
@@ -55,6 +56,7 @@ function useAudioTest(
   const destinationNodeRef = useRef<MediaStreamAudioDestinationNode | null>(
     null,
   );
+  const pipelineHandleRef = useRef<AudioPipelineHandle | null>(null);
 
   const updateAudioLevel = useCallback(() => {
     if (!analyserRef.current) return;
@@ -84,33 +86,24 @@ function useAudioTest(
 
       streamRef.current = stream;
 
+      await audioService.resumeContext();
       const audioContext = audioService.getAudioContext();
-      if (audioContext.state === "suspended") {
-        await audioContext.resume();
-      }
 
-      // Apply noise processing if enabled
-      if (settings.enableNoiseSuppression) {
-        const threshold = -20 - settings.noiseSensitivity * 70;
-
-        const processed = await audioService.processStream(stream, {
-          enableNoiseGate: true,
-          algorithm: "rnnoise",
-          maxChannels: settings.channelCount,
-          sensitivity: threshold,
+      const { stream: processedStream, handle } = await audioService
+        .processStream(stream, {
+          noiseSuppressionEnabled: settings.enableNoiseSuppression,
+          noiseSensitivity: settings.noiseSensitivity,
           inputGain: settings.inputGain,
+          enableNoiseGate: true,
+          assetCdnUrl: "/audio",
+        })
+        .catch((error) => {
+          console.error("Failed to start audio pipeline", error);
+          throw error;
         });
-        processedStreamRef.current = processed;
-      } else {
-        const audioContext = audioService.getAudioContext();
-        const source = audioContext.createMediaStreamSource(stream);
-        const gainNode = audioContext.createGain();
-        gainNode.gain.value = settings.inputGain;
-        const dest = audioContext.createMediaStreamDestination();
-        source.connect(gainNode);
-        gainNode.connect(dest);
-        processedStreamRef.current = dest.stream;
-      }
+
+      processedStreamRef.current = processedStream;
+      pipelineHandleRef.current = handle;
 
       // Setup analyser for visualization
       const analyser = audioContext.createAnalyser();
@@ -148,7 +141,10 @@ function useAudioTest(
     streamRef.current?.getTracks().forEach((track) => track.stop());
     processedStreamRef.current?.getTracks().forEach((track) => track.stop());
 
-    audioService.cleanup();
+    if (pipelineHandleRef.current) {
+      audioService.releasePipeline(pipelineHandleRef.current);
+      pipelineHandleRef.current = null;
+    }
 
     streamRef.current = null;
     processedStreamRef.current = null;

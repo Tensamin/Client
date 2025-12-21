@@ -2,29 +2,30 @@
 
 // Package Imports
 import {
-  LiveKitRoom,
-  RoomAudioRenderer,
-  useConnectionState,
-  useLocalParticipant,
-  useRoomContext,
-  useTracks,
+    LiveKitRoom,
+    RoomAudioRenderer,
+    useConnectionState,
+    useLocalParticipant,
+    useRoomContext,
+    useTracks,
 } from "@livekit/components-react";
+import type { SpeakingController } from "@tensamin/audio";
 import {
-  ConnectionState,
-  createLocalAudioTrack,
-  LocalAudioTrack,
-  LocalVideoTrack,
-  RoomEvent,
-  Track,
+    ConnectionState,
+    createLocalAudioTrack,
+    LocalAudioTrack,
+    LocalVideoTrack,
+    RoomEvent,
+    Track,
 } from "livekit-client";
 import * as Icon from "lucide-react";
 import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useRef,
+    useState,
 } from "react";
 import { toast } from "sonner";
 
@@ -40,14 +41,14 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -433,8 +434,10 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   const { localParticipant } = useLocalParticipant();
 
   const [localTrack, setLocalTrack] = useState<LocalAudioTrack | null>(null);
+  const pipelineControllerRef = useRef<SpeakingController | null>(null);
   const [isDeafened, setIsDeafened] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [isWatching, setIsWatching] = useState<Record<string, boolean>>({});
 
   const startWatching = useCallback((identity: string) => {
@@ -516,6 +519,8 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           const enableNoiseSuppression =
             (data.call_enableNoiseSuppression as boolean) ?? true;
 
+          await audioService.resumeContext();
+
           createdTrack = await createLocalAudioTrack({
             echoCancellation:
               (data.call_enableEchoCancellation as boolean) ?? false,
@@ -532,32 +537,38 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          // Apply noise suppression
-          if (enableNoiseSuppression) {
-            const audioContext = audioService.getAudioContext();
-            createdTrack.setAudioContext(audioContext);
+          // Publish track first (required before replacing track)
+          await localParticipant.publishTrack(createdTrack);
 
-            // Calc threshold
-            // 0.0 -> -20dB
-            // 0.5 -> -55dB
-            // 1.0 -> -90dB
-            const sensitivity = (data.call_noiseSensitivity as number) ?? 0.5;
-            const threshold = -20 - sensitivity * 70;
-            const inputGain = (data.call_inputGain as number) ?? 1.0;
-
-            // Set processor
-            const processor = audioService.getProcessor({
-              enableNoiseGate: (data.call_enableNoiseGate as boolean) ?? true,
-              algorithm: "rnnoise",
-              maxChannels: (data.call_channelCount as number) ?? 2,
-              sensitivity: threshold,
-              inputGain: inputGain,
-            });
-            await createdTrack.setProcessor(processor);
+          if (!mounted) {
+            createdTrack.stop();
+            return;
           }
 
-          // Publish track
-          await localParticipant.publishTrack(createdTrack);
+          const sensitivity = (data.call_noiseSensitivity as number) ?? 0.5;
+          const inputGain = (data.call_inputGain as number) ?? 1.0;
+
+          // Attach processing pipeline after publishing
+          const controller = await audioService.attachToLocalTrack(
+            createdTrack,
+            {
+              noiseSuppressionEnabled: enableNoiseSuppression,
+              noiseSensitivity: sensitivity,
+              inputGain,
+              enableNoiseGate:
+                (data.call_enableNoiseGate as boolean | undefined) ?? true,
+              assetCdnUrl: "/audio",
+              muteWhenSilent: false,
+            },
+          );
+
+          pipelineControllerRef.current = controller;
+
+          // Subscribe to speaking state changes
+          controller.onChange((state) => {
+            setIsSpeaking(state.speaking);
+          });
+
           setLocalTrack(createdTrack);
           setIsMuted(createdTrack.isMuted);
         } catch (error) {
@@ -657,6 +668,10 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
           rawDebugLog("Sub Call Context", "Error stopping track", err, "red");
         }
+        if (pipelineControllerRef.current) {
+          audioService.releaseController(pipelineControllerRef.current);
+          pipelineControllerRef.current = null;
+        }
         audioService.cleanup();
 
         if (isMounted) {
@@ -676,6 +691,10 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         try {
           localTrack.stop();
         } catch {}
+        if (pipelineControllerRef.current) {
+          audioService.releaseController(pipelineControllerRef.current);
+          pipelineControllerRef.current = null;
+        }
         audioService.cleanup();
       }
     };
@@ -688,6 +707,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         isDeafened,
         toggleDeafen,
         isMuted,
+        isSpeaking,
         connectionState,
         isWatching,
         setIsWatching,
@@ -717,6 +737,7 @@ type SubCallContextValue = {
   toggleMute: () => void;
   isDeafened: boolean;
   isMuted: boolean;
+  isSpeaking: boolean;
   connectionState: ConnectionState;
   toggleDeafen: () => void;
   isWatching: Record<string, boolean>;

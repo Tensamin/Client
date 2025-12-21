@@ -15,16 +15,10 @@ export default function Page() {
       license: "Apache-2.0",
     },
     {
-      name: "RNNoise",
-      onlineLicenselink: "https://github.com/xiph/rnnoise/blob/main/COPYING",
-      localLicenseLink: "/licenses/RNNOISE.txt",
-      license: "BSD 3-Clause",
-    },
-    {
-      name: "SpeedX",
-      onlineLicenselink: "https://www.xiph.org/licenses/bsd/speex/",
-      localLicenseLink: "/licenses/SPEEDX.txt",
-      license: "Revised BSD license",
+      name: "DeepFilterNet",
+      onlineLicenselink: "https://github.com/Rikorose/DeepFilterNet/",
+      localLicenseLink: "/licenses/DEEPFILTERNET.txt",
+      license: "Apache-2.0 & MIT",
     },
   ];
 

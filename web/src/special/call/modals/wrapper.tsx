@@ -1,10 +1,9 @@
 // Package Imports
 import { isTrackReference } from "@livekit/components-core";
 import {
-  useIsSpeaking,
-  useMaybeTrackRefContext,
-  useParticipantContext,
-  useParticipantInfo,
+    useMaybeTrackRefContext,
+    useParticipantContext,
+    useParticipantInfo,
 } from "@livekit/components-react";
 import { ParticipantEvent, Track } from "livekit-client";
 import * as Icon from "lucide-react";
@@ -14,6 +13,7 @@ import { useEffect, useState } from "react";
 import { AvatarSizes, fallbackUser } from "@/lib/types";
 
 // Context Imports
+import { useSubCallContext } from "@/context/call";
 import { useUserContext } from "@/context/user";
 
 // Components
@@ -111,7 +111,11 @@ export function TileContent({
   small,
   inGridView,
 }: { hideBadges?: boolean; small?: boolean; inGridView?: boolean } = {}) {
-  const isSpeaking = useIsSpeaking();
+  const participant = useParticipantContext();
+  const { isSpeaking: localIsSpeaking } = useSubCallContext();
+  
+  // Use our speaking detection for local participant, LiveKit's for remote
+  const isSpeaking = participant.isLocal ? localIsSpeaking : false;
 
   return (
     <ParticipantContextMenu>

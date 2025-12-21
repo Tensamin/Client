@@ -1,499 +1,188 @@
 import {
-  SpeexWorkletNode,
-  loadSpeex,
-  RnnoiseWorkletNode,
-  loadRnnoise,
-  NoiseGateWorkletNode,
-} from "@sapphi-red/web-noise-suppressor";
-import { TrackProcessor, Track } from "livekit-client";
-import type { AudioProcessorOptions } from "livekit-client";
-import { rawDebugLog } from "@/context/storage";
+  attachSpeakingDetectionToTrack,
+  type AudioPipelineHandle,
+  type LivekitSpeakingOptions,
+  type SpeakingController,
+} from "@tensamin/audio";
+import {
+  closeAudioContext,
+  getAudioContext,
+  resumeAudioContext,
+} from "@tensamin/audio/dist/context/audio-context.mjs";
+import { createAudioPipeline } from "@tensamin/audio/dist/pipeline/audio-pipeline.mjs";
+import type { LocalAudioTrack } from "livekit-client";
 
-export type NoiseSuppressionAlgorithm = "speex" | "rnnoise" | "noisegate";
+export type ProcessingConfig = {
+  noiseSuppressionEnabled?: boolean;
+  noiseSensitivity?: number; // 0..1 slider from UI
+  noiseReductionLevel?: number; // 0..100 explicit override
+  inputGain?: number; // linear multiplier
+  enableNoiseGate?: boolean;
+  assetCdnUrl?: string;
+  muteWhenSilent?: boolean;
+};
 
-interface NoiseSuppressionOptions {
-  enableNoiseGate: boolean;
-  algorithm: NoiseSuppressionAlgorithm;
-  maxChannels?: number;
-  sensitivity?: number;
-  inputGain?: number;
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
+
+function mapNoiseReductionLevel(
+  sensitivity?: number,
+  override?: number,
+): number {
+  if (typeof override === "number" && Number.isFinite(override)) {
+    return clamp(Math.round(override), 0, 100);
+  }
+  const sens = typeof sensitivity === "number" ? clamp(sensitivity, 0, 1) : 0.5;
+  // Map 0..1 slider into a reasonable DeepFilterNet suppression range (30..100).
+  return clamp(Math.round(30 + sens * 70), 10, 100);
 }
 
-interface AudioGateOptions {
-  threshold: number;
-  maxChannels?: number;
+function mapSpeakingConfig(sensitivity?: number) {
+  const sens = typeof sensitivity === "number" ? clamp(sensitivity, 0, 1) : 0.5;
+  // Old logic used a dB threshold: -20 - sens*70. Keep maxDb fixed and slide minDb.
+  const threshold = -20 - sens * 70;
+  const minDb = Math.min(-25, threshold);
+  const maxDb = -20;
+  // Bias speaking on/off ratios slightly with sensitivity to retain user feel.
+  const speakOnRatio = clamp(0.5 + sens * 0.3, 0.4, 0.9);
+  const speakOffRatio = clamp(speakOnRatio - 0.2, 0.1, 0.6);
+  return {
+    minDb,
+    maxDb,
+    speakOnRatio,
+    speakOffRatio,
+    hangoverMs: 350,
+    attackMs: 50,
+    releaseMs: 120,
+  } satisfies LivekitSpeakingOptions["speaking"];
+}
+
+function toLivekitOptions(config?: ProcessingConfig): LivekitSpeakingOptions {
+  const sensitivity = config?.noiseSensitivity;
+  const inputGain = config?.inputGain ?? 1;
+  const noiseSuppressionEnabled = config?.noiseSuppressionEnabled ?? true;
+  const assetCdnUrl = config?.assetCdnUrl ?? "/audio";
+
+  return {
+    noiseSuppression: {
+      enabled: noiseSuppressionEnabled,
+      noiseReductionLevel: mapNoiseReductionLevel(
+        sensitivity,
+        config?.noiseReductionLevel,
+      ),
+      assetConfig: {
+        cdnUrl: assetCdnUrl,
+      },
+    },
+    speaking: mapSpeakingConfig(sensitivity),
+    output: {
+      speechGain: clamp(inputGain, 0, 3),
+      silenceGain: config?.enableNoiseGate === false ? 0.15 : 0,
+      gainRampTime: 0.02,
+      maxGainDb: 6,
+      smoothTransitions: true,
+    },
+    muteWhenSilent: config?.muteWhenSilent ?? false,
+  } satisfies LivekitSpeakingOptions;
 }
 
 class AudioService {
-  private static instance: AudioService;
-  private audioContext: AudioContext | null = null;
-  private wasmBinaries: Map<string, ArrayBuffer> = new Map();
-  private workletLoaded: Map<string, boolean> = new Map();
+  private pipelines = new Set<AudioPipelineHandle>();
+  private controllers = new Set<SpeakingController>();
 
-  // Simple log helpers (green messages)
-  private logGreen(message: string): void {
-    rawDebugLog("Audio Service", message, "", "green");
+  getAudioContext(): AudioContext {
+    return getAudioContext();
   }
 
-  // Current noise suppression setup
-  private currentProcessor: AudioWorkletNode | null = null;
-  private currentGateProcessor: AudioWorkletNode | null = null;
-  private currentSecondProcessor: AudioWorkletNode | null = null;
-  private sourceNode: MediaStreamAudioSourceNode | null = null;
-  private gainNode: GainNode | null = null;
-  private destinationNode: MediaStreamAudioDestinationNode | null = null;
-  private isProcessing: boolean = false;
-
-  public static getInstance(): AudioService {
-    if (!AudioService.instance) {
-      AudioService.instance = new AudioService();
-    }
-    return AudioService.instance;
-  }
-
-  private constructor() {}
-
-  public getAudioContext(): AudioContext {
-    if (!this.audioContext) {
-      const AudioContextClass =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext })
-          .webkitAudioContext;
-      this.audioContext = new AudioContextClass();
-    }
-    return this.audioContext;
-  }
-
-  private async loadWasmBinary(
-    algorithm: "speex" | "rnnoise",
-  ): Promise<ArrayBuffer> {
-    const cached = this.wasmBinaries.get(algorithm);
-    if (cached) return cached;
-
-    const wasmPath = `/audio/wasm/${algorithm}.wasm`;
-    const simdPath = `/audio/wasm/${algorithm}_simd.wasm`;
-
+  async resumeContext() {
     try {
-      let wasmBinary: ArrayBuffer;
-      if (algorithm === "speex") {
-        wasmBinary = await loadSpeex({ url: wasmPath });
-      } else {
-        wasmBinary = await loadRnnoise({ url: wasmPath, simdUrl: simdPath });
+      // Ensure context exists before attempting resume to avoid a no-op.
+      const ctx = this.getAudioContext();
+      if (ctx.state === "suspended") {
+        await resumeAudioContext();
       }
-      this.wasmBinaries.set(algorithm, wasmBinary);
-      this.logGreen(`Loaded WASM for ${algorithm}`);
-      return wasmBinary;
     } catch (error) {
-      rawDebugLog(
-        "Audio Service",
-        "Failed to load WASM",
-        {
-          algorithm,
-          error,
-        },
-        "red",
-      );
-      throw new Error(`Failed to load ${algorithm} WASM: ${error}`);
+      console.error("Failed to resume audio context", error);
     }
   }
 
-  private async loadWorklet(
-    algorithm: NoiseSuppressionAlgorithm,
-  ): Promise<void> {
-    if (this.workletLoaded.get(algorithm)) return;
+  async attachToLocalTrack(
+    track: LocalAudioTrack,
+    config?: ProcessingConfig,
+  ): Promise<SpeakingController> {
+    await this.resumeContext();
+    const controller = await attachSpeakingDetectionToTrack(
+      track,
+      toLivekitOptions(config),
+    );
+    this.controllers.add(controller);
+    return controller;
+  }
 
-    const ctx = this.getAudioContext();
-    const workletPath = `/audio/worklets/${algorithm}Worklet.js`;
+  async processStream(
+    stream: MediaStream,
+    config?: ProcessingConfig,
+  ): Promise<{ stream: MediaStream; handle: AudioPipelineHandle }> {
+    await this.resumeContext();
+    const track = stream.getAudioTracks()[0];
+    if (!track) {
+      throw new Error("processStream requires an audio track in the stream");
+    }
 
+    const pipeline = await createAudioPipeline(track, toLivekitOptions(config));
+    this.pipelines.add(pipeline);
+
+    const processedStream = new MediaStream([pipeline.processedTrack]);
+    return { stream: processedStream, handle: pipeline };
+  }
+
+  releasePipeline(handle: AudioPipelineHandle | null | undefined) {
+    if (!handle) return;
     try {
-      await ctx.audioWorklet.addModule(workletPath);
-      this.workletLoaded.set(algorithm, true);
-      this.logGreen(`Loaded worklet for ${algorithm}`);
-    } catch (error) {
-      rawDebugLog(
-        "Audio Service",
-        "Failed to load worklet",
-        {
-          algorithm,
-          error,
-        },
-        "red",
-      );
-      throw new Error(`Failed to load ${algorithm} worklet: ${error}`);
+      handle.dispose();
+    } finally {
+      this.pipelines.delete(handle);
     }
   }
 
-  public async createNoiseProcessor(
-    options: NoiseSuppressionOptions,
-  ): Promise<AudioWorkletNode> {
-    const ctx = this.getAudioContext();
-    await this.loadWorklet(options.algorithm);
-
-    switch (options.algorithm) {
-      case "speex": {
-        const wasmBinary = await this.loadWasmBinary("speex");
-        const node = new SpeexWorkletNode(ctx, {
-          wasmBinary,
-          maxChannels: options.maxChannels || 2,
-        });
-        this.logGreen(
-          `Noise suppression enabled (speex, maxChannels=${
-            options.maxChannels || 2
-          })`,
-        );
-        return node;
-      }
-      case "rnnoise": {
-        const wasmBinary = await this.loadWasmBinary("rnnoise");
-        const node = new RnnoiseWorkletNode(ctx, {
-          wasmBinary,
-          maxChannels: options.maxChannels || 2,
-        });
-        this.logGreen(
-          `Noise suppression enabled (rnnoise, maxChannels=${
-            options.maxChannels || 2
-          })`,
-        );
-        return node;
-      }
-      case "noisegate": {
-        const threshold = options.sensitivity || -50;
-        const node = new NoiseGateWorkletNode(ctx, {
-          openThreshold: threshold,
-          closeThreshold: threshold - 10, // 10dB hysteresis
-          holdMs: 200, // Longer hold time
-          maxChannels: options.maxChannels || 2,
-        });
-        // Attach port listener if available so we can log gate-specific events
-        try {
-          if (node.port) {
-            node.port.onmessage = (evt: MessageEvent) => {
-              rawDebugLog(
-                "Audio Service",
-                "Noise gate event",
-                evt.data,
-                "green",
-              );
-            };
-            this.logGreen(`Attached noise gate message handler`);
-          }
-        } catch (err) {
-          rawDebugLog(
-            "Audio Service",
-            "Failed to attach noise gate message handler",
-            err,
-            "red",
-          );
-        }
-        this.logGreen(
-          `Noise gate enabled (threshold=${
-            options.sensitivity ?? -50
-          }, maxChannels=${options.maxChannels || 2})`,
-        );
-        return node;
-      }
-      default:
-        throw new Error(`Unsupported algorithm: ${options.algorithm}`);
+  releaseController(controller: SpeakingController | null | undefined) {
+    if (!controller) return;
+    try {
+      controller.dispose();
+    } finally {
+      this.controllers.delete(controller);
     }
   }
 
-  public async createAudioGate(
-    options: AudioGateOptions,
-  ): Promise<AudioWorkletNode> {
-    const ctx = this.getAudioContext();
-    await this.loadWorklet("noisegate");
-    const node = new NoiseGateWorkletNode(ctx, {
-      openThreshold: options.threshold,
-      closeThreshold: options.threshold - 10, // Increased hysteresis to 10dB
-      holdMs: 200, // Increased hold time to 200ms
-      maxChannels: options.maxChannels || 2,
+  async cleanup() {
+    if (!this.controllers.size && !this.pipelines.size) {
+      return;
+    }
+
+    this.controllers.forEach((controller) => {
+      try {
+        controller.dispose();
+      } catch (error) {
+        console.error("Failed to dispose controller", error);
+      }
     });
-    this.logGreen(
-      `Audio gate enabled (threshold=${options.threshold}, maxChannels=${
-        options.maxChannels || 2
-      })`,
-    );
-    try {
-      if (node.port) {
-        node.port.onmessage = (evt: MessageEvent) => {
-          rawDebugLog("Audio Service", "Audio gate event", evt.data, "green");
-        };
-        this.logGreen(`Attached audio gate message handler`);
+    this.controllers.clear();
+
+    this.pipelines.forEach((pipeline) => {
+      try {
+        pipeline.dispose();
+      } catch (error) {
+        console.error("Failed to dispose pipeline", error);
       }
-    } catch (err) {
-      rawDebugLog(
-        "Audio Service",
-        "Failed to attach audio gate message handler",
-        err,
-        "red",
-      );
-    }
-    return node;
-  }
-
-  public async processStreamWithGate(
-    inputStream: MediaStream,
-    gateOptions: AudioGateOptions,
-  ): Promise<MediaStream> {
-    this.cleanup();
-    const ctx = this.getAudioContext();
-
-    if (ctx.state === "suspended") {
-      await ctx.resume();
-    }
+    });
+    this.pipelines.clear();
 
     try {
-      this.sourceNode = ctx.createMediaStreamSource(inputStream);
-      this.destinationNode = ctx.createMediaStreamDestination();
-      this.currentGateProcessor = await this.createAudioGate(gateOptions);
-
-      this.sourceNode.connect(this.currentGateProcessor);
-      this.currentGateProcessor.connect(this.destinationNode);
-
-      this.isProcessing = true;
-      this.logGreen(
-        `Processing stream with gate: threshold=${gateOptions.threshold}`,
-      );
-      return this.destinationNode.stream;
+      await closeAudioContext();
     } catch (error) {
-      rawDebugLog("Audio Service", "Noise gate error", error, "red");
-      this.cleanup();
-      throw error;
+      console.error("Failed to close audio context", error);
     }
-  }
-
-  public async processStream(
-    inputStream: MediaStream,
-    options: NoiseSuppressionOptions,
-    gateOptions?: AudioGateOptions,
-  ): Promise<MediaStream> {
-    this.cleanup();
-    const ctx = this.getAudioContext();
-
-    if (ctx.state === "suspended") {
-      await ctx.resume();
-    }
-
-    try {
-      this.sourceNode = ctx.createMediaStreamSource(inputStream);
-      this.destinationNode = ctx.createMediaStreamDestination();
-      this.currentProcessor = await this.createNoiseProcessor(options);
-
-      // Create and configure gain node
-      this.gainNode = ctx.createGain();
-      this.gainNode.gain.value = options.inputGain ?? 1.0;
-      this.logGreen(`Input gain set to ${this.gainNode.gain.value}`);
-
-      const shouldEnableGate =
-        gateOptions ||
-        (options.enableNoiseGate && options.algorithm !== "noisegate");
-
-      // Connect: Source -> Gain -> Processor -> [Gate] -> Destination
-      this.sourceNode.connect(this.gainNode);
-      this.gainNode.connect(this.currentProcessor);
-
-      if (shouldEnableGate) {
-        const effectiveGateOptions = gateOptions || {
-          threshold: options.sensitivity ?? -50,
-          maxChannels: options.maxChannels,
-        };
-        this.currentGateProcessor =
-          await this.createAudioGate(effectiveGateOptions);
-        this.currentProcessor.connect(this.currentGateProcessor);
-        this.currentGateProcessor.connect(this.destinationNode);
-      } else {
-        this.currentProcessor.connect(this.destinationNode);
-      }
-
-      this.isProcessing = true;
-      if (options.algorithm === "noisegate") {
-        this.logGreen(
-          `Processing stream with noise gate: threshold=${
-            options.sensitivity ?? "(default)"
-          }`,
-        );
-      } else {
-        this.logGreen(
-          `Processing stream with noise suppression: algorithm=${options.algorithm}`,
-        );
-        if (shouldEnableGate) {
-          this.logGreen(`Processing stream with additional noise gate`);
-        }
-      }
-      return this.destinationNode.stream;
-    } catch (error) {
-      rawDebugLog("Audio Service", "Process error", error, "red");
-      this.cleanup();
-      throw error;
-    }
-  }
-
-  public cleanup(): void {
-    try {
-      this.sourceNode?.disconnect();
-      this.gainNode?.disconnect();
-      this.currentProcessor?.disconnect();
-      this.currentGateProcessor?.disconnect();
-      this.currentSecondProcessor?.disconnect();
-      this.destinationNode?.disconnect();
-    } catch {}
-
-    this.sourceNode = null;
-    this.gainNode = null;
-    this.currentProcessor = null;
-    this.currentGateProcessor = null;
-    this.currentSecondProcessor = null;
-    this.destinationNode = null;
-    if (this.currentGateProcessor) {
-      this.logGreen("Audio gate disabled");
-    }
-    if (this.currentProcessor) {
-      this.logGreen("Noise suppression disabled");
-    }
-    this.isProcessing = false;
-  }
-
-  public isSupported(): boolean {
-    return (
-      // @ts-expect-error webkitAudioContext exists on Safari
-      !!(window.AudioContext || window.webkitAudioContext) &&
-      !!window.AudioWorklet
-    );
-  }
-
-  public getProcessor(
-    defaultNoiseOptions?: NoiseSuppressionOptions,
-  ): TrackProcessor<Track.Kind.Audio, AudioProcessorOptions> {
-    // eslint-disable-next-line
-    const self = this;
-    let originalTrack: MediaStreamTrack | undefined = undefined;
-    let processedStream: MediaStream | undefined = undefined;
-
-    const setProcessedTrackFromStream = (stream?: MediaStream) => {
-      processor.processedTrack = stream?.getAudioTracks()?.[0];
-      processedStream = stream;
-    };
-
-    const processor: TrackProcessor<Track.Kind.Audio, AudioProcessorOptions> = {
-      name: "tensamin-audio-processor",
-      processedTrack: undefined,
-
-      async init(opts) {
-        if (!opts || !opts.track)
-          throw new TypeError("Processor init requires options.track");
-
-        originalTrack = opts.track;
-
-        const inputStream = new MediaStream([originalTrack]);
-        const ctx = self.getAudioContext();
-        if (ctx.state === "suspended") await ctx.resume();
-
-        try {
-          const algorithm =
-            defaultNoiseOptions?.algorithm ??
-            (self.isSupported() ? "rnnoise" : "noisegate");
-          const channelCount = Math.max(
-            opts.kind === "audio" ? 1 : 1,
-            defaultNoiseOptions?.maxChannels ?? 1,
-          );
-
-          const processed = await self.processStream(inputStream, {
-            enableNoiseGate: defaultNoiseOptions?.enableNoiseGate ?? true,
-            algorithm,
-            maxChannels: channelCount,
-            sensitivity: defaultNoiseOptions?.sensitivity,
-            inputGain: defaultNoiseOptions?.inputGain,
-          });
-          setProcessedTrackFromStream(processed);
-          if (processor.processedTrack) {
-            if (algorithm === "noisegate") {
-              self.logGreen(
-                `Processor initialized: noise gate working (processed track set)`,
-              );
-            } else {
-              self.logGreen(
-                `Processor initialized: noise suppression working (processed track set)`,
-              );
-            }
-          } else {
-            self.logGreen(
-              `Processor initialized: noise suppression not active (no processed track)`,
-            );
-          }
-        } catch (error) {
-          rawDebugLog("Audio Service", "Failed to get processor", error, "red");
-          setProcessedTrackFromStream(undefined);
-          throw error;
-        }
-      },
-
-      async restart(opts) {
-        if (!opts || !opts.track)
-          throw new TypeError("Processor restart requires options.track");
-        try {
-          processedStream?.getTracks().forEach((t) => t.stop());
-        } catch {}
-
-        originalTrack = opts.track as MediaStreamTrack;
-        const inputStream = new MediaStream([originalTrack]);
-
-        try {
-          const algorithm =
-            defaultNoiseOptions?.algorithm ??
-            (self.isSupported() ? "rnnoise" : "noisegate");
-          const processed = await self.processStream(inputStream, {
-            enableNoiseGate: defaultNoiseOptions?.enableNoiseGate ?? true,
-            algorithm,
-            maxChannels: defaultNoiseOptions?.maxChannels ?? 1,
-            sensitivity: defaultNoiseOptions?.sensitivity,
-            inputGain: defaultNoiseOptions?.inputGain,
-          });
-          setProcessedTrackFromStream(processed);
-          if (processor.processedTrack) {
-            if (algorithm === "noisegate") {
-              self.logGreen(
-                `Processor restarted: noise gate working (processed track set)`,
-              );
-            } else {
-              self.logGreen(
-                `Processor restarted: noise suppression working (processed track set)`,
-              );
-            }
-          } else {
-            self.logGreen(
-              `Processor restarted: noise suppression not active (no processed track)`,
-            );
-          }
-        } catch (err) {
-          rawDebugLog(
-            "Audio Service",
-            "Failed to restart audio processor",
-            err,
-            "red",
-          );
-          setProcessedTrackFromStream(undefined);
-          throw err;
-        }
-      },
-
-      // Cleanup
-      async destroy() {
-        try {
-          processedStream?.getTracks().forEach((t) => t.stop());
-        } catch {}
-        setProcessedTrackFromStream(undefined);
-        const hadGate = !!self.currentGateProcessor;
-        self.cleanup();
-        if (hadGate) {
-          self.logGreen(`Processor destroyed: audio gate disabled`);
-        } else {
-          self.logGreen(`Processor destroyed: noise suppression disabled`);
-        }
-      },
-    } as TrackProcessor<Track.Kind.Audio, AudioProcessorOptions>;
-
-    return processor;
   }
 }
 
-export const audioService = AudioService.getInstance();
+export const audioService = new AudioService();
