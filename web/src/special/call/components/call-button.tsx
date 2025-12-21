@@ -5,6 +5,7 @@ import { v7 } from "uuid";
 
 // Context Imports
 import { useCallContext } from "@/context/call";
+import { usePageContext } from "@/context/page";
 import { useUserContext } from "@/context/user";
 
 // Components
@@ -12,15 +13,15 @@ import { MotionDivWrapper } from "@/components/animation/presence";
 import { LoadingIcon } from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
 } from "@/components/ui/select";
 
 // Helper Functions
@@ -155,8 +156,12 @@ export function CallButtonPopover({
 }
 
 export function CallButtonWrapper() {
-  const { currentReceiverId, conversations } = useUserContext();
+  const { conversations } = useUserContext();
+  const { page, pageData } = usePageContext();
   const { getCallToken, connect, outerState } = useCallContext();
+
+  // Calculate currentReceiverId directly from pageData to ensure it's always in sync
+  const currentReceiverId = page === "chat" ? Number(pageData) || 0 : 0;
 
   const currentUserAlreadyHasACall = conversations.find(
     (conv) =>
@@ -181,7 +186,7 @@ export function CallButtonWrapper() {
         onClick={() => {
           const callId = v7();
           getCallToken(callId).then((token) => {
-            connect(token, callId);
+            connect(token, callId, currentReceiverId);
           });
         }}
         disabled={outerState === "CONNECTED" || outerState === "CONNECTING"}
