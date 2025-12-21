@@ -23,11 +23,11 @@
       {
         packages.default = pkgs.stdenv.mkDerivation rec {
           pname = "tensamin";
-          version = "0.1.19"; # nix-update will manage this
+          version = "0.1.20"; # nix-update will manage this
 
           src = pkgs.fetchurl {
             url = "https://github.com/Tensamin/Frontend/releases/download/v${version}/tensamin_${version}_amd64.deb";
-            hash = "sha256-M/iHgloJqWyI7Ch4l9YYYVYQ4MxgjdlsIEgUJ2r+4YE="; # nix-update will manage this
+            hash = "sha256-dgPilx5deNvO+bfj5tKqv2Te7zifk1vwUQg4nsFTFFg="; # nix-update will manage this
           };
 
           nativeBuildInputs = with pkgs; [
