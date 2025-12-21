@@ -75,7 +75,7 @@ const config: ForgeConfig = {
   hooks: {
     postMake: async (_, makeResults) => {
       const arch = process.env.ARCH || os.arch();
-      const excludePatterns = ["RELEASES", ".deb", ".rpm"];
+      const excludePatterns = ["RELEASES", ".deb", ".rpm", ".nupkg"];
 
       for (const result of makeResults) {
         for (const i in result.artifacts) {
