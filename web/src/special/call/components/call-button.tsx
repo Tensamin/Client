@@ -5,7 +5,6 @@ import { v7 } from "uuid";
 
 // Context Imports
 import { useCallContext } from "@/context/call";
-import { usePageContext } from "@/context/page";
 import { useUserContext } from "@/context/user";
 
 // Components
@@ -156,17 +155,12 @@ export function CallButtonPopover({
 }
 
 export function CallButtonWrapper() {
-  const { conversations } = useUserContext();
-  const { page, pageData } = usePageContext();
+  const { conversations, currentReceiverId } = useUserContext();
   const { getCallToken, connect, outerState } = useCallContext();
 
-  // Calculate currentReceiverId directly from pageData to ensure it's always in sync
-  const currentReceiverId = page === "chat" ? Number(pageData) || 0 : 0;
-
-  const currentUserAlreadyHasACall = conversations.find(
-    (conv) =>
-      conv.user_id === currentReceiverId && (conv.calls?.length ?? 0) > 0,
-  );
+  const currentUserAlreadyHasACall =
+    conversations.find((conv) => conv?.user_id === currentReceiverId)?.calls
+      ?.length ?? 0 > 0;
 
   return currentUserAlreadyHasACall ? (
     <MotionDivWrapper key="call-button">

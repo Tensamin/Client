@@ -56,6 +56,8 @@ export function VoiceActions() {
   };
   const [pingData, setPingData] = useState<PingDataPayload[]>([]);
   useEffect(() => {
+    if (!localParticipant) return;
+
     const interval = setInterval(() => {
       const currentPing = localParticipant.engine.client.rtt;
       const currentTime = new Date().toLocaleTimeString([], {
@@ -73,7 +75,7 @@ export function VoiceActions() {
     }, 2500);
 
     return () => clearInterval(interval);
-  }, [localParticipant.engine.client.rtt]);
+  }, [localParticipant]);
   const pingGraph = {
     ping: {
       label: "Ping",

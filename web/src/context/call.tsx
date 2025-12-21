@@ -73,6 +73,15 @@ import { User } from "@/lib/types";
 const SubCallContext = createContext<SubCallContextValue | null>(null);
 const CallContext = createContext<CallContextValue | null>(null);
 
+function safeParseMetadata(metadata?: string | null) {
+  if (!metadata) return {} as Record<string, unknown>;
+  try {
+    return JSON.parse(metadata) ?? {};
+  } catch {
+    return {} as Record<string, unknown>;
+  }
+}
+
 // Stream Preview
 async function captureScreenShareFrame(
   track: LocalVideoTrack,
@@ -121,9 +130,7 @@ function ScreenSharePreviewManager() {
 
       const preview = await captureScreenShareFrame(screenShareTrack);
       if (preview) {
-        const currentMetadata = participant.metadata
-          ? JSON.parse(participant.metadata)
-          : {};
+        const currentMetadata = safeParseMetadata(participant.metadata);
         if (currentMetadata.stream_preview !== preview) {
           participant.setMetadata(
             JSON.stringify({ ...currentMetadata, stream_preview: preview }),
@@ -143,9 +150,7 @@ function ScreenSharePreviewManager() {
       // Clean up metadata when screen share stops
       const participant = localParticipantRef.current;
       if (participant) {
-        const currentMetadata = participant.metadata
-          ? JSON.parse(participant.metadata)
-          : {};
+        const currentMetadata = safeParseMetadata(participant.metadata);
         if (currentMetadata.stream_preview) {
           delete currentMetadata.stream_preview;
           participant.setMetadata(JSON.stringify(currentMetadata));
