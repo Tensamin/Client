@@ -35,6 +35,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { DeafButton, MuteButton, ScreenShareButton } from "./buttons";
+import { displayCallId } from "./call-button";
 
 // Main
 export function VoiceActions() {
@@ -179,24 +180,28 @@ export function VoiceActions() {
         </PopoverTrigger>
         <PopoverContent side="top" className="ml-5 w-87.5 flex flex-col gap-2">
           <p className="font-medium">Connection Status</p>
-          <Button
-            onClick={() => {
-              try {
-                navigator.clipboard.writeText(name || "");
-                setCopyCallId(true);
-              } catch {
-                toast.error("Failed to copy Call ID to clipboard");
-              }
-            }}
-            className="flex justify-start w-33 items-center"
-            variant="outline"
-          >
-            {copyCallId ? <Icon.Check /> : <Icon.Copy />}
-            <span>Copy Call ID</span>
-          </Button>
+          <div className="flex gap-3 items-center">
+            <Button
+              onClick={() => {
+                try {
+                  navigator.clipboard.writeText(name || "");
+                  setCopyCallId(true);
+                } catch {
+                  toast.error("Failed to copy Call ID to clipboard");
+                }
+              }}
+              className="flex justify-start w-33 items-center"
+              variant="outline"
+            >
+              {copyCallId ? <Icon.Check /> : <Icon.Copy />}
+              <span>Copy Call ID</span>
+            </Button>
+            <div className="w-px h-6 bg-ring rounded-full" />
+            <p>{name !== "" ? displayCallId(name) : "..."}</p>
+          </div>
           <div className="flex flex-col gap-0.5 text-sm">
-            <p>Quality: {quality ? quality : "..."}</p>
-            <p>State: {connectionState ? connectionState : "..."}</p>
+            Your call ID differs from the call display name, don&apos;t share
+            it. The call display name can&apos;t be reversed to the call ID.
           </div>
           <p className="font-medium">Ping Graph</p>
           <div className="flex flex-col gap-0.5 text-sm">
