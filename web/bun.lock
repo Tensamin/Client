@@ -27,7 +27,7 @@
         "@radix-ui/react-tabs": "^1.1.13",
         "@radix-ui/react-tooltip": "^1.2.8",
         "@tanstack/react-query": "^5.90.12",
-        "@tensamin/audio": "^0.2.0",
+        "@tensamin/audio": "^0.2.3",
         "babel-plugin-react-compiler": "^1.0.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -448,7 +448,7 @@
 
     "@tanstack/react-query": ["@tanstack/react-query@5.90.12", "", { "dependencies": { "@tanstack/query-core": "5.90.12" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-graRZspg7EoEaw0a8faiUASCyJrqjKPdqJ9EwuDRUF9mEYJ1YPczI9H+/agJ0mOJkPCJDk0lsz5QTrLZ/jQ2rg=="],
 
-    "@tensamin/audio": ["@tensamin/audio@0.2.0", "", { "dependencies": { "deepfilternet3-noise-filter": "^1.1.2", "mitt": "^3.0.1" }, "peerDependencies": { "livekit-client": "^2.0.0" } }, "sha512-Uuqh9g2zdKhcpByP9jTv5KHkJALuIbmkiAkRVi+X8ZzBx6DNSu+9kyBdarN4pMeUNOnSkZtSmwsCUR0DO64f2g=="],
+    "@tensamin/audio": ["@tensamin/audio@0.2.3", "", { "dependencies": { "deepfilternet3-noise-filter": "^1.1.2", "mitt": "^3.0.1" }, "peerDependencies": { "livekit-client": "^2.0.0" } }, "sha512-QtknxAsWs/O8jRLpAX7ofAXc43YoLzofJdz32Kipdi5PkCcPA8JXEO2+XRl8TpeqiQjNjiuosV5XA0pPS6GK7w=="],
 
     "@tsconfig/node10": ["@tsconfig/node10@1.0.12", "", {}, "sha512-UCYBaeFvM11aU2y3YPZ//O5Rhj+xKyzy7mvcIoAjASbigy8mHMryP5cK7dgjlz2hWxh1g5pLw084E0a/wlUSFQ=="],
 

@@ -9,12 +9,23 @@ import {
   useRoomContext,
   useTracks,
 } from "@livekit/components-react";
-import type { SpeakingController } from "@tensamin/audio";
+import {
+  attachSpeakingDetectionToRemoteTrack,
+  DEFAULT_LIVEKIT_SPEAKING_OPTIONS,
+  DEFAULT_NOISE_SUPPRESSION_CONFIG,
+  DEFAULT_OUTPUT_GAIN_CONFIG,
+  DEFAULT_SPEAKING_DETECTION_CONFIG,
+  type SpeakingController,
+} from "@tensamin/audio";
 import {
   ConnectionState,
   createLocalAudioTrack,
   LocalAudioTrack,
   LocalVideoTrack,
+  RemoteAudioTrack,
+  RemoteParticipant,
+  RemoteTrack,
+  RemoteTrackPublication,
   RoomEvent,
   Track,
 } from "livekit-client";
@@ -24,6 +35,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -63,7 +75,7 @@ const CallContext = createContext<CallContextValue | null>(null);
 
 // Stream Preview
 async function captureScreenShareFrame(
-  track: LocalVideoTrack
+  track: LocalVideoTrack,
 ): Promise<string | null> {
   const video = document.createElement("video");
   video.muted = true;
@@ -114,7 +126,7 @@ function ScreenSharePreviewManager() {
           : {};
         if (currentMetadata.stream_preview !== preview) {
           participant.setMetadata(
-            JSON.stringify({ ...currentMetadata, stream_preview: preview })
+            JSON.stringify({ ...currentMetadata, stream_preview: preview }),
           );
         }
       }
@@ -269,7 +281,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       shouldConnect,
       setPage,
       waitForDisconnect,
-    ]
+    ],
   );
 
   const [switchCallDialogOpen, setSwitchCallDialogOpen] = useState(false);
@@ -291,7 +303,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }
       return performConnect(token, newCallId);
     },
-    [shouldConnect, callId, performConnect]
+    [shouldConnect, callId, performConnect],
   );
 
   // Handle call switching
@@ -349,7 +361,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           return "";
         });
     },
-    [send]
+    [send],
   );
 
   const handleAcceptCall = useCallback(() => {
@@ -513,10 +525,53 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
   const [localTrack, setLocalTrack] = useState<LocalAudioTrack | null>(null);
   const pipelineControllerRef = useRef<SpeakingController | null>(null);
+  const remoteControllersRef = useRef<
+    Map<string, { controller: SpeakingController; cleanup?: () => void }>
+  >(new Map());
+  const localIdentityRef = useRef<string | null>(null);
   const [isDeafened, setIsDeafened] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speakingByIdentity, setSpeakingByIdentity] = useState<
+    Record<string, boolean>
+  >({});
   const [isWatching, setIsWatching] = useState<Record<string, boolean>>({});
+
+  const updateSpeakingState = useCallback(
+    (identity: string, speaking: boolean) => {
+      if (!identity) return;
+      setSpeakingByIdentity((prev) => {
+        if (prev[identity] === speaking) return prev;
+        return { ...prev, [identity]: speaking };
+      });
+    },
+    [],
+  );
+
+  const removeSpeakingState = useCallback((identity: string) => {
+    if (!identity) return;
+    setSpeakingByIdentity((prev) => {
+      if (!(identity in prev)) return prev;
+      const next = { ...prev };
+      delete next[identity];
+      return next;
+    });
+  }, []);
+
+  const speakingConfig = useMemo(
+    () => ({
+      ...DEFAULT_SPEAKING_DETECTION_CONFIG,
+      minDb:
+        typeof data.call_speakingMinDb === "number"
+          ? data.call_speakingMinDb
+          : DEFAULT_SPEAKING_DETECTION_CONFIG.minDb,
+      maxDb:
+        typeof data.call_speakingMaxDb === "number"
+          ? data.call_speakingMaxDb
+          : DEFAULT_SPEAKING_DETECTION_CONFIG.maxDb,
+    }),
+    [data.call_speakingMaxDb, data.call_speakingMinDb],
+  );
 
   const startWatching = useCallback((identity: string) => {
     setIsWatching((prev) => ({ ...prev, [identity]: true }));
@@ -575,7 +630,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
       room.off(
         RoomEvent.ParticipantDisconnected,
-        handleParticipantDisconnected
+        handleParticipantDisconnected,
       );
     };
   }, [room]);
@@ -595,7 +650,21 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         try {
           // Setup audio track
           const enableNoiseSuppression =
-            (data.call_enableNoiseSuppression as boolean) ?? true;
+            (data.call_enableNoiseSuppression as boolean) ??
+            DEFAULT_NOISE_SUPPRESSION_CONFIG.enabled ??
+            true;
+          const noiseReductionLevel =
+            typeof data.call_noiseReductionLevel === "number"
+              ? data.call_noiseReductionLevel
+              : (DEFAULT_NOISE_SUPPRESSION_CONFIG.noiseReductionLevel ?? 60);
+          const inputGain =
+            typeof data.call_inputGain === "number"
+              ? data.call_inputGain
+              : (DEFAULT_OUTPUT_GAIN_CONFIG.speechGain ?? 1);
+          const speakingMinDb = speakingConfig.minDb;
+          const speakingMaxDb = speakingConfig.maxDb;
+          const enableNoiseGate =
+            (data.call_enableNoiseGate as boolean) ?? true;
 
           await audioService.resumeContext();
 
@@ -623,36 +692,34 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          const inputGain = (data.call_inputGain as number) ?? 1.0;
-          const noiseReductionLevel =
-            (data.call_noiseReductionLevel as number | undefined) ?? 60;
-          const speakingMinDb =
-            (data.call_speakingMinDb as number | undefined) ?? -60;
-          const speakingMaxDb =
-            (data.call_speakingMaxDb as number | undefined) ?? -20;
-
           // Attach processing pipeline after publishing
           const controller = await audioService.attachToLocalTrack(
             createdTrack,
             {
-              noiseSuppressionEnabled: enableNoiseSuppression,
+              noiseSuppressionEnabled: enableNoiseSuppression as boolean,
               noiseReductionLevel,
               inputGain,
-              enableNoiseGate:
-                (data.call_enableNoiseGate as boolean | undefined) ?? true,
+              enableNoiseGate,
               speakingMinDb,
               speakingMaxDb,
               assetCdnUrl: "/audio",
-              muteWhenSilent: false,
-            }
+              muteWhenSilent:
+                (data.call_muteWhenSilent as boolean) ??
+                DEFAULT_LIVEKIT_SPEAKING_OPTIONS.muteWhenSilent ??
+                false,
+            },
           );
 
           pipelineControllerRef.current = controller;
+          const identity = localParticipant.identity || "local";
+          localIdentityRef.current = identity;
 
           // Subscribe to speaking state changes
           controller.onChange((state) => {
             setIsSpeaking(state.speaking);
+            updateSpeakingState(identity, state.speaking);
           });
+          updateSpeakingState(identity, controller.speaking);
 
           setLocalTrack(createdTrack);
           setIsMuted(createdTrack.isMuted);
@@ -661,7 +728,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             "Sub Call Context",
             "Failed to initialize audio",
             error,
-            "red"
+            "red",
           );
           toast.error("Failed to initialize audio.");
           if (createdTrack) createdTrack.stop();
@@ -674,7 +741,109 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [connectionState, shouldConnect, localParticipant, localTrack, data]);
+  }, [
+    connectionState,
+    shouldConnect,
+    localParticipant,
+    localTrack,
+    data,
+    speakingConfig,
+    updateSpeakingState,
+  ]);
+
+  // Remote speaking detection
+  useEffect(() => {
+    if (!room) return;
+
+    const attachRemoteSpeaking = async (
+      track: RemoteAudioTrack,
+      participant: RemoteParticipant,
+    ) => {
+      const identity = participant.identity;
+      if (!identity) return;
+
+      const existing = remoteControllersRef.current.get(identity);
+      if (existing) {
+        existing.cleanup?.();
+        existing.controller.dispose();
+        remoteControllersRef.current.delete(identity);
+      }
+
+      try {
+        const controller = await attachSpeakingDetectionToRemoteTrack(track, {
+          speaking: speakingConfig,
+        });
+
+        const cleanup = controller.onChange((state) =>
+          updateSpeakingState(identity, state.speaking),
+        );
+
+        remoteControllersRef.current.set(identity, { controller, cleanup });
+        updateSpeakingState(identity, controller.speaking);
+      } catch (error) {
+        rawDebugLog(
+          "Sub Call Context",
+          "Failed to attach remote speaking detection",
+          error,
+          "red",
+        );
+      }
+    };
+
+    const removeRemoteController = (identity: string | undefined) => {
+      if (!identity) return;
+      const existing = remoteControllersRef.current.get(identity);
+      if (existing) {
+        existing.cleanup?.();
+        existing.controller.dispose();
+        remoteControllersRef.current.delete(identity);
+      }
+      removeSpeakingState(identity);
+    };
+
+    const handleTrackSubscribed = (
+      track: RemoteTrack,
+      _publication: RemoteTrackPublication,
+      participant: RemoteParticipant,
+    ) => {
+      if (!(track instanceof RemoteAudioTrack)) return;
+      void attachRemoteSpeaking(track, participant);
+    };
+
+    const handleTrackUnsubscribed = (
+      track: RemoteTrack,
+      _publication: RemoteTrackPublication,
+      participant: RemoteParticipant,
+    ) => {
+      if (!(track instanceof RemoteAudioTrack)) return;
+      removeRemoteController(participant.identity);
+    };
+
+    const handleParticipantDisconnected = (participant: RemoteParticipant) => {
+      removeRemoteController(participant.identity);
+    };
+
+    room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
+    room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
+    room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
+
+    const controllersSnapshot = remoteControllersRef.current;
+
+    return () => {
+      room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed);
+      room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
+      room.off(
+        RoomEvent.ParticipantDisconnected,
+        handleParticipantDisconnected,
+      );
+      const snapshot = new Map(controllersSnapshot);
+      snapshot.forEach(({ controller, cleanup }, identity) => {
+        cleanup?.();
+        controller.dispose();
+        removeSpeakingState(identity);
+      });
+    };
+  }, [room, speakingConfig, updateSpeakingState, removeSpeakingState]);
 
   // Deafen logic
   useEffect(() => {
@@ -692,7 +861,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         : {};
       localParticipant
         .setMetadata(
-          JSON.stringify({ ...currentMetadata, deafened: isDeafened })
+          JSON.stringify({ ...currentMetadata, deafened: isDeafened }),
         )
         .catch(() => {});
     }
@@ -758,6 +927,10 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           pipelineControllerRef.current = null;
         }
         audioService.cleanup();
+        if (localIdentityRef.current) {
+          removeSpeakingState(localIdentityRef.current);
+          localIdentityRef.current = null;
+        }
 
         if (isMounted) {
           setLocalTrack(null);
@@ -781,9 +954,13 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           pipelineControllerRef.current = null;
         }
         audioService.cleanup();
+        if (localIdentityRef.current) {
+          removeSpeakingState(localIdentityRef.current);
+          localIdentityRef.current = null;
+        }
       }
     };
-  }, [shouldConnect, localTrack, localParticipant]);
+  }, [removeSpeakingState, shouldConnect, localParticipant, localTrack]);
 
   return (
     <SubCallContext.Provider
@@ -793,6 +970,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         toggleDeafen,
         isMuted,
         isSpeaking,
+        speakingByIdentity,
         connectionState,
         isWatching,
         setIsWatching,
@@ -815,7 +993,7 @@ type CallContextValue = {
   connect: (
     token: string,
     callId: string,
-    receiverId?: number
+    receiverId?: number,
   ) => Promise<void>;
   setOuterState: (input: string) => void;
   setShouldConnect: (input: boolean) => void;
@@ -827,6 +1005,7 @@ type SubCallContextValue = {
   isDeafened: boolean;
   isMuted: boolean;
   isSpeaking: boolean;
+  speakingByIdentity: Record<string, boolean>;
   connectionState: ConnectionState;
   toggleDeafen: () => void;
   isWatching: Record<string, boolean>;
