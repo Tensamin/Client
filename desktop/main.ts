@@ -3,12 +3,12 @@ import {
   app,
   autoUpdater,
   BrowserWindow,
+  desktopCapturer,
   ipcMain,
-  protocol,
   net,
+  protocol,
   shell,
   systemPreferences,
-  desktopCapturer,
 } from "electron";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
