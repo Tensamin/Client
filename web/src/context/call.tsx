@@ -2,30 +2,30 @@
 
 // Package Imports
 import {
-    LiveKitRoom,
-    RoomAudioRenderer,
-    useConnectionState,
-    useLocalParticipant,
-    useRoomContext,
-    useTracks,
+  LiveKitRoom,
+  RoomAudioRenderer,
+  useConnectionState,
+  useLocalParticipant,
+  useRoomContext,
+  useTracks,
 } from "@livekit/components-react";
 import type { SpeakingController } from "@tensamin/audio";
 import {
-    ConnectionState,
-    createLocalAudioTrack,
-    LocalAudioTrack,
-    LocalVideoTrack,
-    RoomEvent,
-    Track,
+  ConnectionState,
+  createLocalAudioTrack,
+  LocalAudioTrack,
+  LocalVideoTrack,
+  RoomEvent,
+  Track,
 } from "livekit-client";
 import * as Icon from "lucide-react";
 import {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useRef,
-    useState,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
 } from "react";
 import { toast } from "sonner";
 
@@ -41,14 +41,14 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -63,7 +63,7 @@ const CallContext = createContext<CallContextValue | null>(null);
 
 // Stream Preview
 async function captureScreenShareFrame(
-  track: LocalVideoTrack,
+  track: LocalVideoTrack
 ): Promise<string | null> {
   const video = document.createElement("video");
   video.muted = true;
@@ -114,7 +114,7 @@ function ScreenSharePreviewManager() {
           : {};
         if (currentMetadata.stream_preview !== preview) {
           participant.setMetadata(
-            JSON.stringify({ ...currentMetadata, stream_preview: preview }),
+            JSON.stringify({ ...currentMetadata, stream_preview: preview })
           );
         }
       }
@@ -174,22 +174,81 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [callId, setCallId] = useState("");
 
   const memorizedReceiverId = useRef<number | null>(null);
+  const explicitlySetReceiverId = useRef(false);
   useEffect(() => {
-    memorizedReceiverId.current = currentReceiverId;
+    if (!explicitlySetReceiverId.current) {
+      memorizedReceiverId.current = currentReceiverId;
+    }
   }, [currentReceiverId]);
+
+  // Disconnect functions
+  const disconnect = useCallback(() => {
+    setPage("home");
+    rawDebugLog("Call Context", "Disconnect");
+    setOuterState("DISCONNECTED");
+    setShouldConnect(false);
+    setToken("");
+    explicitlySetReceiverId.current = false;
+    memorizedReceiverId.current = null;
+    if (connectPromiseRef.current && connectPromiseRef.current.reject) {
+      connectPromiseRef.current.reject({ message: "disconnect" });
+      connectPromiseRef.current = null;
+    }
+  }, [setToken, setPage]);
+
+  const disconnectPromiseRef = useRef<{
+    promise: Promise<void>;
+    resolve: (() => void) | null;
+    timeout: ReturnType<typeof setTimeout> | null;
+  } | null>(null);
+
+  const waitForDisconnect = useCallback(() => {
+    if (disconnectPromiseRef.current) {
+      return disconnectPromiseRef.current.promise;
+    }
+
+    let resolveFn: () => void = () => {};
+    const promise = new Promise<void>((resolve) => {
+      resolveFn = resolve;
+    });
+
+    const timeout = setTimeout(() => {
+      if (disconnectPromiseRef.current) {
+        disconnectPromiseRef.current.resolve?.();
+        disconnectPromiseRef.current = null;
+      }
+    }, 2000);
+
+    disconnectPromiseRef.current = {
+      promise,
+      resolve: resolveFn!,
+      timeout,
+    };
+
+    return promise;
+  }, []);
 
   // Connect functions
   const connectPromiseRef = useRef<{
     resolve: (() => void) | null;
     reject: ((error?: { message: string }) => void) | null;
   } | null>(null);
+
   const performConnect = useCallback(
-    (token: string, callId: string) => {
+    async (token: string, callId: string) => {
+      if (shouldConnect) {
+        rawDebugLog("Call Context", "Disconnecting before switching call");
+        const disconnectPromise = waitForDisconnect();
+        setShouldConnect(false);
+        await disconnectPromise;
+      }
+
       rawDebugLog("Call Context", "Connecting...");
       setOuterState("CONNECTING");
       setToken(token);
       setCallId(callId);
       setShouldConnect(true);
+      setPage("call");
 
       // Cancel pending connect
       if (connectPromiseRef.current && connectPromiseRef.current.reject) {
@@ -202,46 +261,54 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         connectPromiseRef.current = { resolve, reject };
       });
     },
-    [setToken],
+    [
+      setToken,
+      setOuterState,
+      setCallId,
+      setShouldConnect,
+      shouldConnect,
+      setPage,
+      waitForDisconnect,
+    ]
   );
+
   const [switchCallDialogOpen, setSwitchCallDialogOpen] = useState(false);
   const [pendingCall, setPendingCall] = useState<{
     token: string;
     callId: string;
+    receiverId?: number;
   } | null>(null);
   const connect = useCallback(
-    (token: string, newCallId: string) => {
+    (token: string, newCallId: string, receiverId?: number) => {
       if (shouldConnect && callId !== newCallId) {
-        setPendingCall({ token, callId: newCallId });
+        setPendingCall({ token, callId: newCallId, receiverId });
         setSwitchCallDialogOpen(true);
         return Promise.resolve();
       }
+      if (receiverId !== undefined && receiverId !== 0) {
+        memorizedReceiverId.current = receiverId;
+        explicitlySetReceiverId.current = true;
+      }
       return performConnect(token, newCallId);
     },
-    [shouldConnect, callId, performConnect],
+    [shouldConnect, callId, performConnect]
   );
 
   // Handle call switching
   const handleSwitchCall = useCallback(() => {
     if (pendingCall) {
+      if (
+        pendingCall.receiverId !== undefined &&
+        pendingCall.receiverId !== 0
+      ) {
+        memorizedReceiverId.current = pendingCall.receiverId;
+        explicitlySetReceiverId.current = true;
+      }
       performConnect(pendingCall.token, pendingCall.callId);
       setSwitchCallDialogOpen(false);
       setPendingCall(null);
     }
   }, [pendingCall, performConnect]);
-
-  // Disconnect function
-  const disconnect = useCallback(() => {
-    setPage("home");
-    rawDebugLog("Call Context", "Disconnect");
-    setOuterState("DISCONNECTED");
-    setShouldConnect(false);
-    setToken("");
-    if (connectPromiseRef.current && connectPromiseRef.current.reject) {
-      connectPromiseRef.current.reject({ message: "disconnect" });
-      connectPromiseRef.current = null;
-    }
-  }, [setToken, setPage]);
 
   // Call invites
   const [newCallWidgetOpen, setNewCallWidgetOpen] = useState(false);
@@ -282,7 +349,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           return "";
         });
     },
-    [send],
+    [send]
   );
 
   const handleAcceptCall = useCallback(() => {
@@ -384,7 +451,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         onConnected={() => {
           rawDebugLog("Call Context", "Room connected", { token });
           setOuterState("CONNECTED");
-          if (!dontSendInvite) {
+          if (
+            !dontSendInvite &&
+            memorizedReceiverId.current &&
+            memorizedReceiverId.current !== 0
+          ) {
             send("call_invite", {
               receiver_id: memorizedReceiverId.current,
               call_id: callId,
@@ -397,22 +468,29 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
               });
           }
           setDontSendInvite(false);
+          // Clear the explicit flag after connecting
+          explicitlySetReceiverId.current = false;
 
           // Resolve the pending connect promise if one exists
           if (connectPromiseRef.current && connectPromiseRef.current.resolve) {
             connectPromiseRef.current.resolve();
-            connectPromiseRef.current = null;
           }
         }}
         onDisconnected={() => {
           rawDebugLog("Call Context", "Room disconnected");
           setOuterState("DISCONNECTED");
+          if (disconnectPromiseRef.current) {
+            if (disconnectPromiseRef.current.timeout) {
+              clearTimeout(disconnectPromiseRef.current.timeout);
+            }
+            disconnectPromiseRef.current.resolve?.();
+            disconnectPromiseRef.current = null;
+          }
           // If we had a pending connection, reject its promise
           if (connectPromiseRef.current && connectPromiseRef.current.reject) {
             connectPromiseRef.current.reject({
               message: "Room disconnected before connect finished",
             });
-            connectPromiseRef.current = null;
           }
         }}
       >
@@ -497,7 +575,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
       room.off(
         RoomEvent.ParticipantDisconnected,
-        handleParticipantDisconnected,
+        handleParticipantDisconnected
       );
     };
   }, [room]);
@@ -546,13 +624,12 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           }
 
           const inputGain = (data.call_inputGain as number) ?? 1.0;
-          const noiseReductionLevel = (data.call_noiseReductionLevel as
-            | number
-            | undefined) ?? 60;
-          const speakingMinDb = (data.call_speakingMinDb as number | undefined) ??
-            -60;
-          const speakingMaxDb = (data.call_speakingMaxDb as number | undefined) ??
-            -20;
+          const noiseReductionLevel =
+            (data.call_noiseReductionLevel as number | undefined) ?? 60;
+          const speakingMinDb =
+            (data.call_speakingMinDb as number | undefined) ?? -60;
+          const speakingMaxDb =
+            (data.call_speakingMaxDb as number | undefined) ?? -20;
 
           // Attach processing pipeline after publishing
           const controller = await audioService.attachToLocalTrack(
@@ -567,7 +644,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
               speakingMaxDb,
               assetCdnUrl: "/audio",
               muteWhenSilent: false,
-            },
+            }
           );
 
           pipelineControllerRef.current = controller;
@@ -584,7 +661,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             "Sub Call Context",
             "Failed to initialize audio",
             error,
-            "red",
+            "red"
           );
           toast.error("Failed to initialize audio.");
           if (createdTrack) createdTrack.stop();
@@ -615,7 +692,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         : {};
       localParticipant
         .setMetadata(
-          JSON.stringify({ ...currentMetadata, deafened: isDeafened }),
+          JSON.stringify({ ...currentMetadata, deafened: isDeafened })
         )
         .catch(() => {});
     }
@@ -735,7 +812,11 @@ type CallContextValue = {
   getCallToken: (callId: string, sendInvite?: boolean) => Promise<string>;
   shouldConnect: boolean;
   outerState: string;
-  connect: (token: string, callId: string) => Promise<void>;
+  connect: (
+    token: string,
+    callId: string,
+    receiverId?: number
+  ) => Promise<void>;
   setOuterState: (input: string) => void;
   setShouldConnect: (input: boolean) => void;
   disconnect: () => void;
