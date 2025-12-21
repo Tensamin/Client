@@ -6,21 +6,17 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs =
-    {
-      self,
-      nixpkgs,
-      flake-utils,
-    }:
-    flake-utils.lib.eachSystem [ "x86_64-linux" ] (
-      system:
-      let
+  outputs = {
+    nixpkgs,
+    flake-utils,
+  }:
+    flake-utils.lib.eachSystem ["x86_64-linux"] (
+      system: let
         pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
         };
-      in
-      {
+      in {
         packages.default = pkgs.stdenv.mkDerivation rec {
           pname = "tensamin";
           version = "0.1.21"; # nix-update will manage this
@@ -37,30 +33,44 @@
           ];
 
           buildInputs = with pkgs; [
-            alsa-lib
-            at-spi2-atk
-            at-spi2-core
-            cairo
-            cups
-            dbus
-            expat
+            nodejs
+            ffmpeg-full
             glib
+            libgbm
+            nss
+            nspr
+            dbus
+            atk
+            at-spi2-atk
+            cups
+            cairo
             gtk3
-            libappindicator-gtk3
+            pango
+            mesa
+            expat
+            libxkbcommon
+            libxkbfile
+            wayland
+            systemd
+            alsa-lib
+            at-spi2-core
+            gcc
+            vips
+            musl
             libGL
             libdrm
-            libxkbcommon
-            mesa
-            nspr
-            nss
-            pango
-            systemd
+            pipewire
             xorg.libX11
             xorg.libXcomposite
+            xorg.libXcursor
             xorg.libXdamage
             xorg.libXext
             xorg.libXfixes
+            xorg.libXi
             xorg.libXrandr
+            xorg.libXrender
+            xorg.libXScrnSaver
+            xorg.libXtst
             xorg.libxcb
           ];
 
@@ -93,7 +103,7 @@
             description = "Privacy-focused chat app";
             homepage = "https://github.com/Tensamin/Frontend";
             license = licenses.unfree;
-            platforms = [ "x86_64-linux" ];
+            platforms = ["x86_64-linux"];
             mainProgram = pname;
           };
         };
