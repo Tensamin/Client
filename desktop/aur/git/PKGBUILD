@@ -40,7 +40,6 @@ depends=(nodejs
          libxi
          libxrandr
          libxrender
-         libxscrnsaver
          libxtst
          libxcb)
 makedepends=('git' 'npm' 'dpkg' 'fakeroot')
