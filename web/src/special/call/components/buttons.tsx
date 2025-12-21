@@ -113,14 +113,52 @@ function ScreenSharePickerDialog({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      setLoading(true);
-      // @ts-expect-error ElectronAPI
-      window.electronAPI.getScreenSources().then((sources: DesktopSource[]) => {
-        setSources(sources);
-        setLoading(false);
-      });
+    let mounted = true;
+    if (!open) {
+      setSources([]);
+      return () => {
+        mounted = false;
+      };
     }
+
+    setLoading(true);
+
+    type ElectronAPI = {
+      getScreenSources?: () => Promise<DesktopSource[]>;
+    };
+
+    const electronApi = (
+      window as typeof window & { electronAPI?: ElectronAPI }
+    ).electronAPI;
+
+    if (!electronApi?.getScreenSources) {
+      toast.error("Screen capture picker is unavailable in this environment.");
+      setLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    electronApi
+      .getScreenSources()
+      .then((result) => {
+        if (!mounted) return;
+        setSources(result);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        toast.error("Failed to load screen sources.");
+        setSources([]);
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, [open]);
 
   const screens = sources.filter((s) => s.id.startsWith("screen:"));

@@ -214,7 +214,21 @@ export function UserProvider({
     await send("get_chats")
       .then((raw) => {
         const data = raw as CommunicationValue.get_chats;
-        setConversationsAndSync(data.user_ids || []);
+
+        if (data.user_ids.some((conv) => typeof conv.user_id === "string"))
+          toast.warning("User IDs provided as strings, converting to numbers");
+
+        const convertedUserIds = (data.user_ids || []).map((conv) => {
+          return {
+            ...conv,
+            user_id:
+              typeof conv.user_id === "string"
+                ? Number(conv.user_id)
+                : conv.user_id,
+          };
+        });
+
+        setConversationsAndSync(convertedUserIds);
       })
       .catch((err) => {
         toast.error("Failed to get conversations");
@@ -277,16 +291,8 @@ export function UserProvider({
 
   useEffect(() => {
     if (!isReady) return;
-
-    send("get_chats")
-      .then((raw) => {
-        const data = raw as CommunicationValue.get_chats;
-        setConversationsAndSync(data.user_ids || []);
-      })
-      .catch(() => {
-        toast.error("Failed to get conversations");
-      });
-  }, [isReady, send, setConversationsAndSync]);
+    refetchConversations();
+  }, [isReady, refetchConversations]);
 
   useEffect(() => {
     if (!isReady) return;
