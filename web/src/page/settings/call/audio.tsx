@@ -1,6 +1,12 @@
 // Package Imports
 import { useMediaDeviceSelect } from "@livekit/components-react";
-import type { AudioPipelineHandle } from "@tensamin/audio";
+import {
+  DEFAULT_LIVEKIT_SPEAKING_OPTIONS,
+  DEFAULT_NOISE_SUPPRESSION_CONFIG,
+  DEFAULT_OUTPUT_GAIN_CONFIG,
+  DEFAULT_SPEAKING_DETECTION_CONFIG,
+  type AudioPipelineHandle,
+} from "@tensamin/audio";
 import * as Icon from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -103,7 +109,7 @@ function useAudioTest(
     sampleRate: number;
     speakingMinDb: number;
     speakingMaxDb: number;
-  }
+  },
 ) {
   const [isListening, setIsListening] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -120,7 +126,7 @@ function useAudioTest(
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const destinationNodeRef = useRef<MediaStreamAudioDestinationNode | null>(
-    null
+    null,
   );
   const pipelineHandleRef = useRef<AudioPipelineHandle | null>(null);
 
@@ -180,7 +186,7 @@ function useAudioTest(
       analyserRef.current = analyser;
 
       sourceNodeRef.current = audioContext.createMediaStreamSource(
-        processedStreamRef.current!
+        processedStreamRef.current!,
       );
       sourceNodeRef.current.connect(analyser);
 
@@ -397,20 +403,40 @@ export default function Page() {
     kind: "audiooutput",
   });
 
+  const speakingDefaults =
+    DEFAULT_LIVEKIT_SPEAKING_OPTIONS.speaking ??
+    DEFAULT_SPEAKING_DETECTION_CONFIG;
+  const noiseDefaults = DEFAULT_NOISE_SUPPRESSION_CONFIG;
+  const outputDefaults = DEFAULT_OUTPUT_GAIN_CONFIG;
+
+  const speakingMinDb =
+    (data.call_speakingMinDb as number) ?? speakingDefaults.minDb;
+  const speakingMaxDb =
+    (data.call_speakingMaxDb as number) ?? speakingDefaults.maxDb;
+  const noiseReductionLevel =
+    (data.call_noiseReductionLevel as number) ??
+    noiseDefaults.noiseReductionLevel ??
+    60;
+  const enableNoiseSuppression =
+    (data.call_enableNoiseSuppression as boolean) ??
+    noiseDefaults.enabled ??
+    true;
+  const inputGain =
+    (data.call_inputGain as number) ?? outputDefaults.speechGain ?? 1;
+
   // Audio test hook
   const audioTest = useAudioTest(
     inputDevices.activeDeviceId || "",
     outputDevices.activeDeviceId || "",
     {
-      enableNoiseSuppression:
-        (data.call_enableNoiseSuppression as boolean) ?? true,
-      noiseReductionLevel: (data.call_noiseReductionLevel as number) ?? 60,
-      inputGain: (data.call_inputGain as number) ?? 1.0,
+      enableNoiseSuppression,
+      noiseReductionLevel,
+      inputGain,
       channelCount: (data.call_channelCount as number) ?? 2,
       sampleRate: (data.call_sampleRate as number) ?? 48000,
-      speakingMinDb: (data.call_speakingMinDb as number) ?? -60,
-      speakingMaxDb: (data.call_speakingMaxDb as number) ?? -20,
-    }
+      speakingMinDb,
+      speakingMaxDb,
+    },
   );
 
   return (
@@ -472,7 +498,7 @@ export default function Page() {
               <Label>Input Gain</Label>
               <div className="flex items-center gap-3">
                 <Slider
-                  value={[(data.call_inputGain as number) ?? 1.0]}
+                  value={[inputGain]}
                   onValueChange={(value) => set("call_inputGain", value[0])}
                   step={0.01}
                   min={0}
@@ -480,10 +506,7 @@ export default function Page() {
                   className="flex-1"
                 />
                 <span className="text-sm text-muted-foreground w-10">
-                  {(typeof data.call_inputGain === "number"
-                    ? data.call_inputGain
-                    : 1.0
-                  ).toFixed(2)}
+                  {inputGain.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -500,7 +523,7 @@ export default function Page() {
             <SwitchWithLabel
               id="call_enableNoiseSuppression"
               label="Enable Noise Suppression"
-              value={(data.call_enableNoiseSuppression as boolean) ?? true}
+              value={enableNoiseSuppression}
               setValue={(value) => set("call_enableNoiseSuppression", value)}
             />
           </div>
@@ -509,8 +532,8 @@ export default function Page() {
         {/* Speaking Detection */}
         <div className="flex flex-col gap-4">
           <AudioLevelRangeSlider
-            minValue={(data.call_speakingMinDb as number) ?? -60}
-            maxValue={(data.call_speakingMaxDb as number) ?? -20}
+            minValue={speakingMinDb}
+            maxValue={speakingMaxDb}
             audioLevel={audioTest.audioLevel}
             onValueChange={([min, max]) => {
               set("call_speakingMinDb", min);
@@ -523,13 +546,13 @@ export default function Page() {
             <span className="text-muted-foreground">
               Min:{" "}
               <span className="font-semibold text-foreground">
-                {(data.call_speakingMinDb as number) ?? -60} dB
+                {speakingMinDb} dB
               </span>
             </span>
             <span className="text-muted-foreground">
               Max:{" "}
               <span className="font-semibold text-foreground">
-                {(data.call_speakingMaxDb as number) ?? -20} dB
+                {speakingMaxDb} dB
               </span>
             </span>
           </div>
@@ -543,10 +566,8 @@ export default function Page() {
               <Label>Noise Suppression Amount</Label>
               <div className="flex items-center gap-3">
                 <Slider
-                  disabled={
-                    !((data.call_enableNoiseSuppression as boolean) ?? true)
-                  }
-                  value={[(data.call_noiseReductionLevel as number) ?? 60]}
+                  disabled={!enableNoiseSuppression}
+                  value={[noiseReductionLevel]}
                   onValueChange={(value) =>
                     set("call_noiseReductionLevel", value[0])
                   }
@@ -556,7 +577,7 @@ export default function Page() {
                   className="flex-1"
                 />
                 <span className="text-sm text-muted-foreground w-10">
-                  {(data.call_noiseReductionLevel as number) ?? 60}
+                  {noiseReductionLevel}
                 </span>
               </div>
             </div>

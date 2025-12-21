@@ -1,13 +1,17 @@
 import {
-    attachSpeakingDetectionToTrack,
-    type AudioPipelineHandle,
-    type LivekitSpeakingOptions,
-    type SpeakingController,
+  DEFAULT_LIVEKIT_SPEAKING_OPTIONS,
+  DEFAULT_NOISE_SUPPRESSION_CONFIG,
+  DEFAULT_OUTPUT_GAIN_CONFIG,
+  DEFAULT_SPEAKING_DETECTION_CONFIG,
+  attachSpeakingDetectionToTrack,
+  type AudioPipelineHandle,
+  type LivekitSpeakingOptions,
+  type SpeakingController,
 } from "@tensamin/audio";
 import {
-    closeAudioContext,
-    getAudioContext,
-    resumeAudioContext,
+  closeAudioContext,
+  getAudioContext,
+  resumeAudioContext,
 } from "@tensamin/audio/dist/context/audio-context.mjs";
 import { createAudioPipeline } from "@tensamin/audio/dist/pipeline/audio-pipeline.mjs";
 import type { LocalAudioTrack } from "livekit-client";
@@ -34,57 +38,49 @@ function mapNoiseReductionLevel(
   if (typeof override === "number" && Number.isFinite(override)) {
     return clamp(Math.round(override), 0, 100);
   }
-  const sens = typeof sensitivity === "number" ? clamp(sensitivity, 0, 1) : 0.5;
+  if (typeof sensitivity !== "number") {
+    return clamp(
+      Math.round(DEFAULT_NOISE_SUPPRESSION_CONFIG.noiseReductionLevel ?? 60),
+      0,
+      100,
+    );
+  }
+  const sens = clamp(sensitivity, 0, 1);
   // Map 0..1 slider into a reasonable DeepFilterNet suppression range (30..100).
   return clamp(Math.round(30 + sens * 70), 10, 100);
 }
 
-function mapSpeakingConfig(
-  minDb?: number,
-  maxDb?: number,
-  sensitivity?: number,
-) {
-  // Use explicit dB values if provided, otherwise compute from sensitivity
-  let finalMinDb: number;
-  let finalMaxDb: number;
+function mapSpeakingConfig(minDb?: number, maxDb?: number) {
+  const defaults = DEFAULT_SPEAKING_DETECTION_CONFIG;
+  const resolvedMin = typeof minDb === "number" ? minDb : defaults.minDb;
+  const resolvedMax = typeof maxDb === "number" ? maxDb : defaults.maxDb;
 
-  if (
-    typeof minDb === "number" &&
-    typeof maxDb === "number" &&
-    minDb < maxDb
-  ) {
-    finalMinDb = minDb;
-    finalMaxDb = maxDb;
-  } else {
-    // Fallback to sensitivity-based calculation
-    const sens =
-      typeof sensitivity === "number" ? clamp(sensitivity, 0, 1) : 0.5;
-    const threshold = -20 - sens * 70;
-    finalMinDb = Math.min(-25, threshold);
-    finalMaxDb = -20;
-  }
-
-  // Compute ratios based on range for consistent behavior
-  const range = finalMaxDb - finalMinDb;
-  const speakOnRatio = clamp(0.5 + range / 100, 0.4, 0.9);
-  const speakOffRatio = clamp(speakOnRatio - 0.2, 0.1, 0.6);
+  const finalMinDb = Math.min(resolvedMin, resolvedMax);
+  const finalMaxDb = resolvedMax;
 
   return {
     minDb: finalMinDb,
     maxDb: finalMaxDb,
-    speakOnRatio,
-    speakOffRatio,
-    hangoverMs: 350,
-    attackMs: 50,
-    releaseMs: 120,
+    speakOnRatio: defaults.speakOnRatio,
+    speakOffRatio: defaults.speakOffRatio,
+    hangoverMs: defaults.hangoverMs,
+    attackMs: defaults.attackMs,
+    releaseMs: defaults.releaseMs,
   } satisfies LivekitSpeakingOptions["speaking"];
 }
 
 function toLivekitOptions(config?: ProcessingConfig): LivekitSpeakingOptions {
   const sensitivity = config?.noiseSensitivity;
-  const inputGain = config?.inputGain ?? 1;
-  const noiseSuppressionEnabled = config?.noiseSuppressionEnabled ?? true;
+  const inputGain =
+    typeof config?.inputGain === "number"
+      ? config.inputGain
+      : (DEFAULT_OUTPUT_GAIN_CONFIG.speechGain ?? 1);
+  const noiseSuppressionEnabled =
+    config?.noiseSuppressionEnabled ??
+    DEFAULT_NOISE_SUPPRESSION_CONFIG.enabled ??
+    true;
   const assetCdnUrl = config?.assetCdnUrl ?? "/audio";
+  const outputDefaults = DEFAULT_OUTPUT_GAIN_CONFIG;
 
   return {
     noiseSuppression: {
@@ -97,19 +93,21 @@ function toLivekitOptions(config?: ProcessingConfig): LivekitSpeakingOptions {
         cdnUrl: assetCdnUrl,
       },
     },
-    speaking: mapSpeakingConfig(
-      config?.speakingMinDb,
-      config?.speakingMaxDb,
-      sensitivity,
-    ),
+    speaking: mapSpeakingConfig(config?.speakingMinDb, config?.speakingMaxDb),
     output: {
       speechGain: clamp(inputGain, 0, 3),
-      silenceGain: config?.enableNoiseGate === false ? 0.15 : 0,
-      gainRampTime: 0.02,
-      maxGainDb: 6,
-      smoothTransitions: true,
+      silenceGain:
+        config?.enableNoiseGate === false
+          ? 0.15
+          : (outputDefaults.silenceGain ?? 0),
+      gainRampTime: outputDefaults.gainRampTime ?? 0.015,
+      maxGainDb: outputDefaults.maxGainDb ?? 6,
+      smoothTransitions: outputDefaults.smoothTransitions ?? true,
     },
-    muteWhenSilent: config?.muteWhenSilent ?? false,
+    muteWhenSilent:
+      config?.muteWhenSilent ??
+      DEFAULT_LIVEKIT_SPEAKING_OPTIONS.muteWhenSilent ??
+      false,
   } satisfies LivekitSpeakingOptions;
 }
 
