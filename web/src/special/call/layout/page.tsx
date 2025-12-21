@@ -213,7 +213,7 @@ function UserInInviteSelection({
       value={user?.display}
       onSelect={() => {
         send("call_invite", {
-          receiver_id: userId,
+          receiver_id: Number(userId),
           call_id: callId,
         })
           .then(() => {

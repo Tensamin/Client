@@ -1,23 +1,25 @@
 import {
-  attachSpeakingDetectionToTrack,
-  type AudioPipelineHandle,
-  type LivekitSpeakingOptions,
-  type SpeakingController,
+    attachSpeakingDetectionToTrack,
+    type AudioPipelineHandle,
+    type LivekitSpeakingOptions,
+    type SpeakingController,
 } from "@tensamin/audio";
 import {
-  closeAudioContext,
-  getAudioContext,
-  resumeAudioContext,
+    closeAudioContext,
+    getAudioContext,
+    resumeAudioContext,
 } from "@tensamin/audio/dist/context/audio-context.mjs";
 import { createAudioPipeline } from "@tensamin/audio/dist/pipeline/audio-pipeline.mjs";
 import type { LocalAudioTrack } from "livekit-client";
 
 export type ProcessingConfig = {
   noiseSuppressionEnabled?: boolean;
-  noiseSensitivity?: number; // 0..1 slider from UI
+  noiseSensitivity?: number; // 0..1 slider from UI (deprecated, use noiseReductionLevel)
   noiseReductionLevel?: number; // 0..100 explicit override
   inputGain?: number; // linear multiplier
   enableNoiseGate?: boolean;
+  speakingMinDb?: number; // Speaking detection min dB
+  speakingMaxDb?: number; // Speaking detection max dB
   assetCdnUrl?: string;
   muteWhenSilent?: boolean;
 };
@@ -37,18 +39,39 @@ function mapNoiseReductionLevel(
   return clamp(Math.round(30 + sens * 70), 10, 100);
 }
 
-function mapSpeakingConfig(sensitivity?: number) {
-  const sens = typeof sensitivity === "number" ? clamp(sensitivity, 0, 1) : 0.5;
-  // Old logic used a dB threshold: -20 - sens*70. Keep maxDb fixed and slide minDb.
-  const threshold = -20 - sens * 70;
-  const minDb = Math.min(-25, threshold);
-  const maxDb = -20;
-  // Bias speaking on/off ratios slightly with sensitivity to retain user feel.
-  const speakOnRatio = clamp(0.5 + sens * 0.3, 0.4, 0.9);
+function mapSpeakingConfig(
+  minDb?: number,
+  maxDb?: number,
+  sensitivity?: number,
+) {
+  // Use explicit dB values if provided, otherwise compute from sensitivity
+  let finalMinDb: number;
+  let finalMaxDb: number;
+
+  if (
+    typeof minDb === "number" &&
+    typeof maxDb === "number" &&
+    minDb < maxDb
+  ) {
+    finalMinDb = minDb;
+    finalMaxDb = maxDb;
+  } else {
+    // Fallback to sensitivity-based calculation
+    const sens =
+      typeof sensitivity === "number" ? clamp(sensitivity, 0, 1) : 0.5;
+    const threshold = -20 - sens * 70;
+    finalMinDb = Math.min(-25, threshold);
+    finalMaxDb = -20;
+  }
+
+  // Compute ratios based on range for consistent behavior
+  const range = finalMaxDb - finalMinDb;
+  const speakOnRatio = clamp(0.5 + range / 100, 0.4, 0.9);
   const speakOffRatio = clamp(speakOnRatio - 0.2, 0.1, 0.6);
+
   return {
-    minDb,
-    maxDb,
+    minDb: finalMinDb,
+    maxDb: finalMaxDb,
     speakOnRatio,
     speakOffRatio,
     hangoverMs: 350,
@@ -74,7 +97,11 @@ function toLivekitOptions(config?: ProcessingConfig): LivekitSpeakingOptions {
         cdnUrl: assetCdnUrl,
       },
     },
-    speaking: mapSpeakingConfig(sensitivity),
+    speaking: mapSpeakingConfig(
+      config?.speakingMinDb,
+      config?.speakingMaxDb,
+      sensitivity,
+    ),
     output: {
       speechGain: clamp(inputGain, 0, 3),
       silenceGain: config?.enableNoiseGate === false ? 0.15 : 0,
