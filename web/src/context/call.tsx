@@ -44,6 +44,7 @@ import { toast } from "sonner";
 // Lib Imports
 import { audioService } from "@/lib/audioService";
 import * as CommunicationValue from "@/lib/communicationValues";
+import { playSound } from "@/lib/sound";
 
 // Context Imports
 import { usePageContext } from "@/context/page";
@@ -120,6 +121,19 @@ function ScreenSharePreviewManager() {
     localParticipantRef.current = localParticipant;
   }, [localParticipant]);
 
+  const prevScreenShareTrack = useRef<typeof screenShareTrack>(undefined);
+  useEffect(() => {
+    // Detect screen share start
+    if (screenShareTrack && !prevScreenShareTrack.current) {
+      playSound("stream_start_self");
+    }
+    // Detect screen share stop
+    if (!screenShareTrack && prevScreenShareTrack.current) {
+      playSound("stream_end_self");
+    }
+    prevScreenShareTrack.current = screenShareTrack;
+  }, [screenShareTrack]);
+
   useEffect(() => {
     if (!screenShareTrack || !(screenShareTrack instanceof LocalVideoTrack))
       return;
@@ -181,7 +195,8 @@ export function useSubCallContext() {
 // Main Provider Component
 export function CallProvider({ children }: { children: React.ReactNode }) {
   const { lastMessage, send } = useSocketContext();
-  const { get, currentReceiverId } = useUserContext();
+  const { get, currentReceiverId, conversations, setConversations } =
+    useUserContext();
   const { setPage } = usePageContext();
 
   const [shouldConnect, setShouldConnect] = useState(false);
@@ -348,6 +363,34 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, [lastMessage, get]);
+  const saveInviteToConversation = useCallback(
+    (callId: string, receiverId: number) => {
+      setConversations(
+        conversations.map((c) =>
+          c.user_id === receiverId
+            ? { ...c, calls: [...(c.calls || []), callId] }
+            : c,
+        ),
+      );
+    },
+    [conversations, setConversations],
+  );
+  const sendInvite = useCallback(
+    async (callId: string, receiverId: number) => {
+      send("call_invite", {
+        receiver_id: receiverId,
+        call_id: callId,
+      })
+        .then(() => {
+          saveInviteToConversation(callId, receiverId);
+          toast.success("Call invite sent successfully");
+        })
+        .catch(() => {
+          toast.error("Failed to send call invite");
+        });
+    },
+    [send, saveInviteToConversation],
+  );
 
   // Call tokens
   const getCallToken = useCallback(
@@ -468,21 +511,13 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         onConnected={() => {
           rawDebugLog("Call Context", "Room connected", { token });
           setOuterState("CONNECTED");
+          playSound("call_join");
           if (
             !dontSendInvite &&
             memorizedReceiverId.current &&
             memorizedReceiverId.current !== 0
           ) {
-            send("call_invite", {
-              receiver_id: memorizedReceiverId.current,
-              call_id: callId,
-            })
-              .then(() => {
-                toast.success("Call invite sent successfully");
-              })
-              .catch(() => {
-                toast.error("Failed to send call invite");
-              });
+            sendInvite(callId, memorizedReceiverId.current);
           }
           setDontSendInvite(false);
           // Clear the explicit flag after connecting
@@ -496,6 +531,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         onDisconnected={() => {
           rawDebugLog("Call Context", "Room disconnected");
           setOuterState("DISCONNECTED");
+          playSound("call_leave");
           if (disconnectPromiseRef.current) {
             if (disconnectPromiseRef.current.timeout) {
               clearTimeout(disconnectPromiseRef.current.timeout);
@@ -590,6 +626,29 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // Play sounds when isWatching changes
+  const prevIsWatchingRef = useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    const prev = prevIsWatchingRef.current;
+    const current = isWatching;
+
+    // Check for new watchers
+    Object.keys(current).forEach((identity) => {
+      if (current[identity] && !prev[identity]) {
+        playSound("stream_watch_other");
+      }
+    });
+
+    // Check for stopped watchers
+    Object.keys(prev).forEach((identity) => {
+      if (prev[identity] && !current[identity]) {
+        playSound("stream_watch_end");
+      }
+    });
+
+    prevIsWatchingRef.current = { ...current };
+  }, [isWatching]);
+
   const storedUserVolumes = data.call_userVolumes as number[] | null;
 
   // User Volume Management
@@ -614,18 +673,12 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!room) return;
 
-    const playSound = (path: string) => {
-      const audio = new Audio(path);
-      audio.volume = 0.5;
-      audio.play().catch(() => {});
-    };
-
     const handleParticipantConnected = () => {
-      playSound("/assets/sounds/call_join.wav");
+      playSound("call_join");
     };
 
     const handleParticipantDisconnected = () => {
-      playSound("/assets/sounds/call_leave.wav");
+      playSound("call_leave");
     };
 
     room.on(RoomEvent.ParticipantConnected, handleParticipantConnected);
@@ -639,6 +692,31 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       );
     };
   }, [room]);
+
+  // Remote Screen Share Sounds
+  useEffect(() => {
+    if (!room || !localParticipant) return;
+
+    const handleTrackPublished = (publication: RemoteTrackPublication) => {
+      if (publication.source === Track.Source.ScreenShare) {
+        playSound("stream_start_other");
+      }
+    };
+
+    const handleTrackUnpublished = (publication: RemoteTrackPublication) => {
+      if (publication.source === Track.Source.ScreenShare) {
+        playSound("stream_end_other");
+      }
+    };
+
+    room.on(RoomEvent.TrackPublished, handleTrackPublished);
+    room.on(RoomEvent.TrackUnpublished, handleTrackUnpublished);
+
+    return () => {
+      room.off(RoomEvent.TrackPublished, handleTrackPublished);
+      room.off(RoomEvent.TrackUnpublished, handleTrackUnpublished);
+    };
+  }, [room, localParticipant]);
 
   // Custom Audio Init for Noise Suppression
   useEffect(() => {
@@ -875,10 +953,6 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   // Toggle Mute
   const toggleMute = useCallback(async () => {
     if (!localTrack) return;
-
-    rawDebugLog("SUB_CALL", "TOGGLE_MUTE", {
-      currentMuted: localTrack.isMuted,
-    });
 
     if (localTrack.isMuted) {
       await localTrack.unmute();
