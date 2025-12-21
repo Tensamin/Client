@@ -1,6 +1,7 @@
 // Package Imports
 import { useMediaDeviceSelect } from "@livekit/components-react";
 import type { AudioPipelineHandle } from "@tensamin/audio";
+import * as Icon from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // Context Imports
@@ -24,8 +25,71 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { SettingsPageTitle } from "@/page/settings";
 
-// Icons
-import * as Icon from "lucide-react";
+// Main
+function AudioLevelRangeSlider({
+  minValue,
+  maxValue,
+  audioLevel,
+  onValueChange,
+  min = -90,
+  max = 0,
+}: {
+  minValue: number;
+  maxValue: number;
+  audioLevel: number;
+  onValueChange: (values: [number, number]) => void;
+  min?: number;
+  max?: number;
+}) {
+  const bars = 50;
+  const activeBarCount = Math.round(audioLevel * bars);
+
+  return (
+    <div className="flex flex-col gap-3 w-full">
+      <Label>Speaking Detection Range</Label>
+
+      {/* Visualization */}
+      <div className="relative flex h-12 items-end gap-0.5 bg-muted/30 rounded-lg p-2">
+        {Array.from({ length: bars }).map((_, i) => {
+          const isActiveBar = i < activeBarCount;
+          const intensity = i / bars;
+          let barColor = "bg-muted-foreground/40";
+
+          if (audioLevel > 0 && isActiveBar) {
+            if (intensity < 0.5) {
+              barColor = "bg-emerald-500";
+            } else if (intensity < 0.75) {
+              barColor = "bg-amber-500";
+            } else {
+              barColor = "bg-rose-500";
+            }
+          }
+
+          return (
+            <div
+              key={i}
+              className={`flex-1 rounded-sm transition-all duration-75 ${barColor}`}
+              style={{
+                height: `${Math.max(20, audioLevel * 100)}%`,
+                opacity: audioLevel > 0 && isActiveBar ? 1 : 0.25,
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Slider */}
+      <Slider
+        value={[minValue, maxValue]}
+        onValueChange={(values) => onValueChange(values as [number, number])}
+        min={min}
+        max={max}
+        step={1}
+        className="w-full"
+      />
+    </div>
+  );
+}
 
 // Audio Test Hook
 function useAudioTest(
@@ -33,11 +97,13 @@ function useAudioTest(
   outputDeviceId: string,
   settings: {
     enableNoiseSuppression: boolean;
-    noiseSensitivity: number;
+    noiseReductionLevel: number;
     inputGain: number;
     channelCount: number;
     sampleRate: number;
-  },
+    speakingMinDb: number;
+    speakingMaxDb: number;
+  }
 ) {
   const [isListening, setIsListening] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -54,7 +120,7 @@ function useAudioTest(
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const destinationNodeRef = useRef<MediaStreamAudioDestinationNode | null>(
-    null,
+    null
   );
   const pipelineHandleRef = useRef<AudioPipelineHandle | null>(null);
 
@@ -92,9 +158,11 @@ function useAudioTest(
       const { stream: processedStream, handle } = await audioService
         .processStream(stream, {
           noiseSuppressionEnabled: settings.enableNoiseSuppression,
-          noiseSensitivity: settings.noiseSensitivity,
+          noiseReductionLevel: settings.noiseReductionLevel,
           inputGain: settings.inputGain,
           enableNoiseGate: true,
+          speakingMinDb: settings.speakingMinDb,
+          speakingMaxDb: settings.speakingMaxDb,
           assetCdnUrl: "/audio",
         })
         .catch((error) => {
@@ -112,7 +180,7 @@ function useAudioTest(
       analyserRef.current = analyser;
 
       sourceNodeRef.current = audioContext.createMediaStreamSource(
-        processedStreamRef.current!,
+        processedStreamRef.current!
       );
       sourceNodeRef.current.connect(analyser);
 
@@ -251,10 +319,12 @@ function useAudioTest(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     settings.enableNoiseSuppression,
-    settings.noiseSensitivity,
+    settings.noiseReductionLevel,
     settings.inputGain,
     settings.channelCount,
     settings.sampleRate,
+    settings.speakingMinDb,
+    settings.speakingMaxDb,
     inputDeviceId,
   ]);
 
@@ -334,140 +404,226 @@ export default function Page() {
     {
       enableNoiseSuppression:
         (data.call_enableNoiseSuppression as boolean) ?? true,
-      noiseSensitivity: (data.call_noiseSensitivity as number) ?? 0.5,
+      noiseReductionLevel: (data.call_noiseReductionLevel as number) ?? 60,
       inputGain: (data.call_inputGain as number) ?? 1.0,
       channelCount: (data.call_channelCount as number) ?? 2,
       sampleRate: (data.call_sampleRate as number) ?? 48000,
-    },
+      speakingMinDb: (data.call_speakingMinDb as number) ?? -60,
+      speakingMaxDb: (data.call_speakingMaxDb as number) ?? -20,
+    }
   );
 
-  const options = [
-    {
-      label: "Enable Echo Cancellation",
-      key: "call_enableEchoCancellation",
-      default: false,
-    },
-    {
-      label: "Enable Noise Suppression",
-      key: "call_enableNoiseSuppression",
-      default: true,
-    },
-    {
-      label: "Enable Auto Gain Control",
-      key: "call_enableAutoGainControl",
-      default: true,
-    },
-    {
-      label: "Enable Voice Isolation",
-      key: "call_enableVoiceIsolation",
-      default: true,
-    },
-  ];
-
-  const advancedSwitches = [
-    {
-      label: "Enable Dynacast",
-      key: "call_enableDynacast",
-      default: true,
-    },
-    {
-      label: "Enable Adaptive Stream",
-      key: "call_enableAdaptiveStream",
-      default: true,
-    },
-  ];
-
-  const advanced = [
-    {
-      label: "Latency (seconds)",
-      key: "call_latency",
-      default: 0.02,
-    },
-    {
-      label: "Channel Count",
-      key: "call_channelCount",
-      default: 2,
-    },
-    {
-      label: "Sample Rate (Hz)",
-      key: "call_sampleRate",
-      default: 48000,
-    },
-    {
-      label: "Sample Size (bits)",
-      key: "call_sampleSize",
-      default: 16,
-    },
-  ];
-
   return (
-    <div className="flex flex-col gap-7">
-      {/* Input/Output Device */}
-      <div className="flex gap-5">
-        {/* Input Device */}
-        <div className="flex flex-col gap-1">
-          <p className="font-semibold">Input Device</p>
-          <Select
-            value={inputDevices.activeDeviceId}
-            onValueChange={(value) => {
-              set("call_inputDeviceID", value);
-              inputDevices.setActiveMediaDevice(value);
-            }}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Select device..." />
-            </SelectTrigger>
-            <SelectContent>
-              {inputDevices.devices.map((device) => (
-                <SelectItem key={device.deviceId} value={device.deviceId}>
-                  {device.label || "Unknown Device"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="flex gap-7">
+      <div className="flex flex-col gap-7 flex-1">
+        {/* Basic Setup */}
+        <div className="flex flex-col">
+          <SettingsPageTitle text="Basic Setup" />
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-5">
+              {/* Input Device */}
+              <div className="flex flex-col gap-2">
+                <Label>Input Device</Label>
+                <Select
+                  value={inputDevices.activeDeviceId}
+                  onValueChange={(value) => {
+                    set("call_inputDeviceID", value);
+                    inputDevices.setActiveMediaDevice(value);
+                  }}
+                >
+                  <SelectTrigger className="w-50">
+                    <SelectValue placeholder="Select device..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {inputDevices.devices.map((device) => (
+                      <SelectItem key={device.deviceId} value={device.deviceId}>
+                        {device.label || "Unknown Device"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Output Device */}
+              <div className="flex flex-col gap-2">
+                <Label>Output Device</Label>
+                <Select
+                  value={outputDevices.activeDeviceId}
+                  onValueChange={(value) => {
+                    set("call_outputDeviceID", value);
+                    outputDevices.setActiveMediaDevice(value);
+                  }}
+                >
+                  <SelectTrigger className="w-50">
+                    <SelectValue placeholder="Select device..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {outputDevices.devices.map((device) => (
+                      <SelectItem key={device.deviceId} value={device.deviceId}>
+                        {device.label || "Unknown Device"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Input Gain */}
+            <div className="flex flex-col gap-2">
+              <Label>Input Gain</Label>
+              <div className="flex items-center gap-3">
+                <Slider
+                  value={[(data.call_inputGain as number) ?? 1.0]}
+                  onValueChange={(value) => set("call_inputGain", value[0])}
+                  step={0.01}
+                  min={0}
+                  max={2}
+                  className="flex-1"
+                />
+                <span className="text-sm text-muted-foreground w-10">
+                  {(typeof data.call_inputGain === "number"
+                    ? data.call_inputGain
+                    : 1.0
+                  ).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Echo Cancellation */}
+            <SwitchWithLabel
+              id="call_enableEchoCancellation"
+              label="Enable Echo Cancellation"
+              value={(data.call_enableEchoCancellation as boolean) ?? false}
+              setValue={(value) => set("call_enableEchoCancellation", value)}
+            />
+
+            {/* Noise Suppression */}
+            <SwitchWithLabel
+              id="call_enableNoiseSuppression"
+              label="Enable Noise Suppression"
+              value={(data.call_enableNoiseSuppression as boolean) ?? true}
+              setValue={(value) => set("call_enableNoiseSuppression", value)}
+            />
+          </div>
         </div>
-        {/* Output Device */}
-        <div className="flex flex-col gap-1">
-          <p className="font-semibold">Output Device</p>
-          <Select
-            value={outputDevices.activeDeviceId}
-            onValueChange={(value) => {
-              set("call_outputDeviceID", value);
-              outputDevices.setActiveMediaDevice(value);
+
+        {/* Speaking Detection */}
+        <div className="flex flex-col gap-4">
+          <AudioLevelRangeSlider
+            minValue={(data.call_speakingMinDb as number) ?? -60}
+            maxValue={(data.call_speakingMaxDb as number) ?? -20}
+            audioLevel={audioTest.audioLevel}
+            onValueChange={([min, max]) => {
+              set("call_speakingMinDb", min);
+              set("call_speakingMaxDb", max);
             }}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Select device..." />
-            </SelectTrigger>
-            <SelectContent>
-              {outputDevices.devices.map((device) => (
-                <SelectItem key={device.deviceId} value={device.deviceId}>
-                  {device.label || "Unknown Device"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            min={-90}
+            max={0}
+          />
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">
+              Min:{" "}
+              <span className="font-semibold text-foreground">
+                {(data.call_speakingMinDb as number) ?? -60} dB
+              </span>
+            </span>
+            <span className="text-muted-foreground">
+              Max:{" "}
+              <span className="font-semibold text-foreground">
+                {(data.call_speakingMaxDb as number) ?? -20} dB
+              </span>
+            </span>
+          </div>
+        </div>
+
+        {/* Advanced Settings */}
+        <div className="flex flex-col">
+          <SettingsPageTitle text="Advanced Settings" />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label>Noise Suppression Amount</Label>
+              <div className="flex items-center gap-3">
+                <Slider
+                  disabled={
+                    !((data.call_enableNoiseSuppression as boolean) ?? true)
+                  }
+                  value={[(data.call_noiseReductionLevel as number) ?? 60]}
+                  onValueChange={(value) =>
+                    set("call_noiseReductionLevel", value[0])
+                  }
+                  step={1}
+                  min={0}
+                  max={100}
+                  className="flex-1"
+                />
+                <span className="text-sm text-muted-foreground w-10">
+                  {(data.call_noiseReductionLevel as number) ?? 60}
+                </span>
+              </div>
+            </div>
+            <SwitchWithLabel
+              id="call_enableNoiseGate"
+              label="Enable Noise Gate"
+              value={(data.call_enableNoiseGate as boolean) ?? true}
+              setValue={(value) => set("call_enableNoiseGate", value)}
+            />
+            <SwitchWithLabel
+              id="call_enableAutoGainControl"
+              label="Enable Auto Gain Control"
+              value={(data.call_enableAutoGainControl as boolean) ?? true}
+              setValue={(value) => set("call_enableAutoGainControl", value)}
+            />
+            <SwitchWithLabel
+              id="call_enableDynacast"
+              label="Enable Dynacast"
+              value={(data.call_enableDynacast as boolean) ?? true}
+              setValue={(value) => set("call_enableDynacast", value)}
+            />
+            <SwitchWithLabel
+              id="call_enableAdaptiveStream"
+              label="Enable Adaptive Stream"
+              value={(data.call_enableAdaptiveStream as boolean) ?? true}
+              setValue={(value) => set("call_enableAdaptiveStream", value)}
+            />
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="call_channelCount">Channel Count:</Label>
+              <Input
+                id="call_channelCount"
+                type="number"
+                value={(data.call_channelCount as number) ?? 2}
+                onChange={(e) =>
+                  set("call_channelCount", parseFloat(e.target.value) || 2)
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="call_sampleRate">Sample Rate (Hz):</Label>
+              <Input
+                id="call_sampleRate"
+                type="number"
+                value={(data.call_sampleRate as number) ?? 48000}
+                onChange={(e) =>
+                  set("call_sampleRate", parseFloat(e.target.value) || 48000)
+                }
+              />
+            </div>
+          </div>
         </div>
       </div>
-      {/* Audio Test Section */}
-      <div className="flex flex-col gap-1">
-        <p className="font-semibold">Test Audio</p>
+
+      {/* Audio Test (Right) */}
+      <div className="flex flex-col gap-3 w-80">
+        <SettingsPageTitle text="Audio Test" />
         <div className="flex flex-col gap-4 p-4 rounded-lg border bg-card">
-          {/* Audio Level Meter */}
           <div className="flex flex-col gap-2">
             <AudioLevelMeter
               level={audioTest.audioLevel}
               isActive={audioTest.isListening}
             />
           </div>
-
-          {/* Control Buttons */}
-          <div className="flex gap-2 flex-wrap">
-            {/* Record Button */}
+          <div className="flex flex-col gap-2">
             <Button
               variant={audioTest.isRecording ? "destructive" : "outline"}
               size="sm"
-              className="w-38"
               onClick={() => {
                 if (audioTest.isRecording) {
                   audioTest.stopRecording();
@@ -488,12 +644,9 @@ export default function Page() {
                 </>
               )}
             </Button>
-
-            {/* Playback Button */}
             <Button
               variant={audioTest.isPlaying ? "destructive" : "outline"}
               size="sm"
-              className="w-38"
               onClick={() => {
                 if (audioTest.isPlaying) {
                   audioTest.stopPlayback();
@@ -516,76 +669,6 @@ export default function Page() {
               )}
             </Button>
           </div>
-        </div>
-      </div>
-      {/* Input Sensitivity */}
-      <div className="flex flex-col gap-1">
-        <p className="font-semibold">Input Sensitivity</p>
-        <div>
-          <Slider
-            value={[(data.call_inputGain as number) ?? 1.0]}
-            onValueChange={(value) => set("call_inputGain", value)}
-            step={0.01}
-            min={0}
-            max={2}
-          />
-        </div>
-      </div>
-      {/* Voice Enhancement Settings */}
-      <div className="flex flex-col">
-        <div className="flex flex-col gap-3">
-          {options.map((option) => (
-            <SwitchWithLabel
-              key={option.key}
-              id={option.key}
-              label={option.label}
-              value={(data[option.key] as boolean) ?? option.default}
-              setValue={(value) => set(option.key, value)}
-            />
-          ))}
-        </div>
-      </div>
-      {/* Advanced Section */}
-      <div className="flex flex-col">
-        <SettingsPageTitle text="Advanced" />
-        <div className="flex flex-col gap-3 pb-4">
-          {advancedSwitches.map((option) => (
-            <SwitchWithLabel
-              key={option.key}
-              id={option.key}
-              label={option.label}
-              value={(data[option.key] as boolean) ?? option.default}
-              setValue={(value) => set(option.key, value)}
-            />
-          ))}
-        </div>
-        <div className="flex flex-col gap-3">
-          {/* Noise Gate Threshold */}
-          <div className="flex flex-col gap-2">
-            <Label className="font-semibold text-md">
-              Noise Gate Threshold
-            </Label>
-            <Slider
-              value={[(data.call_noiseSensitivity as number) ?? 0.5]}
-              onValueChange={(value) => set("call_noiseSensitivity", value)}
-              step={0.01}
-              min={0}
-              max={1}
-            />
-          </div>
-          {advanced.map((option) => (
-            <div key={option.key} className="flex flex-col gap-2">
-              <Label htmlFor={option.key}>{option.label}:</Label>
-              <Input
-                id={option.key}
-                type="number"
-                value={(data[option.key] as number) ?? option.default}
-                onChange={(e) =>
-                  set(option.key, parseFloat(e.target.value) || option.default)
-                }
-              />
-            </div>
-          ))}
         </div>
       </div>
     </div>

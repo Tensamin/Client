@@ -545,18 +545,26 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          const sensitivity = (data.call_noiseSensitivity as number) ?? 0.5;
           const inputGain = (data.call_inputGain as number) ?? 1.0;
+          const noiseReductionLevel = (data.call_noiseReductionLevel as
+            | number
+            | undefined) ?? 60;
+          const speakingMinDb = (data.call_speakingMinDb as number | undefined) ??
+            -60;
+          const speakingMaxDb = (data.call_speakingMaxDb as number | undefined) ??
+            -20;
 
           // Attach processing pipeline after publishing
           const controller = await audioService.attachToLocalTrack(
             createdTrack,
             {
               noiseSuppressionEnabled: enableNoiseSuppression,
-              noiseSensitivity: sensitivity,
+              noiseReductionLevel,
               inputGain,
               enableNoiseGate:
                 (data.call_enableNoiseGate as boolean | undefined) ?? true,
+              speakingMinDb,
+              speakingMaxDb,
               assetCdnUrl: "/audio",
               muteWhenSilent: false,
             },
