@@ -16,3 +16,8 @@ export const call = "call.tensamin.net";
 
 export const sound_call = "/sounds/call.wav";
 export const sound_message = "/sounds/message.wav";
+
+export const noise_suppression_cdn =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:9187/audio/"
+    : "https://tensamin.net/audio/";
