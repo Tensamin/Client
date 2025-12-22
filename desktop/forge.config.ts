@@ -17,7 +17,7 @@ import packageJson from "./package.json" assert { type: "json" };
 
 const linuxPackageProps = {
   options: {
-    name: packageJson.name,
+    name: packageJson.projectName,
     genericName: "Chat Application",
     version: packageJson.version,
     description: packageJson.description,
@@ -31,7 +31,7 @@ const linuxPackageProps = {
 
 const config: ForgeConfig = {
   packagerConfig: {
-    executableName: packageJson.name,
+    executableName: packageJson.projectName,
     appVersion: packageJson.version,
     icon: "./assets/icon/icon",
     asar: true,
@@ -40,7 +40,7 @@ const config: ForgeConfig = {
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({
-      name: packageJson.name,
+      name: packageJson.projectName,
       version: packageJson.version,
       authors: packageJson.author.name,
       description: packageJson.description,
