@@ -1,6 +1,7 @@
 {
-  "name": "tensamin",
+  "name": "@tensamin/web",
   "productName": "Tensamin",
+  "private": true,
   "description": "True E2EE, decentralized messages. Open source and privacy first.",
   "version": "0.1.24",
   "scripts": {

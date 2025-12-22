@@ -1,5 +1,6 @@
 {
   "name": "tensamin",
+  "private": true,
   "version": "0.1.24",
   "author": {
     "name": "Methanium",
@@ -14,10 +15,18 @@
   "description": "True E2EE, decentralized messages. Open source and privacy first.",
   "homepage": "https://tensamin.net",
   "productName": "Tensamin",
+  "workspaces": [
+    "web",
+    "desktop",
+    "mobile"
+  ],
   "scripts": {
     "format": "bunx prettier --write .",
     "lint": "eslint",
-    "dev": "next dev",
+    "dev": "cd web && bun run dev",
+    "dev:web": "cd web && bun run dev",
+    "dev:desktop": "cd desktop && bun run dev",
+    "dev:mobile": "cd mobile && bun run start",
     "build": "next telemetry disable && next build",
     "build:electron": "cd desktop && bun run build && cd .."
   }
