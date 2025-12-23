@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { defaults } from "@/lib/utils";
 import { SettingsPageTitle } from "@/page/settings";
 
 // Main
@@ -109,7 +110,7 @@ function useAudioTest(
     sampleRate: number;
     speakingMinDb: number;
     speakingMaxDb: number;
-  },
+  }
 ) {
   const [isListening, setIsListening] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -126,7 +127,7 @@ function useAudioTest(
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const destinationNodeRef = useRef<MediaStreamAudioDestinationNode | null>(
-    null,
+    null
   );
   const pipelineHandleRef = useRef<AudioPipelineHandle | null>(null);
 
@@ -166,7 +167,7 @@ function useAudioTest(
           noiseSuppressionEnabled: settings.enableNoiseSuppression,
           noiseReductionLevel: settings.noiseReductionLevel,
           inputGain: settings.inputGain,
-          enableNoiseGate: true,
+          enableNoiseGate: false,
           speakingMinDb: settings.speakingMinDb,
           speakingMaxDb: settings.speakingMaxDb,
           assetCdnUrl: "/audio",
@@ -186,7 +187,7 @@ function useAudioTest(
       analyserRef.current = analyser;
 
       sourceNodeRef.current = audioContext.createMediaStreamSource(
-        processedStreamRef.current!,
+        processedStreamRef.current!
       );
       sourceNodeRef.current.connect(analyser);
 
@@ -432,11 +433,11 @@ export default function Page() {
       enableNoiseSuppression,
       noiseReductionLevel,
       inputGain,
-      channelCount: (data.call_channelCount as number) ?? 2,
-      sampleRate: (data.call_sampleRate as number) ?? 48000,
+      channelCount: (data.call_channelCount as number) ?? defaults.channelCount,
+      sampleRate: (data.call_sampleRate as number) ?? defaults.sampleRate,
       speakingMinDb,
       speakingMaxDb,
-    },
+    }
   );
 
   return (
@@ -582,12 +583,6 @@ export default function Page() {
               </div>
             </div>
             <SwitchWithLabel
-              id="call_enableNoiseGate"
-              label="Enable Noise Gate"
-              value={(data.call_enableNoiseGate as boolean) ?? true}
-              setValue={(value) => set("call_enableNoiseGate", value)}
-            />
-            <SwitchWithLabel
               id="call_enableAutoGainControl"
               label="Enable Auto Gain Control"
               value={(data.call_enableAutoGainControl as boolean) ?? true}
@@ -610,9 +605,28 @@ export default function Page() {
               <Input
                 id="call_channelCount"
                 type="number"
-                value={(data.call_channelCount as number) ?? 2}
+                value={
+                  (data.call_channelCount as number) ?? defaults.channelCount
+                }
                 onChange={(e) =>
-                  set("call_channelCount", parseFloat(e.target.value) || 2)
+                  set(
+                    "call_channelCount",
+                    parseFloat(e.target.value) || defaults.channelCount
+                  )
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="call_sampleSize">Sample Size:</Label>
+              <Input
+                id="call_sampleSize"
+                type="number"
+                value={(data.call_sampleSize as number) ?? defaults.sampleSize}
+                onChange={(e) =>
+                  set(
+                    "call_sampleSize",
+                    parseFloat(e.target.value) || defaults.sampleSize
+                  )
                 }
               />
             </div>
@@ -621,9 +635,12 @@ export default function Page() {
               <Input
                 id="call_sampleRate"
                 type="number"
-                value={(data.call_sampleRate as number) ?? 48000}
+                value={(data.call_sampleRate as number) ?? defaults.sampleRate}
                 onChange={(e) =>
-                  set("call_sampleRate", parseFloat(e.target.value) || 48000)
+                  set(
+                    "call_sampleRate",
+                    parseFloat(e.target.value) || defaults.sampleRate
+                  )
                 }
               />
             </div>

@@ -11,7 +11,6 @@ import {
 } from "@livekit/components-react";
 import {
   attachSpeakingDetectionToRemoteTrack,
-  DEFAULT_LIVEKIT_SPEAKING_OPTIONS,
   DEFAULT_NOISE_SUPPRESSION_CONFIG,
   DEFAULT_OUTPUT_GAIN_CONFIG,
   DEFAULT_SPEAKING_DETECTION_CONFIG,
@@ -45,6 +44,7 @@ import { toast } from "sonner";
 import { audioService } from "@/lib/audioService";
 import * as CommunicationValue from "@/lib/communicationValues";
 import { playSound } from "@/lib/sound";
+import { defaults } from "@/lib/utils";
 
 // Context Imports
 import { usePageContext } from "@/context/page";
@@ -85,7 +85,7 @@ function safeParseMetadata(metadata?: string | null) {
 
 // Stream Preview
 async function captureScreenShareFrame(
-  track: LocalVideoTrack,
+  track: LocalVideoTrack
 ): Promise<string | null> {
   const video = document.createElement("video");
   video.muted = true;
@@ -147,7 +147,7 @@ function ScreenSharePreviewManager() {
         const currentMetadata = safeParseMetadata(participant.metadata);
         if (currentMetadata.stream_preview !== preview) {
           participant.setMetadata(
-            JSON.stringify({ ...currentMetadata, stream_preview: preview }),
+            JSON.stringify({ ...currentMetadata, stream_preview: preview })
           );
         }
       }
@@ -301,7 +301,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       shouldConnect,
       setPage,
       waitForDisconnect,
-    ],
+    ]
   );
 
   const [switchCallDialogOpen, setSwitchCallDialogOpen] = useState(false);
@@ -323,7 +323,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }
       return performConnect(token, newCallId);
     },
-    [shouldConnect, callId, performConnect],
+    [shouldConnect, callId, performConnect]
   );
 
   // Handle call switching
@@ -369,11 +369,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         conversations.map((c) =>
           c.user_id === receiverId
             ? { ...c, calls: [...(c.calls || []), callId] }
-            : c,
-        ),
+            : c
+        )
       );
     },
-    [conversations, setConversations],
+    [conversations, setConversations]
   );
   const sendInvite = useCallback(
     async (callId: string, receiverId: number) => {
@@ -389,7 +389,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           toast.error("Failed to send call invite");
         });
     },
-    [send, saveInviteToConversation],
+    [send, saveInviteToConversation]
   );
 
   // Call tokens
@@ -409,7 +409,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           return "";
         });
     },
-    [send],
+    [send]
   );
 
   const handleAcceptCall = useCallback(() => {
@@ -586,7 +586,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         return { ...prev, [identity]: speaking };
       });
     },
-    [],
+    []
   );
 
   const removeSpeakingState = useCallback((identity: string) => {
@@ -611,7 +611,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           ? data.call_speakingMaxDb
           : DEFAULT_SPEAKING_DETECTION_CONFIG.maxDb,
     }),
-    [data.call_speakingMaxDb, data.call_speakingMinDb],
+    [data.call_speakingMaxDb, data.call_speakingMinDb]
   );
 
   const startWatching = useCallback((identity: string) => {
@@ -688,7 +688,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
       room.off(
         RoomEvent.ParticipantDisconnected,
-        handleParticipantDisconnected,
+        handleParticipantDisconnected
       );
     };
   }, [room]);
@@ -739,15 +739,13 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           const noiseReductionLevel =
             typeof data.call_noiseReductionLevel === "number"
               ? data.call_noiseReductionLevel
-              : (DEFAULT_NOISE_SUPPRESSION_CONFIG.noiseReductionLevel ?? 60);
+              : DEFAULT_NOISE_SUPPRESSION_CONFIG.noiseReductionLevel ?? 60;
           const inputGain =
             typeof data.call_inputGain === "number"
               ? data.call_inputGain
-              : (DEFAULT_OUTPUT_GAIN_CONFIG.speechGain ?? 1);
+              : DEFAULT_OUTPUT_GAIN_CONFIG.speechGain ?? 1;
           const speakingMinDb = speakingConfig.minDb;
           const speakingMaxDb = speakingConfig.maxDb;
-          const enableNoiseGate =
-            (data.call_enableNoiseGate as boolean) ?? true;
 
           await audioService.resumeContext();
 
@@ -758,8 +756,11 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             autoGainControl:
               (data.call_enableAutoGainControl as boolean) ?? true,
             deviceId: (data.call_inputDeviceID as string) ?? "default",
-            sampleRate: (data.call_sampleRate as number) ?? 48000,
-            channelCount: (data.call_channelCount as number) || 2,
+            sampleRate: (data.call_sampleRate as number) ?? defaults.sampleRate,
+            sampleSize: (data.call_sampleSize as number) ?? defaults.sampleSize,
+            voiceIsolation: (data.call_voiceIsolation as boolean) ?? false,
+            channelCount:
+              (data.call_channelCount as number) || defaults.channelCount,
           });
 
           if (!mounted) {
@@ -782,15 +783,11 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
               noiseSuppressionEnabled: enableNoiseSuppression as boolean,
               noiseReductionLevel,
               inputGain,
-              enableNoiseGate,
+              enableNoiseGate: false,
               speakingMinDb,
               speakingMaxDb,
               assetCdnUrl: "/audio",
-              muteWhenSilent:
-                (data.call_muteWhenSilent as boolean) ??
-                DEFAULT_LIVEKIT_SPEAKING_OPTIONS.muteWhenSilent ??
-                false,
-            },
+            }
           );
 
           pipelineControllerRef.current = controller;
@@ -811,7 +808,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             "Sub Call Context",
             "Failed to initialize audio",
             error,
-            "red",
+            "red"
           );
           toast.error("Failed to initialize audio.");
           if (createdTrack) createdTrack.stop();
@@ -840,7 +837,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
     const attachRemoteSpeaking = async (
       track: RemoteAudioTrack,
-      participant: RemoteParticipant,
+      participant: RemoteParticipant
     ) => {
       const identity = participant.identity;
       if (!identity) return;
@@ -858,7 +855,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         });
 
         const cleanup = controller.onChange((state) =>
-          updateSpeakingState(identity, state.speaking),
+          updateSpeakingState(identity, state.speaking)
         );
 
         remoteControllersRef.current.set(identity, { controller, cleanup });
@@ -868,7 +865,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           "Sub Call Context",
           "Failed to attach remote speaking detection",
           error,
-          "red",
+          "red"
         );
       }
     };
@@ -887,7 +884,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     const handleTrackSubscribed = (
       track: RemoteTrack,
       _publication: RemoteTrackPublication,
-      participant: RemoteParticipant,
+      participant: RemoteParticipant
     ) => {
       if (!(track instanceof RemoteAudioTrack)) return;
       void attachRemoteSpeaking(track, participant);
@@ -896,7 +893,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     const handleTrackUnsubscribed = (
       track: RemoteTrack,
       _publication: RemoteTrackPublication,
-      participant: RemoteParticipant,
+      participant: RemoteParticipant
     ) => {
       if (!(track instanceof RemoteAudioTrack)) return;
       removeRemoteController(participant.identity);
@@ -917,7 +914,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
       room.off(
         RoomEvent.ParticipantDisconnected,
-        handleParticipantDisconnected,
+        handleParticipantDisconnected
       );
       const snapshot = new Map(controllersSnapshot);
       snapshot.forEach(({ controller, cleanup }, identity) => {
@@ -944,7 +941,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         : {};
       localParticipant
         .setMetadata(
-          JSON.stringify({ ...currentMetadata, deafened: isDeafened }),
+          JSON.stringify({ ...currentMetadata, deafened: isDeafened })
         )
         .catch(() => {});
     }
@@ -1072,7 +1069,7 @@ type CallContextValue = {
   connect: (
     token: string,
     callId: string,
-    receiverId?: number,
+    receiverId?: number
   ) => Promise<void>;
   setOuterState: (input: string) => void;
   setShouldConnect: (input: boolean) => void;

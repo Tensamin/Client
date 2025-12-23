@@ -1,17 +1,19 @@
 // Package Imports
-import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
+import { Inter } from "next/font/google";
 import { Suspense } from "react";
-import "./globals.css";
-import "katex/dist/katex.min.css";
-import "highlight.js/styles/github-dark.css";
-import "@livekit/components-styles";
 import packageJson from "../../package.json";
 
+// CSS Imports
+import "@livekit/components-styles";
+import "highlight.js/styles/github-dark.css";
+import "katex/dist/katex.min.css";
+import "./globals.css";
+
 // Context Imports
-import { StorageProvider } from "@/context/storage";
 import { PageProvider } from "@/context/page";
+import { StorageProvider } from "@/context/storage";
 
 // Components
 import { Loading } from "@/components/loading";
