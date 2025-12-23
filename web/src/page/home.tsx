@@ -55,7 +55,7 @@ export default function Page() {
         .then(async (data) => {
           if (data.type === "error") {
             toast.error(
-              "Failed to add conversation (the user probably does not exist)",
+              "Failed to add conversation (the user probably does not exist)"
             );
           } else {
             send("add_chat", {
@@ -145,7 +145,7 @@ export default function Page() {
                 <Button
                   disabled={updateLoading}
                   size="sm"
-                  className="w-[120px]"
+                  className="w-30"
                   onClick={() => {
                     setUpdateLoading(true);
                     // @ts-expect-error ElectronAPI only available in Electron
@@ -184,7 +184,7 @@ export default function Page() {
               <div
                 className={cn(
                   "overflow-hidden transition-all duration-800 ease-out",
-                  extraInfo ? "max-h-24 opacity-100" : "max-h-0 opacity-80",
+                  extraInfo ? "max-h-24 opacity-100" : "max-h-0 opacity-80"
                 )}
               >
                 {extraInfo && (

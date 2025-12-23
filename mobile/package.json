@@ -1,5 +1,5 @@
 {
-  "name": "@tensamin/mobile",
+  "name": "tensamin",
   "main": "expo-router/entry",
   "version": "0.1.24",
   "scripts": {
