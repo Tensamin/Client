@@ -25,25 +25,29 @@ import {
 
 // Helper Functions
 export function displayCallId(callId: string) {
-  const hex = callId.replace(/-/g, "");
+  try {
+    const hex = callId.replace(/-/g, "");
 
-  const int = BigInt(`0x${hex}`);
-  const chars =
-    "!#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~";
-  let result = "";
-  let n = int;
+    const int = BigInt(`0x${hex}`);
+    const chars =
+      "!#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~";
+    let result = "";
+    let n = int;
 
-  while (n > BigInt(0)) {
-    result = chars[Number(n % BigInt(85))] + result;
-    n = n / BigInt(85);
+    while (n > BigInt(0)) {
+      result = chars[Number(n % BigInt(85))] + result;
+      n = n / BigInt(85);
+    }
+
+    return (
+      result
+        .replaceAll(/[^a-zA-Z0-9]/g, "")
+        .slice(4, 12)
+        .toUpperCase() || "0"
+    );
+  } catch {
+    return "0";
   }
-
-  return (
-    result
-      .replaceAll(/[^a-zA-Z0-9]/g, "")
-      .slice(4, 12)
-      .toUpperCase() || "0"
-  );
 }
 
 // Main (For navbar)

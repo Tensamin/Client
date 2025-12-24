@@ -4,12 +4,8 @@ import type {
   TrackReferenceOrPlaceholder,
 } from "@livekit/components-core";
 import { isTrackReference } from "@livekit/components-core";
-import {
-  useConnectionState,
-  useLocalParticipant,
-  useTracks,
-} from "@livekit/components-react";
-import { ConnectionState, Track } from "livekit-client";
+import { useTracks } from "@livekit/components-react";
+import { Track } from "livekit-client";
 import {
   createContext,
   useCallback,
@@ -90,29 +86,7 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
   // focus stuff
   const [focusedTrackSid, setFocusedTrackSid] = useState<string | null>(null);
 
-  const { localParticipant } = useLocalParticipant();
-  const connectionState = useConnectionState();
-
   const [hideParticipants, setHideParticipants] = useState(false);
-
-  useEffect(() => {
-    if (localParticipant && connectionState === ConnectionState.Connected) {
-      const currentMetadata = localParticipant.metadata
-        ? JSON.parse(localParticipant.metadata)
-        : {};
-
-      if (currentMetadata.watching_stream !== focusedTrackSid) {
-        localParticipant
-          .setMetadata(
-            JSON.stringify({
-              ...currentMetadata,
-              watching_stream: focusedTrackSid,
-            }),
-          )
-          .catch(() => {});
-      }
-    }
-  }, [focusedTrackSid, localParticipant, connectionState]);
 
   const focusedTrackRef = useMemo(() => {
     if (!focusedTrackSid) {

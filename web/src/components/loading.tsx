@@ -223,11 +223,3 @@ export function DelayedLoadingIcon({ invert }: { invert?: boolean }) {
     </AnimatePresence>
   );
 }
-
-export function LoadingBlock() {
-  return (
-    <div className="w-full h-full bg-background flex items-center justify-center">
-      <LoadingIcon invert />
-    </div>
-  );
-}

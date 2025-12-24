@@ -47,7 +47,7 @@ export function CodeEditor({
       colors: {
         "editor.background": colorToHex(css.getPropertyValue("--card").trim()),
         "editor.foreground": colorToHex(
-          css.getPropertyValue("--card-foreground").trim()
+          css.getPropertyValue("--card-foreground").trim(),
         ),
       },
     });

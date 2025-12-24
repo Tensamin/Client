@@ -5,9 +5,9 @@ import {
   useParticipantContext,
   useParticipantInfo,
 } from "@livekit/components-react";
-import { ParticipantEvent, Track } from "livekit-client";
+import { Track } from "livekit-client";
 import * as Icon from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 // Lib Imports
 import { AvatarSizes, fallbackUser } from "@/lib/types";
@@ -17,6 +17,7 @@ import { useSubCallContext } from "@/context/call";
 import { useUserContext } from "@/context/user";
 
 // Components
+import { LoadingIcon } from "@/components/loading";
 import { ParticipantContextMenu } from "../layout/menus";
 import { CallModal } from "./raw";
 
@@ -30,10 +31,11 @@ export function CallUserModal({
   overwriteSize?: AvatarSizes;
   inGridView?: boolean;
 } = {}) {
-  const { identity, metadata } = useParticipantInfo();
+  const { identity } = useParticipantInfo();
   const participant = useParticipantContext();
   const trackRef = useMaybeTrackRefContext();
   const { get, fetchedUsers } = useUserContext();
+  const { participantData } = useSubCallContext();
 
   const screenShareTrackRef =
     trackRef &&
@@ -42,10 +44,16 @@ export function CallUserModal({
       ? trackRef
       : undefined;
 
-  const [muted, setMuted] = useState(false);
-  const [deafened, setDeafened] = useState(false);
-
   const userId = identity ? Number(identity) : 0;
+  const deafened = identity
+    ? (participantData[identity]?.deafened ?? false)
+    : false;
+
+  // Get muted state directly from participant's audio track publication
+  const audioPublication = participant?.getTrackPublication(
+    Track.Source.Microphone,
+  );
+  const muted = audioPublication?.isMuted ?? false;
 
   // Fetch user data independently
   useEffect(() => {
@@ -57,32 +65,6 @@ export function CallUserModal({
     }
     get(userId, false);
   }, [userId, get, fetchedUsers]);
-
-  useEffect(() => {
-    if (metadata) {
-      try {
-        const data = JSON.parse(metadata);
-        setDeafened(!!data.deafened);
-      } catch {}
-    }
-  }, [metadata]);
-
-  useEffect(() => {
-    if (!participant) {
-      return;
-    }
-
-    const handleMuted = () => setMuted(true);
-    const handleUnmuted = () => setMuted(false);
-
-    participant.on(ParticipantEvent.TrackMuted, handleMuted);
-    participant.on(ParticipantEvent.TrackUnmuted, handleUnmuted);
-
-    return () => {
-      participant.off(ParticipantEvent.TrackMuted, handleMuted);
-      participant.off(ParticipantEvent.TrackUnmuted, handleUnmuted);
-    };
-  }, [participant]);
 
   // Get user data from context
   const user = fetchedUsers.get(userId) ?? fallbackUser;
@@ -99,10 +81,8 @@ export function CallUserModal({
       hideBadges={hideBadges}
       inGridView={inGridView}
     />
-  ) : identity !== "" ? (
-    <p>Loading...</p>
   ) : (
-    <p>Error</p>
+    <LoadingIcon />
   );
 }
 
@@ -126,14 +106,14 @@ export function TileContent({
 
   return (
     <ParticipantContextMenu>
-      <div className="aspect-video relative w-full max-h-full">
+      <div className="aspect-video relative w-full max-h-full bg-black rounded-xl">
         <div
-          className={`absolute inset-0 rounded-xl transition-all ease-in-out duration-400 pointer-events-none z-20 ${
+          className={`absolute inset-0 rounded-xl transition-all ease-in-out duration-400 pointer-events-none z-30 ${
             isSpeaking && "ring-3 ring-primary ring-inset"
           }`}
         />
 
-        <div className="w-full h-full flex items-center justify-center rounded-xl z-10">
+        <div className="w-full h-full flex items-center justify-center rounded-xl z-10 bg-black">
           <CallUserModal
             inGridView={inGridView}
             overwriteSize={small ? "extraLarge" : undefined}

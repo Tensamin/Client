@@ -74,18 +74,9 @@ import { User } from "@/lib/types";
 const SubCallContext = createContext<SubCallContextValue | null>(null);
 const CallContext = createContext<CallContextValue | null>(null);
 
-function safeParseMetadata(metadata?: string | null) {
-  if (!metadata) return {} as Record<string, unknown>;
-  try {
-    return JSON.parse(metadata) ?? {};
-  } catch {
-    return {} as Record<string, unknown>;
-  }
-}
-
 // Stream Preview
 async function captureScreenShareFrame(
-  track: LocalVideoTrack
+  track: LocalVideoTrack,
 ): Promise<string | null> {
   const video = document.createElement("video");
   video.muted = true;
@@ -93,15 +84,29 @@ async function captureScreenShareFrame(
   await video.play();
 
   const canvas = document.createElement("canvas");
-  canvas.width = 1280;
-  canvas.height = 720;
+  canvas.width = 480;
+  canvas.height = 270;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const dataUrl = canvas.toDataURL("image/webp", 0.4);
+  const videoAspect = video.videoWidth / video.videoHeight;
+  const canvasAspect = canvas.width / canvas.height;
 
-  // Cleanup
+  let drawWidth = canvas.width;
+  let drawHeight = canvas.width / videoAspect;
+  let offsetX = 0;
+  let offsetY = (canvas.height - drawHeight) / 2;
+
+  if (videoAspect < canvasAspect) {
+    drawWidth = canvas.height * videoAspect;
+    drawHeight = canvas.height;
+    offsetX = (canvas.width - drawWidth) / 2;
+    offsetY = 0;
+  }
+
+  ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
+  const dataUrl = canvas.toDataURL("image/webp", 0.5);
+
   video.pause();
   video.srcObject = null;
 
@@ -110,6 +115,7 @@ async function captureScreenShareFrame(
 
 function ScreenSharePreviewManager() {
   const { localParticipant } = useLocalParticipant();
+  const { setParticipantData } = useSubCallContext();
   const tracks = useTracks([Track.Source.ScreenShare], {
     onlySubscribed: false,
   });
@@ -144,11 +150,25 @@ function ScreenSharePreviewManager() {
 
       const preview = await captureScreenShareFrame(screenShareTrack);
       if (preview) {
-        const currentMetadata = safeParseMetadata(participant.metadata);
-        if (currentMetadata.stream_preview !== preview) {
-          participant.setMetadata(
-            JSON.stringify({ ...currentMetadata, stream_preview: preview })
-          );
+        const encoder = new TextEncoder();
+        const data = encoder.encode(
+          JSON.stringify({
+            type: "stream_preview",
+            preview,
+          }),
+        );
+        await participant.publishData(data, { reliable: true });
+
+        // Update local participant data so user can see their own preview
+        const identity = participant.identity;
+        if (identity) {
+          setParticipantData((prev) => ({
+            ...prev,
+            [identity]: {
+              ...prev[identity],
+              stream_preview: preview,
+            },
+          }));
         }
       }
     };
@@ -161,17 +181,32 @@ function ScreenSharePreviewManager() {
 
     return () => {
       clearInterval(interval);
-      // Clean up metadata when screen share stops
+      // Send cleanup message when screen share stops
       const participant = localParticipantRef.current;
       if (participant) {
-        const currentMetadata = safeParseMetadata(participant.metadata);
-        if (currentMetadata.stream_preview) {
-          delete currentMetadata.stream_preview;
-          participant.setMetadata(JSON.stringify(currentMetadata));
+        const encoder = new TextEncoder();
+        const data = encoder.encode(
+          JSON.stringify({
+            type: "stream_preview",
+            preview: null,
+          }),
+        );
+        participant.publishData(data, { reliable: true }).catch(() => {});
+
+        // Clear local preview
+        const identity = participant.identity;
+        if (identity) {
+          setParticipantData((prev) => ({
+            ...prev,
+            [identity]: {
+              ...prev[identity],
+              stream_preview: null,
+            },
+          }));
         }
       }
     };
-  }, [screenShareTrack]);
+  }, [screenShareTrack, setParticipantData]);
 
   return null;
 }
@@ -301,7 +336,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       shouldConnect,
       setPage,
       waitForDisconnect,
-    ]
+    ],
   );
 
   const [switchCallDialogOpen, setSwitchCallDialogOpen] = useState(false);
@@ -323,7 +358,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }
       return performConnect(token, newCallId);
     },
-    [shouldConnect, callId, performConnect]
+    [shouldConnect, callId, performConnect],
   );
 
   // Handle call switching
@@ -369,11 +404,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         conversations.map((c) =>
           c.user_id === receiverId
             ? { ...c, calls: [...(c.calls || []), callId] }
-            : c
-        )
+            : c,
+        ),
       );
     },
-    [conversations, setConversations]
+    [conversations, setConversations],
   );
   const sendInvite = useCallback(
     async (callId: string, receiverId: number) => {
@@ -389,7 +424,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           toast.error("Failed to send call invite");
         });
     },
-    [send, saveInviteToConversation]
+    [send, saveInviteToConversation],
   );
 
   // Call tokens
@@ -409,7 +444,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           return "";
         });
     },
-    [send]
+    [send],
   );
 
   const handleAcceptCall = useCallback(() => {
@@ -548,7 +583,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         }}
       >
         <RoomAudioRenderer />
-        <ScreenSharePreviewManager />
         <SubCallProvider>{children}</SubCallProvider>
       </LiveKitRoom>
     </CallContext.Provider>
@@ -577,7 +611,20 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     Record<string, boolean>
   >({});
   const [isWatching, setIsWatching] = useState<Record<string, boolean>>({});
+  const [participantData, setParticipantData] = useState<
+    Record<
+      string,
+      { deafened?: boolean; muted?: boolean; stream_preview?: string | null }
+    >
+  >({});
+  const [ownMetadata, setOwnMetadata] = useState<OwnMetadata>({
+    isAdmin: false,
+  });
+  const [callMetadata, setCallMetadata] = useState<CallMetadata>({
+    anonymousJoining: false,
+  });
 
+  // Speaking detection stuff
   const updateSpeakingState = useCallback(
     (identity: string, speaking: boolean) => {
       if (!identity) return;
@@ -586,7 +633,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         return { ...prev, [identity]: speaking };
       });
     },
-    []
+    [],
   );
 
   const removeSpeakingState = useCallback((identity: string) => {
@@ -611,12 +658,82 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           ? data.call_speakingMaxDb
           : DEFAULT_SPEAKING_DETECTION_CONFIG.maxDb,
     }),
-    [data.call_speakingMaxDb, data.call_speakingMinDb]
+    [data.call_speakingMaxDb, data.call_speakingMinDb],
   );
 
-  const startWatching = useCallback((identity: string) => {
-    setIsWatching((prev) => ({ ...prev, [identity]: true }));
-  }, []);
+  // Get own and call metadata
+  useEffect(() => {
+    if (!localParticipant.metadata) return;
+    const parsedData = JSON.parse(localParticipant.metadata);
+    setOwnMetadata(parsedData);
+  }, [localParticipant.metadata]);
+  useEffect(() => {
+    if (!room.metadata) return;
+    const parsedData = JSON.parse(room.metadata);
+    setCallMetadata(parsedData);
+  }, [room.metadata]);
+
+  // Data channel listener for participant data
+  useEffect(() => {
+    if (!room) return;
+
+    const handleDataReceived = (
+      payload: Uint8Array,
+      participant?: RemoteParticipant,
+    ) => {
+      if (!participant) return;
+
+      try {
+        const decoder = new TextDecoder();
+        const text = decoder.decode(payload);
+        const data = JSON.parse(text);
+
+        const identity = participant.identity;
+        if (!identity) return;
+
+        if (data.type === "deafened") {
+          setParticipantData((prev) => ({
+            ...prev,
+            [identity]: {
+              ...prev[identity],
+              deafened: data.deafened,
+            },
+          }));
+        } else if (data.type === "stream_preview") {
+          setParticipantData((prev) => ({
+            ...prev,
+            [identity]: {
+              ...prev[identity],
+              stream_preview: data.preview,
+            },
+          }));
+        }
+      } catch (error) {
+        rawDebugLog(
+          "Sub Call Context",
+          "Failed to parse data message",
+          error,
+          "red",
+        );
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, handleDataReceived);
+
+    return () => {
+      room.off(RoomEvent.DataReceived, handleDataReceived);
+    };
+  }, [room]);
+
+  // Screen share watching management
+  const { ownId } = useUserContext();
+  const startWatching = useCallback(
+    (identity: string) => {
+      if (Number(identity) === ownId) return;
+      setIsWatching((prev) => ({ ...prev, [identity]: true }));
+    },
+    [ownId],
+  );
 
   const stopWatching = useCallback((identity: string) => {
     setIsWatching((prev) => {
@@ -688,7 +805,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
       room.off(
         RoomEvent.ParticipantDisconnected,
-        handleParticipantDisconnected
+        handleParticipantDisconnected,
       );
     };
   }, [room]);
@@ -739,11 +856,11 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           const noiseReductionLevel =
             typeof data.call_noiseReductionLevel === "number"
               ? data.call_noiseReductionLevel
-              : DEFAULT_NOISE_SUPPRESSION_CONFIG.noiseReductionLevel ?? 60;
+              : (DEFAULT_NOISE_SUPPRESSION_CONFIG.noiseReductionLevel ?? 60);
           const inputGain =
             typeof data.call_inputGain === "number"
               ? data.call_inputGain
-              : DEFAULT_OUTPUT_GAIN_CONFIG.speechGain ?? 1;
+              : (DEFAULT_OUTPUT_GAIN_CONFIG.speechGain ?? 1);
           const speakingMinDb = speakingConfig.minDb;
           const speakingMaxDb = speakingConfig.maxDb;
 
@@ -787,7 +904,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
               speakingMinDb,
               speakingMaxDb,
               assetCdnUrl: "/audio",
-            }
+            },
           );
 
           pipelineControllerRef.current = controller;
@@ -808,7 +925,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             "Sub Call Context",
             "Failed to initialize audio",
             error,
-            "red"
+            "red",
           );
           toast.error("Failed to initialize audio.");
           if (createdTrack) createdTrack.stop();
@@ -837,7 +954,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
     const attachRemoteSpeaking = async (
       track: RemoteAudioTrack,
-      participant: RemoteParticipant
+      participant: RemoteParticipant,
     ) => {
       const identity = participant.identity;
       if (!identity) return;
@@ -855,7 +972,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         });
 
         const cleanup = controller.onChange((state) =>
-          updateSpeakingState(identity, state.speaking)
+          updateSpeakingState(identity, state.speaking),
         );
 
         remoteControllersRef.current.set(identity, { controller, cleanup });
@@ -865,7 +982,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           "Sub Call Context",
           "Failed to attach remote speaking detection",
           error,
-          "red"
+          "red",
         );
       }
     };
@@ -884,7 +1001,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     const handleTrackSubscribed = (
       track: RemoteTrack,
       _publication: RemoteTrackPublication,
-      participant: RemoteParticipant
+      participant: RemoteParticipant,
     ) => {
       if (!(track instanceof RemoteAudioTrack)) return;
       void attachRemoteSpeaking(track, participant);
@@ -893,7 +1010,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     const handleTrackUnsubscribed = (
       track: RemoteTrack,
       _publication: RemoteTrackPublication,
-      participant: RemoteParticipant
+      participant: RemoteParticipant,
     ) => {
       if (!(track instanceof RemoteAudioTrack)) return;
       removeRemoteController(participant.identity);
@@ -914,7 +1031,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
       room.off(
         RoomEvent.ParticipantDisconnected,
-        handleParticipantDisconnected
+        handleParticipantDisconnected,
       );
       const snapshot = new Map(controllersSnapshot);
       snapshot.forEach(({ controller, cleanup }, identity) => {
@@ -936,14 +1053,26 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       shouldConnect &&
       connectionState === ConnectionState.Connected
     ) {
-      const currentMetadata = localParticipant.metadata
-        ? JSON.parse(localParticipant.metadata)
-        : {};
-      localParticipant
-        .setMetadata(
-          JSON.stringify({ ...currentMetadata, deafened: isDeafened })
-        )
-        .catch(() => {});
+      const encoder = new TextEncoder();
+      const data = encoder.encode(
+        JSON.stringify({
+          type: "deafened",
+          deafened: isDeafened,
+        }),
+      );
+      localParticipant.publishData(data, { reliable: true }).catch(() => {});
+
+      // Update local participant data
+      const identity = localParticipant.identity;
+      if (identity) {
+        setParticipantData((prev) => ({
+          ...prev,
+          [identity]: {
+            ...prev[identity],
+            deafened: isDeafened,
+          },
+        }));
+      }
     }
   }, [isDeafened, localParticipant, shouldConnect, connectionState]);
 
@@ -961,7 +1090,41 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     }
 
     setIsMuted(localTrack.isMuted);
-  }, [localTrack, isDeafened]);
+
+    // Broadcast mute state to other participants
+    if (
+      localParticipant &&
+      shouldConnect &&
+      connectionState === ConnectionState.Connected
+    ) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(
+        JSON.stringify({
+          type: "muted",
+          muted: localTrack.isMuted,
+        }),
+      );
+      localParticipant.publishData(data, { reliable: true }).catch(() => {});
+
+      // Update local participant data
+      const identity = localParticipant.identity;
+      if (identity) {
+        setParticipantData((prev) => ({
+          ...prev,
+          [identity]: {
+            ...prev[identity],
+            muted: localTrack.isMuted,
+          },
+        }));
+      }
+    }
+  }, [
+    localTrack,
+    isDeafened,
+    localParticipant,
+    shouldConnect,
+    connectionState,
+  ]);
 
   // Toggle Deafen
   const toggleDeafen = useCallback(async () => {
@@ -1041,6 +1204,8 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   return (
     <SubCallContext.Provider
       value={{
+        ownMetadata,
+        callMetadata,
         toggleMute,
         isDeafened,
         toggleDeafen,
@@ -1052,8 +1217,11 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         setIsWatching,
         startWatching,
         stopWatching,
+        participantData,
+        setParticipantData,
       }}
     >
+      <ScreenSharePreviewManager />
       {children}
     </SubCallContext.Provider>
   );
@@ -1069,14 +1237,22 @@ type CallContextValue = {
   connect: (
     token: string,
     callId: string,
-    receiverId?: number
+    receiverId?: number,
   ) => Promise<void>;
   setOuterState: (input: string) => void;
   setShouldConnect: (input: boolean) => void;
   disconnect: () => void;
 };
 
+type OwnMetadata = {
+  isAdmin: boolean;
+};
+type CallMetadata = {
+  anonymousJoining: boolean;
+};
 type SubCallContextValue = {
+  ownMetadata: OwnMetadata;
+  callMetadata: CallMetadata;
   toggleMute: () => void;
   isDeafened: boolean;
   isMuted: boolean;
@@ -1088,4 +1264,13 @@ type SubCallContextValue = {
   setIsWatching: (watching: Record<string, boolean>) => void;
   startWatching: (identity: string) => void;
   stopWatching: (identity: string) => void;
+  participantData: Record<
+    string,
+    { deafened?: boolean; stream_preview?: string | null }
+  >;
+  setParticipantData: React.Dispatch<
+    React.SetStateAction<
+      Record<string, { deafened?: boolean; stream_preview?: string | null }>
+    >
+  >;
 };
