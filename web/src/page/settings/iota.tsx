@@ -1,32 +1,18 @@
 "use client";
 
 // Package Imports
+import * as Icon from "lucide-react";
 import { useEffect, useEffectEvent, useState } from "react";
 import { toast } from "sonner";
-import * as Icon from "lucide-react";
 
 // Lib Imports
-import { cn } from "@/lib/utils";
 import * as CommunicationValue from "@/lib/communicationValues";
+import { cn } from "@/lib/utils";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
 
 // Components
-import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,11 +24,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -50,11 +41,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useStorageContext } from "@/context/storage";
 import { StoredSettings } from "@/lib/types";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 
 // Main
 export default function Page() {
@@ -83,27 +83,24 @@ export default function Page() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-4">
-        <p>{"Sync your settings with Iota"}</p>
+        <p>Save settings on your Iota</p>
         <div className="flex gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button disabled={loading || !value || value === ""}>
-                {"Load"}
-              </Button>
+              <Button disabled={loading || !value || value === ""}>Load</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
-                  {"Are you sure you want to load this profile?"}
+                  Are you sure you want to load this profile?
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  {
-                    "This will replace your current settings! Make sure to save them first if you want to keep them."
-                  }
+                  This will replace your current settings! Make sure to save
+                  them first if you want to keep them.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>{"Cancel"}</AlertDialogCancel>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => {
                     toast.promise(
@@ -113,7 +110,7 @@ export default function Page() {
                         const settingsData =
                           raw as CommunicationValue.settings_load;
                         const payload: StoredSettings = JSON.parse(
-                          settingsData.payload,
+                          settingsData.payload
                         );
                         Object.keys(payload).forEach((key) => {
                           if (
@@ -129,7 +126,7 @@ export default function Page() {
                         loading: "Loading settings...",
                         success: "Settings loaded",
                         error: "Failed to load settings",
-                      },
+                      }
                     );
                   }}
                 >
@@ -160,7 +157,7 @@ export default function Page() {
               variant="outline"
               role="combobox"
               aria-expanded={false}
-              className="w-[200px] justify-between"
+              className="w-50 justify-between"
             >
               {"Loading profiles..."}
               <Icon.ChevronsUpDown className="opacity-50" />
@@ -172,13 +169,13 @@ export default function Page() {
                   variant="outline"
                   role="combobox"
                   aria-expanded={open}
-                  className="w-[200px] justify-between"
+                  className="w-50 justify-between"
                 >
                   {value || "Select a profile"}
                   <Icon.ChevronsUpDown className="opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[200px] p-0">
+              <PopoverContent className="w-50 p-0">
                 <Command>
                   <CommandInput
                     placeholder={"Search profiles..."}
@@ -193,7 +190,7 @@ export default function Page() {
                           value={setting}
                           onSelect={(currentValue) => {
                             setValue(
-                              currentValue === value ? "" : currentValue,
+                              currentValue === value ? "" : currentValue
                             );
                             setOpen(false);
                           }}
@@ -202,7 +199,7 @@ export default function Page() {
                           <Icon.Check
                             className={cn(
                               "ml-auto",
-                              value === setting ? "opacity-100" : "opacity-0",
+                              value === setting ? "opacity-100" : "opacity-0"
                             )}
                           />
                         </CommandItem>

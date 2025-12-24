@@ -16,6 +16,11 @@ import { UserAvatar } from "@/components/modals/raw";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Main
 export function CallModal({
@@ -23,6 +28,7 @@ export function CallModal({
   title,
   icon,
   loading,
+  isAdmin,
   muted,
   deafened,
   screenShareTrackRef,
@@ -33,6 +39,7 @@ export function CallModal({
   title: string;
   icon?: string;
   loading: boolean;
+  isAdmin?: boolean;
   muted?: boolean;
   deafened?: boolean;
   screenShareTrackRef?: TrackReference;
@@ -170,6 +177,19 @@ export function CallModal({
               <Badge className="h-5.5 select-none bg-background/75 border-input">
                 <Icon.HeadphoneOff color="var(--foreground)" />
               </Badge>
+            )}
+            {isAdmin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge className="h-5.5 select-none bg-background/75 border-input pointer-events-auto">
+                    <Icon.ShieldCheck color="var(--foreground)" />
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  This user is the call creator and has administrative
+                  privileges.
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         )}

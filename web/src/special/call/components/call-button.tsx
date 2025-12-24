@@ -167,7 +167,7 @@ export function CallButtonWrapper() {
       ?.length ?? 0 > 0;
 
   return currentUserAlreadyHasACall ? (
-    <MotionDivWrapper key="call-button">
+    <MotionDivWrapper fadeInFromTop key="call-button">
       <CallButton
         key="call-button"
         calls={
@@ -177,7 +177,7 @@ export function CallButtonWrapper() {
       />
     </MotionDivWrapper>
   ) : (
-    <MotionDivWrapper key="call-button">
+    <MotionDivWrapper fadeInFromTop key="call-button">
       <Button
         className="h-9 w-9"
         variant="outline"
