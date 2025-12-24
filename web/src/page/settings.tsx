@@ -1,6 +1,6 @@
 // Package Imports
-import React, { useCallback } from "react";
 import packageJson from "@/../package.json";
+import React, { useCallback } from "react";
 
 // Context Imports
 import { usePageContext } from "@/context/page";
@@ -8,6 +8,7 @@ import { useSocketContext } from "@/context/socket";
 import { useStorageContext } from "@/context/storage";
 
 // Components
+import { PageDiv } from "@/components/pageDiv";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,19 +21,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import IotaPage from "@/page/settings/iota";
-import ProfilePage from "@/page/settings/profile";
-import PrivacyPage from "@/page/settings/privacy";
-import ThemePage from "@/page/settings/theme";
-import CssPage from "@/page/settings/css";
-import LayoutPage from "@/page/settings/layout";
-import CallsPage from "@/page/settings/calls";
-import NotificationsPage from "@/page/settings/notifications";
 import AccessabilityPage from "@/page/settings/accessability";
-import PremiumPage from "@/page/settings/premium";
-import DeveloperPage from "@/page/settings/developer";
+import CallsPage from "@/page/settings/calls";
 import CreditsPage from "@/page/settings/credit";
-import { PageDiv } from "@/components/pageDiv";
+import CssPage from "@/page/settings/css";
+import DeveloperPage from "@/page/settings/developer";
+import IotaPage from "@/page/settings/iota";
+import LayoutPage from "@/page/settings/layout";
+import NotificationsPage from "@/page/settings/notifications";
+import PremiumPage from "@/page/settings/premium";
+import PrivacyPage from "@/page/settings/privacy";
+import ProfilePage from "@/page/settings/profile";
+import ThemePage from "@/page/settings/theme";
 
 // Main
 export const Pages = [

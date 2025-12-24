@@ -7,7 +7,7 @@ import {
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import * as Icon from "lucide-react";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 // Lib Imports
 import { AvatarSizes, fallbackUser } from "@/lib/types";
@@ -46,14 +46,19 @@ export function CallUserModal({
 
   const userId = identity ? Number(identity) : 0;
   const deafened = identity
-    ? (participantData[identity]?.deafened ?? false)
+    ? participantData[identity]?.deafened ?? false
     : false;
 
   // Get muted state directly from participant's audio track publication
   const audioPublication = participant?.getTrackPublication(
-    Track.Source.Microphone,
+    Track.Source.Microphone
   );
   const muted = audioPublication?.isMuted ?? false;
+
+  const getIsAdmin = useCallback(() => {
+    if (!participant?.metadata) return false;
+    return JSON.parse(participant.metadata).isAdmin;
+  }, [participant.metadata]);
 
   // Fetch user data independently
   useEffect(() => {
@@ -75,6 +80,7 @@ export function CallUserModal({
       title={user.display}
       icon={user.avatar || undefined}
       loading={user.loading}
+      isAdmin={getIsAdmin()}
       muted={muted}
       deafened={deafened}
       screenShareTrackRef={screenShareTrackRef}
@@ -102,7 +108,7 @@ export function TileContent({
   // Prefer our detector for every participant, fall back to LiveKit's flag
   const isSpeaking = participant.isLocal
     ? localIsSpeaking
-    : (speakingFromMap ?? participant.isSpeaking);
+    : speakingFromMap ?? participant.isSpeaking;
 
   return (
     <ParticipantContextMenu>

@@ -10,11 +10,12 @@ import {
 import * as Icon from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Context Imports
-import { useStorageContext } from "@/context/storage";
-
 // Lib Imports
 import { audioService } from "@/lib/audioService";
+import { cn } from "@/lib/utils";
+
+// Context Imports
+import { useStorageContext } from "@/context/storage";
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,53 @@ import { defaults } from "@/lib/utils";
 import { SettingsPageTitle } from "@/page/settings";
 
 // Main
+function AudioVisualizer({
+  audioLevel,
+  className,
+}: {
+  audioLevel: number;
+  className?: string;
+}) {
+  const bars = 40;
+  const activeBarCount = Math.round(audioLevel * bars);
+
+  return (
+    <div
+      className={cn(
+        "relative flex h-12 items-end gap-0.5 rounded-lg p-2",
+        className
+      )}
+    >
+      {Array.from({ length: bars }).map((_, i) => {
+        const isActiveBar = i < activeBarCount;
+        const intensity = i / bars;
+        let barColor = "bg-muted-foreground";
+
+        if (audioLevel > 0 && isActiveBar) {
+          if (intensity < 0.5) {
+            barColor = "bg-emerald-500";
+          } else if (intensity < 0.75) {
+            barColor = "bg-amber-500";
+          } else {
+            barColor = "bg-rose-500";
+          }
+        }
+
+        return (
+          <div
+            key={i}
+            className={`flex-1 rounded-sm transition-all duration-75 ${barColor}`}
+            style={{
+              height: `${Math.max(20, audioLevel * 100)}%`,
+              opacity: audioLevel > 0 && isActiveBar ? 1 : 0.25,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 function AudioLevelRangeSlider({
   minValue,
   maxValue,
@@ -48,42 +96,15 @@ function AudioLevelRangeSlider({
   min?: number;
   max?: number;
 }) {
-  const bars = 50;
-  const activeBarCount = Math.round(audioLevel * bars);
-
   return (
     <div className="flex flex-col gap-3 w-full">
       <Label>Speaking Detection Range</Label>
 
       {/* Visualization */}
-      <div className="relative flex h-12 items-end gap-0.5 bg-muted/30 rounded-lg p-2">
-        {Array.from({ length: bars }).map((_, i) => {
-          const isActiveBar = i < activeBarCount;
-          const intensity = i / bars;
-          let barColor = "bg-muted-foreground/40";
-
-          if (audioLevel > 0 && isActiveBar) {
-            if (intensity < 0.5) {
-              barColor = "bg-emerald-500";
-            } else if (intensity < 0.75) {
-              barColor = "bg-amber-500";
-            } else {
-              barColor = "bg-rose-500";
-            }
-          }
-
-          return (
-            <div
-              key={i}
-              className={`flex-1 rounded-sm transition-all duration-75 ${barColor}`}
-              style={{
-                height: `${Math.max(20, audioLevel * 100)}%`,
-                opacity: audioLevel > 0 && isActiveBar ? 1 : 0.25,
-              }}
-            />
-          );
-        })}
-      </div>
+      <AudioVisualizer
+        audioLevel={audioLevel}
+        className="bg-muted/30 border border-muted/50"
+      />
 
       {/* Slider */}
       <Slider
@@ -110,7 +131,7 @@ function useAudioTest(
     sampleRate: number;
     speakingMinDb: number;
     speakingMaxDb: number;
-  },
+  }
 ) {
   const [isListening, setIsListening] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -127,7 +148,7 @@ function useAudioTest(
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const destinationNodeRef = useRef<MediaStreamAudioDestinationNode | null>(
-    null,
+    null
   );
   const pipelineHandleRef = useRef<AudioPipelineHandle | null>(null);
 
@@ -187,7 +208,7 @@ function useAudioTest(
       analyserRef.current = analyser;
 
       sourceNodeRef.current = audioContext.createMediaStreamSource(
-        processedStreamRef.current!,
+        processedStreamRef.current!
       );
       sourceNodeRef.current.connect(analyser);
 
@@ -350,49 +371,6 @@ function useAudioTest(
   };
 }
 
-// Audio Level Meter Component
-function AudioLevelMeter({
-  level,
-  isActive,
-}: {
-  level: number;
-  isActive: boolean;
-}) {
-  const bars = 20;
-  const activeBarCount = Math.round(level * bars);
-
-  return (
-    <div className="flex gap-0.5 h-6 items-end">
-      {Array.from({ length: bars }).map((_, i) => {
-        const isActiveBar = i < activeBarCount;
-        const intensity = i / bars;
-        let barColor = "bg-muted-foreground";
-
-        if (isActive && isActiveBar) {
-          if (intensity < 0.5) {
-            barColor = "bg-green-500";
-          } else if (intensity < 0.75) {
-            barColor = "bg-yellow-500";
-          } else {
-            barColor = "bg-red-500";
-          }
-        }
-
-        return (
-          <div
-            key={i}
-            className={`w-2 rounded-sm transition-all duration-75 ${barColor}`}
-            style={{
-              height: `${40 + i * 3}%`,
-              opacity: isActive && isActiveBar ? 1 : 0.3,
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
 // Main
 export default function Page() {
   const { data, set } = useStorageContext();
@@ -437,7 +415,7 @@ export default function Page() {
       sampleRate: (data.call_sampleRate as number) ?? defaults.sampleRate,
       speakingMinDb,
       speakingMaxDb,
-    },
+    }
   );
 
   return (
@@ -559,6 +537,63 @@ export default function Page() {
           </div>
         </div>
 
+        <div className="flex flex-col">
+          <SettingsPageTitle text="Audio Test" />
+          <div className="flex flex-col gap-4 p-3 rounded-lg border bg-card">
+            {/* Visualization */}
+            <AudioVisualizer audioLevel={audioTest.audioLevel} />
+            <div className="flex flex-col gap-2">
+              <Button
+                variant={audioTest.isRecording ? "destructive" : "outline"}
+                size="sm"
+                onClick={() => {
+                  if (audioTest.isRecording) {
+                    audioTest.stopRecording();
+                  } else {
+                    audioTest.startRecording();
+                  }
+                }}
+              >
+                {audioTest.isRecording ? (
+                  <>
+                    <Icon.Square className="h-4 w-4" />
+                    Stop Recording
+                  </>
+                ) : (
+                  <>
+                    <Icon.Mic className="h-4 w-4 text-destructive" />
+                    Record Test
+                  </>
+                )}
+              </Button>
+              <Button
+                variant={audioTest.isPlaying ? "destructive" : "outline"}
+                size="sm"
+                onClick={() => {
+                  if (audioTest.isPlaying) {
+                    audioTest.stopPlayback();
+                  } else {
+                    audioTest.playRecording();
+                  }
+                }}
+                disabled={!audioTest.recordedBlob || audioTest.isRecording}
+              >
+                {audioTest.isPlaying ? (
+                  <>
+                    <Icon.Square className="h-4 w-4" />
+                    Stop
+                  </>
+                ) : (
+                  <>
+                    <Icon.Play className="h-4 w-4" />
+                    Play Recording
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Advanced Settings */}
         <div className="flex flex-col">
           <SettingsPageTitle text="Advanced Settings" />
@@ -611,7 +646,7 @@ export default function Page() {
                 onChange={(e) =>
                   set(
                     "call_channelCount",
-                    parseFloat(e.target.value) || defaults.channelCount,
+                    parseFloat(e.target.value) || defaults.channelCount
                   )
                 }
               />
@@ -625,7 +660,7 @@ export default function Page() {
                 onChange={(e) =>
                   set(
                     "call_sampleSize",
-                    parseFloat(e.target.value) || defaults.sampleSize,
+                    parseFloat(e.target.value) || defaults.sampleSize
                   )
                 }
               />
@@ -639,73 +674,11 @@ export default function Page() {
                 onChange={(e) =>
                   set(
                     "call_sampleRate",
-                    parseFloat(e.target.value) || defaults.sampleRate,
+                    parseFloat(e.target.value) || defaults.sampleRate
                   )
                 }
               />
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Audio Test (Right) */}
-      <div className="flex flex-col gap-3 w-80">
-        <SettingsPageTitle text="Audio Test" />
-        <div className="flex flex-col gap-4 p-4 rounded-lg border bg-card">
-          <div className="flex flex-col gap-2">
-            <AudioLevelMeter
-              level={audioTest.audioLevel}
-              isActive={audioTest.isListening}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Button
-              variant={audioTest.isRecording ? "destructive" : "outline"}
-              size="sm"
-              onClick={() => {
-                if (audioTest.isRecording) {
-                  audioTest.stopRecording();
-                } else {
-                  audioTest.startRecording();
-                }
-              }}
-            >
-              {audioTest.isRecording ? (
-                <>
-                  <Icon.Square className="h-4 w-4" />
-                  Stop Recording
-                </>
-              ) : (
-                <>
-                  <Icon.Mic className="h-4 w-4 text-destructive" />
-                  Record Test
-                </>
-              )}
-            </Button>
-            <Button
-              variant={audioTest.isPlaying ? "destructive" : "outline"}
-              size="sm"
-              onClick={() => {
-                if (audioTest.isPlaying) {
-                  audioTest.stopPlayback();
-                } else {
-                  audioTest.playRecording();
-                }
-              }}
-              disabled={!audioTest.recordedBlob || audioTest.isRecording}
-            >
-              {audioTest.isPlaying ? (
-                <>
-                  <Icon.Square className="h-4 w-4" />
-                  Stop
-                </>
-              ) : (
-                <>
-                  <Icon.Play className="h-4 w-4" />
-                  Play Recording
-                </>
-              )}
-            </Button>
           </div>
         </div>
       </div>

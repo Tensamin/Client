@@ -93,7 +93,6 @@ export function CallFocus() {
                   onParticipantClick={handleParticipantClick}
                   className="relative h-full aspect-video flex-none rounded-xl"
                 >
-                  {/* CallModal from @/.../raw.tsx */}
                   <TileContent small />
                   <FocusDuplicateOverlay focusedTrackSid={focusedTrackSid} />
                 </ParticipantTile>
