@@ -62,7 +62,7 @@ export async function sha256(content: string | BufferSource) {
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
-    undefined
+    undefined,
   );
 
   React.useEffect(() => {
@@ -145,7 +145,7 @@ export function calculateOptimalLayout(
   containerWidth: number,
   containerHeight: number,
   gap: number = 16,
-  aspectRatio: number = 16 / 9
+  aspectRatio: number = 16 / 9,
 ) {
   if (count === 0) return { width: 0, height: 0, cols: 0 };
 

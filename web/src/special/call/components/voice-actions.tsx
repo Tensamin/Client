@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // Context Imports
-import { useCallContext } from "@/context/call";
+import { useCallContext, useSubCallContext } from "@/context/call";
 import { usePageContext } from "@/context/page";
 
 // Components
@@ -29,11 +29,14 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useSocketContext } from "@/context/socket";
 import { DeafButton, MuteButton, ScreenShareButton } from "./buttons";
 import { displayCallId } from "./call-button";
 
@@ -110,6 +113,12 @@ export function VoiceActions() {
   );
   const isScreenShare = isScreenShareEnabled || !!trackRef;
 
+  // Annymous Joining
+  const [loading, setLoading] = useState(false);
+  const { send } = useSocketContext();
+  const { ownMetadata, callMetadata } = useSubCallContext();
+
+  // Render
   const commonClassNames = "text-sm";
   const connectingColor = "text-ring";
   return shouldConnect ? (
@@ -178,7 +187,7 @@ export function VoiceActions() {
             </p>
           </Button>
         </PopoverTrigger>
-        <PopoverContent side="top" className="ml-5 w-87.5 flex flex-col gap-2">
+        <PopoverContent side="top" className="ml-5 w-87.5 flex flex-col gap-3">
           <p className="font-medium">Connection Status</p>
           <div className="flex gap-3 items-center">
             <Button
@@ -200,8 +209,26 @@ export function VoiceActions() {
             <p>{name !== "" ? displayCallId(name) : "..."}</p>
           </div>
           <div className="flex flex-col gap-0.5 text-sm">
-            Your call ID differs from the call display name, don&apos;t share
-            it. The call display name can&apos;t be reversed to the call ID.
+            The call display name is derived from the call ID and can&apos;t be
+            reversed, so you can freely share it. However, the call ID could be
+            used to join the call if the call creator enables anonymous joining.
+          </div>
+          <div className="flex w-full justify-start gap-2">
+            <Checkbox
+              disabled={!ownMetadata.isAdmin || loading}
+              checked={callMetadata.anonymousJoining}
+              onCheckedChange={(value) => {
+                setLoading(true);
+                send("call_set_anonymous_joining", {
+                  enabled: value,
+                }).then(() => setLoading(false));
+              }}
+            />
+            <Label
+              className={ownMetadata.isAdmin ? "" : "text-muted-foreground"}
+            >
+              Enable Anonymous Joining
+            </Label>
           </div>
           <p className="font-medium">Ping Graph</p>
           <div className="flex flex-col gap-0.5 text-sm">

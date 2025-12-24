@@ -50,13 +50,12 @@ import { CallGrid } from "./grid";
 function CallPageContent() {
   const { conversations } = useUserContext();
   const { disconnect } = useCallContext();
-  const { stopWatching } = useSubCallContext();
+  const { stopWatching, isWatching } = useSubCallContext();
   const {
     focusedTrackRef,
     setFocusedTrackSid,
     hideParticipants,
     setHideParticipants,
-    focusedTrackSid,
   } = useCallPageContext();
   const { callId } = useCallContext();
 
@@ -65,14 +64,9 @@ function CallPageContent() {
   const participants = useParticipants();
   const viewers = useMemo(() => {
     return participants.filter((p) => {
-      try {
-        const md = p.metadata ? JSON.parse(p.metadata) : {};
-        return md.watching_stream === focusedTrackSid;
-      } catch {
-        return false;
-      }
+      return isWatching[p.identity] ?? false;
     });
-  }, [participants, focusedTrackSid]);
+  }, [participants, isWatching]);
 
   return (
     <div className="flex flex-col w-full h-full gap-5 relative pb-11">

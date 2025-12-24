@@ -234,11 +234,9 @@ export function useNewUserNotification() {
 
           const playSound = async () => {
             try {
-              const audioContext = new (
-                window.AudioContext ||
+              const audioContext = new (window.AudioContext ||
                 // @ts-expect-error idk
-                window.webkitAudioContext
-              )();
+                window.webkitAudioContext)();
               const response = await fetch("/assets/sounds/message.wav");
               const arrayBuffer = await response.arrayBuffer();
               const audioBuffer =

@@ -11,7 +11,7 @@ import { AvatarSizes } from "@/lib/types";
 import { useSubCallContext } from "@/context/call";
 
 // Components
-import { LoadingBlock } from "@/components/loading";
+import { LoadingIcon } from "@/components/loading";
 import { UserAvatar } from "@/components/modals/raw";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,41 +39,46 @@ export function CallModal({
   hideBadges?: boolean;
   inGridView?: boolean;
 }>) {
-  const { isWatching } = useSubCallContext();
+  const { isWatching, participantData } = useSubCallContext();
 
   const isScreenShare = !!screenShareTrackRef;
   const isLocal = screenShareTrackRef?.participant?.isLocal;
   const currentIsWatching =
     isWatching[screenShareTrackRef?.participant?.identity ?? ""] ?? false;
 
-  const metadata = screenShareTrackRef?.participant?.metadata;
+  const participantIdentity = screenShareTrackRef?.participant?.identity;
   const previewImage = useMemo(() => {
-    if (!metadata) return null;
-    try {
-      return JSON.parse(metadata).stream_preview;
-    } catch {
-      return null;
-    }
-  }, [metadata]);
+    if (!participantIdentity) return null;
+    return participantData[participantIdentity]?.stream_preview ?? null;
+  }, [participantData, participantIdentity]);
 
   const renderScreenShareContent = () => {
     // Own Screen Share
     if (isLocal && (isFocused || inGridView)) {
       return (
-        <div className="absolute inset-0 z-0 bg-black rounded-xl flex items-center justify-center">
-          Your screen is being shared. There is a preview at the bottom of the
-          sidebar.
-        </div>
+        <>
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Stream Preview"
+              className="bg-black absolute inset-0 w-full h-full object-contain opacity-30 z-0 rounded-xl"
+            />
+          )}
+          <div className="backdrop-blur-md font-semibold absolute inset-0 z-0 rounded-xl flex flex-col gap-3 items-center justify-center text-center px-5">
+            Your screen is being shared. There is a preview at the bottom of the
+            sidebar.
+          </div>
+        </>
       );
     }
 
     // Watching someone
     if (currentIsWatching && !isLocal) {
       return (
-        <div className="absolute inset-0 z-0 bg-black rounded-xl">
+        <div className="absolute inset-0 w-full h-full rounded-xl">
           <VideoTrack
             trackRef={screenShareTrackRef!}
-            className="rounded-xl h-full w-full object-contain bg-black"
+            className="bg-black rounded-xl h-full w-full object-contain"
           />
         </div>
       );
@@ -86,7 +91,7 @@ export function CallModal({
           <img
             src={previewImage}
             alt="Stream Preview"
-            className="absolute inset-0 w-full h-full object-contain opacity-50 bg-black z-0 rounded-xl"
+            className="bg-black absolute inset-0 w-full h-full object-contain opacity-30 blur-xs z-0 rounded-xl"
           />
           <Button className="z-10">
             <Icon.Monitor />
@@ -97,17 +102,38 @@ export function CallModal({
         <img
           src={previewImage}
           alt="Stream Preview"
-          className="absolute inset-0 w-full h-full object-contain bg-black z-0 rounded-xl"
+          className="bg-black absolute inset-0 w-full h-full object-contain z-0 rounded-xl"
         />
       );
     }
 
     // Loading
-    return <LoadingBlock />;
+    return (
+      <div>
+        {renderUserAvatar()}
+        <div className="absolute inset-0 rounded-xl w-full h-full bg-transparent flex p-3 justify-start items-start z-30">
+          <LoadingIcon />
+        </div>
+      </div>
+    );
+  };
+
+  const renderUserAvatar = () => {
+    return (
+      <div className="w-full h-full flex justify-center items-center">
+        <UserAvatar
+          icon={icon}
+          title={title}
+          size={overwriteSize ? overwriteSize : "jumbo"}
+          state={undefined}
+          border
+        />
+      </div>
+    );
   };
 
   return loading ? (
-    <Card className="relative w-full h-full bg-input/30">
+    <Card className="relative w-full h-full bg-card/75">
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
         <div className="w-full h-full flex justify-center items-center">
           <UserAvatar
@@ -125,7 +151,7 @@ export function CallModal({
       </CardContent>
     </Card>
   ) : (
-    <Card className="relative w-full h-full bg-input/30">
+    <Card className="relative w-full h-full bg-card/75">
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
         {!isFocused && (
           <div className="absolute h-full w-full flex items-end justify-start p-2 gap-2 pointer-events-none z-30">

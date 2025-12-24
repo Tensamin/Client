@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import packageJson from "../../package.json";
 
 // CSS Imports
-import "@livekit/components-styles";
+//import "@livekit/components-styles";
 import "highlight.js/styles/github-dark.css";
 import "katex/dist/katex.min.css";
 import "./globals.css";
