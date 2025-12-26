@@ -35,7 +35,7 @@ export default function Page() {
   const { ownId } = useCryptoContext();
   const { page, pageInstance } = usePageContext();
   const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
-    "CONVERSATIONS"
+    "CONVERSATIONS",
   );
 
   // Scroll position tracking
@@ -75,7 +75,7 @@ export default function Page() {
     ro.observe(el);
     if (voiceEl) ro.observe(voiceEl);
     const mo = new MutationObserver(() =>
-      requestAnimationFrame(() => requestAnimationFrame(updateOverflow))
+      requestAnimationFrame(() => requestAnimationFrame(updateOverflow)),
     );
     mo.observe(el, { childList: true, subtree: true, characterData: true });
     const onWindowResize = () => updateOverflow();
@@ -107,7 +107,7 @@ export default function Page() {
                     }`}
                     onClick={() =>
                       startTransition(() =>
-                        setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
+                        setCategory(cat as "COMMUNITIES" | "CONVERSATIONS"),
                       )
                     }
                     aria-pressed={category === cat}

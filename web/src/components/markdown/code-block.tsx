@@ -55,7 +55,9 @@ export function CodeBlock({
           defaults.showLinesInCodeBlocks
         }
         language={language}
-        theme={(data.codeBlockShikiTheme as string) ?? defaults.codeBlockShikiTheme}
+        theme={
+          (data.codeBlockShikiTheme as string) ?? defaults.codeBlockShikiTheme
+        }
       >
         {children}
       </ShikiHighlighter>

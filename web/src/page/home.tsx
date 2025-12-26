@@ -68,7 +68,7 @@ export default function Page() {
         .then(async (data) => {
           if (data.type === "error") {
             toast.error(
-              "Failed to add conversation (the user probably does not exist)"
+              "Failed to add conversation (the user probably does not exist)",
             );
           } else {
             send("add_chat", {
@@ -146,10 +146,13 @@ export default function Page() {
           </Button>
         </div>
         <ScrollArea className="flex w-auto h-[calc(100vh-300px)] flex-col">
-          {[...conversations, ...conversations, ...conversations]
+          {conversations
             .filter((conv) => (conv.calls?.length ?? 0) > 0)
             .map((conversation, index) => (
-              <div key={index} className="flex flex-col items-end gap-3 pt-3 pr-4">
+              <div
+                key={index}
+                className="flex flex-col items-end gap-3 pt-3 pr-4"
+              >
                 {/* User */}
                 <UserModal
                   id={conversation.user_id}
@@ -234,7 +237,7 @@ export default function Page() {
               <div
                 className={cn(
                   "overflow-hidden transition-all duration-800 ease-out",
-                  extraInfo ? "max-h-24 opacity-100" : "max-h-0 opacity-80"
+                  extraInfo ? "max-h-24 opacity-100" : "max-h-0 opacity-80",
                 )}
               >
                 {extraInfo && (
