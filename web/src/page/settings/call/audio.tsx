@@ -48,7 +48,7 @@ function AudioVisualizer({
     <div
       className={cn(
         "relative flex h-12 items-end gap-0.5 rounded-lg p-2",
-        className
+        className,
       )}
     >
       {Array.from({ length: bars }).map((_, i) => {
@@ -131,7 +131,7 @@ function useAudioTest(
     sampleRate: number;
     speakingMinDb: number;
     speakingMaxDb: number;
-  }
+  },
 ) {
   const [isListening, setIsListening] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -148,7 +148,7 @@ function useAudioTest(
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const destinationNodeRef = useRef<MediaStreamAudioDestinationNode | null>(
-    null
+    null,
   );
   const pipelineHandleRef = useRef<AudioPipelineHandle | null>(null);
 
@@ -208,7 +208,7 @@ function useAudioTest(
       analyserRef.current = analyser;
 
       sourceNodeRef.current = audioContext.createMediaStreamSource(
-        processedStreamRef.current!
+        processedStreamRef.current!,
       );
       sourceNodeRef.current.connect(analyser);
 
@@ -415,7 +415,7 @@ export default function Page() {
       sampleRate: (data.call_sampleRate as number) ?? defaults.sampleRate,
       speakingMinDb,
       speakingMaxDb,
-    }
+    },
   );
 
   return (
@@ -646,7 +646,7 @@ export default function Page() {
                 onChange={(e) =>
                   set(
                     "call_channelCount",
-                    parseFloat(e.target.value) || defaults.channelCount
+                    parseFloat(e.target.value) || defaults.channelCount,
                   )
                 }
               />
@@ -660,7 +660,7 @@ export default function Page() {
                 onChange={(e) =>
                   set(
                     "call_sampleSize",
-                    parseFloat(e.target.value) || defaults.sampleSize
+                    parseFloat(e.target.value) || defaults.sampleSize,
                   )
                 }
               />
@@ -674,7 +674,7 @@ export default function Page() {
                 onChange={(e) =>
                   set(
                     "call_sampleRate",
-                    parseFloat(e.target.value) || defaults.sampleRate
+                    parseFloat(e.target.value) || defaults.sampleRate,
                   )
                 }
               />

@@ -46,12 +46,12 @@ export function CallUserModal({
 
   const userId = identity ? Number(identity) : 0;
   const deafened = identity
-    ? participantData[identity]?.deafened ?? false
+    ? (participantData[identity]?.deafened ?? false)
     : false;
 
   // Get muted state directly from participant's audio track publication
   const audioPublication = participant?.getTrackPublication(
-    Track.Source.Microphone
+    Track.Source.Microphone,
   );
   const muted = audioPublication?.isMuted ?? false;
 
@@ -108,7 +108,7 @@ export function TileContent({
   // Prefer our detector for every participant, fall back to LiveKit's flag
   const isSpeaking = participant.isLocal
     ? localIsSpeaking
-    : speakingFromMap ?? participant.isSpeaking;
+    : (speakingFromMap ?? participant.isSpeaking);
 
   return (
     <ParticipantContextMenu>
