@@ -8,8 +8,9 @@ import { useStorageContext } from "@/context/storage";
 import { useTheme } from "next-themes";
 
 // Components
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -18,17 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { defaults } from "@/lib/defaults";
+import { capitalizeFirstLetter } from "@/lib/utils";
 import { useEffect } from "react";
 import { SettingsPageTitle } from "../settings";
-import { capitalizeFirstLetter } from "@/lib/utils";
 
 // Main
 export default function Page() {
   const { data, set } = useStorageContext();
   const { setTheme } = useTheme();
   const [tempColor, setTempColor] = useState(
-    (data.themeHex as string) || "#000000",
+    (data.themeHex as string) || "#000000"
   );
 
   useEffect(() => {
@@ -132,33 +134,51 @@ export default function Page() {
           Reset
         </Button>
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col">
         <SettingsPageTitle text="Code Block" />
-        <Select
-          value={(data.codeBlockShikiTheme as string) ?? "houston"}
-          onValueChange={(value) => set("codeBlockShikiTheme", value)}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue
-              placeholder={
-                (data.codeBlockShikiTheme as string) ?? "Select shiki theme"
+        <div className="flex flex-col gap-4">
+          <Select
+            value={
+              (data.codeBlockShikiTheme as string) ??
+              defaults.codeBlockShikiTheme
+            }
+            onValueChange={(value) => set("codeBlockShikiTheme", value)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue
+                placeholder={
+                  (data.codeBlockShikiTheme as string) ?? "Select shiki theme"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {Object.keys(bundledThemes).map((theme) => (
+                  <SelectItem
+                    key={theme}
+                    value={theme}
+                    onClick={() => set("codeBlockShikiTheme", theme)}
+                  >
+                    {capitalizeFirstLetter(theme)}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2">
+            <Switch
+              id="showLinesInCodeBlocks"
+              checked={
+                (data.showLinesInCodeBlocks as boolean) ??
+                defaults.showLinesInCodeBlocks
               }
+              onCheckedChange={(value) => set("showLinesInCodeBlocks", value)}
             />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {Object.keys(bundledThemes).map((theme) => (
-                <SelectItem
-                  key={theme}
-                  value={theme}
-                  onClick={() => set("codeBlockShikiTheme", theme)}
-                >
-                  {capitalizeFirstLetter(theme)}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+            <Label htmlFor="showLinesInCodeBlocks">
+              Show line numbers in code blocks
+            </Label>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { ShikiHighlighter } from "react-shiki";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
+import { defaults } from "@/lib/defaults";
 import { mono } from "@/lib/fonts";
 import { Button } from "../ui/button";
 
@@ -49,9 +50,12 @@ export function CodeBlock({
         className={`${mono.className} bg-input/15`}
         rootStyle="padding: 12px;"
         showLanguage={false}
-        showLineNumbers={(data.showLinesInCodeBlocks as boolean) ?? false}
+        showLineNumbers={
+          (data.showLinesInCodeBlocks as boolean) ??
+          defaults.showLinesInCodeBlocks
+        }
         language={language}
-        theme={(data.codeBlockShikiTheme as string) ?? "houston"}
+        theme={(data.codeBlockShikiTheme as string) ?? defaults.codeBlockShikiTheme}
       >
         {children}
       </ShikiHighlighter>
