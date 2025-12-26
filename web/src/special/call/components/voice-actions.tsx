@@ -30,6 +30,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
@@ -107,9 +108,7 @@ export function VoiceActions() {
   });
   const trackRef = screenShareTrackRefs.find(
     (ref) =>
-      ref &&
-      ref.participant?.isLocal &&
-      ref.source === Track.Source.ScreenShare,
+      ref && ref.participant?.isLocal && ref.source === Track.Source.ScreenShare
   );
   const isScreenShare = isScreenShareEnabled || !!trackRef;
 
@@ -119,12 +118,33 @@ export function VoiceActions() {
   const { ownMetadata, callMetadata } = useSubCallContext();
 
   // Render
+  const [dialogOpen, setDialogOpen] = useState(false);
   const commonClassNames = "text-sm";
   const connectingColor = "text-ring";
   return shouldConnect ? (
     <Card className="bg-input/30 rounded-lg border-input flex flex-col gap-2 justify-center items-center w-full p-2">
       {isScreenShare && trackRef && (
-        <VideoTrack className="border rounded-lg" trackRef={trackRef} />
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <div className="group relative aspect-video w-full h-full">
+            <VideoTrack
+              className="group aspect-video bg-black border rounded-lg"
+              trackRef={trackRef}
+            />
+            <div
+              onClick={() => setDialogOpen(true)}
+              className="rounded-lg border absolute top-0 left-0 w-full h-full items-center justify-center bg-black/75 group group-hover:flex hidden"
+            >
+              <Icon.Expand />
+            </div>
+          </div>
+          <DialogContent className="h-auto !max-w-[75vw]">
+            <DialogTitle>Screen Share Preview</DialogTitle>
+            <VideoTrack
+              className="group aspect-video bg-black border rounded-lg h-full w-full"
+              trackRef={trackRef}
+            />
+          </DialogContent>
+        </Dialog>
       )}
       <Popover>
         <PopoverTrigger asChild>
@@ -206,7 +226,7 @@ export function VoiceActions() {
               <span>Copy Call ID</span>
             </Button>
             <div className="w-px h-6 bg-ring rounded-full" />
-            <p>{name !== "" ? displayCallId(name) : "..."}</p>
+            {name !== "" ? displayCallId(name) : <p>...</p>}
           </div>
           <div className="flex flex-col gap-0.5 text-sm">
             The call display name is derived from the call ID and can&apos;t be
@@ -215,16 +235,21 @@ export function VoiceActions() {
           </div>
           <div className="flex w-full justify-start gap-2">
             <Checkbox
+              id="enableAnonymousJoining"
               disabled={!ownMetadata.isAdmin || loading}
               checked={callMetadata.anonymousJoining}
-              onCheckedChange={(value) => {
+              onCheckedChange={async (value) => {
                 setLoading(true);
-                send("call_set_anonymous_joining", {
+                await send("call_set_anonymous_joining", {
                   enabled: value,
-                }).then(() => setLoading(false));
+                }).catch(() => {
+                  toast.error("Failed to enable anonymous joining");
+                });
+                setLoading(false);
               }}
             />
             <Label
+              htmlFor="enableAnonymousJoining"
               className={ownMetadata.isAdmin ? "" : "text-muted-foreground"}
             >
               Enable Anonymous Joining

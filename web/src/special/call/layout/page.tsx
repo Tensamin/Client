@@ -72,13 +72,13 @@ function CallPageContent() {
     <div className="flex flex-col w-full h-full gap-5 relative pb-11">
       <div className="absolute pl-1 pt-1 h-6 top-0 left-0 flex gap-3 items-center">
         {/* Information */}
-        <div>{displayCallId(callId)}</div>
+        {displayCallId(callId)}
 
         <AnimatePresence>
           {focusedTrackRef && (
             <MotionDivWrapper fadeInFromTop className="flex gap-3 items-center">
               {/* Separator */}
-              <div className="w-0.5 h-6 bg-border" />
+              {viewers.length > 0 && <div className="w-0.5 h-6 bg-border" />}
 
               {/* Viewers */}
               <div className="flex -space-x-3 overflow-hidden z-30 items-center">

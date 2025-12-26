@@ -76,7 +76,7 @@ const CallContext = createContext<CallContextValue | null>(null);
 
 // Stream Preview
 async function captureScreenShareFrame(
-  track: LocalVideoTrack,
+  track: LocalVideoTrack
 ): Promise<string | null> {
   const video = document.createElement("video");
   video.muted = true;
@@ -155,7 +155,7 @@ function ScreenSharePreviewManager() {
           JSON.stringify({
             type: "stream_preview",
             preview,
-          }),
+          })
         );
         await participant.publishData(data, { reliable: true });
 
@@ -189,7 +189,7 @@ function ScreenSharePreviewManager() {
           JSON.stringify({
             type: "stream_preview",
             preview: null,
-          }),
+          })
         );
         participant.publishData(data, { reliable: true }).catch(() => {});
 
@@ -232,7 +232,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const { lastMessage, send } = useSocketContext();
   const { get, currentReceiverId, conversations, setConversations } =
     useUserContext();
-  const { setPage } = usePageContext();
+  const { setPage, page } = usePageContext();
 
   const [shouldConnect, setShouldConnect] = useState(false);
   const [token, setToken] = useState("");
@@ -250,7 +250,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   // Disconnect functions
   const disconnect = useCallback(() => {
-    setPage("home");
+    if (page === "call") {
+      setPage("home");
+    }
     rawDebugLog("Call Context", "Disconnect");
     setOuterState("DISCONNECTED");
     setShouldConnect(false);
@@ -261,7 +263,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       connectPromiseRef.current.reject({ message: "disconnect" });
       connectPromiseRef.current = null;
     }
-  }, [setToken, setPage]);
+  }, [setToken, setPage, page]);
 
   const disconnectPromiseRef = useRef<{
     promise: Promise<void>;
@@ -336,7 +338,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       shouldConnect,
       setPage,
       waitForDisconnect,
-    ],
+    ]
   );
 
   const [switchCallDialogOpen, setSwitchCallDialogOpen] = useState(false);
@@ -358,7 +360,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }
       return performConnect(token, newCallId);
     },
-    [shouldConnect, callId, performConnect],
+    [shouldConnect, callId, performConnect]
   );
 
   // Handle call switching
@@ -404,11 +406,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         conversations.map((c) =>
           c.user_id === receiverId
             ? { ...c, calls: [...(c.calls || []), callId] }
-            : c,
-        ),
+            : c
+        )
       );
     },
-    [conversations, setConversations],
+    [conversations, setConversations]
   );
   const sendInvite = useCallback(
     async (callId: string, receiverId: number) => {
@@ -424,7 +426,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           toast.error("Failed to send call invite");
         });
     },
-    [send, saveInviteToConversation],
+    [send, saveInviteToConversation]
   );
 
   // Call tokens
@@ -444,7 +446,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           return "";
         });
     },
-    [send],
+    [send]
   );
 
   const handleAcceptCall = useCallback(() => {
@@ -633,7 +635,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         return { ...prev, [identity]: speaking };
       });
     },
-    [],
+    []
   );
 
   const removeSpeakingState = useCallback((identity: string) => {
@@ -658,7 +660,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           ? data.call_speakingMaxDb
           : DEFAULT_SPEAKING_DETECTION_CONFIG.maxDb,
     }),
-    [data.call_speakingMaxDb, data.call_speakingMinDb],
+    [data.call_speakingMaxDb, data.call_speakingMinDb]
   );
 
   // Get own and call metadata
@@ -679,7 +681,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
     const handleDataReceived = (
       payload: Uint8Array,
-      participant?: RemoteParticipant,
+      participant?: RemoteParticipant
     ) => {
       if (!participant) return;
 
@@ -713,7 +715,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           "Sub Call Context",
           "Failed to parse data message",
           error,
-          "red",
+          "red"
         );
       }
     };
@@ -732,7 +734,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       if (Number(identity) === ownId) return;
       setIsWatching((prev) => ({ ...prev, [identity]: true }));
     },
-    [ownId],
+    [ownId]
   );
 
   const stopWatching = useCallback((identity: string) => {
@@ -805,7 +807,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
       room.off(
         RoomEvent.ParticipantDisconnected,
-        handleParticipantDisconnected,
+        handleParticipantDisconnected
       );
     };
   }, [room]);
@@ -856,11 +858,11 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           const noiseReductionLevel =
             typeof data.call_noiseReductionLevel === "number"
               ? data.call_noiseReductionLevel
-              : (DEFAULT_NOISE_SUPPRESSION_CONFIG.noiseReductionLevel ?? 60);
+              : DEFAULT_NOISE_SUPPRESSION_CONFIG.noiseReductionLevel ?? 60;
           const inputGain =
             typeof data.call_inputGain === "number"
               ? data.call_inputGain
-              : (DEFAULT_OUTPUT_GAIN_CONFIG.speechGain ?? 1);
+              : DEFAULT_OUTPUT_GAIN_CONFIG.speechGain ?? 1;
           const speakingMinDb = speakingConfig.minDb;
           const speakingMaxDb = speakingConfig.maxDb;
 
@@ -904,7 +906,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
               speakingMinDb,
               speakingMaxDb,
               assetCdnUrl: "/audio",
-            },
+            }
           );
 
           pipelineControllerRef.current = controller;
@@ -925,7 +927,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
             "Sub Call Context",
             "Failed to initialize audio",
             error,
-            "red",
+            "red"
           );
           toast.error("Failed to initialize audio.");
           if (createdTrack) createdTrack.stop();
@@ -954,7 +956,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
     const attachRemoteSpeaking = async (
       track: RemoteAudioTrack,
-      participant: RemoteParticipant,
+      participant: RemoteParticipant
     ) => {
       const identity = participant.identity;
       if (!identity) return;
@@ -972,7 +974,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         });
 
         const cleanup = controller.onChange((state) =>
-          updateSpeakingState(identity, state.speaking),
+          updateSpeakingState(identity, state.speaking)
         );
 
         remoteControllersRef.current.set(identity, { controller, cleanup });
@@ -982,7 +984,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
           "Sub Call Context",
           "Failed to attach remote speaking detection",
           error,
-          "red",
+          "red"
         );
       }
     };
@@ -1001,7 +1003,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     const handleTrackSubscribed = (
       track: RemoteTrack,
       _publication: RemoteTrackPublication,
-      participant: RemoteParticipant,
+      participant: RemoteParticipant
     ) => {
       if (!(track instanceof RemoteAudioTrack)) return;
       void attachRemoteSpeaking(track, participant);
@@ -1010,7 +1012,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     const handleTrackUnsubscribed = (
       track: RemoteTrack,
       _publication: RemoteTrackPublication,
-      participant: RemoteParticipant,
+      participant: RemoteParticipant
     ) => {
       if (!(track instanceof RemoteAudioTrack)) return;
       removeRemoteController(participant.identity);
@@ -1031,7 +1033,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
       room.off(
         RoomEvent.ParticipantDisconnected,
-        handleParticipantDisconnected,
+        handleParticipantDisconnected
       );
       const snapshot = new Map(controllersSnapshot);
       snapshot.forEach(({ controller, cleanup }, identity) => {
@@ -1058,7 +1060,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         JSON.stringify({
           type: "deafened",
           deafened: isDeafened,
-        }),
+        })
       );
       localParticipant.publishData(data, { reliable: true }).catch(() => {});
 
@@ -1102,7 +1104,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         JSON.stringify({
           type: "muted",
           muted: localTrack.isMuted,
-        }),
+        })
       );
       localParticipant.publishData(data, { reliable: true }).catch(() => {});
 
@@ -1237,7 +1239,7 @@ type CallContextValue = {
   connect: (
     token: string,
     callId: string,
-    receiverId?: number,
+    receiverId?: number
   ) => Promise<void>;
   setOuterState: (input: string) => void;
   setShouldConnect: (input: boolean) => void;

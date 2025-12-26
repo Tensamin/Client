@@ -68,10 +68,10 @@ export function CallModal({
             <img
               src={previewImage}
               alt="Stream Preview"
-              className="bg-black absolute inset-0 w-full h-full object-contain opacity-30 z-0 rounded-xl"
+              className="select-none bg-black absolute inset-0 w-full h-full object-contain opacity-30 z-0 rounded-xl"
             />
           )}
-          <div className="backdrop-blur-md font-semibold absolute inset-0 z-0 rounded-xl flex flex-col gap-3 items-center justify-center text-center px-5">
+          <div className="select-none backdrop-blur-md font-semibold absolute inset-0 z-0 rounded-xl flex flex-col gap-3 items-center justify-center text-center px-5">
             Your screen is being shared. There is a preview at the bottom of the
             sidebar.
           </div>
@@ -85,7 +85,7 @@ export function CallModal({
         <div className="absolute inset-0 w-full h-full rounded-xl">
           <VideoTrack
             trackRef={screenShareTrackRef!}
-            className="bg-black rounded-xl h-full w-full object-contain"
+            className="bg-black rounded-xl h-full w-full object-contain select-none"
           />
         </div>
       );
@@ -98,7 +98,7 @@ export function CallModal({
           <img
             src={previewImage}
             alt="Stream Preview"
-            className="bg-black absolute inset-0 w-full h-full object-contain opacity-30 blur-xs z-0 rounded-xl"
+            className="select-none bg-black absolute inset-0 w-full h-full object-contain opacity-30 blur-xs z-0 rounded-xl"
           />
           <Button className="z-10">
             <Icon.Monitor />
@@ -109,7 +109,7 @@ export function CallModal({
         <img
           src={previewImage}
           alt="Stream Preview"
-          className="bg-black absolute inset-0 w-full h-full object-contain z-0 rounded-xl"
+          className="select-none bg-black absolute inset-0 w-full h-full object-contain z-0 rounded-xl"
         />
       );
     }
