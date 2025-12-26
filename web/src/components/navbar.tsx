@@ -104,7 +104,7 @@ export const Navbar = memo(function Navbar() {
       failedMessagesAmount === 1
         ? "Failed to load 1 message"
         : `${failedMessagesAmount} messages failed to load`,
-    [failedMessagesAmount]
+    [failedMessagesAmount],
   );
 
   return (

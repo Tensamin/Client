@@ -1,7 +1,8 @@
 // Package Imports
-import React from "react";
 import Link from "next/link";
+import React from "react";
 import type { Components } from "react-markdown";
+import { isInlineCode } from "react-shiki";
 
 // Components
 import {
@@ -13,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { CodeBlock } from "@/components/markdown/code-block";
+import { CodeBlock } from "./code-block";
 
 // Types
 type HProps = React.HTMLAttributes<HTMLHeadingElement>;
@@ -28,7 +29,6 @@ type HrProps = React.HTMLAttributes<HTMLHRElement>;
 type ImgProps = React.ImgHTMLAttributes<HTMLImageElement>;
 type EmProps = React.HTMLAttributes<HTMLElement>;
 type StrongProps = React.HTMLAttributes<HTMLElement>;
-type CodeProps = React.HTMLAttributes<HTMLElement> & { inline?: boolean };
 
 // Main
 export const H1 = ({ className, ...props }: HProps) => {
@@ -214,30 +214,16 @@ export const markdownComponents: Components = {
   td: TableCell,
   strong: Strong,
   em: Em,
-  code: ({ className, children, inline, ...props }: CodeProps) => {
-    const code = String(children).replace(/\n$/, "");
+  code: ({ className, children, node }) => {
+    const code = String(children).trim();
+    const match = className?.match(/language-(\w+)/);
+    const language = match ? match[1] : "text";
+    const isInline = node ? isInlineCode(node) : false;
 
-    if (inline) {
-      return (
-        <code
-          className={cn(
-            "bg-muted px-1.5 py-0.5 rounded-md font-mono text-sm text-foreground",
-            className,
-          )}
-          {...props}
-        >
-          {children}
-        </code>
-      );
-    }
-
-    const languageToken = className?.split(" ")[1]?.replace("language-", "");
     return (
-      <CodeBlock
-        language={languageToken || "text"}
-        code={code}
-        className={className}
-      />
+      <CodeBlock language={language} inline={isInline}>
+        {code}
+      </CodeBlock>
     );
   },
 };

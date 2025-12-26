@@ -1,13 +1,11 @@
 "use client";
 
-import React from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import rehypeHighlight from "rehype-highlight";
 import { markdownComponents } from "@/components/markdown/components";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 
 type TextProps = {
   text: string;
@@ -19,7 +17,7 @@ export function Text({ text, className }: TextProps) {
     <div className={cn("whitespace-pre-wrap", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex, rehypeHighlight]}
+        rehypePlugins={[rehypeKatex]}
         components={markdownComponents}
       >
         {text}

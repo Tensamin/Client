@@ -1,8 +1,8 @@
 "use client";
 
 // Package Imports
-import { useEffect, useMemo, useState } from "react";
 import * as Icon from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 // Context Imports
@@ -19,9 +19,10 @@ import {
 } from "@/components/ui/context-menu";
 
 // Types
-import { Message, MessageGroup as MessageGroupType, User } from "@/lib/types";
 import { UserAvatar } from "@/components/modals/raw";
 import { Skeleton } from "@/components/ui/skeleton";
+import { rawDebugLog } from "@/context/storage";
+import { Message, MessageGroup as MessageGroupType, User } from "@/lib/types";
 import { Text } from "../markdown/text";
 
 // This needs restructuring!
@@ -131,21 +132,29 @@ function FinalMessage({ message: data }: { message: Message }) {
 
     const decryptMessage = async () => {
       try {
-        const sharedSecretData = await decrypt(
+        if (!currentReceiverSharedSecret || currentReceiverSharedSecret === "")
+          return;
+        const decryptedMessage = await decrypt(
           data.content,
           currentReceiverSharedSecret,
         );
         if (cancelled) return;
-        if (!sharedSecretData.success) {
-          // @ts-expect-error Idk TypeScript is (still) dumb
+        if (!decryptedMessage.success) {
+          rawDebugLog("Chat Page", "Decryption failed", {
+            currentReceiverSharedSecret,
+            decryptedMessage,
+            data,
+          });
+          // @ts-expect-error Idk TypeScript is dumb
           setFailedMessagesAmount((prev: number) => prev + 1);
           setContent("Error decrypting message");
           return;
         }
-        setContent(sharedSecretData.message);
+        rawDebugLog("Chat Page", "Decrypted message");
+        setContent(decryptedMessage.message);
       } catch (err: unknown) {
         if (cancelled) return;
-        // @ts-expect-error Idk TypeScript is dumb
+        // @ts-expect-error Idk TypeScript is (still) dumb
         setFailedMessagesAmount((prev: number) => prev + 1);
         setContent(String(err));
       } finally {
@@ -161,6 +170,15 @@ function FinalMessage({ message: data }: { message: Message }) {
       cancelled = true;
     };
   }, [data, currentReceiverSharedSecret, decrypt, setFailedMessagesAmount]);
+
+  // Catch empty content or no shared secret
+  if (
+    !currentReceiverSharedSecret ||
+    currentReceiverSharedSecret === "" ||
+    content === ""
+  ) {
+    return null;
+  }
 
   return (
     <ContextMenu>
