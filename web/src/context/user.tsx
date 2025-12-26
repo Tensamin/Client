@@ -71,7 +71,7 @@ export function UserProvider({
   children: React.ReactNode;
 }>) {
   const [fetchedUsers, setFetchedUsers] = useState<Map<number, User>>(
-    new Map()
+    new Map(),
   );
   const fetchedUsersRef = useRef(fetchedUsers);
   const prevLastMessageRef = useRef<unknown>(null);
@@ -100,7 +100,7 @@ export function UserProvider({
         return next;
       });
     },
-    []
+    [],
   );
 
   const get = useCallback(
@@ -136,7 +136,7 @@ export function UserProvider({
           username: data.data.username,
           display: getDisplayFromUsername(
             data.data.username,
-            data.data.display
+            data.data.display,
           ),
           avatar: data.data.avatar,
           about: data.data.about,
@@ -187,7 +187,7 @@ export function UserProvider({
         } as User;
       }
     },
-    [updateFetchedUsers]
+    [updateFetchedUsers],
   );
 
   const setConversationsAndSync = useCallback(
@@ -200,7 +200,7 @@ export function UserProvider({
         }
       });
     },
-    [get]
+    [get],
   );
 
   // Get own user
@@ -237,7 +237,7 @@ export function UserProvider({
           "User Context",
           "Failed to refetch conversations",
           err,
-          "red"
+          "red",
         );
       });
   }, [send, setConversationsAndSync]);
@@ -262,7 +262,7 @@ export function UserProvider({
         const sharedSecret = await get_shared_secret(
           privateKey,
           ownUser.public_key,
-          otherUser.public_key
+          otherUser.public_key,
         );
 
         if (!sharedSecret.success) {
@@ -312,7 +312,7 @@ export function UserProvider({
     async (
       message: CommunicationValue.Parent<
         CommunicationValue.client_changed | CommunicationValue.get_states
-      >
+      >,
     ) => {
       switch (message.type) {
         case "client_changed": {
@@ -353,7 +353,7 @@ export function UserProvider({
                   state: nextState,
                   loading: true,
                 });
-              }
+              },
             );
           });
           return;
@@ -361,7 +361,7 @@ export function UserProvider({
         default:
           return;
       }
-    }
+    },
   );
 
   useEffect(() => {
@@ -383,18 +383,18 @@ export function UserProvider({
         draft.set(id, newUser);
       });
     },
-    [updateFetchedUsers]
+    [updateFetchedUsers],
   );
 
   // Electron Update Stuff
   const [appUpdateInformation, setUpdate] = useState<UpdatePayload | undefined>(
-    undefined
+    undefined,
   );
 
   // Load dev update
   useEffect(() => {
     setUpdate(data.fakeUpdateInformation as UpdatePayload | undefined);
-  }, [data.fakeUpdateInformation])
+  }, [data.fakeUpdateInformation]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -407,7 +407,7 @@ export function UserProvider({
 
     const handleUpdatePayload = (
       update: UpdatePayload,
-      shouldToast: boolean
+      shouldToast: boolean,
     ) => {
       if (shouldToast) {
         toast.info("There is an update available!", {
@@ -429,13 +429,13 @@ export function UserProvider({
       (update: UpdatePayload) => {
         console.log("Update available:", update);
         handleUpdatePayload(update, true);
-      }
+      },
     );
 
     const unsubscribeLogs = electronAPI.onUpdateLog?.(
       (log: UpdateLogPayload) => {
         rawDebugLog("Electron App", "Received Update Log", log, "green");
-      }
+      },
     );
 
     void (async () => {

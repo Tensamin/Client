@@ -1,6 +1,5 @@
 // Context Imports
 import { useUserContext } from "@/context/user";
-import { useStorageContext } from "@/context/storage";
 
 // Components
 import * as Modal from "@/components/modals/raw";
@@ -9,7 +8,6 @@ import { UserModal } from "@/components/modals/user";
 // Main
 export function Communities() {
   const { communities } = useUserContext();
-  useStorageContext();
   return (
     <div className="flex flex-col gap-2 pb-3">
       {communities.length === 0 && (
@@ -32,7 +30,6 @@ export function Communities() {
 
 export function Conversations() {
   const { conversations } = useUserContext();
-  useStorageContext();
   return (
     <div className="flex flex-col gap-2 pb-3">
       {conversations.length === 0 && (
