@@ -209,6 +209,21 @@ export function MediumModal({
   );
 }
 
+export function CallOnHomepage({
+  display,
+  avatar,
+}: {
+  display: string;
+  avatar?: string;
+}) {
+  return (
+    <div className="flex gap-2 items-center">
+      <p>{display}</p>
+      <UserAvatar title={display} border size="small" icon={avatar} />
+    </div>
+  );
+}
+
 export function Profile({
   creationTimestamp,
   title,

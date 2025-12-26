@@ -25,7 +25,7 @@ export function UserModal({
   className,
 }: {
   id: number;
-  size: "big" | "medium" | "profile" | "call" | "avatar";
+  size: "big" | "medium" | "profile" | "call" | "avatar" | "callOnHomepage";
   calls?: string[];
   className?: string;
 }) {
@@ -135,6 +135,14 @@ export function UserModal({
           creationTimestamp={user.id}
           description={user.about || ""}
           state={user.state || "NONE"}
+        />
+      );
+    case "callOnHomepage":
+      return (
+        <RawModal.CallOnHomepage
+          key={id}
+          display={user.display}
+          avatar={user.avatar}
         />
       );
     case "avatar":

@@ -22,6 +22,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
+import { mono } from "@/lib/fonts";
 
 // Helper Functions
 export function displayCallId(callId: string) {
@@ -40,10 +41,12 @@ export function displayCallId(callId: string) {
     }
 
     return (
-      result
-        .replaceAll(/[^a-zA-Z0-9]/g, "")
-        .slice(4, 12)
-        .toUpperCase() || "0"
+      <p className={mono.className}>
+        {result
+          .replaceAll(/[^a-zA-Z0-9]/g, "")
+          .slice(4, 12)
+          .toUpperCase() || "0"}
+      </p>
     );
   } catch {
     return "0";
@@ -63,7 +66,7 @@ export function CallInteraction({
 
   return (
     <div className="flex flex-col gap-3">
-      <p>{displayCallId(callId)}</p>
+      {displayCallId(callId)}
       <Button
         disabled={loading}
         onClick={() => {
