@@ -109,7 +109,7 @@ export function CallButton({
         <Button className="w-9 h-9">
           <Icon.Phone />
         </Button>
-      ) : calls.length > 2 ? (
+      ) : calls.length > 1 ? (
         <Select
           value=""
           onValueChange={(value) => {
@@ -147,7 +147,7 @@ export function CallButtonPopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild className="ml-auto">
-        <p>{children}</p>
+        {children}
       </PopoverTrigger>
       <PopoverContent>
         <CallInteraction

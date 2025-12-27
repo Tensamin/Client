@@ -11,10 +11,15 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { useCallContext } from "@/context/call";
 import { fallbackUser } from "@/lib/types";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { displayCallId } from "@/special/call/components/call-button";
+import { v7 } from "uuid";
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 // Main
@@ -29,8 +34,17 @@ export function UserModal({
   calls?: string[];
   className?: string;
 }) {
-  const { get, ownState, ownId, fetchedUsers } = useUserContext();
+  const {
+    get,
+    ownState,
+    ownId,
+    fetchedUsers,
+    conversations,
+    currentReceiverId,
+  } = useUserContext();
   const { setPage } = usePageContext();
+  const { getCallToken, connect, outerState, setDontSendInvite } =
+    useCallContext();
 
   useEffect(() => {
     const cachedUser = fetchedUsers.get(id);
@@ -50,8 +64,11 @@ export function UserModal({
     state: user.id === ownId ? ownState : user.state,
   };
 
-  const [profilePictureOpen, setProfilePictureOpen] = useState(false);
+  const currentUserCalls =
+    conversations.find((conv) => conv?.user_id === user.id)?.calls || [];
+
   const [profileOpen, setProfileOpen] = useState(false);
+
   switch (size) {
     case "big":
       return <RawModal.BigModal key={id} {...props} />;
@@ -71,11 +88,60 @@ export function UserModal({
               />
             </ContextMenuTrigger>
             <ContextMenuContent>
+              {currentUserCalls.length > 1 ? (
+                <ContextMenuSub>
+                  <ContextMenuSubTrigger>Calls</ContextMenuSubTrigger>
+                  <ContextMenuContent>
+                    {currentUserCalls.map((callId) => (
+                      <ContextMenuItem
+                        key={callId}
+                        onSelect={() => {
+                          getCallToken(callId).then((token) => {
+                            setDontSendInvite(true);
+                            connect(token, callId);
+                          });
+                        }}
+                        disabled={
+                          outerState === "CONNECTED" ||
+                          outerState === "CONNECTING"
+                        }
+                      >
+                        {displayCallId(callId)}
+                      </ContextMenuItem>
+                    ))}
+                  </ContextMenuContent>
+                </ContextMenuSub>
+              ) : currentUserCalls.length === 1 ? (
+                <ContextMenuItem
+                  onSelect={() => {
+                    getCallToken(currentUserCalls[0]).then((token) => {
+                      setDontSendInvite(true);
+                      connect(token, currentUserCalls[0]);
+                    });
+                  }}
+                  disabled={
+                    outerState === "CONNECTED" || outerState === "CONNECTING"
+                  }
+                >
+                  Call
+                </ContextMenuItem>
+              ) : (
+                <ContextMenuItem
+                  onSelect={() => {
+                    const callId = v7();
+                    getCallToken(callId).then((token) => {
+                      connect(token, callId, currentReceiverId);
+                    });
+                  }}
+                  disabled={
+                    outerState === "CONNECTED" || outerState === "CONNECTING"
+                  }
+                >
+                  Call
+                </ContextMenuItem>
+              )}
               <ContextMenuItem onSelect={() => setProfileOpen(true)}>
                 View Profile
-              </ContextMenuItem>
-              <ContextMenuItem onSelect={() => setProfilePictureOpen(true)}>
-                View Profile Picture
               </ContextMenuItem>
               <ContextMenuItem disabled variant="destructive">
                 Delete Conversation
@@ -86,13 +152,11 @@ export function UserModal({
           <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
             <DialogContent
               aria-describedby={undefined}
-              className="w-auto rounded-3xl"
+              className="!max-w-4xl h-auto"
             >
-              <DialogHeader>
-                <DialogTitle>{user.display}&apos;s Profile</DialogTitle>
-              </DialogHeader>
-              <div className="scale-125 m-10">
-                <RawModal.Profile
+              <DialogTitle hidden>{user.id}</DialogTitle>
+              <div className="w-full">
+                <RawModal.BigProfile
                   key={id}
                   {...props}
                   creationTimestamp={user.id}
@@ -100,29 +164,6 @@ export function UserModal({
                   state={user.state || "NONE"}
                 />
               </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog
-            open={profilePictureOpen}
-            onOpenChange={setProfilePictureOpen}
-          >
-            <DialogContent
-              aria-describedby={undefined}
-              className="w-auto rounded-3xl scale-115"
-            >
-              <DialogHeader>
-                <DialogTitle>{user.display}&apos;s Profile Picture</DialogTitle>
-              </DialogHeader>
-              <RawModal.UserAvatar
-                className="size-80"
-                key={id}
-                border
-                size="gigantica"
-                title={user.display}
-                icon={user.avatar}
-                loading={user.loading}
-              />
             </DialogContent>
           </Dialog>
         </>

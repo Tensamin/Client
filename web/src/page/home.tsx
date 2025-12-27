@@ -161,7 +161,7 @@ export default function Page() {
                 />
 
                 {/* Calls */}
-                <div className="flex flex-wrap items-center justify-end gap-2">
+                <div className="flex flex-col items-center justify-end gap-2">
                   {conversation.calls?.map((call, index) => (
                     <Popover key={index}>
                       <PopoverTrigger asChild>

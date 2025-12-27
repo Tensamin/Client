@@ -26,6 +26,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { AvatarSizes, UnixTimestamp } from "@/lib/types";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "../ui/button";
 
 // Main
 export function UserAvatar({
@@ -45,57 +47,85 @@ export function UserAvatar({
   loading?: boolean;
   className?: string;
 }) {
+  const sizeMap = {
+    small: {
+      container: "size-8",
+      fallbackText: "text-xs",
+      wrapperPos: "-bottom-px -right-px",
+      wrapperSize: "w-3 h-3",
+      dotSize: "w-2 h-2",
+    },
+    medium: {
+      container: "size-9",
+      fallbackText: "text-sm",
+      wrapperPos: "bottom-0 right-0",
+      wrapperSize: "w-3.5 h-3.5",
+      dotSize: "w-2.5 h-2.5",
+    },
+    large: {
+      container: "size-12",
+      fallbackText: "text-xl",
+      wrapperPos: "bottom-0 right-0",
+      wrapperSize: "w-3.5 h-3.5",
+      dotSize: "w-2.5 h-2.5",
+    },
+    extraLarge: {
+      container: "size-20",
+      fallbackText: "text-2xl",
+      wrapperPos: "bottom-0 right-0",
+      wrapperSize: "w-4 h-4",
+      dotSize: "w-3 h-3",
+    },
+    jumbo: {
+      container: "size-30",
+      fallbackText: "text-5xl",
+      wrapperPos: "bottom-0 right-0",
+      wrapperSize: "w-5 h-5",
+      dotSize: "w-3.5 h-3.5",
+    },
+    gigantica: {
+      container: "size-40",
+      fallbackText: "text-6xl",
+      wrapperPos: "bottom-1 right-1",
+      wrapperSize: "w-8 h-8",
+      dotSize: "w-6 h-6",
+    },
+  } as const;
+
+  const cfg = sizeMap[size];
+
+  const containerClass = `relative aspect-square select-none ${
+    border ? "border border-muted" : ""
+  } ${cfg.container} rounded-full ${className ?? ""}`;
+  const avatarClass = `${
+    !border ? "bg-transparent" : ""
+  } object-cover w-full h-full`;
+
   return loading ? (
     <Skeleton
       className={`aspect-square select-none ${
-        border && "border border-muted"
-      } ${size === "small" && "size-8"} ${size === "medium" && "size-9"} ${
-        size === "large" && "size-12"
-      } ${size === "extraLarge" && "size-20"} ${
-        size === "jumbo" && "size-30"
-      } ${size === "gigantica" && "size-40"} rounded-full ${className}`}
+        border ? "border border-muted" : ""
+      } ${cfg.container} rounded-full ${className ?? ""}`}
     />
   ) : (
-    <div
-      className={`relative aspect-square select-none ${
-        border && "border border-muted"
-      } ${size === "small" && "size-8"} ${size === "medium" && "size-9"} ${
-        size === "large" && "size-12"
-      } ${size === "extraLarge" && "size-20"} ${
-        size === "jumbo" && "size-30"
-      } ${size === "gigantica" && "size-40"} rounded-full ${className}`}
-    >
-      <Avatar
-        className={`${!border && "bg-transparent"} object-cover w-full h-full`}
-        key={icon}
-      >
+    <div className={containerClass}>
+      <Avatar className={avatarClass} key={icon}>
         {icon && <AvatarImage src={icon} />}
-        <AvatarFallback
-          className={`${size === "extraLarge" && "text-2xl"} ${
-            size === "gigantica" && "text-6xl"
-          } ${size === "jumbo" && "text-5xl"} ${
-            size === "large" && "text-xl"
-          } ${size === "medium" && "text-sm"} ${size === "small" && "text-xs"}`}
-        >
+        <AvatarFallback className={cfg.fallbackText}>
           {convertStringToInitials(title)}
         </AvatarFallback>
       </Avatar>
+
       {state && (
         <Tooltip>
           <TooltipTrigger asChild>
             <div
-              className={`rounded-full absolute bg-muted ${
-                size === "small" && "-bottom-px -right-px"
-              } ${size === "large" && "bottom-0 right-0"} ${
-                size === "large" && "w-3.5 h-3.5"
-              } ${
-                size === "small" && "w-3 h-3"
-              } flex justify-center items-center`}
+              className={`rounded-full absolute bg-muted ${cfg.wrapperPos} ${cfg.wrapperSize} flex justify-center items-center`}
             >
               <div
-                className={`${size === "large" && "w-2.5 h-2.5"} ${
-                  size === "small" && "w-2 h-2"
-                } rounded-full border ${getColorFor(state)}`}
+                className={`${cfg.dotSize} rounded-full border ${getColorFor(
+                  state,
+                )}`}
               />
             </div>
           </TooltipTrigger>
@@ -292,5 +322,153 @@ export function Profile({
         </CardFooter>
       )}
     </Card>
+  );
+}
+
+export function BigProfile({
+  creationTimestamp,
+  title,
+  description,
+  status,
+  state,
+  icon,
+  badges,
+  loading,
+}: {
+  creationTimestamp: UnixTimestamp;
+  title: string;
+  description: string;
+  status?: string;
+  state: string;
+  icon?: string;
+  badges?: string[];
+  loading: boolean;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = contentRef.current;
+    if (element) {
+      setIsOverflowing(element.scrollHeight > element.clientHeight);
+    }
+  }, [description]);
+
+  return loading ? (
+    <div className="min-h-screen w-full flex items-start justify-center p-8">
+      <Card className="w-full max-w-6xl p-8 rounded-2xl border-input bg-input/37">
+        <CardHeader className="flex flex-col md:flex-row items-center gap-8 p-0">
+          <UserAvatar title={title} size="gigantica" border loading />
+          <div className="flex-1 flex flex-col gap-4">
+            <Skeleton className="h-10 w-96" />
+            <Skeleton className="h-6 w-72" />
+            <div className="flex gap-2 mt-2">
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="mt-8">
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <div className="mt-4 flex gap-2">
+            <Skeleton className="h-6 w-44" />
+            <Skeleton className="h-6 w-36" />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  ) : (
+    <div className="w-full flex items-start justify-center p-4">
+      <Card className="w-full max-w-5xl p-4 rounded-2xl border-input bg-transparent border-none">
+        <CardHeader className="flex flex-col md:flex-row items-start gap-8 p-0">
+          <div className="flex-shrink-0">
+            <UserAvatar
+              icon={icon}
+              title={title}
+              state={state}
+              size="gigantica"
+              border
+            />
+          </div>
+
+          <div className="flex-1 flex flex-col gap-4">
+            <div className="flex flex-col">
+              <p className="text-6xl md:text-7xl font-extrabold leading-tight">
+                {title}
+              </p>
+              {status && (
+                <p className="text-2xl font-semibold text-muted-foreground mt-2">
+                  {status}
+                </p>
+              )}
+              {badges && badges.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {badges.map((badge) => (
+                    <Badge key={badge} className="text-sm">
+                      {badge}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="mt-8 flex flex-col gap-6">
+          {description && description !== "" && (
+            <div>
+              <div className="relative">
+                <div
+                  ref={contentRef}
+                  className={`text-lg p-6 border border-input bg-input/40 rounded-xl w-full whitespace-pre-wrap ${
+                    isExpanded
+                      ? "max-h-190 overflow-y-auto"
+                      : "max-h-70 overflow-hidden"
+                  }`}
+                >
+                  <Text text={description} />
+                </div>
+
+                {/* Bottom fade */}
+                <div
+                  aria-hidden
+                  className={`absolute rounded-b-lg bottom-0 inset-x-0 pointer-events-none h-10 z-20 transition-opacity duration-200 bg-gradient-to-t from-sidebar to-transparent ${
+                    isOverflowing && !isExpanded ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              </div>
+
+              {isOverflowing && (
+                <Button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  variant="outline"
+                  className="mt-3"
+                >
+                  {isExpanded ? "Read less" : "Read more"}
+                </Button>
+              )}
+            </div>
+          )}
+
+          <div className="whitespace-pre-wrap p-4 border border-input bg-input/40 text-sm rounded-xl w-full">
+            Created {getCreationString(creationTimestamp)}
+          </div>
+        </CardContent>
+
+        {badges && badges.length > 0 && (
+          <CardFooter className="mt-6">
+            <div className="flex flex-wrap gap-3">
+              {badges.map((badge) => (
+                <Badge key={badge} className="text-sm">
+                  {badge}
+                </Badge>
+              ))}
+            </div>
+          </CardFooter>
+        )}
+      </Card>
+    </div>
   );
 }
