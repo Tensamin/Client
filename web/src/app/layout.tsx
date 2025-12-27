@@ -13,7 +13,7 @@ import "highlight.js/styles/github-dark.css";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 // (anti-format)
-import "../branding/colors/colors.css";
+import "./colors.css";
 
 // Context Imports
 import { PageProvider } from "@/context/page";
