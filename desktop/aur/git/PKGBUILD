@@ -56,11 +56,11 @@ pkgver() {
 build() {
 	command -v bun >/dev/null 2>&1 || sudo npm i -g bun
 
-	cd "$srcdir/Frontend"
+	cd "$srcdir/Frontend/web"
 	bun install
 	bun run build
 	
-	cd desktop
+	cd "$srcdir/Frontend/desktop"
 	bun install
 	bun run build:git
 }
