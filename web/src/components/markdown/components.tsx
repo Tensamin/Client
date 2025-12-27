@@ -221,7 +221,7 @@ export const markdownComponents: Components = {
     const isInline = node ? isInlineCode(node) : false;
 
     return (
-      <CodeBlock language={language} inline={isInline}>
+      <CodeBlock empty={!children} language={language} inline={isInline}>
         {code}
       </CodeBlock>
     );

@@ -1,17 +1,17 @@
 // Package Imports
 import {
-  useRef,
-  useEffect,
-  useMemo,
-  useEffectEvent,
-  useState,
-  useCallback,
-} from "react";
-import {
+  InfiniteData,
   useInfiniteQuery,
   useQueryClient,
-  InfiniteData,
 } from "@tanstack/react-query";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 // Lib Imports
 import { InitialMessages } from "@/lib/utils";
@@ -23,14 +23,14 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import { MessageGroup as MessageGroupComponent } from "@/components/chat/message";
-import { DelayedLoadingIcon } from "@/components/loading";
 import { MessagesTop } from "@/components/chat/messagesTop";
+import { DelayedLoadingIcon } from "@/components/loading";
 
 // Types
 import {
-  Messages,
   Message,
   MessageGroup as MessageGroupType,
+  Messages,
 } from "@/lib/types";
 
 const GROUP_WINDOW_MS = 60 * 1000;
@@ -169,14 +169,14 @@ export function Box() {
         const lastGroup = targetPage.messages.at(-1);
         const lastGroupLastMessage = lastGroup?.messages.at(-1);
 
-        // Check for duplicate message (same sender, timestamp, and content)
+        // Dup check
         if (
           lastGroupLastMessage &&
           lastGroupLastMessage.sender === newMsg.sender &&
           lastGroupLastMessage.timestamp === newMsg.timestamp &&
           lastGroupLastMessage.content === newMsg.content
         ) {
-          return base; // Skip duplicate
+          return base;
         }
 
         const shouldMerge =
