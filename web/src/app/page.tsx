@@ -177,14 +177,12 @@ export default function Page() {
         <div className="flex-1 h-full flex flex-col">
           <Navbar />
           <div className="flex-1 bg-background rounded-tl-xl border overflow-auto p-2">
-            <ViewTransition name="page-vt">
-              {page === "home" && <HomePage key={`home-${pageInstance}`} />}
-              {page === "settings" && (
-                <SettingsPage key={`settings-${pageInstance}`} />
-              )}
-              {page === "chat" && <ChatPage key={`chat-${pageInstance}`} />}
-              {page === "call" && <CallPage key={`call-${pageInstance}`} />}
-            </ViewTransition>
+            {page === "home" && <HomePage key={`home-${pageInstance}`} />}
+            {page === "settings" && (
+              <SettingsPage key={`settings-${pageInstance}`} />
+            )}
+            {page === "chat" && <ChatPage key={`chat-${pageInstance}`} />}
+            {page === "call" && <CallPage key={`call-${pageInstance}`} />}
           </div>
         </div>
       </div>

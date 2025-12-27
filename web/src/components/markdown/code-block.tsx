@@ -16,10 +16,12 @@ export function CodeBlock({
   language,
   children,
   inline,
+  empty,
 }: {
   language: string;
   children: string;
   inline: boolean;
+  empty?: boolean;
 }) {
   const { data } = useStorageContext();
   const [copied, setCopied] = useState(false);
@@ -29,14 +31,21 @@ export function CodeBlock({
     setTimeout(() => setCopied(false), 1000);
   };
 
+  if (language === "emoji") {
+    const emoji = Buffer.from(children, "base64").toString();
+    return emoji;
+  }
+
   return inline ? (
     <code
       onClick={copyCode}
       className={`px-1.5 py-0.5 rounded-sm ${
+        empty && "text-muted-foreground/30"
+      } ${
         copied ? "bg-primary/20" : "bg-input/40"
       } transition-all duration-250 ease-in-out ${mono.className}`}
     >
-      {children}
+      {empty ? "Empty" : children}
     </code>
   ) : (
     <div className="flex flex-col rounded-xl border overflow-hidden">

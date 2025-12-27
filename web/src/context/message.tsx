@@ -15,18 +15,19 @@ import { toast } from "sonner";
 import * as CommunicationValue from "@/lib/communicationValues";
 
 // Context Imports
-import { useSocketContext } from "@/context/socket";
-import { usePageContext } from "@/context/page";
-import { useUserContext } from "@/context/user";
 import { useCryptoContext } from "@/context/crypto";
+import { usePageContext } from "@/context/page";
+import { useSocketContext } from "@/context/socket";
 import { useStorageContext } from "@/context/storage";
+import { useUserContext } from "@/context/user";
 
 // Components
 import { UserAvatar } from "@/components/modals/raw";
 
 // Types
-import { Message, MessageGroup, Messages } from "@/lib/types";
+import { Text } from "@/components/markdown/text";
 import { DataContainer } from "@/lib/communicationValues";
+import { Message, MessageGroup, Messages } from "@/lib/types";
 
 const GROUP_WINDOW_MS = 60 * 1000;
 
@@ -253,7 +254,7 @@ export function useNewUserNotification() {
           const showFallback = () => {
             toast(otherUser.display, {
               duration: 5000,
-              description: decrypted.message,
+              description: <Text text={decrypted.message} />,
               icon: (
                 <UserAvatar
                   className="block"

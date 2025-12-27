@@ -13,6 +13,7 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import { Box } from "@/components/chat/box";
+import { StyledEmojiPicker } from "@/components/emojiPicker";
 import { PageDiv, PageTextarea } from "@/components/pageDiv";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,7 +63,7 @@ export default function Page() {
                 send_to_server: true,
                 sender: ownId,
                 timestamp: Date.now(),
-                //files
+                //files: [],
                 content: message,
               }).then((data) => {
                 console.log("meeewwooo", data);
@@ -74,6 +75,7 @@ export default function Page() {
           placeholder="Type a message..."
           className="w-full overflow-hidden min-h-10 max-h-52 placeholder:select-none"
         />
+        {/* Buttons */}
         <Button
           disabled
           variant="outline"
@@ -90,9 +92,10 @@ export default function Page() {
               <Icon.HandMetal />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="h-80 w-120 flex flex-col gap-3">
-            <p className="text-lg font-semibold">Emojis</p>
-            <div className="text-muted-foreground/50">Coming soon...</div>
+          <PopoverContent className="w-auto">
+            <StyledEmojiPicker
+              onInsert={(emoji) => setMessage((prev) => prev + emoji)}
+            />
           </PopoverContent>
         </Popover>
       </div>
