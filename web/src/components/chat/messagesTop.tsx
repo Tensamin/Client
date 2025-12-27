@@ -23,14 +23,8 @@ export function MessagesTop() {
   }, [currentReceiverId, get]);
 
   return (
-    <div className="relative aspect-16/2 w-2/3 flex justify-center items-end">
-      <div className="relative z-10 flex items-center justify-center h-full">
-        <div className="text-center text-foreground">
-          <p className="text-md mx-auto font-medium">
-            This is the start of your conversation with {user?.display}
-          </p>
-        </div>
-      </div>
-    </div>
+    <p className="text-md mx-auto font-medium pb-10">
+      This is the start of your conversation with {user?.display}
+    </p>
   );
 }

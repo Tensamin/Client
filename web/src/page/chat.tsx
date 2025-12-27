@@ -1,20 +1,25 @@
 // Package Imports
-import React, { useEffect, useRef, useState } from "react";
-import * as Icon from "lucide-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import * as Icon from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 
 // Lib Imports
 import { MaxSendBoxSize } from "@/lib/utils";
 
 // Context Imports
-import { useStorageContext } from "@/context/storage";
 import { useMessageContext } from "@/context/message";
+import { useStorageContext } from "@/context/storage";
 import { useUserContext } from "@/context/user";
 
 // Components
-import { Button } from "@/components/ui/button";
 import { Box } from "@/components/chat/box";
 import { PageDiv, PageTextarea } from "@/components/pageDiv";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // Main
 export default function Page() {
@@ -42,12 +47,6 @@ export default function Page() {
         </QueryClientProvider>
       </PageDiv>
       <div className="flex gap-2">
-        <Button
-          variant="outline"
-          className="aspect-square h-10 w-10 flex rounded-lg border dark:border-border dark:bg-card/46 bg-card/46"
-        >
-          <Icon.Plus />
-        </Button>
         <PageTextarea
           ref={textareaRef}
           value={message}
@@ -75,6 +74,27 @@ export default function Page() {
           placeholder="Type a message..."
           className="w-full overflow-hidden min-h-10 max-h-52 placeholder:select-none"
         />
+        <Button
+          disabled
+          variant="outline"
+          className="aspect-square h-10 w-10 flex rounded-lg border dark:border-border dark:bg-card/46 bg-card/46"
+        >
+          <Icon.Plus />
+        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="aspect-square h-10 w-10 flex rounded-lg border dark:border-border dark:bg-card/46 bg-card/46"
+            >
+              <Icon.HandMetal />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="h-80 w-120 flex flex-col gap-3">
+            <p className="text-lg font-semibold">Emojis</p>
+            <div className="text-muted-foreground/50">Coming soon...</div>
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );
