@@ -46,12 +46,12 @@ export function CallUserModal({
 
   const userId = identity ? Number(identity) : 0;
   const deafened = identity
-    ? (participantData[identity]?.deafened ?? false)
+    ? participantData[identity]?.deafened ?? false
     : false;
 
   // Get muted state directly from participant's audio track publication
   const audioPublication = participant?.getTrackPublication(
-    Track.Source.Microphone,
+    Track.Source.Microphone
   );
   const muted = audioPublication?.isMuted ?? false;
 
@@ -98,24 +98,26 @@ export function TileContent({
   inGridView,
 }: { hideBadges?: boolean; small?: boolean; inGridView?: boolean } = {}) {
   const participant = useParticipantContext();
-  const { isSpeaking: localIsSpeaking, speakingByIdentity } =
-    useSubCallContext();
+  const {
+    isSpeaking: localIsSpeaking,
+    speakingByIdentity,
+    isMuted,
+  } = useSubCallContext();
 
   const speakingFromMap = participant.identity
     ? speakingByIdentity[participant.identity]
     : undefined;
 
-  // Prefer our detector for every participant, fall back to LiveKit's flag
   const isSpeaking = participant.isLocal
-    ? localIsSpeaking
-    : (speakingFromMap ?? participant.isSpeaking);
+    ? localIsSpeaking && !isMuted
+    : speakingFromMap ?? participant.isSpeaking;
 
   return (
     <ParticipantContextMenu>
       <div className="aspect-video relative w-full max-h-full bg-black rounded-xl">
         <div
           className={`absolute inset-0 rounded-xl transition-all ease-in-out duration-400 pointer-events-none z-30 ${
-            isSpeaking && "ring-3 ring-primary ring-inset"
+            isSpeaking ? "ring-3 ring-primary ring-inset" : ""
           }`}
         />
 
