@@ -48,7 +48,7 @@ export function CodeBlock({
       {empty ? "Empty" : children}
     </code>
   ) : (
-    <div className="flex flex-col rounded-xl border overflow-hidden">
+    <div className="flex flex-col rounded-lg border overflow-hidden">
       <div className="flex justify-between bg-card items-center p-0.5">
         <p className="pl-2 text-[14px]">{language}</p>
         <Button size="sm" variant="ghost" onClick={copyCode}>

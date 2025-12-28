@@ -20,7 +20,7 @@ import { CodeBlock } from "./code-block";
 type HProps = React.HTMLAttributes<HTMLHeadingElement>;
 type PProps = React.HTMLAttributes<HTMLParagraphElement>;
 type AProps = React.AnchorHTMLAttributes<HTMLAnchorElement>;
-type QProps = React.HTMLAttributes<HTMLQuoteElement>;
+type QuoteProps = React.HTMLAttributes<HTMLQuoteElement>;
 type UlProps = React.HTMLAttributes<HTMLUListElement>;
 type OlProps = React.HTMLAttributes<HTMLOListElement>;
 type LiProps = React.LiHTMLAttributes<HTMLLIElement>;
@@ -98,33 +98,37 @@ export const A = ({ href = "", className, ...props }: AProps) => {
   );
 };
 
-export const Blockquote = ({ className, ...props }: QProps) => {
+export const Blockquote = ({ className, children, ...props }: QuoteProps) => {
+  const betterChildren = React.Children.map(children, (child) => {
+    if (typeof child === "string") return null;
+    return child;
+  });
+
   return (
     <blockquote
-      className={cn(
-        "mt-6 border-l-2 pl-6 italic text-muted-foreground",
-        className,
-      )}
+      className={cn("border-l-2 pl-3 mt-3 flex flex-col", className)}
       {...props}
-    />
+    >
+      {betterChildren}
+    </blockquote>
   );
 };
 
-export const UL = ({ className, ...props }: UlProps) => {
+export const UL = ({ className, children, ...props }: UlProps) => {
+  const betterChildren = React.Children.map(children, (child) => {
+    if (typeof child === "string") return null;
+    return child;
+  });
   return (
-    <ul
-      className={cn("my-6 ml-6 list-disc [&>li]:mt-2", className)}
-      {...props}
-    />
+    <ul className={cn("ml-6 list-disc [&>li]:mt-2", className)} {...props}>
+      {betterChildren}
+    </ul>
   );
 };
 
 export const OL = ({ className, ...props }: OlProps) => {
   return (
-    <ol
-      className={cn("my-6 ml-6 list-decimal [&>li]:mt-2", className)}
-      {...props}
-    />
+    <ol className={cn("ml-6 list-decimal [&>li]:mt-2", className)} {...props} />
   );
 };
 
@@ -133,7 +137,7 @@ export const LI = ({ className, ...props }: LiProps) => {
 };
 
 export const HR = ({ className, ...props }: HrProps) => {
-  return <hr className={cn("my-4 border-muted", className)} {...props} />;
+  return <hr className={cn("border-muted", className)} {...props} />;
 };
 
 export const Img = ({ className, alt, src, ...props }: ImgProps) => {
@@ -153,7 +157,7 @@ export const Img = ({ className, alt, src, ...props }: ImgProps) => {
       src={src}
       alt={alt ?? ""}
       className={cn(
-        "my-4 h-auto max-w-full rounded-md border border-border object-cover",
+        "h-auto max-w-full rounded-md border border-border object-cover",
         className,
       )}
       {...props}
@@ -167,7 +171,7 @@ export const TableComponent = ({
 }: React.TableHTMLAttributes<HTMLTableElement>) => {
   return (
     <Table
-      className={cn("my-6 w-full overflow-hidden rounded-md border", className)}
+      className={cn("w-full overflow-hidden rounded-md", className)}
       {...props}
     />
   );

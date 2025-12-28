@@ -8,7 +8,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto transition-all duration-200 ease-in-out"
+      className="relative w-full overflow-x-auto transition-all duration-200 ease-in-out border bg-popover rounded-lg"
     >
       <table
         data-slot="table"
@@ -27,7 +27,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
     <thead
       data-slot="table-header"
       className={cn(
-        "[&_tr]:border-b transition-all duration-200 ease-in-out",
+        "[&_tr]:border-b transition-all duration-200 ease-in-out font-semibold",
         className,
       )}
       {...props}
@@ -118,11 +118,11 @@ function TableCaption({
 
 export {
   Table,
-  TableHeader,
   TableBody,
+  TableCaption,
+  TableCell,
   TableFooter,
   TableHead,
+  TableHeader,
   TableRow,
-  TableCell,
-  TableCaption,
 };
