@@ -23,12 +23,17 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarMenu,
+  MenubarRadioGroup,
+  MenubarRadioItem,
   MenubarSub,
   MenubarSubContent,
   MenubarSubTrigger,
   MenubarTrigger,
 } from "@/components/ui/menubar";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUserContext } from "@/context/user";
+import { defaults } from "@/lib/defaults";
 
 // Types
 interface DesktopSource {
@@ -58,8 +63,8 @@ export function MuteButton({
             ? "ghost"
             : "destructive"
           : isMicrophoneEnabled
-            ? "outline"
-            : "destructive"
+          ? "outline"
+          : "destructive"
       }
       onClick={toggleMute}
       aria-label={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
@@ -88,8 +93,8 @@ export function DeafButton({
             ? "destructive"
             : "ghost"
           : isDeafened
-            ? "destructive"
-            : "outline"
+          ? "destructive"
+          : "outline"
       }
       onClick={toggleDeafen}
       aria-label={isDeafened ? "Undeafen" : "Deafen"}
@@ -239,7 +244,8 @@ export function ScreenShareButton({
   className?: string;
 }) {
   const { isScreenShareEnabled, localParticipant } = useLocalParticipant();
-  const { isElectron } = useStorageContext();
+  const { isElectron, data, set } = useStorageContext();
+  const { ownUserHasPremium } = useUserContext();
 
   const [loading, setLoading] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -256,7 +262,7 @@ export function ScreenShareButton({
             const allowed = await window.electronAPI.getScreenAccess();
             if (!allowed) {
               toast.error(
-                "Screen capture permission denied. Please allow screen access in your system settings.",
+                "Screen capture permission denied. Please allow screen access in your system settings."
               );
               setLoading(false);
               return;
@@ -306,6 +312,78 @@ export function ScreenShareButton({
     }
   };
 
+  const toggleShareAudio = () => {
+    set(
+      "data.call_screenShare_audio",
+      !(
+        (data.call_screenShare_audio as boolean) ??
+        defaults.call_screenShare_audio
+      )
+    );
+  };
+
+  // call_screenShare_width
+  // call_screenShare_height
+  // call_screenShare_frameRate
+  const qualityPresets = [
+    // 480p
+    {
+      label: "480p / 30",
+      width: 854,
+      height: 480,
+      frameRate: 30,
+      premium: false,
+    },
+
+    // 720p
+    {
+      label: "720p / 60",
+      width: 1280,
+      height: 720,
+      frameRate: 60,
+      premium: false,
+    },
+
+    // 1080p
+    {
+      label: "1080p / 30",
+      width: 1920,
+      height: 1080,
+      frameRate: 30,
+      premium: false,
+    },
+    {
+      label: "1080p / 60",
+      width: 1920,
+      height: 1080,
+      frameRate: 60,
+      premium: true,
+    },
+    {
+      label: "1080p / 120",
+      width: 1920,
+      height: 1080,
+      frameRate: 120,
+      premium: true,
+    },
+
+    // 1440p
+    {
+      label: "1440p / 60",
+      width: 2560,
+      height: 1440,
+      frameRate: 60,
+      premium: true,
+    },
+    {
+      label: "1440p / 120",
+      width: 2560,
+      height: 1440,
+      frameRate: 120,
+      premium: true,
+    },
+  ];
+
   return (
     <>
       <ScreenSharePickerDialog
@@ -328,8 +406,8 @@ export function ScreenShareButton({
                     ? "default"
                     : "ghost"
                   : isScreenShareEnabled
-                    ? "default"
-                    : "outline"
+                  ? "default"
+                  : "outline"
               }
             >
               {isScreenShareEnabled ? (
@@ -355,12 +433,52 @@ export function ScreenShareButton({
                 </>
               )}
             </MenubarItem>
+            <MenubarItem onSelect={toggleShareAudio} className="flex gap-2">
+              <Switch
+                className="scale-75 -mx-1.5 w-7"
+                checked={
+                  (data.call_screenShare_audio as boolean) ??
+                  defaults.call_screenShare_audio
+                }
+              />
+              Share Audio
+            </MenubarItem>
             <MenubarSub>
               <MenubarSubTrigger className="flex gap-2 items-center">
                 <Icon.Sparkles size={15} /> Change Quality
               </MenubarSubTrigger>
               <MenubarSubContent>
-                <MenubarItem disabled>Work in progress</MenubarItem>
+                <MenubarRadioGroup
+                  value={`${data.call_screenShare_width}${data.call_screenShare_height}${data.call_screenShare_frameRate}`}
+                >
+                  {qualityPresets.map((preset) => {
+                    const isPremium = preset.premium;
+                    const disabled = isPremium && !ownUserHasPremium;
+                    return (
+                      <MenubarRadioItem
+                        value={`${preset.width}${preset.height}${preset.frameRate}`}
+                        key={preset.label}
+                        disabled={disabled}
+                        onSelect={() => {
+                          set("call_screenShare_width", preset.width);
+                          set("call_screenShare_height", preset.height);
+                          set("call_screenShare_frameRate", preset.frameRate);
+                          toast.success(
+                            `Screen share quality ${preset.label} saved`
+                          );
+                        }}
+                      >
+                        {preset.label}
+                        {isPremium && (
+                          <Icon.Gem
+                            size={15}
+                            className="ml-auto text-blue-300"
+                          />
+                        )}
+                      </MenubarRadioItem>
+                    );
+                  })}
+                </MenubarRadioGroup>
               </MenubarSubContent>
             </MenubarSub>
           </MenubarContent>
@@ -388,7 +506,7 @@ export function CameraButton({
         await localParticipant.setCameraEnabled(!isCameraEnabled);
         rawDebugLog(
           "Call",
-          isCameraEnabled ? "Camera disabled" : "Camera enabled",
+          isCameraEnabled ? "Camera disabled" : "Camera enabled"
         );
       }
     } catch (error) {
@@ -408,8 +526,8 @@ export function CameraButton({
             ? "ghost"
             : "destructive"
           : isCameraEnabled
-            ? "outline"
-            : "destructive"
+          ? "outline"
+          : "destructive"
       }
       onClick={toggleCamera}
       disabled
