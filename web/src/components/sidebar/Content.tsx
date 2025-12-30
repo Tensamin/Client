@@ -1,17 +1,15 @@
 import { useEffect, useRef, useState, ViewTransition } from "react";
 
 import { useCallContext } from "@/context/call";
-import { usePageContext } from "@/context/page";
 
 import { Communities, Conversations } from "@/components/modals/category";
 import { VoiceActions } from "@/special/call/components/voice-actions";
 
-export default function Content() {
-  const { page, pageInstance } = usePageContext();
-  const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
-    "CONVERSATIONS",
-  );
-
+export default function Content({
+  category,
+}: {
+  category: "CONVERSATIONS" | "COMMUNITIES";
+}) {
   // Scroll position tracking
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const voiceRef = useRef<HTMLDivElement | null>(null);
@@ -48,7 +46,7 @@ export default function Content() {
     ro.observe(el);
     if (voiceEl) ro.observe(voiceEl);
     const mo = new MutationObserver(() =>
-      requestAnimationFrame(() => requestAnimationFrame(updateOverflow)),
+      requestAnimationFrame(() => requestAnimationFrame(updateOverflow))
     );
     mo.observe(el, { childList: true, subtree: true, characterData: true });
     const onWindowResize = () => updateOverflow();

@@ -4,10 +4,15 @@ import Content from "./Content";
 import { BigModal } from "../modals/raw";
 
 import { useUserContext } from "@/context/user";
+import { useState } from "react";
 import CategorySwitcher from "./CategorySwitcher";
 
 export default function Main() {
   const { ownId } = useUserContext();
+  const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
+    "CONVERSATIONS"
+  );
+
   return (
     <div className="w-64 h-full flex flex-col p-2 shrink-0">
       <Wrap
@@ -21,8 +26,8 @@ export default function Main() {
           />
         )}
       />
-      <CategorySwitcher />
-      <Content />
+      <CategorySwitcher category={category} setCategory={setCategory} />
+      <Content category={category} />
     </div>
   );
 }
