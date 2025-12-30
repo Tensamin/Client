@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { startTransition, useState, ViewTransition } from "react";
+import { startTransition, ViewTransition } from "react";
 
-export default function CategorySwitcher() {
-  const [category, setCategory] = useState<"COMMUNITIES" | "CONVERSATIONS">(
-    "CONVERSATIONS",
-  );
-
+export default function CategorySwitcher({
+  category,
+  setCategory,
+}: {
+  category: "CONVERSATIONS" | "COMMUNITIES";
+  setCategory: (cat: "CONVERSATIONS" | "COMMUNITIES") => void;
+}) {
   return (
     <div className="relative inline-flex rounded-full bg-input/30 border border-input overflow-hidden mt-3 mx-1 p-1 min-h-11.5">
       <div className="relative grid grid-cols-2 w-full gap-1">
@@ -21,7 +23,7 @@ export default function CategorySwitcher() {
               }`}
               onClick={() =>
                 startTransition(() =>
-                  setCategory(cat as "COMMUNITIES" | "CONVERSATIONS"),
+                  setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
                 )
               }
               aria-pressed={category === cat}
