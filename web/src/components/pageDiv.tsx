@@ -1,8 +1,7 @@
-import React from "react";
 import { cn } from "@/lib/utils";
+import React from "react";
 
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function PageDiv({
@@ -17,7 +16,7 @@ export function PageDiv({
   return scroll ? (
     <ScrollArea
       className={cn(
-        "rounded-lg border p-2 bg-sidebar/46 flex flex-col",
+        "flex flex-col",
         className,
       )}
     >
@@ -26,7 +25,7 @@ export function PageDiv({
   ) : (
     <div
       className={cn(
-        "rounded-lg border p-2 bg-sidebar/46 overflow-y-auto overflow-x-hidden",
+        "overflow-y-auto overflow-x-hidden",
         className,
       )}
     >
@@ -50,17 +49,3 @@ export function PageInput({
   );
 }
 
-export function PageTextarea({
-  className,
-  ...props
-}: React.ComponentProps<"textarea">) {
-  return (
-    <Textarea
-      className={cn(
-        "dark:bg-sidebar/46 bg-sidebar/46 dark:border-border border-border border resize-none rounded-lg focus-visible:ring-0",
-        className,
-      )}
-      {...props}
-    />
-  );
-}

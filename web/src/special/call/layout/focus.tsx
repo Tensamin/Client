@@ -59,9 +59,9 @@ export function CallFocus() {
       1,
       containerSize.width,
       hideParticipants
-        ? containerSize.height
+        ? Math.max(0, containerSize.height - 70)
         : Math.max(0, containerSize.height - 230),
-      16, // gap-4
+      16 // gap-4
     );
   }, [containerSize, hideParticipants]);
 

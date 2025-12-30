@@ -14,13 +14,14 @@ import { useUserContext } from "@/context/user";
 // Components
 import { Box } from "@/components/chat/box";
 import { StyledEmojiPicker } from "@/components/emojiPicker";
-import { PageDiv, PageTextarea } from "@/components/pageDiv";
+import { PageDiv } from "@/components/pageDiv";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
 
 // Main
 export default function Page() {
@@ -41,14 +42,14 @@ export default function Page() {
   }, [message]);
 
   return (
-    <div className="h-full w-full flex flex-col gap-2 overflow-hidden">
-      <PageDiv className="h-full">
+    <div className="h-full w-full flex flex-col overflow-hidden">
+      <PageDiv className="px-2 h-full">
         <QueryClientProvider client={client}>
           <Box />
         </QueryClientProvider>
       </PageDiv>
-      <div className="flex gap-2">
-        <PageTextarea
+      <div className="flex gap-2 p-3 border-t bg-card/50">
+        <Textarea
           ref={textareaRef}
           value={message}
           onKeyDown={(e) => {
@@ -73,22 +74,15 @@ export default function Page() {
           }}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type a message..."
-          className="w-full overflow-hidden min-h-10 max-h-52 placeholder:select-none"
+          className="w-full overflow-hidden min-h-10 max-h-52 placeholder:select-none resize-none"
         />
         {/* Buttons */}
-        <Button
-          disabled
-          variant="outline"
-          className="aspect-square h-10 w-10 flex rounded-lg border dark:border-border dark:bg-card/46 bg-card/46"
-        >
+        <Button disabled variant="outline" className="w-10 h-10">
           <Icon.Plus />
         </Button>
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="aspect-square h-10 w-10 flex rounded-lg border dark:border-border dark:bg-card/46 bg-card/46"
-            >
+            <Button variant="outline" className="w-10 h-10">
               <Icon.HandMetal />
             </Button>
           </PopoverTrigger>

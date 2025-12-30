@@ -108,10 +108,9 @@ export function VoiceActions() {
   });
   const trackRef = screenShareTrackRefs.find(
     (ref) =>
-      ref &&
-      ref.participant?.isLocal &&
-      ref.source === Track.Source.ScreenShare,
+      ref && ref.participant?.isLocal && ref.source === Track.Source.ScreenShare
   );
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const isScreenShare = isScreenShareEnabled || !!trackRef;
 
   // Annymous Joining
@@ -139,14 +138,49 @@ export function VoiceActions() {
               <Icon.Expand />
             </div>
           </div>
-          <DialogContent className="h-auto !max-w-[75vw]">
+          <DialogContent className="h-auto max-w-[75vw]!">
             <DialogTitle>Screen Share Preview</DialogTitle>
             <VideoTrack
               className="group aspect-video bg-black border rounded-lg h-full w-full"
               trackRef={trackRef}
             />
+            <div className="flex">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDialogOpen(false);
+                  setIsFullscreen(true);
+                }}
+              >
+                Fullscreen
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
+      )}
+      {isScreenShare && trackRef && (
+        <div
+          hidden={!isFullscreen}
+          className="p-3 gap-3 bg-background fixed top-0 left-0 z-100 flex flex-col justify-center"
+          style={{
+            width: window.innerWidth,
+            height: window.innerHeight,
+          }}
+        >
+          <div className="flex items-center gap-3 font-medium text-lg">
+            <Button variant="outline" onClick={() => setIsFullscreen(false)}>
+              Exit Fullscreen
+            </Button>
+            Fullscreen Screen Share Preview
+          </div>
+          <VideoTrack
+            style={{
+              maxHeight: window.innerHeight - 73,
+            }}
+            className="object-contain group aspect-video bg-black border rounded-lg h-full w-full"
+            trackRef={trackRef}
+          />
+        </div>
       )}
       <Popover>
         <PopoverTrigger asChild>

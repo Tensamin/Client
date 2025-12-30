@@ -92,7 +92,7 @@ export default function Page() {
   const [extraInfo, setExtraInfo] = useState<string | null>(null);
 
   return (
-    <PageDiv className="flex flex-col gap-4 h-full">
+    <PageDiv className="p-2 flex flex-col gap-4 h-full">
       <div className="flex justify-between h-full">
         <div className="flex gap-2">
           <Dialog open={open} onOpenChange={setOpen}>

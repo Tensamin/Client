@@ -21,6 +21,7 @@ import { displayCallId } from "@/special/call/components/call-button";
 import { v7 } from "uuid";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import Avatar from "./Avatar";
 
 // Main
 export function UserModal({
@@ -190,13 +191,13 @@ export function UserModal({
       return (
         <Tooltip>
           <TooltipTrigger>
-            <RawModal.UserAvatar
+            <Avatar
               key={id}
-              border
+              addBorder
               className={className}
-              size="small"
-              title={user.display}
-              icon={user.avatar}
+              size={10}
+              display={user.display}
+              image={user.avatar}
               loading={user.loading}
             />
           </TooltipTrigger>

@@ -95,6 +95,11 @@ export type StoredSettings = {
   [key: string]: Value;
 };
 
+export type UserWithConversations = {
+  data: User;
+  conversation?: Conversation;
+};
+
 export type User = {
   id: UserId;
   username: string;
