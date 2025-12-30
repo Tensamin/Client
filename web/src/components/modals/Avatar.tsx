@@ -44,7 +44,7 @@ export default function Avatar({
       className={cn(
         "aspect-square select-none rounded-full",
         addBorder && "border border-muted",
-        className
+        className,
       )}
     />
   ) : (
@@ -56,13 +56,13 @@ export default function Avatar({
       className={cn(
         "relative aspect-square select-none rounded-full",
         addBorder && "border border-muted",
-        className
+        className,
       )}
     >
       <AvatarComponent.Avatar
         className={cn(
           !addBorder && "bg-transparent",
-          "object-cover w-full h-full"
+          "object-cover w-full h-full",
         )}
         key={image}
       >

@@ -108,7 +108,9 @@ export function VoiceActions() {
   });
   const trackRef = screenShareTrackRefs.find(
     (ref) =>
-      ref && ref.participant?.isLocal && ref.source === Track.Source.ScreenShare
+      ref &&
+      ref.participant?.isLocal &&
+      ref.source === Track.Source.ScreenShare,
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isScreenShare = isScreenShareEnabled || !!trackRef;
