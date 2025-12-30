@@ -63,8 +63,8 @@ export function MuteButton({
             ? "ghost"
             : "destructive"
           : isMicrophoneEnabled
-          ? "outline"
-          : "destructive"
+            ? "outline"
+            : "destructive"
       }
       onClick={toggleMute}
       aria-label={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
@@ -93,8 +93,8 @@ export function DeafButton({
             ? "destructive"
             : "ghost"
           : isDeafened
-          ? "destructive"
-          : "outline"
+            ? "destructive"
+            : "outline"
       }
       onClick={toggleDeafen}
       aria-label={isDeafened ? "Undeafen" : "Deafen"}
@@ -262,7 +262,7 @@ export function ScreenShareButton({
             const allowed = await window.electronAPI.getScreenAccess();
             if (!allowed) {
               toast.error(
-                "Screen capture permission denied. Please allow screen access in your system settings."
+                "Screen capture permission denied. Please allow screen access in your system settings.",
               );
               setLoading(false);
               return;
@@ -318,7 +318,7 @@ export function ScreenShareButton({
       !(
         (data.call_screenShare_audio as boolean) ??
         defaults.call_screenShare_audio
-      )
+      ),
     );
   };
 
@@ -406,8 +406,8 @@ export function ScreenShareButton({
                     ? "default"
                     : "ghost"
                   : isScreenShareEnabled
-                  ? "default"
-                  : "outline"
+                    ? "default"
+                    : "outline"
               }
             >
               {isScreenShareEnabled ? (
@@ -464,7 +464,7 @@ export function ScreenShareButton({
                           set("call_screenShare_height", preset.height);
                           set("call_screenShare_frameRate", preset.frameRate);
                           toast.success(
-                            `Screen share quality ${preset.label} saved`
+                            `Screen share quality ${preset.label} saved`,
                           );
                         }}
                       >
@@ -506,7 +506,7 @@ export function CameraButton({
         await localParticipant.setCameraEnabled(!isCameraEnabled);
         rawDebugLog(
           "Call",
-          isCameraEnabled ? "Camera disabled" : "Camera enabled"
+          isCameraEnabled ? "Camera disabled" : "Camera enabled",
         );
       }
     } catch (error) {
@@ -526,8 +526,8 @@ export function CameraButton({
             ? "ghost"
             : "destructive"
           : isCameraEnabled
-          ? "outline"
-          : "destructive"
+            ? "outline"
+            : "destructive"
       }
       onClick={toggleCamera}
       disabled

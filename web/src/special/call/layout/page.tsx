@@ -91,10 +91,7 @@ function CallPageContent() {
                       fadeInFromTop
                       key={p.identity}
                     >
-                      <UserModal
-                        id={Number(p.identity)}
-                        size="avatar"
-                      />
+                      <UserModal id={Number(p.identity)} size="avatar" />
                     </MotionDivWrapper>
                   ))}
                 </AnimatePresence>

@@ -14,21 +14,11 @@ export function PageDiv({
   scroll?: boolean;
 }) {
   return scroll ? (
-    <ScrollArea
-      className={cn(
-        "flex flex-col",
-        className,
-      )}
-    >
+    <ScrollArea className={cn("flex flex-col", className)}>
       {children}
     </ScrollArea>
   ) : (
-    <div
-      className={cn(
-        "overflow-y-auto overflow-x-hidden",
-        className,
-      )}
-    >
+    <div className={cn("overflow-y-auto overflow-x-hidden", className)}>
       {children}
     </div>
   );
@@ -48,4 +38,3 @@ export function PageInput({
     </Input>
   );
 }
-

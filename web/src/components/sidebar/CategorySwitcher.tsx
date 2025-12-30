@@ -4,7 +4,7 @@ import { startTransition, useState, ViewTransition } from "react";
 
 export default function CategorySwitcher() {
   const [category, setCategory] = useState<"COMMUNITIES" | "CONVERSATIONS">(
-    "CONVERSATIONS"
+    "CONVERSATIONS",
   );
 
   return (
@@ -21,7 +21,7 @@ export default function CategorySwitcher() {
               }`}
               onClick={() =>
                 startTransition(() =>
-                  setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
+                  setCategory(cat as "COMMUNITIES" | "CONVERSATIONS"),
                 )
               }
               aria-pressed={category === cat}

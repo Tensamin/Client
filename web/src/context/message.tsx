@@ -114,7 +114,7 @@ export function MessageProvider({
 
       return grouped;
     },
-    []
+    [],
   );
 
   const getMessages = useCallback(
@@ -151,7 +151,7 @@ export function MessageProvider({
         previous: loaded - amount,
       };
     },
-    [currentReceiverId, groupMessages, id, isReady, ownId, send]
+    [currentReceiverId, groupMessages, id, isReady, ownId, send],
   );
 
   const sendMessage = useCallback(
@@ -161,15 +161,15 @@ export function MessageProvider({
       if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
       setAddRealtimeMessageToBox(message);
       const ownPublicKey = await get(ownId, false).then(
-        (data) => data.public_key
+        (data) => data.public_key,
       );
       const otherPublicKey = await get(currentReceiverId, false).then(
-        (data) => data.public_key
+        (data) => data.public_key,
       );
       const sharedSecret = await get_shared_secret(
         privateKey,
         ownPublicKey,
-        otherPublicKey
+        otherPublicKey,
       );
       const encrypted = await encrypt(message.content, sharedSecret.message);
       return await send("message_send", {
@@ -188,7 +188,7 @@ export function MessageProvider({
       ownId,
       privateKey,
       send,
-    ]
+    ],
   );
 
   return (
@@ -223,12 +223,12 @@ export function useNewUserNotification() {
           const sharedSecret = await get_shared_secret(
             privateKey,
             ownUser.public_key,
-            otherUser.public_key
+            otherUser.public_key,
           );
 
           const decrypted = await decrypt(
             encryptedMessage,
-            sharedSecret.message
+            sharedSecret.message,
           );
 
           if (!decrypted.success) return;
@@ -240,9 +240,8 @@ export function useNewUserNotification() {
                 window.webkitAudioContext)();
               const response = await fetch("/assets/sounds/message.wav");
               const arrayBuffer = await response.arrayBuffer();
-              const audioBuffer = await audioContext.decodeAudioData(
-                arrayBuffer
-              );
+              const audioBuffer =
+                await audioContext.decodeAudioData(arrayBuffer);
               const source = audioContext.createBufferSource();
               source.buffer = audioBuffer;
               source.connect(audioContext.destination);
@@ -320,6 +319,6 @@ export function useNewUserNotification() {
       ownId,
       privateKey,
       data.enableNotifications,
-    ]
+    ],
   );
 }
