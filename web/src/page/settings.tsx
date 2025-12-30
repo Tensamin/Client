@@ -128,7 +128,7 @@ export default function Page() {
 
   return (
     <div className="h-full w-full flex gap-2">
-      <PageDiv className="flex flex-col h-full w-40 shrink-0 flex-none px-0">
+      <PageDiv className="pb-2 pl-0.5 flex flex-col h-full w-40 shrink-0 flex-none border-r">
         <div className="flex-1 overflow-y-auto scrollbar-hide px-2 flex flex-col justify-between">
           <div className="flex flex-col mt-2">
             {Pages.map((page) => {

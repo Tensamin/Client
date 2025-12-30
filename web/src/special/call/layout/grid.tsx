@@ -63,7 +63,7 @@ export function CallGrid({ className }: { className?: string }) {
                 disableSpeakingIndicator
                 onParticipantClick={handleParticipantClick}
                 className={
-                  "w-full h-full relative border-0 flex justify-center items-center"
+                  "w-full h-full relative border-0 flex justify-center items-center px-5"
                 }
               >
                 <TileContent inGridView />

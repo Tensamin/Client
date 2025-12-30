@@ -4,7 +4,7 @@
 import { useParticipants } from "@livekit/components-react";
 import { AnimatePresence } from "framer-motion";
 import * as Icon from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
@@ -17,7 +17,7 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import { MotionDivWrapper } from "@/components/animation/presence";
-import { UserAvatar } from "@/components/modals/raw";
+import Avatar from "@/components/modals/Avatar";
 import { UserModal } from "@/components/modals/user";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,6 +59,8 @@ function CallPageContent() {
   } = useCallPageContext();
   const { callId } = useCallContext();
 
+  const innerCallPageContainer = useRef<HTMLDivElement>(null);
+
   const [open, setOpen] = useState(false);
 
   const participants = useParticipants();
@@ -70,7 +72,7 @@ function CallPageContent() {
 
   return (
     <div className="flex flex-col w-full h-full gap-5 relative pb-11">
-      <div className="absolute pl-1 pt-1 h-6 top-0 left-0 flex gap-3 items-center">
+      <div className="absolute pl-2 pt-3 h-6 top-0 left-0 flex gap-3 items-center">
         {/* Information */}
         {displayCallId(callId)}
 
@@ -90,7 +92,6 @@ function CallPageContent() {
                       key={p.identity}
                     >
                       <UserModal
-                        className="scale-90"
                         id={Number(p.identity)}
                         size="avatar"
                       />
@@ -107,7 +108,7 @@ function CallPageContent() {
           )}
         </AnimatePresence>
       </div>
-      <div className="flex-1">
+      <div className="flex-1" ref={innerCallPageContainer}>
         {focusedTrackRef ? <CallFocus /> : <CallGrid className="h-full" />}
       </div>
       <div className="absolute bottom-3 left-0 flex justify-center w-full">
@@ -219,11 +220,11 @@ function UserInInviteSelection({
           });
       }}
     >
-      <UserAvatar
-        border
-        icon={user?.avatar}
-        size="small"
-        title={user?.display ?? ""}
+      <Avatar
+        addBorder
+        image={user?.avatar}
+        size={10}
+        display={user?.display ?? ""}
         loading={!user}
       />
       {user?.display}

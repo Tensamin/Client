@@ -12,7 +12,7 @@ import { useSubCallContext } from "@/context/call";
 
 // Components
 import { LoadingIcon } from "@/components/loading";
-import { UserAvatar } from "@/components/modals/raw";
+import Avatar from "@/components/modals/Avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -117,7 +117,7 @@ export function CallModal({
     // Loading
     return (
       <div>
-        {renderUserAvatar()}
+        {renderAvatar()}
         <div className="absolute inset-0 rounded-xl w-full h-full bg-transparent flex p-3 justify-start items-start z-30">
           <LoadingIcon />
         </div>
@@ -125,15 +125,15 @@ export function CallModal({
     );
   };
 
-  const renderUserAvatar = () => {
+  const renderAvatar = () => {
     return (
       <div className="w-full h-full flex justify-center items-center">
-        <UserAvatar
-          icon={icon}
-          title={title}
-          size={overwriteSize ? overwriteSize : "jumbo"}
-          state={undefined}
-          border
+        <Avatar
+          image={icon}
+          display={title}
+          size={12}
+          addBorder
+          loading={false}
         />
       </div>
     );
@@ -143,12 +143,7 @@ export function CallModal({
     <Card className="relative w-full h-full bg-card/75">
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
         <div className="w-full h-full flex justify-center items-center">
-          <UserAvatar
-            title={title}
-            size={overwriteSize ? overwriteSize : "jumbo"}
-            border
-            loading
-          />
+          <Avatar image={null} display={title} size={12} addBorder loading />
         </div>
         {!isFocused && (
           <div className="absolute h-full w-full flex items-end justify-start p-4 z-30">
@@ -197,12 +192,12 @@ export function CallModal({
           renderScreenShareContent()
         ) : (
           <div className="w-full h-full flex justify-center items-center">
-            <UserAvatar
-              icon={icon}
-              title={title}
-              size={overwriteSize ? overwriteSize : "jumbo"}
-              state={undefined}
-              border
+            <Avatar
+              image={icon}
+              display={title}
+              size={inGridView ? 54 : 32}
+              addBorder
+              loading={false}
             />
           </div>
         )}

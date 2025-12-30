@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/context-menu";
 
 // Types
-import { UserAvatar } from "@/components/modals/raw";
+import Avatar from "@/components/modals/Avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { rawDebugLog } from "@/context/storage";
 import { Message, MessageGroup as MessageGroupType, User } from "@/lib/types";
@@ -74,11 +74,12 @@ export function MessageGroup({ data }: { data: MessageGroupType }) {
   return (
     <div className="flex gap-2 pl-1 w-full items-start pb-4.25">
       {data.showAvatar !== false && (
-        <UserAvatar
-          icon={sender?.avatar || undefined}
-          title={sender?.display || ""}
-          size="medium"
-          border
+        <Avatar
+          image={sender?.avatar}
+          display={sender?.display ?? ""}
+          size={15}
+          addBorder
+          loading={!sender || sender.loading}
         />
       )}
       <div className="flex flex-col w-full">
@@ -136,7 +137,7 @@ function FinalMessage({ message: data }: { message: Message }) {
           return;
         const decryptedMessage = await decrypt(
           data.content,
-          currentReceiverSharedSecret,
+          currentReceiverSharedSecret
         );
         if (cancelled) return;
         if (!decryptedMessage.success) {
