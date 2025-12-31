@@ -5,6 +5,7 @@ import * as Icon from "lucide-react";
 
 // Components
 import { Button } from "@/components/ui/button";
+import { Top } from "../page";
 
 // Main
 export default function Page() {
@@ -58,68 +59,72 @@ export default function Page() {
   ];
 
   return (
-    <div className="flex flex-col gap-15">
-      <div className="flex flex-col gap-5">
-        <h2 className="text-xl font-medium">Open Source Projects</h2>
-        <div className="flex flex-col 2xl:flex-row gap-10 pl-3">
-          {projects.map((project, index) => (
-            <div className="flex flex-col gap-2" key={index}>
-              <div className="flex flex-col">
-                <p className="text-lg font-semibold">{project.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {project.license}
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  onClick={() =>
-                    window.open(project.onlineLicenselink, "_blank")
-                  }
-                >
-                  <Icon.ExternalLink /> Online License
-                </Button>
-                <Button
-                  onClick={() =>
-                    window.open(project.localLicenseLink, "_blank")
-                  }
-                >
-                  <Icon.ExternalLink /> Local License
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="flex flex-col gap-5">
-        <h2 className="text-xl font-medium">Contributers</h2>
-        <div className="flex flex-col gap-10 pl-3">
-          {contributers.map((contributer, index) => (
-            <div className="flex flex-col gap-2" key={index}>
-              <div className="flex gap-3">
-                {/* eslint-disable-next-line */}
-                <img
-                  src={contributer.picture}
-                  className="aspect-square h-12 rounded-full border"
-                />
+    <Top text="Credits">
+      <div className="flex flex-col gap-15">
+        <div className="flex flex-col gap-5">
+          <h2 className="text-xl font-medium">Open Source Projects</h2>
+          <div className="flex flex-col 2xl:flex-row gap-10 pl-3">
+            {projects.map((project, index) => (
+              <div className="flex flex-col gap-2" key={index}>
                 <div className="flex flex-col">
-                  <p className="text-lg font-semibold flex items-center">
-                    {contributer.name}
-                    <span
-                      onClick={() => {
-                        window.open(contributer.website, "_blank");
-                      }}
-                      className="text-xs font-medium pl-3 cursor-pointer"
-                    >
-                      {contributer.website}
-                    </span>
+                  <p className="text-lg font-semibold">{project.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {project.license}
                   </p>
-                  <p className="text-sm text-ring w-2/3">{contributer.work}</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() =>
+                      window.open(project.onlineLicenselink, "_blank")
+                    }
+                  >
+                    <Icon.ExternalLink /> Online License
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      window.open(project.localLicenseLink, "_blank")
+                    }
+                  >
+                    <Icon.ExternalLink /> Local License
+                  </Button>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-5">
+          <h2 className="text-xl font-medium">Contributers</h2>
+          <div className="flex flex-col gap-10 pl-3">
+            {contributers.map((contributer, index) => (
+              <div className="flex flex-col gap-2" key={index}>
+                <div className="flex gap-3">
+                  {/* eslint-disable-next-line */}
+                  <img
+                    src={contributer.picture}
+                    className="aspect-square h-12 rounded-full border"
+                  />
+                  <div className="flex flex-col">
+                    <p className="text-lg font-semibold flex items-center">
+                      {contributer.name}
+                      <span
+                        onClick={() => {
+                          window.open(contributer.website, "_blank");
+                        }}
+                        className="text-xs font-medium pl-3 cursor-pointer"
+                      >
+                        {contributer.website}
+                      </span>
+                    </p>
+                    <p className="text-sm text-ring w-2/3">
+                      {contributer.work}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </Top>
   );
 }

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 // Context Imports
 import { useUserContext } from "@/context/user";
+import { Top } from "../page";
 
 // Main
 export default function Page() {
@@ -40,11 +41,13 @@ export default function Page() {
   }, [get, ownId]);
 
   return (
-    <div className="flex flex-col">
-      <p>Status: {premiumInfo.level}</p>
-      {premiumInfo.level !== "SETTINGS_PREMIUM_LEVEL_FREE" && (
-        <p>Days remaining: {premiumInfo.expiresInDays}</p>
-      )}
-    </div>
+    <Top text="Premium">
+      <div className="flex flex-col">
+        <p>Status: {premiumInfo.level}</p>
+        {premiumInfo.level !== "SETTINGS_PREMIUM_LEVEL_FREE" && (
+          <p>Days remaining: {premiumInfo.expiresInDays}</p>
+        )}
+      </div>
+    </Top>
   );
 }

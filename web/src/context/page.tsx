@@ -1,8 +1,14 @@
 "use client";
 
 // Package Imports
-import { useRouter } from "next/navigation";
-import { createContext, useContext, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 // Main
 type PageContextType = {
@@ -27,30 +33,52 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
   const [pageData, setPageData] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [errorDescription, setErrorDescription] = useState("");
+  const [initalLoadDone, setInitialLoadDone] = useState(false);
 
+  const pathname = usePathname();
   const router = useRouter();
 
-  const setPage = async (page: string, data?: string) => {
-    let base = "z";
+  useEffect(() => {
+    const segments = pathname.split("/").filter((seg) => seg.length > 0);
+    if (segments.length < 2) return;
 
-    if (page === "error" || page === "login" || page === "signup") {
-      base = "y";
-    }
+    const pageName = segments[2]
+      ? `${segments[1]}/${segments[2]}`
+      : segments[1];
+    setPageRaw(pageName);
+  }, [pathname]);
 
-    router.push(`/${base}/${page}`);
+  const setPage = useCallback(
+    async (page: string, data?: string) => {
+      let base = "z";
 
-    setPageRaw(page);
-    setPageData(data ?? "");
-    setErrorMessage("");
-    setErrorDescription("");
-  };
+      if (page === "error" || page === "login" || page === "signup") {
+        base = "y";
+      }
+
+      router.push(`/${base}/${page}`);
+      if (data) {
+        setPageData(data);
+      }
+      setErrorMessage("");
+      setErrorDescription("");
+    },
+    [router]
+  );
 
   const setError = (message: string, description: string) => {
-    setPageRaw("error");
+    router.push("/y/error");
     setPageData("");
     setErrorMessage(message);
     setErrorDescription(description);
   };
+
+  // Initial load
+  useEffect(() => {
+    if (initalLoadDone) return;
+    setInitialLoadDone(true);
+    setPage("home");
+  }, [initalLoadDone, setPage]);
 
   return (
     <PageContext.Provider

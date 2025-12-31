@@ -9,6 +9,7 @@ import { useStorageContext } from "@/context/storage";
 // Components
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Top } from "../page";
 
 // Main
 export default function Page() {
@@ -29,17 +30,19 @@ export default function Page() {
   }, [data.enableNotifications, set]);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex gap-2">
-        <Switch
-          id="enableNotifications"
-          checked={(data.enableNotifications as boolean) ?? false}
-          onCheckedChange={(value) => set("enableNotifications", value)}
-        />
-        <Label htmlFor="enableNotifications">
-          Enable Desktop Notifications
-        </Label>
+    <Top text="Notifications">
+      <div className="flex flex-col gap-3">
+        <div className="flex gap-2">
+          <Switch
+            id="enableNotifications"
+            checked={(data.enableNotifications as boolean) ?? false}
+            onCheckedChange={(value) => set("enableNotifications", value)}
+          />
+          <Label htmlFor="enableNotifications">
+            Enable Desktop Notifications
+          </Label>
+        </div>
       </div>
-    </div>
+    </Top>
   );
 }

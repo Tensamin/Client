@@ -3,6 +3,7 @@
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useStorageContext } from "@/context/storage";
+import { Top } from "../page";
 
 export default function Page() {
   const {
@@ -11,13 +12,15 @@ export default function Page() {
   } = useStorageContext();
 
   return (
-    <div className="flex items-start gap-2">
-      <Switch
-        id="reverseEnterInChats"
-        checked={reverseEnterInChats ? true : false}
-        onCheckedChange={(value) => set("reverseEnterInChats", value)}
-      />
-      <Label htmlFor="reverseEnterInChats">Invert enter key behavior</Label>
-    </div>
+    <Top text="Accessibility">
+      <div className="flex items-start gap-2">
+        <Switch
+          id="reverseEnterInChats"
+          checked={reverseEnterInChats ? true : false}
+          onCheckedChange={(value) => set("reverseEnterInChats", value)}
+        />
+        <Label htmlFor="reverseEnterInChats">Invert enter key behavior</Label>
+      </div>
+    </Top>
   );
 }
