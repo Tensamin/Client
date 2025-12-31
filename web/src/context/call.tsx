@@ -160,12 +160,12 @@ function ScreenSharePreviewManager() {
         await participant.publishData(data, { reliable: true });
 
         // Update local participant data so user can see their own preview
-        const identity = participant.identity;
-        if (identity) {
+        const user = Number(participant.identity);
+        if (user) {
           setParticipantData((prev) => ({
             ...prev,
-            [identity]: {
-              ...prev[identity],
+            [user]: {
+              ...prev[user],
               stream_preview: preview,
             },
           }));
@@ -194,12 +194,12 @@ function ScreenSharePreviewManager() {
         participant.publishData(data, { reliable: true }).catch(() => {});
 
         // Clear local preview
-        const identity = participant.identity;
-        if (identity) {
+        const user = Number(participant.identity);
+        if (user) {
           setParticipantData((prev) => ({
             ...prev,
-            [identity]: {
-              ...prev[identity],
+            [user]: {
+              ...prev[user],
               stream_preview: null,
             },
           }));
@@ -488,6 +488,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   // Call Page
   const [isAtMax, setIsAtMax] = useState(false);
   const [currentLayout, setCurrentLayout] = useState<"grid" | "focus">("grid");
+  const inGridView = useMemo(() => {
+    return currentLayout === "grid";
+  }, [currentLayout]);
 
   return (
     <CallContext.Provider
@@ -503,8 +506,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         callId,
         isAtMax,
         setIsAtMax,
-        currentLayout,
         setCurrentLayout,
+        inGridView,
       }}
     >
       <AlertDialog
@@ -628,8 +631,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
 // Sub Provider Component
 function SubCallProvider({ children }: { children: React.ReactNode }) {
-  const { shouldConnect } = useCallContext();
+  const { shouldConnect, callId } = useCallContext();
   const { data } = useStorageContext();
+  const { send } = useSocketContext();
 
   const room = useRoomContext();
   const connectionState = useConnectionState();
@@ -647,7 +651,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   const [speakingByIdentity, setSpeakingByIdentity] = useState<
     Record<string, boolean>
   >({});
-  const [isWatching, setIsWatching] = useState<Record<string, boolean>>({});
+  const [isWatching, setIsWatching] = useState<Record<number, boolean>>({});
   const [participantData, setParticipantData] = useState<
     Record<
       string,
@@ -660,6 +664,36 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   const [callMetadata, setCallMetadata] = useState<CallMetadata>({
     anonymousJoining: false,
   });
+
+  // Call Administration
+  const disconnectUser = async (user: number) => {
+    if (!room) return;
+    send("call_disconnect_user", {
+      call_id: callId,
+      user_id: user,
+    })
+      .then(() => {
+        toast.success("User disconnected from call.");
+      })
+      .catch(() => {
+        toast.error("Failed to disconnect user from call.");
+      });
+  };
+
+  const timeoutUser = async (user: number, until: number) => {
+    if (!room) return;
+    send("call_timeout_user", {
+      call_id: callId,
+      user_id: user,
+      until,
+    })
+      .then(() => {
+        toast.success("User timed out.");
+      })
+      .catch(() => {
+        toast.error("Failed to timeout user.");
+      });
+  };
 
   // Speaking detection stuff
   const updateSpeakingState = useCallback(
@@ -765,37 +799,39 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
   // Screen share watching management
   const { ownId } = useUserContext();
   const startWatching = useCallback(
-    (identity: string) => {
-      if (Number(identity) === ownId) return;
-      setIsWatching((prev) => ({ ...prev, [identity]: true }));
+    (user: number) => {
+      if (user === ownId) return;
+      setIsWatching((prev) => ({ ...prev, [user]: true }));
     },
     [ownId]
   );
 
-  const stopWatching = useCallback((identity: string) => {
+  const stopWatching = useCallback((user: number) => {
     setIsWatching((prev) => {
       const newWatching = { ...prev };
-      delete newWatching[identity];
+      delete newWatching[user];
       return newWatching;
     });
   }, []);
 
   // Play sounds when isWatching changes
-  const prevIsWatchingRef = useRef<Record<string, boolean>>({});
+  const prevIsWatchingRef = useRef<Record<number, boolean>>({});
   useEffect(() => {
     const prev = prevIsWatchingRef.current;
     const current = isWatching;
 
     // Check for new watchers
-    Object.keys(current).forEach((identity) => {
-      if (current[identity] && !prev[identity]) {
+    Object.keys(current).forEach((user) => {
+      const userId = Number(user);
+      if (current[userId] && !prev[userId]) {
         playSound("stream_watch_other");
       }
     });
 
     // Check for stopped watchers
-    Object.keys(prev).forEach((identity) => {
-      if (prev[identity] && !current[identity]) {
+    Object.keys(prev).forEach((user) => {
+      const userId = Number(user);
+      if (prev[userId] && !current[userId]) {
         playSound("stream_watch_end");
       }
     });
@@ -1256,6 +1292,8 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         stopWatching,
         participantData,
         setParticipantData,
+        disconnectUser,
+        timeoutUser,
       }}
     >
       <ScreenSharePreviewManager />
@@ -1281,8 +1319,8 @@ type CallContextValue = {
   disconnect: () => void;
   isAtMax: boolean;
   setIsAtMax: (input: boolean) => void;
-  currentLayout: "grid" | "focus";
   setCurrentLayout: (input: "grid" | "focus") => void;
+  inGridView: boolean;
 };
 
 type OwnMetadata = {
@@ -1298,20 +1336,22 @@ type SubCallContextValue = {
   isDeafened: boolean;
   isMuted: boolean;
   isSpeaking: boolean;
-  speakingByIdentity: Record<string, boolean>;
+  speakingByIdentity: Record<number, boolean>;
   connectionState: ConnectionState;
   toggleDeafen: () => void;
-  isWatching: Record<string, boolean>;
-  setIsWatching: (watching: Record<string, boolean>) => void;
-  startWatching: (identity: string) => void;
-  stopWatching: (identity: string) => void;
+  isWatching: Record<number, boolean>;
+  setIsWatching: (watching: Record<number, boolean>) => void;
+  startWatching: (user: number) => void;
+  stopWatching: (user: number) => void;
   participantData: Record<
-    string,
+    number,
     { deafened?: boolean; stream_preview?: string | null }
   >;
   setParticipantData: React.Dispatch<
     React.SetStateAction<
-      Record<string, { deafened?: boolean; stream_preview?: string | null }>
+      Record<number, { deafened?: boolean; stream_preview?: string | null }>
     >
   >;
+  disconnectUser: (user: number) => void;
+  timeoutUser: (user: number, until: number) => void;
 };

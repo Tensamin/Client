@@ -3,7 +3,6 @@ import { isTrackReference } from "@livekit/components-core";
 import {
   useMaybeTrackRefContext,
   useParticipantContext,
-  useParticipantInfo,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import * as Icon from "lucide-react";
@@ -19,22 +18,17 @@ import { useUserContext } from "@/context/user";
 // Components
 import { LoadingIcon } from "@/components/loading";
 import { cn } from "@/lib/utils";
-import { ParticipantContextMenu } from "../menus";
+import ParticipantContextMenu from "../ParticipantContextMenu";
 import { CallModal } from "./raw";
 
 // Main
-export function CallUserModal({
-  hideBadges,
-  inGridView,
-}: {
-  hideBadges?: boolean;
-  inGridView?: boolean;
-}) {
-  const { identity } = useParticipantInfo();
+export function CallUserModal({ hideBadges }: { hideBadges?: boolean }) {
   const participant = useParticipantContext();
   const trackRef = useMaybeTrackRefContext();
   const { get, fetchedUsers } = useUserContext();
   const { participantData } = useSubCallContext();
+
+  const user = Number(participant.identity);
 
   const screenShareTrackRef =
     trackRef &&
@@ -43,10 +37,8 @@ export function CallUserModal({
       ? trackRef
       : undefined;
 
-  const userId = identity ? Number(identity) : 0;
-  const deafened = identity
-    ? participantData[identity]?.deafened ?? false
-    : false;
+  const userId = user ? user : 0;
+  const deafened = user ? participantData[user]?.deafened ?? false : false;
 
   // Get muted state directly from participant's audio track publication
   const audioPublication = participant?.getTrackPublication(
@@ -71,13 +63,13 @@ export function CallUserModal({
   }, [userId, get, fetchedUsers]);
 
   // Get user data from context
-  const user = fetchedUsers.get(userId) ?? fallbackUser;
+  const userData = fetchedUsers.get(userId) ?? fallbackUser;
 
-  return identity && identity !== "" ? (
+  return userId && userId !== 0 ? (
     <CallModal
-      title={user.display}
-      icon={user.avatar || undefined}
-      loading={user.loading}
+      title={userData.display}
+      icon={userData.avatar || undefined}
+      loading={userData.loading}
       isAdmin={getIsAdmin()}
       muted={muted}
       deafened={deafened}
@@ -102,11 +94,10 @@ export function TileContent({
     speakingByIdentity,
     isMuted,
   } = useSubCallContext();
-  const { isAtMax, setIsAtMax, currentLayout } = useCallContext();
-  const inGridView = currentLayout === "grid";
+  const { isAtMax, setIsAtMax } = useCallContext();
 
   const speakingFromMap = participant.identity
-    ? speakingByIdentity[participant.identity]
+    ? speakingByIdentity[Number(participant.identity)]
     : undefined;
 
   const isSpeaking = participant.isLocal
@@ -141,7 +132,7 @@ export function TileContent({
         />
 
         <div className="w-full h-full flex items-center justify-center rounded-xl z-10 bg-black">
-          <CallUserModal inGridView={inGridView} hideBadges={hideBadges} />
+          <CallUserModal hideBadges={hideBadges} />
         </div>
       </div>
     </ParticipantContextMenu>

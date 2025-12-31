@@ -42,16 +42,16 @@ export function CallModal({
   hideBadges?: boolean;
 }>) {
   const { isWatching, participantData } = useSubCallContext();
-  const { isAtMax, currentLayout } = useCallContext();
-
-  const inGridView = currentLayout === "grid";
+  const { isAtMax, inGridView } = useCallContext();
 
   const isScreenShare = !!screenShareTrackRef;
   const isLocal = screenShareTrackRef?.participant?.isLocal;
   const currentIsWatching =
-    isWatching[screenShareTrackRef?.participant?.identity ?? ""] ?? false;
+    isWatching[Number(screenShareTrackRef?.participant?.identity)] ?? false;
 
-  const participantIdentity = screenShareTrackRef?.participant?.identity;
+  const participantIdentity = Number(
+    screenShareTrackRef?.participant?.identity
+  );
   const previewImage = useMemo(() => {
     if (!participantIdentity) return null;
     return participantData[participantIdentity]?.stream_preview ?? null;

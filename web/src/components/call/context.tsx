@@ -134,7 +134,7 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      startWatching(event.participant.identity);
+      startWatching(Number(event.participant.identity));
       setFocusedTrackSid((current) => (current === trackSid ? null : trackSid));
     },
     [resolveTrackSid, startWatching],
