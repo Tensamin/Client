@@ -45,6 +45,7 @@ const config: ForgeConfig = {
       authors: packageJson.author.name,
       description: packageJson.description,
       setupExe: `${packageJson.productName}.exe`,
+      iconUrl: "https://tensamin.net/assets/app/icon.ico",
       setupIcon: "assets/installer.ico",
       //loadingGif: "assets/loading.gif",
       title: packageJson.productName,
