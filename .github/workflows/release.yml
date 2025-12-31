@@ -145,6 +145,17 @@ jobs:
           git pull -f
 
           NEW_VERSION=$(jq -r '.version' package.json)
+          ASSET_URL="https://github.com/${{ github.repository }}/releases/download/v${NEW_VERSION}/tensamin.tar.gz"
+
+          echo "Checking availability of $ASSET_URL"
+          for i in {1..10}; do
+            if curl -sIf "$ASSET_URL"; then
+              echo "Asset is ready."
+              break
+            fi
+            echo "Waiting for asset... (attempt $i)"
+            sleep 15
+          done
 
           nix run github:Mic92/nix-update -- \
             --flake \

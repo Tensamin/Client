@@ -67,6 +67,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 // Types
 import Avatar from "@/components/modals/Avatar";
+import { playSound } from "@/lib/sound";
 import { User } from "@/lib/types";
 
 // Main
@@ -115,7 +116,6 @@ async function captureScreenShareFrame(
 function ScreenSharePreviewManager() {
   const { localParticipant } = useLocalParticipant();
   const { setParticipantData } = useSubCallContext();
-  const { playSound } = useCallContext();
   const tracks = useTracks([Track.Source.ScreenShare], {
     onlySubscribed: false,
   });
@@ -138,7 +138,7 @@ function ScreenSharePreviewManager() {
       playSound("stream_end_self");
     }
     prevScreenShareTrack.current = screenShareTrack;
-  }, [screenShareTrack, playSound]);
+  }, [screenShareTrack]);
 
   useEffect(() => {
     if (!screenShareTrack || !(screenShareTrack instanceof LocalVideoTrack))
@@ -242,17 +242,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   const memorizedReceiverId = useRef<number | null>(null);
   const explicitlySetReceiverId = useRef(false);
-
-  const audioElementForSounds = useRef<HTMLAudioElement>(null);
-
-  const playSound = (sound: string) => {
-    if (audioElementForSounds.current) {
-      audioElementForSounds.current.src = `/assets/sounds/${sound}.wav`;
-      audioElementForSounds.current.play().catch((err) => {
-        rawDebugLog("Call Context", "Failed to play sound", err, "red");
-      });
-    }
-  };
 
   useEffect(() => {
     if (!explicitlySetReceiverId.current) {
@@ -471,6 +460,31 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     });
   }, [newCallData, getCallToken, connect]);
 
+  // Call Sound
+  const callSoundRef = useRef<(() => Promise<void>) | null>(null);
+  useEffect(() => {
+    let canceled = false;
+
+    if (newCallWidgetOpen) {
+      playSound("call2", true).then((stopSound) => {
+        if (canceled) {
+          stopSound().catch(() => {});
+          return;
+        }
+        callSoundRef.current = stopSound;
+      });
+    } else {
+      callSoundRef.current?.().catch(() => {});
+      callSoundRef.current = null;
+    }
+
+    return () => {
+      canceled = true;
+      callSoundRef.current?.().catch(() => {});
+      callSoundRef.current = null;
+    };
+  }, [newCallWidgetOpen]);
+
   return (
     <CallContext.Provider
       value={{
@@ -483,7 +497,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         setOuterState,
         setShouldConnect,
         callId,
-        playSound,
       }}
     >
       <AlertDialog
@@ -548,7 +561,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
                 <Icon.PhoneForwarded />
               </Button>
             </div>
-            <audio loop hidden autoPlay src="/assets/sounds/call2.wav" />
           </DialogContent>
         </Dialog>
       )}
@@ -599,7 +611,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           }
         }}
       >
-        <audio ref={audioElementForSounds} />
         <RoomAudioRenderer />
         <SubCallProvider>{children}</SubCallProvider>
       </LiveKitRoom>
@@ -609,7 +620,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
 // Sub Provider Component
 function SubCallProvider({ children }: { children: React.ReactNode }) {
-  const { shouldConnect, playSound } = useCallContext();
+  const { shouldConnect } = useCallContext();
   const { data } = useStorageContext();
 
   const room = useRoomContext();
@@ -782,7 +793,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     });
 
     prevIsWatchingRef.current = { ...current };
-  }, [isWatching, playSound]);
+  }, [isWatching]);
 
   const storedUserVolumes = data.call_userVolumes as number[] | null;
 
@@ -826,7 +837,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         handleParticipantDisconnected,
       );
     };
-  }, [room, playSound]);
+  }, [room]);
 
   // Remote Screen Share Sounds
   useEffect(() => {
@@ -851,7 +862,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
       room.off(RoomEvent.TrackPublished, handleTrackPublished);
       room.off(RoomEvent.TrackUnpublished, handleTrackUnpublished);
     };
-  }, [room, localParticipant, playSound]);
+  }, [room, localParticipant]);
 
   // Custom Audio Init for Noise Suppression
   useEffect(() => {
@@ -1260,7 +1271,6 @@ type CallContextValue = {
   setOuterState: (input: string) => void;
   setShouldConnect: (input: boolean) => void;
   disconnect: () => void;
-  playSound: (sound: string) => void;
 };
 
 type OwnMetadata = {
