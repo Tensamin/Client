@@ -259,7 +259,7 @@ export function useNewUserNotification() {
                 <Avatar
                   className="block"
                   addBorder
-                  size={4}
+                  size={10}
                   display={otherUser.display}
                   image={otherUser.avatar}
                   loading={otherUser.loading}
