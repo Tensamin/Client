@@ -2,7 +2,7 @@
 
 // Package Imports
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 // Main
 type PageContextType = {
@@ -37,7 +37,7 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
       base = "y";
     }
 
-    await router.push(`/${base}/${page}`);
+    router.push(`/${base}/${page}`);
 
     setPageRaw(page);
     setPageData(data ?? "");

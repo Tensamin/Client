@@ -39,10 +39,10 @@ export default function Page() {
       if (id === 0 || privateKey === "") {
         toast.error("Empty Credentials Provided.");
       } else {
-        window.location.reload();
+        setPage("home");
       }
     },
-    [set],
+    [set, setPage],
   );
 
   const handleFileSelect = useCallback(

@@ -69,7 +69,7 @@ function CallPageContent() {
   const participants = useParticipants();
   const viewers = useMemo(() => {
     return participants.filter((p) => {
-      return isWatching[p.identity] ?? false;
+      return isWatching[Number(p.identity)] ?? false;
     });
   }, [participants, isWatching]);
 
@@ -155,7 +155,7 @@ function CallPageContent() {
             onClick={() => {
               if (focusedTrackRef) {
                 setFocusedTrackSid(null);
-                stopWatching(focusedTrackRef.participant.identity);
+                stopWatching(Number(focusedTrackRef.participant.identity));
               } else {
                 disconnect();
               }
