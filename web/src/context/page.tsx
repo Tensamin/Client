@@ -30,17 +30,15 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
 
   const router = useRouter();
 
-  useEffect(() => {
+  const setPage = async (page: string, data?: string) => {
     let base = "z";
 
     if (page === "error" || page === "login" || page === "signup") {
       base = "y";
     }
 
-    router.push(`/${base}/${page}`);
-  }, [page, pageData, router]);
+    await router.push(`/${base}/${page}`);
 
-  const setPage = (page: string, data?: string) => {
     setPageRaw(page);
     setPageData(data ?? "");
     setErrorMessage("");
