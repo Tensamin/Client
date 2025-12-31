@@ -7,17 +7,18 @@ import {
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import * as Icon from "lucide-react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 // Lib Imports
 import { fallbackUser } from "@/lib/types";
 
 // Context Imports
-import { useSubCallContext } from "@/context/call";
+import { useCallContext, useSubCallContext } from "@/context/call";
 import { useUserContext } from "@/context/user";
 
 // Components
 import { LoadingIcon } from "@/components/loading";
+import { cn } from "@/lib/utils";
 import { ParticipantContextMenu } from "../menus";
 import { CallModal } from "./raw";
 
@@ -28,7 +29,7 @@ export function CallUserModal({
 }: {
   hideBadges?: boolean;
   inGridView?: boolean;
-} = {}) {
+}) {
   const { identity } = useParticipantInfo();
   const participant = useParticipantContext();
   const trackRef = useMaybeTrackRefContext();
@@ -44,12 +45,12 @@ export function CallUserModal({
 
   const userId = identity ? Number(identity) : 0;
   const deafened = identity
-    ? (participantData[identity]?.deafened ?? false)
+    ? participantData[identity]?.deafened ?? false
     : false;
 
   // Get muted state directly from participant's audio track publication
   const audioPublication = participant?.getTrackPublication(
-    Track.Source.Microphone,
+    Track.Source.Microphone
   );
   const muted = audioPublication?.isMuted ?? false;
 
@@ -82,7 +83,6 @@ export function CallUserModal({
       deafened={deafened}
       screenShareTrackRef={screenShareTrackRef}
       hideBadges={hideBadges}
-      inGridView={inGridView}
     />
   ) : (
     <LoadingIcon />
@@ -91,14 +91,19 @@ export function CallUserModal({
 
 export function TileContent({
   hideBadges,
-  inGridView,
-}: { hideBadges?: boolean; inGridView?: boolean } = {}) {
+  containerSize,
+}: {
+  hideBadges?: boolean;
+  containerSize?: { width: number; height: number };
+} = {}) {
   const participant = useParticipantContext();
   const {
     isSpeaking: localIsSpeaking,
     speakingByIdentity,
     isMuted,
   } = useSubCallContext();
+  const { isAtMax, setIsAtMax, currentLayout } = useCallContext();
+  const inGridView = currentLayout === "grid";
 
   const speakingFromMap = participant.identity
     ? speakingByIdentity[participant.identity]
@@ -106,15 +111,33 @@ export function TileContent({
 
   const isSpeaking = participant.isLocal
     ? localIsSpeaking && !isMuted
-    : (speakingFromMap ?? participant.isSpeaking);
+    : speakingFromMap ?? participant.isSpeaking;
+
+  const focusContainerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!containerSize) return;
+
+    const containerWidth = containerSize.width;
+    const focusWidth = focusContainerRef.current?.clientWidth ?? 0;
+    const substact = focusWidth - containerWidth;
+    setIsAtMax(substact >= -8);
+  }, [containerSize, setIsAtMax]);
 
   return (
     <ParticipantContextMenu>
-      <div className="aspect-video relative w-full max-h-full bg-black rounded-xl">
+      <div
+        ref={focusContainerRef}
+        className={cn(
+          "aspect-video relative w-full max-h-full bg-black",
+          isAtMax ? "" : "rounded-xl"
+        )}
+      >
         <div
-          className={`absolute inset-0 rounded-xl transition-all ease-in-out duration-400 pointer-events-none z-30 ${
-            isSpeaking ? "ring-3 ring-primary ring-inset" : ""
-          }`}
+          className={cn(
+            "absolute inset-0 transition-all ease-in-out duration-400 pointer-events-none z-30",
+            isSpeaking ? "ring-3 ring-primary ring-inset" : "",
+            isAtMax ? "rounded-none" : "rounded-xl"
+          )}
         />
 
         <div className="w-full h-full flex items-center justify-center rounded-xl z-10 bg-black">

@@ -7,7 +7,7 @@ import { useMemo } from "react";
 // Lib Imports
 
 // Context Imports
-import { useSubCallContext } from "@/context/call";
+import { useCallContext, useSubCallContext } from "@/context/call";
 
 // Components
 import { LoadingIcon } from "@/components/loading";
@@ -31,7 +31,6 @@ export function CallModal({
   deafened,
   screenShareTrackRef,
   hideBadges: isFocused,
-  inGridView,
 }: Readonly<{
   title: string;
   icon?: string;
@@ -41,9 +40,11 @@ export function CallModal({
   deafened?: boolean;
   screenShareTrackRef?: TrackReference;
   hideBadges?: boolean;
-  inGridView?: boolean;
 }>) {
   const { isWatching, participantData } = useSubCallContext();
+  const { isAtMax, currentLayout } = useCallContext();
+
+  const inGridView = currentLayout === "grid";
 
   const isScreenShare = !!screenShareTrackRef;
   const isLocal = screenShareTrackRef?.participant?.isLocal;

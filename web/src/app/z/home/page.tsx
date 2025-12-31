@@ -68,7 +68,7 @@ export default function Page() {
         .then(async (data) => {
           if (data.type === "error") {
             toast.error(
-              "Failed to add conversation (the user probably does not exist)",
+              "Failed to add conversation (the user probably does not exist)"
             );
           } else {
             send("add_chat", {
@@ -187,7 +187,7 @@ export default function Page() {
       <ContentForTesting />
       <div className="mt-auto">
         {appUpdateInformation && (
-          <Card className="bg-muted/70">
+          <Card className="bg-muted/70 border border-input">
             <CardHeader>
               <CardTitle>Update Available</CardTitle>
               <CardDescription>
@@ -229,22 +229,27 @@ export default function Page() {
                 </Button>
               </CardAction>
             </CardHeader>
-            <CardContent className="flex flex-col gap-1">
-              <Text
-                text={appUpdateInformation.releaseNotes ?? ""}
-                className="text-sm"
-              />
-              <div
-                className={cn(
-                  "overflow-hidden transition-all duration-800 ease-out",
-                  extraInfo ? "max-h-24 opacity-100" : "max-h-0 opacity-80",
-                )}
-              >
-                {extraInfo && (
-                  <p className="text-sm text-destructive mt-1">{extraInfo}</p>
-                )}
-              </div>
-            </CardContent>
+            {appUpdateInformation.releaseNotes &&
+              appUpdateInformation.releaseNotes !== "" && (
+                <CardContent className="flex flex-col gap-1">
+                  <Text
+                    text={appUpdateInformation.releaseNotes ?? ""}
+                    className="text-sm"
+                  />
+                  <div
+                    className={cn(
+                      "overflow-hidden transition-all duration-800 ease-out",
+                      extraInfo ? "max-h-24 opacity-100" : "max-h-0 opacity-80"
+                    )}
+                  >
+                    {extraInfo && (
+                      <p className="text-sm text-destructive mt-1">
+                        {extraInfo}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              )}
           </Card>
         )}
       </div>

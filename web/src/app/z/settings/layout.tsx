@@ -33,7 +33,6 @@ export const Pages = [
   "-Appearance",
   "Theme",
   "CSS",
-  "Layout",
   "-General",
   "Calls",
   "Notifications",
@@ -81,8 +80,9 @@ export default function Page({ children }: { children: React.ReactNode }) {
   const setSelected = useCallback(
     (page: string) => {
       set("lastSettingsMenu", page);
+      setPage(`settings/${page.toLowerCase()}`);
     },
-    [set],
+    [set, setPage]
   );
 
   return (
@@ -160,11 +160,7 @@ export default function Page({ children }: { children: React.ReactNode }) {
         </div>
       </PageDiv>
       <PageDiv className="flex-1 min-w-0 h-full flex flex-col p-3 overflow-hidden">
-        {[...Pages, "Credits"].map((page) =>
-          page === selected ? (
-            <SettingsPageTitle key={page} text={page} />
-          ) : null,
-        )}
+        <SettingsPageTitle key={selected} text={selected} />
         <div className="flex w-full h-full overflow-auto">{children}</div>
       </PageDiv>
     </div>
