@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useStorageContext } from "@/context/storage";
 import { StoredSettings } from "@/lib/types";
+import { Top } from "../page";
 
 // Main
 export default function Page() {
@@ -81,243 +82,247 @@ export default function Page() {
   useEffect(() => loadRemoteSettings, []);
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-4">
-        <p>Save settings on your Iota</p>
-        <div className="flex gap-2">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button disabled={loading || !value || value === ""}>Load</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Are you sure you want to load this profile?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will replace your current settings! Make sure to save
-                  them first if you want to keep them.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => {
-                    toast.promise(
-                      send("settings_load", {
-                        settings_name: value,
-                      }).then((raw) => {
-                        const settingsData =
-                          raw as CommunicationValue.settings_load;
-                        const payload: StoredSettings = JSON.parse(
-                          settingsData.payload,
-                        );
-                        Object.keys(payload).forEach((key) => {
-                          if (
-                            !payload[key] ||
-                            key === "loadPrivateKey" ||
-                            (key === "privateKey" && !data.loadPrivateKey)
-                          )
-                            return;
-                          set(key, payload[key]);
-                        });
-                      }),
-                      {
-                        loading: "Loading settings...",
-                        success: "Settings loaded",
-                        error: "Failed to load settings",
-                      },
-                    );
-                  }}
-                >
-                  {"Load"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <Button
-            disabled={loading || !value || value === ""}
-            onClick={() => {
-              send("settings_save", {
-                settings_name: value,
-                payload: data.loadPrivateKey
-                  ? data
-                  : ({
-                      ...data,
-                      privateKey: "REDACTED",
-                    } as StoredSettings),
-              }).then(() => toast.success("Settings saved"));
-            }}
-          >
-            {"Save"}
-          </Button>
-          {loading ? (
+    <Top text="Iota">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4">
+          <p>Save settings on your Iota</p>
+          <div className="flex gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button disabled={loading || !value || value === ""}>
+                  Load
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Are you sure you want to load this profile?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will replace your current settings! Make sure to save
+                    them first if you want to keep them.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      toast.promise(
+                        send("settings_load", {
+                          settings_name: value,
+                        }).then((raw) => {
+                          const settingsData =
+                            raw as CommunicationValue.settings_load;
+                          const payload: StoredSettings = JSON.parse(
+                            settingsData.payload
+                          );
+                          Object.keys(payload).forEach((key) => {
+                            if (
+                              !payload[key] ||
+                              key === "loadPrivateKey" ||
+                              (key === "privateKey" && !data.loadPrivateKey)
+                            )
+                              return;
+                            set(key, payload[key]);
+                          });
+                        }),
+                        {
+                          loading: "Loading settings...",
+                          success: "Settings loaded",
+                          error: "Failed to load settings",
+                        }
+                      );
+                    }}
+                  >
+                    {"Load"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button
-              disabled
-              variant="outline"
-              role="combobox"
-              aria-expanded={false}
-              className="w-50 justify-between"
-            >
-              {"Loading profiles..."}
-              <Icon.ChevronsUpDown className="opacity-50" />
-            </Button>
-          ) : (
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
-                  className="w-50 justify-between"
-                >
-                  {value || "Select a profile"}
-                  <Icon.ChevronsUpDown className="opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-50 p-0">
-                <Command>
-                  <CommandInput
-                    placeholder={"Search profiles..."}
-                    className="h-9"
-                  />
-                  <CommandList>
-                    <CommandEmpty>{"No profiles found."}</CommandEmpty>
-                    <CommandGroup>
-                      {settings.map((setting) => (
-                        <CommandItem
-                          key={setting}
-                          value={setting}
-                          onSelect={(currentValue) => {
-                            setValue(
-                              currentValue === value ? "" : currentValue,
-                            );
-                            setOpen(false);
-                          }}
-                        >
-                          {setting}
-                          <Icon.Check
-                            className={cn(
-                              "ml-auto",
-                              value === setting ? "opacity-100" : "opacity-0",
-                            )}
-                          />
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-9 h-9"
-                onClick={() => {
-                  setNewProfileOpen(true);
-                }}
-              >
-                <Icon.Plus />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{"Create a new profile"}</p>
-            </TooltipContent>
-          </Tooltip>
-          <Dialog open={newProfileOpen} onOpenChange={setNewProfileOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{"Create profile"}</DialogTitle>
-                <DialogDescription>
-                  {"Name a profile so you can quickly load it later."}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="profileName">{"Profile name"}</Label>
-                  <Input
-                    type="text"
-                    id="profileName"
-                    placeholder={"e.g. Profile 1"}
-                    value={tmpValue}
-                    onChange={(e) => setTmpValue(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="flex w-full justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setTmpValue("");
-                    setNewProfileOpen(false);
-                  }}
-                >
-                  {"Cancel"}
-                </Button>
-                <Button
-                  onClick={() => {
-                    setValue(tmpValue);
-                    setTmpValue("");
-                    setNewProfileOpen(false);
-                  }}
-                >
-                  {"Add profile"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2 items-center">
-            <Checkbox
-              id="loadPrivateKey"
-              checked={(data.loadPrivateKey as boolean) ?? false}
+              disabled={loading || !value || value === ""}
               onClick={() => {
-                if (data.loadPrivateKey as boolean) {
-                  set("loadPrivateKey", false);
-                } else {
-                  setDialogOpen(true);
-                }
+                send("settings_save", {
+                  settings_name: value,
+                  payload: data.loadPrivateKey
+                    ? data
+                    : ({
+                        ...data,
+                        privateKey: "REDACTED",
+                      } as StoredSettings),
+                }).then(() => toast.success("Settings saved"));
               }}
-              //onCheckedChange={(value) => set("loadPrivateKey", value)}
-            />
-            <Label htmlFor="loadPrivateKey">{"Include private key"}</Label>
-          </div>
-          <div className="text-xs flex flex-col gap-1">
-            <p className="text-destructive">{"This is not recommended!"}</p>
-            <p className="text-muted-foreground w-120">
-              {
-                "Including your private key can act as a backup to restore your account and for quickly switching between accounts, but the securiy risks that come with it are significant. Only enable this option if you trust the Iota host."
-              }
-            </p>
-          </div>
-          <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{"Include private key?"}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {
-                    "Anyone with access to this profile can read your private key."
-                  }
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{"Cancel"}</AlertDialogCancel>
-                <AlertDialogAction
+            >
+              {"Save"}
+            </Button>
+            {loading ? (
+              <Button
+                disabled
+                variant="outline"
+                role="combobox"
+                aria-expanded={false}
+                className="w-50 justify-between"
+              >
+                {"Loading profiles..."}
+                <Icon.ChevronsUpDown className="opacity-50" />
+              </Button>
+            ) : (
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-50 justify-between"
+                  >
+                    {value || "Select a profile"}
+                    <Icon.ChevronsUpDown className="opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-50 p-0">
+                  <Command>
+                    <CommandInput
+                      placeholder={"Search profiles..."}
+                      className="h-9"
+                    />
+                    <CommandList>
+                      <CommandEmpty>{"No profiles found."}</CommandEmpty>
+                      <CommandGroup>
+                        {settings.map((setting) => (
+                          <CommandItem
+                            key={setting}
+                            value={setting}
+                            onSelect={(currentValue) => {
+                              setValue(
+                                currentValue === value ? "" : currentValue
+                              );
+                              setOpen(false);
+                            }}
+                          >
+                            {setting}
+                            <Icon.Check
+                              className={cn(
+                                "ml-auto",
+                                value === setting ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-9 h-9"
                   onClick={() => {
-                    set("loadPrivateKey", true);
-                    setDialogOpen(false);
+                    setNewProfileOpen(true);
                   }}
                 >
-                  {"Continue"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                  <Icon.Plus />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{"Create a new profile"}</p>
+              </TooltipContent>
+            </Tooltip>
+            <Dialog open={newProfileOpen} onOpenChange={setNewProfileOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{"Create profile"}</DialogTitle>
+                  <DialogDescription>
+                    {"Name a profile so you can quickly load it later."}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="profileName">{"Profile name"}</Label>
+                    <Input
+                      type="text"
+                      id="profileName"
+                      placeholder={"e.g. Profile 1"}
+                      value={tmpValue}
+                      onChange={(e) => setTmpValue(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex w-full justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setTmpValue("");
+                      setNewProfileOpen(false);
+                    }}
+                  >
+                    {"Cancel"}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setValue(tmpValue);
+                      setTmpValue("");
+                      setNewProfileOpen(false);
+                    }}
+                  >
+                    {"Add profile"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2 items-center">
+              <Checkbox
+                id="loadPrivateKey"
+                checked={(data.loadPrivateKey as boolean) ?? false}
+                onClick={() => {
+                  if (data.loadPrivateKey as boolean) {
+                    set("loadPrivateKey", false);
+                  } else {
+                    setDialogOpen(true);
+                  }
+                }}
+                //onCheckedChange={(value) => set("loadPrivateKey", value)}
+              />
+              <Label htmlFor="loadPrivateKey">{"Include private key"}</Label>
+            </div>
+            <div className="text-xs flex flex-col gap-1">
+              <p className="text-destructive">{"This is not recommended!"}</p>
+              <p className="text-muted-foreground w-120">
+                {
+                  "Including your private key can act as a backup to restore your account and for quickly switching between accounts, but the securiy risks that come with it are significant. Only enable this option if you trust the Iota host."
+                }
+              </p>
+            </div>
+            <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{"Include private key?"}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {
+                      "Anyone with access to this profile can read your private key."
+                    }
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{"Cancel"}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      set("loadPrivateKey", true);
+                      setDialogOpen(false);
+                    }}
+                  >
+                    {"Continue"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
-    </div>
+    </Top>
   );
 }

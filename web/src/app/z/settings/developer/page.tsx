@@ -30,6 +30,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { Top } from "../page";
 
 function FitJson({
   sensitive,
@@ -120,7 +121,7 @@ export default function Page() {
 
   const entries = useMemo(
     () => Object.entries(data || {}).map(([key, value]) => ({ key, value })),
-    [data],
+    [data]
   );
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>("");
@@ -225,7 +226,7 @@ export default function Page() {
   }, [data, newKey, newValue, set]);
 
   return (
-    <>
+    <Top text="Developer Settings">
       <div className="flex flex-col w-full min-w-0 gap-2">
         <div className="flex gap-2 flex-row items-center justify-between">
           <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
@@ -243,7 +244,7 @@ export default function Page() {
         <div>
           {filteredEntries.length ? (
             <div className="w-full max-w-full overflow-x-auto rounded-lg border">
-              <table className="w-full min-w-[640px] table-auto bg-card text-xs">
+              <table className="w-full min-w-160 table-auto bg-card text-xs">
                 <thead className="bg-muted">
                   <tr className="border-b border-border">
                     <th className="px-2 py-1.5 text-left font-medium align-middle">
@@ -425,6 +426,6 @@ export default function Page() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </Top>
   );
 }

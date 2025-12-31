@@ -74,9 +74,13 @@ function SettingsButton({
 export default function Page({ children }: { children: React.ReactNode }) {
   const { ownPing, iotaPing } = useSocketContext();
   const { data, set, clearAll } = useStorageContext();
-  const { setPage } = usePageContext();
+  const { setPage, page } = usePageContext();
 
-  const selected = data.lastSettingsMenu as string;
+  const selected =
+    page.replace("settings/", "") ===
+    (data.lastSettingsMenu as string).toLowerCase()
+      ? (data.lastSettingsMenu as string)
+      : undefined;
   const setSelected = useCallback(
     (page: string) => {
       set("lastSettingsMenu", page);
@@ -160,8 +164,7 @@ export default function Page({ children }: { children: React.ReactNode }) {
         </div>
       </PageDiv>
       <PageDiv className="flex-1 min-w-0 h-full flex flex-col p-3 overflow-hidden">
-        <SettingsPageTitle key={selected} text={selected} />
-        <div className="flex w-full h-full overflow-auto">{children}</div>
+        {children}
       </PageDiv>
     </div>
   );

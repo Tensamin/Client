@@ -1,3 +1,5 @@
+import { Top } from "../page";
+
 export default function Page() {
-  return <div>Privacy Settings</div>;
+  return <Top text="Privacy Settings">Privacy Settings</Top>;
 }
