@@ -58,7 +58,7 @@ export function SocketProvider({
   const pendingRequests = useRef(new Map());
 
   const { bypass } = useStorageContext();
-  const { setPage } = usePageContext();
+  const { setError } = usePageContext();
   const { privateKeyHash, ownId } = useCryptoContext();
 
   const [isReady, setIsReady] = useState(false);
@@ -148,8 +148,7 @@ export function SocketProvider({
     reconnectAttempts: RetryCount,
     reconnectInterval: 3000,
     onReconnectStop: () => {
-      setPage(
-        "error",
+      setError(
         "Could not connect to Omikron",
         "Either your internet connection or the Omikron is down. Check our status page and try again later.",
       );
@@ -281,22 +280,19 @@ export function SocketProvider({
           const data = raw as CommunicationValue.Error | Error;
           switch (data instanceof Error ? "error" : data.type) {
             case "error_invalid_private_key":
-              setPage(
-                "error",
+              setError(
                 "Invalid Private Key",
                 "Your private key is invalid. Try logging in again. \n If the issue persists, you may need to regenerate your private key.",
               );
               return;
             case "error_no_iota":
-              setPage(
-                "error",
+              setError(
                 "Iota Offline",
                 "Your Iota appears to be offline. Check your Iota's internet connection or restart it.",
               );
               return;
             default:
-              setPage(
-                "error",
+              setError(
                 "Identification Failed",
                 "This could be a broken Omikron or an unkown error.",
               );
@@ -304,7 +300,7 @@ export function SocketProvider({
           }
         });
     }
-  }, [connected, privateKeyHash, setPage, identified, ownId, send]);
+  }, [connected, privateKeyHash, setError, identified, ownId, send]);
 
   useEffect(() => {
     if (!isReady) return;

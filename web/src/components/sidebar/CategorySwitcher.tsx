@@ -23,7 +23,7 @@ export default function CategorySwitcher({
               }`}
               onClick={() =>
                 startTransition(() =>
-                  setCategory(cat as "COMMUNITIES" | "CONVERSATIONS")
+                  setCategory(cat as "COMMUNITIES" | "CONVERSATIONS"),
                 )
               }
               aria-pressed={category === cat}

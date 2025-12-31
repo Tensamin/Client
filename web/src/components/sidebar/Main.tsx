@@ -1,3 +1,5 @@
+"use client";
+
 import Wrap from "@/components/Wrap";
 import Content from "./Content";
 
@@ -10,7 +12,7 @@ import CategorySwitcher from "./CategorySwitcher";
 export default function Main() {
   const { ownId } = useUserContext();
   const [category, setCategory] = useState<"CONVERSATIONS" | "COMMUNITIES">(
-    "CONVERSATIONS"
+    "CONVERSATIONS",
   );
 
   return (

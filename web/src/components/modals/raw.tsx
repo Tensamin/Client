@@ -157,7 +157,6 @@ export function Profile({
   title,
   description,
   status,
-  username,
   state,
   icon,
   badges,
@@ -167,7 +166,6 @@ export function Profile({
   title: string;
   description: string;
   status?: string;
-  username?: string;
   state: string;
   icon?: string;
   badges?: string[];
