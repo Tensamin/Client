@@ -23,7 +23,7 @@
           version = "0.1.31"; # nix-update will manage this
 
           src = pkgs.fetchurl {
-            url = "https://github.com/Tensamin/Frontend/releases/download/v${version}/tensamin_${version}_amd64.deb";
+            url = "https://github.com/Tensamin/Client/releases/download/v${version}/tensamin_${version}_amd64.deb";
             hash = "sha256-RHsNn+dlXDdryzjdHLvJlK9DXODIEP9JPQROVGI1gQU="; # nix-update will manage this
           };
 
@@ -102,7 +102,7 @@
 
           meta = with pkgs.lib; {
             description = "Privacy-focused chat app";
-            homepage = "https://github.com/Tensamin/Frontend";
+            homepage = "https://tensamin.net/";
             license = licenses.unfree;
             platforms = ["x86_64-linux"];
             mainProgram = pname;
