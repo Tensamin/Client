@@ -1,40 +1,17 @@
 "use client";
 
 // Package Imports
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
-import * as Icon from "lucide-react";
-
-// Context Imports
-import { useStorageContext } from "@/context/storage";
-import { SocketProvider } from "@/context/socket";
-import { UserProvider } from "@/context/user";
-import { MessageProvider } from "@/context/message";
-import { CryptoProvider } from "@/context/crypto";
-import { CallProvider } from "@/context/call";
-
-// Pages
-import LoginPage from "@/page/login";
-import SignupPage from "@/page/signup";
-
-// Components
-import { Toaster } from "@/components/ui/sonner";
-import { Loading } from "@/components/loading";
+import { useRouter } from "next/navigation";
+import { createContext, useContext, useEffect, useState } from "react";
 
 // Main
 type PageContextType = {
+  errorMessage: string;
+  errorDescription: string;
   page: string;
   pageData: string;
-  extraPageData: string;
-  pageInstance: number;
-  setPage: (page: string, data?: string, extraData?: string) => void;
+  setPage: (page: string, data?: string) => void;
+  setError: (message: string, description: string) => void;
 };
 
 const PageContext = createContext<PageContextType | null>(null);
@@ -48,110 +25,47 @@ export function usePageContext() {
 export function PageProvider({ children }: { children: React.ReactNode }) {
   const [page, setPageRaw] = useState("home");
   const [pageData, setPageData] = useState("");
-  const [extraPageData, setExtraPageData] = useState("");
-  const [pageInstance, setPageInstance] = useState(0);
-  const lastPageKeyRef = useRef<string>("home:");
-  const [, startTransition] = useTransition();
+  const [errorMessage, setErrorMessage] = useState("");
+  const [errorDescription, setErrorDescription] = useState("");
 
-  const { bypass } = useStorageContext();
-
-  const setPage = useCallback(
-    (nextPage: string, data: string = "", extraData: string = "") => {
-      if (bypass && nextPage === "error") return;
-
-      const isSameDestination =
-        nextPage === page && data === pageData && extraData === extraPageData;
-
-      if (isSameDestination) return;
-
-      const nextKey = `${nextPage}:${data}`;
-      const shouldIncrementInstance = nextKey !== lastPageKeyRef.current;
-
-      startTransition(() => {
-        setPageRaw(nextPage);
-        setPageData(data);
-        setExtraPageData(extraData);
-        if (shouldIncrementInstance) {
-          lastPageKeyRef.current = nextKey;
-          setPageInstance((prev) => prev + 1);
-        }
-      });
-    },
-    [bypass, page, pageData, extraPageData],
-  );
+  const router = useRouter();
 
   useEffect(() => {
-    if (bypass && page === "error") {
-      // es-lint-disable-next-line
-      setPageRaw("home");
-      setPageData("");
-      setExtraPageData("");
-      lastPageKeyRef.current = "home:";
-      setPageInstance((prev) => prev + 1);
-    }
-  }, [bypass, page]);
+    let base = "z";
 
-  const contextValues = {
-    page,
-    pageData,
-    extraPageData,
-    pageInstance,
-    setPage,
+    if (page === "error" || page === "login" || page === "signup") {
+      base = "y";
+    }
+
+    router.push(`/${base}/${page}`);
+  }, [page, pageData, router]);
+
+  const setPage = (page: string, data?: string) => {
+    setPageRaw(page);
+    setPageData(data ?? "");
+    setErrorMessage("");
+    setErrorDescription("");
   };
 
-  if (page === "error" && !bypass)
-    return (
-      <Loading
-        message={pageData || "ERROR"}
-        extra={extraPageData || ""}
-        isError
-        progress={100}
-      />
-    );
-
-  if (page === "login" || page === "signup")
-    return (
-      <PageContext.Provider value={contextValues}>
-        <CryptoProvider>
-          <Toaster
-            position="top-right"
-            expand
-            icons={{
-              success: <Icon.Check size={19} />,
-              error: <Icon.X size={19} />,
-              warning: <Icon.AlertTriangle size={19} />,
-              info: <Icon.Book size={19} />,
-              loading: <Icon.Loader size={19} className="animate-spin" />,
-            }}
-          />
-          {page === "login" && <LoginPage key={`login-${pageInstance}`} />}
-          {page === "signup" && <SignupPage key={`signup-${pageInstance}`} />}
-        </CryptoProvider>
-      </PageContext.Provider>
-    );
+  const setError = (message: string, description: string) => {
+    setPageRaw("error");
+    setPageData("");
+    setErrorMessage(message);
+    setErrorDescription(description);
+  };
 
   return (
-    <PageContext.Provider value={contextValues}>
-      <Toaster
-        position="top-right"
-        expand
-        icons={{
-          success: <Icon.Check size={19} />,
-          error: <Icon.X size={19} />,
-          warning: <Icon.AlertTriangle size={19} />,
-          info: <Icon.Book size={19} />,
-          loading: <Icon.Loader size={19} className="animate-spin" />,
-        }}
-      />
-      <CryptoProvider>
-        <SocketProvider>
-          <UserProvider>
-            <CallProvider>
-              <MessageProvider>{children}</MessageProvider>
-            </CallProvider>
-          </UserProvider>
-        </SocketProvider>
-      </CryptoProvider>
+    <PageContext.Provider
+      value={{
+        errorMessage,
+        errorDescription,
+        page,
+        pageData,
+        setPage,
+        setError,
+      }}
+    >
+      {children}
     </PageContext.Provider>
   );
 }

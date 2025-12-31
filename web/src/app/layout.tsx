@@ -1,4 +1,5 @@
 // Package Imports
+import * as Icon from "lucide-react";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
@@ -16,11 +17,13 @@ import "./globals.css";
 import "./colors.css";
 
 // Context Imports
-import { PageProvider } from "@/context/page";
 import { StorageProvider } from "@/context/storage";
 
 // Components
 import { Loading } from "@/components/loading";
+import { Toaster } from "@/components/ui/sonner";
+import { CryptoProvider } from "@/context/crypto";
+import { PageProvider } from "@/context/page";
 
 // Main
 export const metadata: Metadata = {
@@ -52,9 +55,24 @@ export default function RootLayout({
         >
           <StorageProvider>
             <PageProvider>
-              <Suspense fallback={<Loading progress={10} />}>
-                {children}
-              </Suspense>
+              <CryptoProvider>
+                <Suspense fallback={<Loading progress={0} />}>
+                  <Toaster
+                    position="top-right"
+                    expand
+                    icons={{
+                      success: <Icon.Check size={19} />,
+                      error: <Icon.X size={19} />,
+                      warning: <Icon.AlertTriangle size={19} />,
+                      info: <Icon.Book size={19} />,
+                      loading: (
+                        <Icon.Loader size={19} className="animate-spin" />
+                      ),
+                    }}
+                  />
+                  {children}
+                </Suspense>
+              </CryptoProvider>
             </PageProvider>
           </StorageProvider>
         </ThemeProvider>

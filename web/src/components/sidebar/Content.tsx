@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, ViewTransition } from "react";
 
 import { useCallContext } from "@/context/call";
 
+import { VoiceActions } from "@/components/call/components/voice-actions";
 import { Communities, Conversations } from "@/components/modals/category";
-import { VoiceActions } from "@/special/call/components/voice-actions";
 
 export default function Content({
   category,
@@ -46,7 +46,7 @@ export default function Content({
     ro.observe(el);
     if (voiceEl) ro.observe(voiceEl);
     const mo = new MutationObserver(() =>
-      requestAnimationFrame(() => requestAnimationFrame(updateOverflow))
+      requestAnimationFrame(() => requestAnimationFrame(updateOverflow)),
     );
     mo.observe(el, { childList: true, subtree: true, characterData: true });
     const onWindowResize = () => updateOverflow();

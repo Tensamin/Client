@@ -1,8 +1,9 @@
+"use client";
+
 // Package Imports
 import { AnimatePresence } from "framer-motion";
 import * as Icon from "lucide-react";
 import {
-  memo,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -17,6 +18,7 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import { MotionDivWrapper } from "@/components/animation/presence";
+import { CallButtonWrapper } from "@/components/call/components/call-button";
 import { Button } from "@/components/ui/button";
 import {
   HoverCard,
@@ -24,10 +26,9 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { WindowControls } from "@/components/windowControls";
-import { CallButtonWrapper } from "@/special/call/components/call-button";
 
 // Main
-export const Navbar = memo(function Navbar() {
+export default function Navbar() {
   const { setPage, page } = usePageContext();
   const { failedMessagesAmount, currentReceiverId, get } = useUserContext();
   const [receiverUsername, setReceiverUsername] = useState("");
@@ -168,4 +169,4 @@ export const Navbar = memo(function Navbar() {
       </div>
     </div>
   );
-});
+}
