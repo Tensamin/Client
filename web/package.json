@@ -2,7 +2,7 @@
   "name": "tensamin",
   "productName": "Tensamin",
   "description": "True E2EE, decentralized messages. Open source and privacy first.",
-  "version": "0.1.28",
+  "version": "0.1.29",
   "scripts": {
     "lint": "eslint",
     "dev": "next dev",
