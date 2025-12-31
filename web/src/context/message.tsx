@@ -27,6 +27,7 @@ import { useUserContext } from "@/context/user";
 import { Text } from "@/components/markdown/text";
 import Avatar from "@/components/modals/Avatar";
 import { DataContainer } from "@/lib/communicationValues";
+import { playSound } from "@/lib/sound";
 import { Message, MessageGroup, Messages } from "@/lib/types";
 
 const GROUP_WINDOW_MS = 60 * 1000;
@@ -233,24 +234,6 @@ export function useNewUserNotification() {
 
           if (!decrypted.success) return;
 
-          const playSound = async () => {
-            try {
-              const audioContext = new (window.AudioContext ||
-                // @ts-expect-error idk
-                window.webkitAudioContext)();
-              const response = await fetch("/assets/sounds/message.wav");
-              const arrayBuffer = await response.arrayBuffer();
-              const audioBuffer =
-                await audioContext.decodeAudioData(arrayBuffer);
-              const source = audioContext.createBufferSource();
-              source.buffer = audioBuffer;
-              source.connect(audioContext.destination);
-              source.start(0);
-            } catch (err: unknown) {
-              toast.error(String(err));
-            }
-          };
-
           const showFallback = () => {
             toast(otherUser.display, {
               duration: 5000,
@@ -267,7 +250,7 @@ export function useNewUserNotification() {
               ),
             });
 
-            playSound();
+            playSound("message");
           };
 
           if (!data.enableNotifications) {
@@ -282,7 +265,7 @@ export function useNewUserNotification() {
               silent: true,
             });
 
-            playSound();
+            playSound("message");
 
             notification.onclick = () => {
               window.focus();
