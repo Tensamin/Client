@@ -61,7 +61,7 @@ export function CallFocus() {
       hideParticipants
         ? Math.max(0, containerSize.height - 70)
         : Math.max(0, containerSize.height - 230),
-      16, // gap-4
+      16 // gap-4
     );
   }, [containerSize, hideParticipants]);
 
@@ -80,7 +80,7 @@ export function CallFocus() {
             height: layout.height,
           }}
         >
-          <TileContent hideBadges />
+          <TileContent containerSize={containerSize} hideBadges />
         </FocusLayout>
         {!hideParticipants && (
           <div className="w-full max-w-5xl">
