@@ -286,7 +286,7 @@ export function Box() {
         <img
           //width={220}
           //height={220}
-          src="/assets/images/megamind.png"
+          src="/assets/images/logo.png"
           alt={"Unknown Error"}
           className="w-55 h-55"
         />
