@@ -86,7 +86,7 @@ export default function Page({ children }: { children: React.ReactNode }) {
       set("lastSettingsMenu", page);
       setPage(`settings/${page.toLowerCase()}`);
     },
-    [set, setPage]
+    [set, setPage],
   );
 
   return (

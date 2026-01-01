@@ -12,6 +12,7 @@ import { rawDebugLog, useStorageContext } from "@/context/storage";
 // Components
 import { LoadingIcon } from "@/components/loading";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,6 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from "@/components/ui/menubar";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserContext } from "@/context/user";
 import { defaults } from "@/lib/defaults";
@@ -250,6 +250,75 @@ export function ScreenShareButton({
   const [loading, setLoading] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  // Get current screen share settings with defaults
+  const dataWithDefaults = {
+    call_screenShare_width:
+      (data.call_screenShare_width as number) ??
+      defaults.call_screenShare_width,
+    call_screenShare_height:
+      (data.call_screenShare_height as number) ??
+      defaults.call_screenShare_height,
+    call_screenShare_frameRate:
+      (data.call_screenShare_frameRate as number) ??
+      defaults.call_screenShare_frameRate,
+    call_screenShare_audio:
+      (data.call_screenShare_audio as boolean) ??
+      defaults.call_screenShare_audio,
+  };
+
+  // Apply constraints dynamically when settings change during active screen share
+  useEffect(() => {
+    if (!isScreenShareEnabled || !localParticipant) return;
+
+    const applyNewConstraints = async () => {
+      try {
+        const screenShareTrack = localParticipant.getTrackPublication(
+          Track.Source.ScreenShare,
+        );
+
+        if (!screenShareTrack?.track) return;
+
+        const videoTrack = screenShareTrack.track as LocalVideoTrack;
+        const mediaStreamTrack = videoTrack.mediaStreamTrack;
+
+        if (!mediaStreamTrack || mediaStreamTrack.kind !== "video") return;
+
+        // Apply new constraints to the existing track
+        await mediaStreamTrack.applyConstraints({
+          width: { ideal: dataWithDefaults.call_screenShare_width },
+          height: { ideal: dataWithDefaults.call_screenShare_height },
+          frameRate: { ideal: dataWithDefaults.call_screenShare_frameRate },
+        });
+
+        rawDebugLog(
+          "ScreenShare",
+          "Applied new constraints",
+          {
+            width: dataWithDefaults.call_screenShare_width,
+            height: dataWithDefaults.call_screenShare_height,
+            frameRate: dataWithDefaults.call_screenShare_frameRate,
+          },
+          "green",
+        );
+      } catch (err) {
+        rawDebugLog(
+          "ScreenShare",
+          "Failed to apply constraints",
+          { err },
+          "red",
+        );
+      }
+    };
+
+    applyNewConstraints();
+  }, [
+    isScreenShareEnabled,
+    localParticipant,
+    dataWithDefaults.call_screenShare_width,
+    dataWithDefaults.call_screenShare_height,
+    dataWithDefaults.call_screenShare_frameRate,
+  ]);
+
   const toggleScreenShare = async () => {
     try {
       if (localParticipant) {
@@ -285,14 +354,16 @@ export function ScreenShareButton({
     setPickerOpen(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
+        audio: dataWithDefaults.call_screenShare_audio,
         video: {
-          mandatory: {
-            chromeMediaSource: "desktop",
-            chromeMediaSourceId: id,
-            maxFrameRate: 60,
+          width: dataWithDefaults.call_screenShare_width,
+          height: dataWithDefaults.call_screenShare_height,
+          frameRate: dataWithDefaults.call_screenShare_frameRate,
+          deviceId: id,
+          aspectRatio: {
+            ideal: 16 / 9,
           },
-        } as unknown as MediaTrackConstraints,
+        },
       });
 
       const track = stream.getVideoTracks()[0];
@@ -303,7 +374,7 @@ export function ScreenShareButton({
         simulcast: false,
         videoEncoding: {
           ...VideoPresets.h1440.encoding,
-          maxFramerate: 60,
+          maxFramerate: dataWithDefaults.call_screenShare_frameRate,
         },
       });
     } catch (err) {
@@ -313,18 +384,12 @@ export function ScreenShareButton({
   };
 
   const toggleShareAudio = () => {
-    set(
-      "data.call_screenShare_audio",
-      !(
-        (data.call_screenShare_audio as boolean) ??
-        defaults.call_screenShare_audio
-      ),
-    );
+    const current =
+      (data.call_screenShare_audio as boolean) ??
+      defaults.call_screenShare_audio;
+    set("call_screenShare_audio", !current);
   };
 
-  // call_screenShare_width
-  // call_screenShare_height
-  // call_screenShare_frameRate
   const qualityPresets = [
     // 480p
     {
@@ -434,12 +499,12 @@ export function ScreenShareButton({
               )}
             </MenubarItem>
             <MenubarItem onSelect={toggleShareAudio} className="flex gap-2">
-              <Switch
-                className="scale-75 -mx-1.5 w-7"
+              <Checkbox
                 checked={
                   (data.call_screenShare_audio as boolean) ??
                   defaults.call_screenShare_audio
                 }
+                onCheckedChange={toggleShareAudio}
               />
               Share Audio
             </MenubarItem>
@@ -449,7 +514,7 @@ export function ScreenShareButton({
               </MenubarSubTrigger>
               <MenubarSubContent>
                 <MenubarRadioGroup
-                  value={`${data.call_screenShare_width}${data.call_screenShare_height}${data.call_screenShare_frameRate}`}
+                  value={`${dataWithDefaults.call_screenShare_width}${dataWithDefaults.call_screenShare_height}${dataWithDefaults.call_screenShare_frameRate}`}
                 >
                   {qualityPresets.map((preset) => {
                     const isPremium = preset.premium;

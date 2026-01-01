@@ -1,6 +1,7 @@
 // Package Imports
 import { useParticipantContext } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import * as Icon from "lucide-react";
 
 // Context Imports
 import { useSubCallContext } from "@/context/call";
@@ -48,32 +49,34 @@ export default function ParticipantContextMenu({
         <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuGroup>
-            <ContextMenuItem
-              disabled={!hasScreenShare || isWatchingUser}
-              onSelect={() => startWatching(user)}
-            >
-              Start Watching
-            </ContextMenuItem>
-            <ContextMenuItem
-              variant="destructive"
-              disabled={!isWatchingUser}
-              onSelect={() => stopWatching(user)}
-            >
-              Stop Watching
-            </ContextMenuItem>
+            {hasScreenShare && isWatchingUser && user !== ownId ? (
+              <ContextMenuItem
+                variant="destructive"
+                onSelect={() => stopWatching(user)}
+              >
+                <Icon.CircleStop /> Stop Watching
+              </ContextMenuItem>
+            ) : (
+              <ContextMenuItem
+                disabled={!hasScreenShare || user === ownId}
+                onSelect={() => startWatching(user)}
+              >
+                <Icon.CirclePlay /> Start Watching
+              </ContextMenuItem>
+            )}
             <ContextMenuItem
               variant="destructive"
               disabled={!ownIsAdmin || user === ownId}
               onSelect={() => disconnectUser(user)}
             >
-              Disconnect User
+              <Icon.Gavel /> Disconnect User
             </ContextMenuItem>
             <ContextMenuItem
               variant="destructive"
               disabled={!ownIsAdmin || user === ownId}
               onSelect={() => setTimeoutMenuOpen(true)}
             >
-              Timeout User
+              <Icon.Timer /> Timeout User
             </ContextMenuItem>
           </ContextMenuGroup>
         </ContextMenuContent>
@@ -89,7 +92,7 @@ export default function ParticipantContextMenu({
               onClick={() => {
                 timeoutUser(
                   user,
-                  new Date(Date.now() + 1 * 60 * 1000).getTime()
+                  new Date(Date.now() + 1 * 60 * 1000).getTime(),
                 );
                 setTimeoutMenuOpen(false);
               }}
@@ -101,7 +104,7 @@ export default function ParticipantContextMenu({
               onClick={() => {
                 timeoutUser(
                   user,
-                  new Date(Date.now() + 5 * 60 * 1000).getTime()
+                  new Date(Date.now() + 5 * 60 * 1000).getTime(),
                 );
                 setTimeoutMenuOpen(false);
               }}
@@ -113,7 +116,7 @@ export default function ParticipantContextMenu({
               onClick={() => {
                 timeoutUser(
                   user,
-                  new Date(Date.now() + 60 * 60 * 1000).getTime()
+                  new Date(Date.now() + 60 * 60 * 1000).getTime(),
                 );
                 setTimeoutMenuOpen(false);
               }}
@@ -125,7 +128,7 @@ export default function ParticipantContextMenu({
               onClick={() => {
                 timeoutUser(
                   user,
-                  new Date(Date.now() + 24 * 60 * 60 * 1000).getTime()
+                  new Date(Date.now() + 24 * 60 * 60 * 1000).getTime(),
                 );
                 setTimeoutMenuOpen(false);
               }}
