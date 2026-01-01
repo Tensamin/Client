@@ -38,11 +38,11 @@ export function CallUserModal({ hideBadges }: { hideBadges?: boolean }) {
       : undefined;
 
   const userId = user ? user : 0;
-  const deafened = user ? participantData[user]?.deafened ?? false : false;
+  const deafened = user ? (participantData[user]?.deafened ?? false) : false;
 
-  // Get muted state directly from participant's audio track publication
+  // Get muted state
   const audioPublication = participant?.getTrackPublication(
-    Track.Source.Microphone
+    Track.Source.Microphone,
   );
   const muted = audioPublication?.isMuted ?? false;
 
@@ -94,7 +94,7 @@ export function TileContent({
     speakingByIdentity,
     isMuted,
   } = useSubCallContext();
-  const { setIsAtMax } = useCallContext();
+  const { setIsAtMax, isAtMax } = useCallContext();
 
   const speakingFromMap = participant.identity
     ? speakingByIdentity[Number(participant.identity)]
@@ -102,16 +102,39 @@ export function TileContent({
 
   const isSpeaking = participant.isLocal
     ? localIsSpeaking && !isMuted
-    : speakingFromMap ?? participant.isSpeaking;
+    : (speakingFromMap ?? participant.isSpeaking);
 
   const focusContainerRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!containerSize) return;
 
-    const containerWidth = containerSize.width;
-    const focusWidth = focusContainerRef.current?.clientWidth ?? 0;
-    const substact = focusWidth - containerWidth;
-    setIsAtMax(substact >= -8);
+  // Detects if the focused element is at the container edges
+  useEffect(() => {
+    const element = focusContainerRef.current;
+    if (!element) return;
+
+    const checkMaxState = () => {
+      if (!containerSize) {
+        setIsAtMax(false);
+        return;
+      }
+
+      const containerWidth = containerSize.width;
+      const focusWidth = element.clientWidth;
+      const subtract = focusWidth - containerWidth;
+      setIsAtMax(subtract >= -8);
+    };
+
+    // Initial check
+    checkMaxState();
+
+    const resizeObserver = new ResizeObserver(() => {
+      checkMaxState();
+    });
+
+    resizeObserver.observe(element);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, [containerSize, setIsAtMax]);
 
   return (
@@ -123,7 +146,8 @@ export function TileContent({
         {/* Speaking indicator */}
         <div
           className={cn(
-            "absolute inset-0 transition-all ease-in-out duration-400 pointer-events-none z-30 rounded-xl",
+            "absolute inset-0 transition-all ease-in-out duration-400 pointer-events-none z-30",
+            isAtMax && hideBadges ? "" : "rounded-xl",
             isSpeaking ? "ring-3 ring-primary ring-inset" : "",
           )}
         />

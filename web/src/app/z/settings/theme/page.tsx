@@ -46,7 +46,7 @@ export default function Page() {
   const { data, set } = useStorageContext();
   const { setTheme, resolvedTheme } = useTheme();
   const [tempColor, setTempColor] = useState(
-    (data.themeHex as string) || "#000000"
+    (data.themeHex as string) || "#000000",
   );
 
   useEffect(() => {
@@ -59,15 +59,15 @@ export default function Page() {
         ? "dark"
         : "light"
       : (data.colorScheme as string) === "dark"
-      ? "dark"
-      : "light";
+        ? "dark"
+        : "light";
 
   const colors = useMemo(() => {
     try {
       return generateColors(
         tempColor || "#000000",
         (data.tintType as "hard" | "light") || "hard",
-        previewScheme as "light" | "dark"
+        previewScheme as "light" | "dark",
       );
     } catch {
       return null;
@@ -233,7 +233,7 @@ export default function Page() {
             style={
               colors
                 ? (Object.fromEntries(
-                    Object.entries(colors).map(([k, v]) => [k, v])
+                    Object.entries(colors).map(([k, v]) => [k, v]),
                   ) as React.CSSProperties)
                 : undefined
             }

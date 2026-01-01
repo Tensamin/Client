@@ -51,7 +51,7 @@ export function CallModal({
     isWatching[Number(screenShareTrackRef?.participant?.identity)] ?? false;
 
   const participantIdentity = Number(
-    screenShareTrackRef?.participant?.identity
+    screenShareTrackRef?.participant?.identity,
   );
   const previewImage = useMemo(() => {
     if (!participantIdentity) return null;
@@ -68,15 +68,15 @@ export function CallModal({
               src={previewImage}
               alt="Stream Preview"
               className={cn(
-                "select-none bg-black absolute inset-0 w-full h-full object-contain opacity-30 z-0",
-                isAtMax && isFocused ? "" : "rounded-xl"
+                "blur-xs select-none bg-black absolute inset-0 w-full h-full object-contain opacity-30 z-0",
+                isAtMax && isFocused ? "" : "rounded-xl",
               )}
             />
           )}
           <div
             className={cn(
               "select-none backdrop-blur-md font-semibold absolute inset-0 z-0 flex flex-col gap-3 items-center justify-center text-center px-5",
-              isAtMax && isFocused ? "" : "rounded-xl"
+              isAtMax && isFocused ? "" : "rounded-xl",
             )}
           >
             Your screen is being shared. There is a preview at the bottom of the
@@ -94,7 +94,7 @@ export function CallModal({
             trackRef={screenShareTrackRef!}
             className={cn(
               "bg-black h-full w-full object-contain select-none",
-              isAtMax && isFocused ? "" : "rounded-xl"
+              isAtMax && isFocused ? "" : "rounded-xl",
             )}
           />
         </div>
@@ -109,8 +109,8 @@ export function CallModal({
             src={previewImage}
             alt="Stream Preview"
             className={cn(
-              "select-none bg-black absolute inset-0 w-full h-full object-contain opacity-30 z-0",
-              isAtMax && isFocused ? "" : "rounded-xl"
+              "blur-xs select-none bg-black absolute inset-0 w-full h-full object-contain opacity-30 z-0",
+              isAtMax && isFocused ? "" : "rounded-xl",
             )}
           />
           <Button className="z-10">
@@ -123,8 +123,8 @@ export function CallModal({
           src={previewImage}
           alt="Stream Preview"
           className={cn(
-            "select-none bg-black absolute inset-0 w-full h-full object-contain z-0",
-            isAtMax && isFocused ? "" : "rounded-xl"
+            "blur-xs select-none bg-black absolute inset-0 w-full h-full object-contain z-0",
+            isAtMax && isFocused ? "" : "rounded-xl",
           )}
         />
       );
@@ -159,7 +159,7 @@ export function CallModal({
     <Card
       className={cn(
         "relative w-full h-full bg-card/75",
-        isFocused ? "rounded-none" : "rounded-xl"
+        isFocused ? "rounded-none border-x-0" : "rounded-xl",
       )}
     >
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
@@ -177,7 +177,7 @@ export function CallModal({
     <Card
       className={cn(
         "relative w-full h-full bg-card/75",
-        isFocused ? "rounded-none border-x-0" : "rounded-xl"
+        isAtMax && isFocused ? "rounded-none border-x-0" : "rounded-xl",
       )}
     >
       <CardContent className="w-full h-full flex flex-col items-center justify-center">

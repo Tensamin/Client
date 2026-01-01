@@ -115,7 +115,7 @@ export function VoiceActions() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isScreenShare = isScreenShareEnabled || !!trackRef;
 
-  // Annymous Joining
+  // Anonymous Joining
   const [loading, setLoading] = useState(false);
   const { send } = useSocketContext();
   const { ownMetadata, callMetadata } = useSubCallContext();
@@ -326,7 +326,7 @@ export function VoiceActions() {
           className="flex justify-center flex-1"
           onClick={() => setPage("call")}
         >
-          <Icon.Expand /> {"Expand"}
+          <Icon.Expand /> Expand
         </Button>
         <Button
           variant="destructive"

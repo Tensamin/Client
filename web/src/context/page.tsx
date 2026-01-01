@@ -63,7 +63,7 @@ export function PageProvider({ children }: { children: React.ReactNode }) {
       setErrorMessage("");
       setErrorDescription("");
     },
-    [router]
+    [router],
   );
 
   const setError = (message: string, description: string) => {
