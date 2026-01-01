@@ -94,7 +94,7 @@ export function TileContent({
     speakingByIdentity,
     isMuted,
   } = useSubCallContext();
-  const { isAtMax, setIsAtMax } = useCallContext();
+  const { setIsAtMax } = useCallContext();
 
   const speakingFromMap = participant.identity
     ? speakingByIdentity[Number(participant.identity)]
@@ -118,20 +118,17 @@ export function TileContent({
     <ParticipantContextMenu>
       <div
         ref={focusContainerRef}
-        className={cn(
-          "aspect-video relative w-full max-h-full bg-black",
-          isAtMax ? "" : "rounded-xl"
-        )}
+        className="aspect-video relative w-full max-h-full"
       >
+        {/* Speaking indicator */}
         <div
           className={cn(
-            "absolute inset-0 transition-all ease-in-out duration-400 pointer-events-none z-30",
+            "absolute inset-0 transition-all ease-in-out duration-400 pointer-events-none z-30 rounded-xl",
             isSpeaking ? "ring-3 ring-primary ring-inset" : "",
-            isAtMax ? "rounded-none" : "rounded-xl"
           )}
         />
 
-        <div className="w-full h-full flex items-center justify-center rounded-xl z-10 bg-black">
+        <div className="w-full h-full flex items-center justify-center z-10">
           <CallUserModal hideBadges={hideBadges} />
         </div>
       </div>
