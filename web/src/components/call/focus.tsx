@@ -91,7 +91,7 @@ export function CallFocus() {
                   trackRef={track}
                   disableSpeakingIndicator
                   onParticipantClick={handleParticipantClick}
-                  className="relative h-full aspect-video flex-none rounded-xl"
+                  className="relative h-full aspect-video flex-none"
                 >
                   <TileContent />
                   <FocusDuplicateOverlay focusedTrackSid={focusedTrackSid} />

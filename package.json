@@ -10,7 +10,6 @@
     "url": "https://github.com/Tensamin/Frontend.git",
     "type": "git"
   },
-  "main": "src/electron.ts",
   "description": "True E2EE, decentralized messages. Open source and privacy first.",
   "homepage": "https://tensamin.net",
   "productName": "Tensamin",

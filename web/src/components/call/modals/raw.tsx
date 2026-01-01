@@ -20,6 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 // Main
 export function CallModal({
@@ -66,10 +67,18 @@ export function CallModal({
             <img
               src={previewImage}
               alt="Stream Preview"
-              className="select-none bg-black absolute inset-0 w-full h-full object-contain opacity-30 z-0 rounded-xl"
+              className={cn(
+                "select-none bg-black absolute inset-0 w-full h-full object-contain opacity-30 z-0",
+                isAtMax && isFocused ? "" : "rounded-xl"
+              )}
             />
           )}
-          <div className="select-none backdrop-blur-md font-semibold absolute inset-0 z-0 rounded-xl flex flex-col gap-3 items-center justify-center text-center px-5">
+          <div
+            className={cn(
+              "select-none backdrop-blur-md font-semibold absolute inset-0 z-0 flex flex-col gap-3 items-center justify-center text-center px-5",
+              isAtMax && isFocused ? "" : "rounded-xl"
+            )}
+          >
             Your screen is being shared. There is a preview at the bottom of the
             sidebar.
           </div>
@@ -80,10 +89,13 @@ export function CallModal({
     // Watching someone
     if (currentIsWatching && !isLocal) {
       return (
-        <div className="absolute inset-0 w-full h-full rounded-xl">
+        <div className="absolute inset-0 w-full h-full">
           <VideoTrack
             trackRef={screenShareTrackRef!}
-            className="bg-black rounded-xl h-full w-full object-contain select-none"
+            className={cn(
+              "bg-black h-full w-full object-contain select-none",
+              isAtMax && isFocused ? "" : "rounded-xl"
+            )}
           />
         </div>
       );
@@ -96,7 +108,10 @@ export function CallModal({
           <img
             src={previewImage}
             alt="Stream Preview"
-            className="select-none bg-black absolute inset-0 w-full h-full object-contain opacity-30 blur-xs z-0 rounded-xl"
+            className={cn(
+              "select-none bg-black absolute inset-0 w-full h-full object-contain opacity-30 z-0",
+              isAtMax && isFocused ? "" : "rounded-xl"
+            )}
           />
           <Button className="z-10">
             <Icon.Monitor />
@@ -107,7 +122,10 @@ export function CallModal({
         <img
           src={previewImage}
           alt="Stream Preview"
-          className="select-none bg-black absolute inset-0 w-full h-full object-contain z-0 rounded-xl"
+          className={cn(
+            "select-none bg-black absolute inset-0 w-full h-full object-contain z-0",
+            isAtMax && isFocused ? "" : "rounded-xl"
+          )}
         />
       );
     }
@@ -116,7 +134,7 @@ export function CallModal({
     return (
       <div>
         {renderAvatar()}
-        <div className="absolute inset-0 rounded-xl w-full h-full bg-transparent flex p-3 justify-start items-start z-30">
+        <div className="absolute inset-0 w-full h-full bg-transparent flex p-3 justify-start items-start z-30">
           <LoadingIcon />
         </div>
       </div>
@@ -138,7 +156,12 @@ export function CallModal({
   };
 
   return loading ? (
-    <Card className="relative w-full h-full bg-card/75">
+    <Card
+      className={cn(
+        "relative w-full h-full bg-card/75",
+        isFocused ? "rounded-none" : "rounded-xl"
+      )}
+    >
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
         <div className="w-full h-full flex justify-center items-center">
           <Avatar image={null} display={title} size={12} addBorder loading />
@@ -151,7 +174,12 @@ export function CallModal({
       </CardContent>
     </Card>
   ) : (
-    <Card className="relative w-full h-full bg-card/75">
+    <Card
+      className={cn(
+        "relative w-full h-full bg-card/75",
+        isFocused ? "rounded-none border-x-0" : "rounded-xl"
+      )}
+    >
       <CardContent className="w-full h-full flex flex-col items-center justify-center">
         {!isFocused && (
           <div className="absolute h-full w-full flex items-end justify-start p-2 gap-2 pointer-events-none z-30">
