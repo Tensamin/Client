@@ -11,20 +11,33 @@
     nixpkgs,
     flake-utils,
   }:
-    flake-utils.lib.eachSystem ["x86_64-linux"] (
+    flake-utils.lib.eachSystem ["x86_64-linux" "aarch64-linux"] (
       system: let
         pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
         };
+        
+        archMapping = {
+          x86_64-linux = {
+            debArch = "amd64";
+            hash = "sha256-ZZhRoNrG7fFEDNTQlV5pmIaLB+RouW3xu0VyR5kK8sg="; # nix-update will manage this
+          };
+          aarch64-linux = {
+            debArch = "arm64";
+            hash = "sha256-BCUahhy/0hGhJXbLGe816ASoGdeFtblni2dXnO0YLRo="; # nix-update will manage this
+          };
+        };
+        
+        archConfig = archMapping.${system};
       in {
         packages.default = pkgs.stdenv.mkDerivation rec {
           pname = "tensamin";
           version = "0.1.32"; # nix-update will manage this
 
           src = pkgs.fetchurl {
-            url = "https://github.com/Tensamin/Client/releases/download/v${version}/tensamin_${version}_amd64.deb";
-            hash = "sha256-GeWYR5iG7D7bnoQSjuag65IE+3j1936JRByqcMXG4Ys="; # nix-update will manage this
+            url = "https://github.com/Tensamin/Client/releases/download/v${version}/tensamin_${version}_${archConfig.debArch}.deb";
+            hash = archConfig.hash;
           };
 
           nativeBuildInputs = with pkgs; [
@@ -104,7 +117,7 @@
             description = "Privacy-focused chat app";
             homepage = "https://tensamin.net/";
             license = licenses.unfree;
-            platforms = ["x86_64-linux"];
+            platforms = ["x86_64-linux" "aarch64-linux"];
             mainProgram = pname;
           };
         };

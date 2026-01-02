@@ -120,22 +120,23 @@ jobs:
       - name: Set up repository
         uses: actions/checkout@v4
 
-      - name: Publish tensamin-bin
-        uses: ulises-jeremias/github-actions-aur-publish@v1
-        with:
-          pkgname: tensamin-bin
-          pkgbuild: ./desktop/aur/bin/PKGBUILD
-          assets: ./desktop/aur/bin/tensamin.install
-          commit_username: ${{ secrets.AUR_USERNAME }}
-          commit_email: ${{ secrets.AUR_EMAIL }}
-          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Automated Update
-          ssh_keyscan_types: ed25519
-
       - name: Set up nix
         uses: cachix/install-nix-action@v25
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download artifacts and calculate hashes
+        run: |
+          VERSION="${{ needs.check-version.outputs.version }}"
+          
+          wget "https://github.com/Tensamin/Client/releases/download/v${VERSION}/tensamin_${VERSION}_amd64.deb"
+          wget "https://github.com/Tensamin/Client/releases/download/v${VERSION}/tensamin_${VERSION}_arm64.deb"
+          
+          AMD64_HASH=$(nix hash file --type sha256 --sri "tensamin_${VERSION}_amd64.deb")
+          ARM64_HASH=$(nix hash file --type sha256 --sri "tensamin_${VERSION}_arm64.deb")
+          
+          echo "AMD64_HASH=$AMD64_HASH" >> $GITHUB_ENV
+          echo "ARM64_HASH=$ARM64_HASH" >> $GITHUB_ENV
 
       - name: Update nix flake
         run: |
@@ -146,13 +147,17 @@ jobs:
 
           NEW_VERSION=$(jq -r '.version' package.json)
 
-          nix run github:Mic92/nix-update -- \
-            --flake \
-            --version="$NEW_VERSION" \
-            default
+          # Update version
+          sed -i "s/version = \"[^\"]*\";/version = \"$NEW_VERSION\";/" flake.nix
+          
+          # Update x86_64 hash
+          sed -i "/x86_64-linux = {/,/};/ s|hash = \"sha256-[^\"]*\";|hash = \"$AMD64_HASH\";|" flake.nix
+          
+          # Update aarch64 hash
+          sed -i "/aarch64-linux = {/,/};/ s|hash = \"sha256-[^\"]*\";|hash = \"$ARM64_HASH\";|" flake.nix
 
           if [[ -n $(git status --porcelain) ]]; then
-            git add .
+            git add flake.nix
             git commit -m "chore: update to v$NEW_VERSION"
           else
             echo "No updates found."
@@ -164,6 +169,18 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.ref }}
+
+      - name: Publish tensamin-bin
+        uses: ulises-jeremias/github-actions-aur-publish@v1
+        with:
+          pkgname: tensamin-bin
+          pkgbuild: ./desktop/aur/bin/PKGBUILD
+          assets: ./desktop/aur/bin/tensamin.install
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Automated Update
+          ssh_keyscan_types: ed25519
 
   publish-aur-git:
     runs-on: ubuntu-latest
