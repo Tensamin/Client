@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { defaults } from "@/lib/utils";
+import { defaults } from "@/lib/defaults";
 import { SettingsPageTitle } from "../layout";
 
 // Main

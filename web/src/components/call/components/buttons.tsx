@@ -1,8 +1,13 @@
 // Package Imports
 import { useLocalParticipant } from "@livekit/components-react";
-import { LocalVideoTrack, Track, VideoPresets } from "livekit-client";
+import {
+  LocalAudioTrack,
+  LocalVideoTrack,
+  Track,
+  VideoPresets,
+} from "livekit-client";
 import * as Icon from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // Context Imports
@@ -12,13 +17,20 @@ import { rawDebugLog, useStorageContext } from "@/context/storage";
 // Components
 import { LoadingIcon } from "@/components/loading";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Menubar,
   MenubarContent,
@@ -109,96 +121,77 @@ function ScreenSharePickerDialog({
   open,
   onOpenChange,
   onSelect,
+  sources,
+  audioSources,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (id: string) => void;
+  onSelect: (videoId: string, audioId: string) => void;
+  sources: DesktopSource[];
+  audioSources: Array<{ id: string; name: string; type: string }>;
 }) {
-  const [sources, setSources] = useState<DesktopSource[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    if (!open) {
-      setSources([]);
-      return () => {
-        mounted = false;
-      };
-    }
-
-    setLoading(true);
-
-    type ElectronAPI = {
-      getScreenSources?: () => Promise<DesktopSource[]>;
-    };
-
-    const electronApi = (
-      window as typeof window & { electronAPI?: ElectronAPI }
-    ).electronAPI;
-
-    if (!electronApi?.getScreenSources) {
-      toast.error("Screen capture picker is unavailable in this environment.");
-      setLoading(false);
-      return () => {
-        mounted = false;
-      };
-    }
-
-    electronApi
-      .getScreenSources()
-      .then((result) => {
-        if (!mounted) return;
-        setSources(result);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        toast.error("Failed to load screen sources.");
-        setSources([]);
-      })
-      .finally(() => {
-        if (mounted) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, [open]);
-
   const screens = sources.filter((s) => s.id.startsWith("screen:"));
   const apps = sources.filter((s) => s.id.startsWith("window:"));
+  const [selectedVideoSource, setSelectedVideoSource] = useState<string | null>(
+    null,
+  );
+  const [selectedAudioSource, setSelectedAudioSource] = useState<string>("");
+
+  // Auto-select video source if only one available (but still show dialog for audio selection)
+  useEffect(() => {
+    if (sources.length === 1 && !selectedVideoSource && open) {
+      setSelectedVideoSource(sources[0].id);
+    }
+  }, [sources, selectedVideoSource, open]);
+
+  const handleShare = () => {
+    if (selectedVideoSource) {
+      onSelect(selectedVideoSource, selectedAudioSource || "none");
+      setSelectedVideoSource(null);
+      setSelectedAudioSource("");
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent
+        aria-describedby={undefined}
+        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+      >
         <DialogHeader>
           <DialogTitle>Share Screen</DialogTitle>
         </DialogHeader>
-        {loading ? (
-          <div className="flex justify-center p-4">
-            <LoadingIcon />
-          </div>
-        ) : (
+        <div className="flex flex-col gap-4">
+          {/* Video Source Selection */}
           <Tabs defaultValue={screens.length > 0 ? "screens" : "apps"}>
-            <TabsList>
-              {screens.length > 0 && (
-                <TabsTrigger value="screens">Screens</TabsTrigger>
-              )}
-              {apps.length > 0 && (
-                <TabsTrigger value="apps">Applications</TabsTrigger>
-              )}
-            </TabsList>
+            {sources.length !== 1 && (
+              <TabsList>
+                {screens.length > 0 && (
+                  <TabsTrigger value="screens">Screens</TabsTrigger>
+                )}
+                {apps.length > 0 && (
+                  <TabsTrigger value="apps">Applications</TabsTrigger>
+                )}
+              </TabsList>
+            )}
             <TabsContent value="screens" className="grid grid-cols-2 gap-4">
               {screens.map((source) => (
-                <div key={source.id} onClick={() => onSelect(source.id)}>
+                <div
+                  key={source.id}
+                  onClick={() => setSelectedVideoSource(source.id)}
+                  className={`cursor-pointer hover:opacity-80 rounded-lg border-2 transition-colors ${
+                    selectedVideoSource === source.id
+                      ? "border-primary"
+                      : "border-transparent"
+                  }`}
+                >
                   <img
                     src={source.thumbnail}
                     alt={source.name}
                     className="w-full rounded-lg border"
                   />
                   {source.name && source.name !== "" && (
-                    <p className="text-center mt-2 text-sm truncate">
+                    <p className="text-center mt-2 text-sm truncate px-2">
                       {source.name}
                     </p>
                   )}
@@ -207,13 +200,21 @@ function ScreenSharePickerDialog({
             </TabsContent>
             <TabsContent value="apps" className="grid grid-cols-3 gap-4">
               {apps.map((source) => (
-                <div key={source.id} onClick={() => onSelect(source.id)}>
+                <div
+                  key={source.id}
+                  onClick={() => setSelectedVideoSource(source.id)}
+                  className={`cursor-pointer hover:opacity-80 rounded-lg border-2 transition-colors ${
+                    selectedVideoSource === source.id
+                      ? "border-primary"
+                      : "border-transparent"
+                  }`}
+                >
                   <img
                     src={source.thumbnail}
                     alt={source.name}
                     className="w-full rounded-lg border"
                   />
-                  <div className="flex items-center gap-2 mt-2 justify-center">
+                  <div className="flex items-center gap-2 mt-2 justify-center px-2">
                     {source.appIcon && source.appIcon.endsWith("=") && (
                       <img
                         src={source.appIcon}
@@ -221,7 +222,7 @@ function ScreenSharePickerDialog({
                         alt={source.name || "Source"}
                       />
                     )}
-                    <p className="text-center mt-2 text-sm truncate">
+                    <p className="text-center text-sm truncate">
                       {source.name}
                     </p>
                   </div>
@@ -229,7 +230,37 @@ function ScreenSharePickerDialog({
               ))}
             </TabsContent>
           </Tabs>
-        )}
+
+          {/* Audio Source Selection */}
+          <div className="flex flex-col gap-2 pt-4 border-t">
+            <Label className="text-sm font-medium">Audio Source</Label>
+            <Select
+              value={selectedAudioSource}
+              onValueChange={setSelectedAudioSource}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select audio source..." />
+              </SelectTrigger>
+              <SelectContent>
+                {audioSources.map((source) => (
+                  <SelectItem key={source.id} value={source.id}>
+                    {source.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Share Button */}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleShare} disabled={!selectedVideoSource}>
+              Share
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -249,8 +280,14 @@ export function ScreenShareButton({
 
   const [loading, setLoading] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [getSources, setGetSources] = useState(false);
 
-  // Get current screen share settings with defaults
+  const [sources, setSources] = useState<DesktopSource[]>([]);
+  const [audioSources, setAudioSources] = useState<
+    Array<{ id: string; name: string; type: string }>
+  >([]);
+
+  // Defaults
   const dataWithDefaults = {
     call_screenShare_width:
       (data.call_screenShare_width as number) ??
@@ -261,12 +298,9 @@ export function ScreenShareButton({
     call_screenShare_frameRate:
       (data.call_screenShare_frameRate as number) ??
       defaults.call_screenShare_frameRate,
-    call_screenShare_audio:
-      (data.call_screenShare_audio as boolean) ??
-      defaults.call_screenShare_audio,
   };
 
-  // Apply constraints dynamically when settings change during active screen share
+  // Apply constraints during screen share
   useEffect(() => {
     if (!isScreenShareEnabled || !localParticipant) return;
 
@@ -336,7 +370,7 @@ export function ScreenShareButton({
               setLoading(false);
               return;
             }
-            setPickerOpen(true);
+            setGetSources(true);
             setLoading(false);
           }
         } else {
@@ -350,45 +384,187 @@ export function ScreenShareButton({
     }
   };
 
-  const handleElectronShare = async (id: string) => {
-    setPickerOpen(false);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: dataWithDefaults.call_screenShare_audio,
-        video: {
-          width: dataWithDefaults.call_screenShare_width,
-          height: dataWithDefaults.call_screenShare_height,
-          frameRate: dataWithDefaults.call_screenShare_frameRate,
-          deviceId: id,
-          aspectRatio: {
-            ideal: 16 / 9,
+  const handleElectronShare = useCallback(
+    async (videoId: string, audioId: string) => {
+      setPickerOpen(false);
+      try {
+        const videoStream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            mandatory: {
+              chromeMediaSource: "desktop",
+              chromeMediaSourceId: videoId,
+              minWidth: dataWithDefaults.call_screenShare_width,
+              maxWidth: dataWithDefaults.call_screenShare_width,
+              minHeight: dataWithDefaults.call_screenShare_height,
+              maxHeight: dataWithDefaults.call_screenShare_height,
+              minFrameRate: dataWithDefaults.call_screenShare_frameRate,
+              maxFrameRate: dataWithDefaults.call_screenShare_frameRate,
+            },
           },
-        },
-      });
+        } as MediaStreamConstraints);
 
-      const track = stream.getVideoTracks()[0];
-      const localVideoTrack = new LocalVideoTrack(track);
-      await localParticipant.publishTrack(localVideoTrack, {
-        source: Track.Source.ScreenShare,
-        ...VideoPresets.h1440,
-        simulcast: false,
-        videoEncoding: {
-          ...VideoPresets.h1440.encoding,
-          maxFramerate: dataWithDefaults.call_screenShare_frameRate,
-        },
-      });
-    } catch (err) {
-      console.error("Failed to share screen", err);
-      toast.error("Failed to share screen");
+        const videoTrack = videoStream.getVideoTracks()[0];
+
+        if (videoTrack) {
+          const localVideoTrack = new LocalVideoTrack(videoTrack);
+          await localParticipant.publishTrack(localVideoTrack, {
+            source: Track.Source.ScreenShare,
+            ...VideoPresets.h1440,
+            simulcast: false,
+            videoEncoding: {
+              ...VideoPresets.h1440.encoding,
+              maxFramerate: dataWithDefaults.call_screenShare_frameRate,
+            },
+          });
+        }
+
+        // Capture audio
+        if (audioId !== "none") {
+          try {
+            let audioStream: MediaStream | null = null;
+
+            if (audioId === "system") {
+              audioStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                  mandatory: {
+                    chromeMediaSource: "desktop",
+                    chromeMediaSourceId: videoId,
+                  },
+                } as unknown,
+                video: false,
+              } as MediaStreamConstraints);
+            } else if (audioId.startsWith("pipewire:") || audioId.length > 20) {
+              audioStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                  deviceId: { exact: audioId },
+                },
+                video: false,
+              } as MediaStreamConstraints);
+            } else {
+              audioStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                  mandatory: {
+                    chromeMediaSource: "desktop",
+                    chromeMediaSourceId: audioId,
+                  },
+                } as unknown,
+                video: false,
+              } as MediaStreamConstraints);
+            }
+
+            if (audioStream) {
+              const audioTracks = audioStream.getAudioTracks();
+              if (audioTracks.length > 0) {
+                const audioTrack = audioTracks[0];
+                const localAudioTrack = new LocalAudioTrack(audioTrack);
+                await localParticipant.publishTrack(localAudioTrack, {
+                  source: Track.Source.ScreenShareAudio,
+                });
+                console.log("[ScreenShare] Audio track published successfully");
+              }
+            }
+          } catch (audioErr) {
+            console.error("[ScreenShare] Failed to capture audio:", audioErr);
+            toast.error(
+              "Screen sharing started but audio capture failed. Check audio source settings.",
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Failed to share screen", err);
+        toast.error("Failed to share screen");
+      }
+    },
+    [
+      dataWithDefaults.call_screenShare_frameRate,
+      dataWithDefaults.call_screenShare_height,
+      dataWithDefaults.call_screenShare_width,
+      localParticipant,
+    ],
+  );
+
+  // Get sources
+  useEffect(() => {
+    let mounted = true;
+    if (!getSources) {
+      return () => {
+        mounted = false;
+      };
     }
-  };
 
-  const toggleShareAudio = () => {
-    const current =
-      (data.call_screenShare_audio as boolean) ??
-      defaults.call_screenShare_audio;
-    set("call_screenShare_audio", !current);
-  };
+    setLoading(true);
+
+    type ElectronAPI = {
+      getScreenSources?: () => Promise<DesktopSource[]>;
+      getAudioSources?: () => Promise<
+        Array<{ id: string; name: string; type: string }>
+      >;
+    };
+
+    const electronApi = (
+      window as typeof window & { electronAPI?: ElectronAPI }
+    ).electronAPI;
+
+    if (!electronApi?.getScreenSources || !electronApi?.getAudioSources) {
+      toast.error("Screen capture picker is unavailable in this environment.");
+      setLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    // Load sources
+    const loadSources = async () => {
+      try {
+        const [videoSources, audioSourcesList] = await Promise.all([
+          electronApi.getScreenSources!(),
+          electronApi.getAudioSources!(),
+        ]);
+
+        if (!mounted) return;
+
+        const audioDevices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = audioDevices.filter((d) => d.kind === "audioinput");
+
+        const enhancedAudioSources = [...audioSourcesList];
+        audioInputs.forEach((device) => {
+          if (
+            device.label.toLowerCase().includes("monitor") ||
+            device.label.toLowerCase().includes("loopback") ||
+            device.label.toLowerCase().includes("pipewire")
+          ) {
+            enhancedAudioSources.push({
+              id: device.deviceId,
+              name: device.label || "Unknown Audio Device",
+              type: "monitor",
+            });
+          }
+        });
+
+        setSources(videoSources);
+        setAudioSources(enhancedAudioSources);
+        setPickerOpen(true);
+      } catch (error) {
+        if (!mounted) return;
+        console.error("Failed to load sources:", error);
+        toast.error("Failed to load screen sources.");
+        setSources([]);
+        setAudioSources([]);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          setGetSources(false);
+        }
+      }
+    };
+
+    loadSources();
+
+    return () => {
+      mounted = false;
+    };
+  }, [handleElectronShare, getSources]);
 
   const qualityPresets = [
     // 480p
@@ -454,7 +630,11 @@ export function ScreenShareButton({
       <ScreenSharePickerDialog
         open={pickerOpen}
         onOpenChange={setPickerOpen}
-        onSelect={handleElectronShare}
+        onSelect={(videoId, audioId) => {
+          handleElectronShare(videoId, audioId);
+        }}
+        sources={sources}
+        audioSources={audioSources}
       />
       <Menubar asChild>
         <MenubarMenu>
@@ -478,7 +658,7 @@ export function ScreenShareButton({
               {isScreenShareEnabled ? (
                 <Icon.MonitorDot />
               ) : loading ? (
-                <LoadingIcon />
+                <Icon.Loader2 className="animate-spin" />
               ) : (
                 <Icon.Monitor />
               )}
@@ -497,16 +677,6 @@ export function ScreenShareButton({
                   Start
                 </>
               )}
-            </MenubarItem>
-            <MenubarItem onSelect={toggleShareAudio} className="flex gap-2">
-              <Checkbox
-                checked={
-                  (data.call_screenShare_audio as boolean) ??
-                  defaults.call_screenShare_audio
-                }
-                onCheckedChange={toggleShareAudio}
-              />
-              Share Audio
             </MenubarItem>
             <MenubarSub>
               <MenubarSubTrigger className="flex gap-2 items-center">

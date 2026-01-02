@@ -290,7 +290,7 @@ export function Box() {
           alt={"Unknown Error"}
           className="w-55 h-55"
         />
-        <p className="text-xl">{"No conversation?"}</p>
+        <p className="text-xl">Failed to load messages</p>
       </div>
     );
   }

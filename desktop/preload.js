@@ -40,4 +40,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getCameraAccess: () => ipcRenderer.invoke("electronMain:getCameraAccess"),
   getScreenAccess: () => ipcRenderer.invoke("electronMain:getScreenAccess"),
   getScreenSources: () => ipcRenderer.invoke("electronMain:screen:getSources"),
+  getAudioSources: () => ipcRenderer.invoke("electronMain:audio:getSources"),
 });

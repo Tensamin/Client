@@ -201,7 +201,7 @@ const rotateHue = (h: number, deg: number) => {
   return v;
 };
 
-const readThemeFromCSS = (scheme: Scheme): Partial<ThemeMap> => {
+export const readThemeFromCSS = (scheme: Scheme): Partial<ThemeMap> => {
   const result: Partial<ThemeMap> = {};
   if (typeof document === "undefined") return result;
   const wantSelector = scheme === "light" ? ":root" : ".dark";

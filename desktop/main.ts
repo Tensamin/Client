@@ -12,7 +12,7 @@ import {
 } from "electron";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-// @ts-expect-error Squirrel startup
+// @ts-ignore Squirrel startup
 import squirrelStartup from "electron-squirrel-startup";
 
 // Types
@@ -90,6 +90,35 @@ async function listScreenSources() {
       appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
     };
   });
+}
+
+async function listAudioSources() {
+  const audioSources: Array<{ id: string; name: string; type: string }> = [
+    { id: "none", name: "None", type: "none" },
+  ];
+
+  try {
+    audioSources.push({ id: "system", name: "Entire System", type: "system" });
+
+    if (process.platform === "linux") {
+      audioSources.push(
+        {
+          id: "pipewire:electron",
+          name: "PipeWire ALSA [electron]",
+          type: "pipewire",
+        },
+        {
+          id: "pipewire:chrome",
+          name: "PipeWire ALSA [chrome]",
+          type: "pipewire",
+        },
+      );
+    }
+  } catch (error) {
+    console.error("Error listing audio sources:", error);
+  }
+
+  return audioSources;
 }
 
 // Main
@@ -381,5 +410,23 @@ ipcMain.handle("electronMain:screen:getSources", async () => {
     console.error("Failed to fetch screen sources:", error);
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to fetch screen sources: ${message}`);
+  }
+});
+ipcMain.handle("electronMain:audio:getSources", async () => {
+  try {
+    return await listAudioSources();
+  } catch (error) {
+    console.error("Failed to fetch audio sources:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to fetch audio sources: ${message}`);
+  }
+});
+
+ipcMain.handle("electronMain:audio:enumerateDevices", async () => {
+  try {
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to enumerate audio devices:", error);
+    return { success: false, error: String(error) };
   }
 });

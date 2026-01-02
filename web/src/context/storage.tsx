@@ -14,7 +14,7 @@ import { useTheme } from "next-themes";
 
 // Lib Imports
 import { handleError, progressBar } from "@/lib/utils";
-import { generateColors } from "@/lib/theme";
+import { generateColors, readThemeFromCSS } from "@/lib/theme";
 
 // Components
 import { RawLoading } from "@/components/loading";
@@ -211,8 +211,13 @@ export function StorageProvider({
       userData.themeHex === "" ||
       !userData.tintType ||
       userData.tintType === ""
-    )
+    ) {
+      const variables = readThemeFromCSS("dark");
+      Object.entries(variables).forEach(([name]) =>
+        document.documentElement.style.removeProperty(name),
+      );
       return;
+    }
 
     const activeScheme = (resolvedTheme ?? systemTheme ?? "light") as
       | "light"

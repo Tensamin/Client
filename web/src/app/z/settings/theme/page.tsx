@@ -167,7 +167,6 @@ export default function Page() {
                   set("colorScheme", "");
                   set("tintType", "");
                   setTempColor("#000000");
-                  window.location.reload();
                 }}
                 variant="destructive"
               >

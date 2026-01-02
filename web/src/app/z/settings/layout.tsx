@@ -78,7 +78,7 @@ export default function Page({ children }: { children: React.ReactNode }) {
 
   const selected =
     page.replace("settings/", "") ===
-    (data.lastSettingsMenu as string).toLowerCase()
+    ((data.lastSettingsMenu as string) ?? "").toLowerCase()
       ? (data.lastSettingsMenu as string)
       : undefined;
   const setSelected = useCallback(
