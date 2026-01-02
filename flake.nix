@@ -21,11 +21,11 @@
         archMapping = {
           x86_64-linux = {
             debArch = "amd64";
-            hash = "sha256-ZZhRoNrG7fFEDNTQlV5pmIaLB+RouW3xu0VyR5kK8sg="; # nix-update will manage this
+            hash = "sha256-sRbrWBiQ5Wsk4Vm4qBQlmvakJtp0+2rNhJYHRlodX5o="; # nix-update will manage this
           };
           aarch64-linux = {
             debArch = "arm64";
-            hash = "sha256-BCUahhy/0hGhJXbLGe816ASoGdeFtblni2dXnO0YLRo="; # nix-update will manage this
+            hash = "sha256-f2ci62f3h1CuSdHYe7qPx3HLR7VbB0HGNsLarcnf1Sw="; # nix-update will manage this
           };
         };
         
