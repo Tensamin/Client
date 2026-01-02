@@ -120,6 +120,19 @@ jobs:
       - name: Set up repository
         uses: actions/checkout@v4
 
+      - name: Download artifacts and calculate hashes
+        run: |
+          VERSION="${{ needs.check-version.outputs.version }}"
+          
+          wget "https://github.com/Tensamin/Client/releases/download/v${VERSION}/tensamin_${VERSION}_amd64.deb"
+          wget "https://github.com/Tensamin/Client/releases/download/v${VERSION}/tensamin_${VERSION}_arm64.deb"
+          
+          AMD64_HASH=$(nix hash file --type sha256 --sri "tensamin_${VERSION}_amd64.deb")
+          ARM64_HASH=$(nix hash file --type sha256 --sri "tensamin_${VERSION}_arm64.deb")
+          
+          echo "AMD64_HASH=$AMD64_HASH" >> $GITHUB_ENV
+          echo "ARM64_HASH=$ARM64_HASH" >> $GITHUB_ENV
+
       - name: Publish tensamin-bin
         uses: ulises-jeremias/github-actions-aur-publish@v1
         with:
@@ -146,10 +159,14 @@ jobs:
 
           NEW_VERSION=$(jq -r '.version' package.json)
 
-          nix run github:Mic92/nix-update -- \
-            --flake \
-            --version="$NEW_VERSION" \
-            default
+          # Update version
+          sed -i "s/version = \"[^\"]*\";/version = \"$NEW_VERSION\";/" flake.nix
+          
+          # Update x86_64 hash
+          sed -i "/x86_64-linux = {/,/};/ s|hash = \"sha256-[^\"]*\";|hash = \"$AMD64_HASH\";|" flake.nix
+          
+          # Update aarch64 hash
+          sed -i "/aarch64-linux = {/,/};/ s|hash = \"sha256-[^\"]*\";|hash = \"$ARM64_HASH\";|" flake.nix
 
           if [[ -n $(git status --porcelain) ]]; then
             git add .
