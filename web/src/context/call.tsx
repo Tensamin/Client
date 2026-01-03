@@ -665,6 +665,10 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     anonymousJoining: false,
   });
 
+  const [streamViewers, setStreamViewers] = useState<Record<number, number[]>>(
+    {},
+  );
+
   // Call Administration
   const disconnectUser = async (user: number) => {
     if (!room) return;
@@ -778,6 +782,25 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
               stream_preview: data.preview,
             },
           }));
+        } else if (data.type === "stream_viewing_start") {
+          const viewerId = Number(participant.identity);
+          const targetId = Number(data.target);
+          setStreamViewers((prev) => {
+            const viewers = prev[targetId] || [];
+            if (viewers.includes(viewerId)) return prev;
+            return { ...prev, [targetId]: [...viewers, viewerId] };
+          });
+        } else if (data.type === "stream_viewing_end") {
+          const viewerId = Number(participant.identity);
+          const targetId = Number(data.target);
+          setStreamViewers((prev) => {
+            const viewers = prev[targetId] || [];
+            if (!viewers.includes(viewerId)) return prev;
+            return {
+              ...prev,
+              [targetId]: viewers.filter((id) => id !== viewerId),
+            };
+          });
         }
       } catch (error) {
         rawDebugLog(
@@ -802,17 +825,42 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
     (user: number) => {
       if (user === ownId) return;
       setIsWatching((prev) => ({ ...prev, [user]: true }));
+
+      if (room) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(
+          JSON.stringify({
+            type: "stream_viewing_start",
+            target: user,
+          }),
+        );
+        room.localParticipant.publishData(data, { reliable: true });
+      }
     },
-    [ownId],
+    [ownId, room],
   );
 
-  const stopWatching = useCallback((user: number) => {
-    setIsWatching((prev) => {
-      const newWatching = { ...prev };
-      delete newWatching[user];
-      return newWatching;
-    });
-  }, []);
+  const stopWatching = useCallback(
+    (user: number) => {
+      setIsWatching((prev) => {
+        const newWatching = { ...prev };
+        delete newWatching[user];
+        return newWatching;
+      });
+
+      if (room) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(
+          JSON.stringify({
+            type: "stream_viewing_end",
+            target: user,
+          }),
+        );
+        room.localParticipant.publishData(data, { reliable: true });
+      }
+    },
+    [room],
+  );
 
   // Play sounds when isWatching changes
   const prevIsWatchingRef = useRef<Record<number, boolean>>({});
@@ -1294,6 +1342,7 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
         setParticipantData,
         disconnectUser,
         timeoutUser,
+        streamViewers,
       }}
     >
       <ScreenSharePreviewManager />
@@ -1354,4 +1403,5 @@ type SubCallContextValue = {
   >;
   disconnectUser: (user: number) => void;
   timeoutUser: (user: number, until: number) => void;
+  streamViewers: Record<number, number[]>;
 };

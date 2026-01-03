@@ -3,6 +3,7 @@
 // Package Imports
 import { useParticipants } from "@livekit/components-react";
 import { AnimatePresence } from "framer-motion";
+import { Track } from "livekit-client";
 import * as Icon from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -54,7 +55,7 @@ import { Switch } from "@/components/ui/switch";
 function CallPageContent() {
   const { conversations } = useUserContext();
   const { disconnect, inGridView, setCurrentLayout, callId } = useCallContext();
-  const { stopWatching, isWatching } = useSubCallContext();
+  const { stopWatching, isWatching, streamViewers } = useSubCallContext();
   const {
     focusedTrackRef,
     setFocusedTrackSid,
@@ -78,10 +79,16 @@ function CallPageContent() {
 
   const participants = useParticipants();
   const viewers = useMemo(() => {
+    if (!focusedTrackRef || focusedTrackRef.source !== Track.Source.ScreenShare)
+      return [];
+
+    const focusedIdentity = Number(focusedTrackRef.participant.identity);
+    const viewerIds = streamViewers[focusedIdentity] ?? [];
+
     return participants.filter((p) => {
-      return isWatching[Number(p.identity)] ?? false;
+      return viewerIds.includes(Number(p.identity));
     });
-  }, [participants, isWatching]);
+  }, [participants, focusedTrackRef, streamViewers]);
 
   return (
     <div className="flex flex-col w-full h-full gap-5 relative pb-11">

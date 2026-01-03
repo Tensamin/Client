@@ -162,10 +162,17 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      startWatching(Number(event.participant.identity));
+      const track = participantTracks.find(
+        (track) => getTrackReferenceId(track) === trackSid,
+      );
+
+      if (track?.source === Track.Source.ScreenShare) {
+        startWatching(Number(event.participant.identity));
+      }
+
       setFocusedTrackSid((current) => (current === trackSid ? null : trackSid));
     },
-    [resolveTrackSid, startWatching],
+    [resolveTrackSid, startWatching, participantTracks],
   );
 
   const value: CallPageContextValue = {
