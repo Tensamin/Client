@@ -30,6 +30,7 @@ import {
 } from "@/components/call/context";
 import { CallFocus } from "@/components/call/focus";
 import { CallGrid } from "@/components/call/grid";
+import { PopoutScreenShare } from "@/components/call/modals/PopoutScreenShare";
 import Avatar from "@/components/modals/Avatar";
 import { UserModal } from "@/components/modals/user";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,8 @@ function CallPageContent() {
     setFocusedTrackSid,
     hideParticipants,
     setHideParticipants,
+    popoutScreenShare,
+    closePopout,
   } = useCallPageContext();
   const { callId } = useCallContext();
 
@@ -183,6 +186,15 @@ function CallPageContent() {
           </Popover>
         </div>
       </div>
+
+      {/* Popout Screen Share */}
+      {popoutScreenShare && (
+        <PopoutScreenShare
+          trackRef={popoutScreenShare.trackRef}
+          title={popoutScreenShare.title}
+          onClose={closePopout}
+        />
+      )}
     </div>
   );
 }

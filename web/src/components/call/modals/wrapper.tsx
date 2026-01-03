@@ -1,5 +1,5 @@
 // Package Imports
-import { isTrackReference } from "@livekit/components-core";
+import { isTrackReference, TrackReference } from "@livekit/components-core";
 import {
   useMaybeTrackRefContext,
   useParticipantContext,
@@ -22,7 +22,13 @@ import ParticipantContextMenu from "../ParticipantContextMenu";
 import { CallModal } from "./raw";
 
 // Main
-export function CallUserModal({ hideBadges }: { hideBadges?: boolean }) {
+export function CallUserModal({
+  hideBadges,
+  onPopout,
+}: {
+  hideBadges?: boolean;
+  onPopout?: (trackRef: TrackReference, title: string) => void;
+}) {
   const participant = useParticipantContext();
   const trackRef = useMaybeTrackRefContext();
   const { get, fetchedUsers } = useUserContext();
@@ -75,6 +81,7 @@ export function CallUserModal({ hideBadges }: { hideBadges?: boolean }) {
       deafened={deafened}
       screenShareTrackRef={screenShareTrackRef}
       hideBadges={hideBadges}
+      onPopout={onPopout}
     />
   ) : (
     <LoadingIcon />
@@ -84,9 +91,11 @@ export function CallUserModal({ hideBadges }: { hideBadges?: boolean }) {
 export function TileContent({
   hideBadges,
   containerSize,
+  onPopout,
 }: {
   hideBadges?: boolean;
   containerSize?: { width: number; height: number };
+  onPopout?: (trackRef: TrackReference, title: string) => void;
 } = {}) {
   const participant = useParticipantContext();
   const {
@@ -153,7 +162,7 @@ export function TileContent({
         />
 
         <div className="w-full h-full flex items-center justify-center z-10">
-          <CallUserModal hideBadges={hideBadges} />
+          <CallUserModal hideBadges={hideBadges} onPopout={onPopout} />
         </div>
       </div>
     </ParticipantContextMenu>

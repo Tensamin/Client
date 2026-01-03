@@ -34,6 +34,7 @@ export function CallFocus() {
     focusedTrackSid,
     handleParticipantClick,
     hideParticipants,
+    openPopout,
   } = useCallPageContext();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -80,7 +81,11 @@ export function CallFocus() {
             height: layout.height,
           }}
         >
-          <TileContent containerSize={containerSize} hideBadges />
+          <TileContent
+            containerSize={containerSize}
+            hideBadges
+            onPopout={openPopout}
+          />
         </FocusLayout>
         {!hideParticipants && (
           <div className="w-full max-w-5xl">
@@ -93,7 +98,7 @@ export function CallFocus() {
                   onParticipantClick={handleParticipantClick}
                   className="relative h-full aspect-video flex-none"
                 >
-                  <TileContent />
+                  <TileContent onPopout={openPopout} />
                   <FocusDuplicateOverlay focusedTrackSid={focusedTrackSid} />
                 </ParticipantTile>
               ))}

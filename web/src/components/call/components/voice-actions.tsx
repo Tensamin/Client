@@ -9,7 +9,7 @@ import {
 } from "@livekit/components-react";
 import { ConnectionQuality, ConnectionState, Track } from "livekit-client";
 import * as Icon from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
@@ -37,6 +37,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useSocketContext } from "@/context/socket";
 import { DeafButton, MuteButton, ScreenShareButton } from "./buttons";
 import { displayCallId } from "./call-button";
@@ -112,77 +117,170 @@ export function VoiceActions() {
       ref.participant?.isLocal &&
       ref.source === Track.Source.ScreenShare,
   );
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const isScreenShare = isScreenShareEnabled || !!trackRef;
+
+  // Fullscreen handling with native API
+  const videoContainerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleFullscreen = useCallback(() => {
+    const container = videoContainerRef.current;
+    if (!container) return;
+
+    if (!document.fullscreenElement) {
+      container
+        .requestFullscreen?.()
+        .then(() => {
+          setIsFullscreen(true);
+        })
+        .catch(() => {
+          // Fullscreen request failed, fall back to dialog
+        });
+    } else {
+      document
+        .exitFullscreen?.()
+        .then(() => {
+          setIsFullscreen(false);
+        })
+        .catch(() => {
+          // Exit fullscreen failed
+        });
+    }
+  }, []);
+
+  // Listen for fullscreen changes (including Escape key exits)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   // Anonymous Joining
   const [loading, setLoading] = useState(false);
   const { send } = useSocketContext();
   const { ownMetadata, callMetadata } = useSubCallContext();
 
-  // Render
+  // Dialog for expanded preview
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Render
   const commonClassNames = "text-sm";
   const connectingColor = "text-ring";
   return shouldConnect ? (
     <Card className="bg-input/30 rounded-lg border-input flex flex-col gap-2 justify-center items-center w-full p-2">
       {isScreenShare && trackRef && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <div className="group relative aspect-video w-full h-full">
+          <div
+            ref={videoContainerRef}
+            className={cn(
+              "group relative aspect-video w-full h-full",
+              isFullscreen && "bg-black",
+            )}
+          >
             <VideoTrack
-              className="group aspect-video bg-black border rounded-lg"
+              className={cn(
+                "group aspect-video bg-black border rounded-lg",
+                isFullscreen &&
+                  "rounded-none border-none w-full h-full object-contain",
+              )}
               trackRef={trackRef}
             />
-            <div
-              onClick={() => setDialogOpen(true)}
-              className="rounded-lg border absolute top-0 left-0 w-full h-full items-center justify-center bg-black/75 group group-hover:flex hidden"
-            >
-              <Icon.Expand />
-            </div>
+            {/* Hover overlay with controls (hidden in fullscreen) */}
+            {!isFullscreen && (
+              <div className="rounded-lg absolute top-0 left-0 w-full h-full items-center justify-center bg-black/75 group-hover:flex hidden">
+                <div className="flex gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="h-9 w-9 bg-background rounded-xl">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-full w-full"
+                          onClick={() => setDialogOpen(true)}
+                        >
+                          <Icon.Expand className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>Expand Preview</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="h-9 w-9 bg-background rounded-xl">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-full w-full"
+                          onClick={handleFullscreen}
+                        >
+                          {isFullscreen ? (
+                            <Icon.Minimize className="h-5 w-5" />
+                          ) : (
+                            <Icon.Maximize className="h-5 w-5" />
+                          )}
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            )}
+            {/* Fullscreen exit button (only visible in fullscreen) */}
+            {isFullscreen && (
+              <div className="absolute top-4 right-4 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="w-9 h-9 bg-background rounded-xl">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-full w-full"
+                    onClick={handleFullscreen}
+                  >
+                    <Icon.Minimize className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
           <DialogContent className="h-auto max-w-[75vw]!">
             <DialogTitle>Screen Share Preview</DialogTitle>
-            <VideoTrack
-              className="group aspect-video bg-black border rounded-lg h-full w-full"
-              trackRef={trackRef}
-            />
-            <div className="flex">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setDialogOpen(false);
-                  setIsFullscreen(true);
-                }}
-              >
-                Fullscreen
-              </Button>
+            <div className="relative group">
+              <VideoTrack
+                className="group aspect-video bg-black border rounded-lg h-full w-full"
+                trackRef={trackRef}
+              />
+              <div className="absolute top-2 right-2 z-40 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-9 h-9 bg-background rounded-xl">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-full w-full"
+                        onClick={() => {
+                          setDialogOpen(false);
+                          setTimeout(() => {
+                            handleFullscreen();
+                          }, 100);
+                        }}
+                      >
+                        <Icon.Maximize className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>Enter Fullscreen</TooltipContent>
+                </Tooltip>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
-      )}
-      {isScreenShare && trackRef && (
-        <div
-          hidden={!isFullscreen}
-          className="p-3 gap-3 bg-background fixed top-0 left-0 z-100 flex flex-col justify-center"
-          style={{
-            width: window.innerWidth,
-            height: window.innerHeight,
-          }}
-        >
-          <div className="flex items-center gap-3 font-medium text-lg">
-            <Button variant="outline" onClick={() => setIsFullscreen(false)}>
-              Exit Fullscreen
-            </Button>
-            Fullscreen Screen Share Preview
-          </div>
-          <VideoTrack
-            style={{
-              maxHeight: window.innerHeight - 73,
-            }}
-            className="object-contain group aspect-video bg-black border rounded-lg h-full w-full"
-            trackRef={trackRef}
-          />
-        </div>
       )}
       <Popover>
         <PopoverTrigger asChild>

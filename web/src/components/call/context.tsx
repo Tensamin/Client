@@ -3,7 +3,7 @@ import type {
   ParticipantClickEvent,
   TrackReferenceOrPlaceholder,
 } from "@livekit/components-core";
-import { isTrackReference } from "@livekit/components-core";
+import { isTrackReference, TrackReference } from "@livekit/components-core";
 import { useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import {
@@ -20,6 +20,11 @@ import {
 import { useSubCallContext } from "@/context/call";
 
 // Types
+type PopoutScreenShare = {
+  trackRef: TrackReference;
+  title: string;
+} | null;
+
 type CallPageContextValue = {
   participantTracks: TrackReferenceOrPlaceholder[];
   focusedTrackSid: string | null;
@@ -28,6 +33,9 @@ type CallPageContextValue = {
   handleParticipantClick: (event: ParticipantClickEvent) => void;
   hideParticipants: boolean;
   setHideParticipants: (hide: boolean) => void;
+  popoutScreenShare: PopoutScreenShare;
+  openPopout: (trackRef: TrackReference, title: string) => void;
+  closePopout: () => void;
 };
 
 const CallPageContext = createContext<CallPageContextValue | null>(null);
@@ -88,6 +96,18 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
 
   const [hideParticipants, setHideParticipants] = useState(false);
 
+  // popout screen share state
+  const [popoutScreenShare, setPopoutScreenShare] =
+    useState<PopoutScreenShare>(null);
+
+  const openPopout = useCallback((trackRef: TrackReference, title: string) => {
+    setPopoutScreenShare({ trackRef, title });
+  }, []);
+
+  const closePopout = useCallback(() => {
+    setPopoutScreenShare(null);
+  }, []);
+
   const focusedTrackRef = useMemo(() => {
     if (!focusedTrackSid) {
       return undefined;
@@ -105,6 +125,21 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
       setFocusedTrackSid(null);
     }
   }, [focusedTrackRef, focusedTrackSid]);
+
+  // Close popout if the track is no longer available
+  useEffect(() => {
+    if (popoutScreenShare) {
+      const trackStillExists = trackReferences.some(
+        (track) =>
+          isTrackReference(track) &&
+          track.publication?.trackSid ===
+            popoutScreenShare.trackRef.publication?.trackSid,
+      );
+      if (!trackStillExists) {
+        setPopoutScreenShare(null);
+      }
+    }
+  }, [trackReferences, popoutScreenShare]);
 
   // click handling
   const resolveTrackSid = useCallback(
@@ -148,6 +183,9 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
     handleParticipantClick,
     hideParticipants,
     setHideParticipants,
+    popoutScreenShare,
+    openPopout,
+    closePopout,
   };
 
   return (

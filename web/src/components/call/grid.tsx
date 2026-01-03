@@ -14,7 +14,8 @@ import { TileContent } from "./modals/wrapper";
 
 // Main
 export function CallGrid({ className }: { className?: string }) {
-  const { participantTracks, handleParticipantClick } = useCallPageContext();
+  const { participantTracks, handleParticipantClick, openPopout } =
+    useCallPageContext();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
@@ -66,7 +67,7 @@ export function CallGrid({ className }: { className?: string }) {
                   "w-full h-full relative border-0 flex justify-center items-center px-5"
                 }
               >
-                <TileContent />
+                <TileContent onPopout={openPopout} />
               </ParticipantTile>
             </div>
           ))}

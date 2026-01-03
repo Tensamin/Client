@@ -2,9 +2,7 @@
 import { TrackReference } from "@livekit/components-core";
 import { VideoTrack } from "@livekit/components-react";
 import * as Icon from "lucide-react";
-import { useMemo } from "react";
-
-// Lib Imports
+import { useCallback, useMemo, useRef, useState } from "react";
 
 // Context Imports
 import { useCallContext, useSubCallContext } from "@/context/call";
@@ -22,6 +20,67 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+// Types
+interface ScreenShareControlsProps {
+  onFullscreen: () => void;
+  onPopout: () => void;
+  isFullscreen: boolean;
+}
+
+// Screen Share Controls Component
+function ScreenShareControls({
+  onFullscreen,
+  onPopout,
+  isFullscreen,
+}: ScreenShareControlsProps) {
+  return (
+    <div className="absolute top-2 right-2 z-40 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="h-8 w-8 bg-background rounded-xl">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-full w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPopout();
+              }}
+            >
+              <Icon.ExternalLink className="h-4 w-4" />
+            </Button>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>Pop out to new window</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="h-8 w-8 bg-background rounded-xl">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-full w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                onFullscreen();
+              }}
+            >
+              {isFullscreen ? (
+                <Icon.Minimize className="h-4 w-4" />
+              ) : (
+                <Icon.Maximize className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          {isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
 // Main
 export function CallModal({
   title,
@@ -32,6 +91,7 @@ export function CallModal({
   deafened,
   screenShareTrackRef,
   hideBadges: isFocused,
+  onPopout,
 }: Readonly<{
   title: string;
   icon?: string;
@@ -41,9 +101,12 @@ export function CallModal({
   deafened?: boolean;
   screenShareTrackRef?: TrackReference;
   hideBadges?: boolean;
+  onPopout?: (trackRef: TrackReference, title: string) => void;
 }>) {
   const { isWatching, participantData } = useSubCallContext();
   const { isAtMax, inGridView } = useCallContext();
+  const videoContainerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const isScreenShare = !!screenShareTrackRef;
   const isLocal = screenShareTrackRef?.participant?.isLocal;
@@ -57,6 +120,50 @@ export function CallModal({
     if (!participantIdentity) return null;
     return participantData[participantIdentity]?.stream_preview ?? null;
   }, [participantData, participantIdentity]);
+
+  const handleFullscreen = useCallback(() => {
+    const container = videoContainerRef.current;
+    if (!container) return;
+
+    if (!document.fullscreenElement) {
+      container
+        .requestFullscreen?.()
+        .then(() => {
+          setIsFullscreen(true);
+        })
+        .catch(() => {
+          // Fullscreen request failed
+        });
+    } else {
+      document
+        .exitFullscreen?.()
+        .then(() => {
+          setIsFullscreen(false);
+        })
+        .catch(() => {
+          // Exit fullscreen failed
+        });
+    }
+  }, []);
+
+  const handlePopout = useCallback(() => {
+    if (screenShareTrackRef && onPopout) {
+      onPopout(screenShareTrackRef, title);
+    }
+  }, [screenShareTrackRef, onPopout, title]);
+
+  // Listen for fullscreen changes
+  const handleFullscreenChange = useCallback(() => {
+    setIsFullscreen(!!document.fullscreenElement);
+  }, []);
+
+  // Set up fullscreen event listener
+  useMemo(() => {
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [handleFullscreenChange]);
 
   const renderScreenShareContent = () => {
     // Own Screen Share
@@ -89,13 +196,25 @@ export function CallModal({
     // Watching someone
     if (currentIsWatching && !isLocal) {
       return (
-        <div className="absolute inset-0 w-full h-full">
+        <div
+          ref={videoContainerRef}
+          className={cn(
+            "absolute inset-0 w-full h-full group",
+            isFullscreen && "bg-black",
+          )}
+        >
           <VideoTrack
             trackRef={screenShareTrackRef!}
             className={cn(
               "bg-black h-full w-full object-contain select-none",
               isAtMax && isFocused ? "" : "rounded-xl",
+              isFullscreen && "rounded-none",
             )}
+          />
+          <ScreenShareControls
+            onFullscreen={handleFullscreen}
+            onPopout={handlePopout}
+            isFullscreen={isFullscreen}
           />
         </div>
       );
