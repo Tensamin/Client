@@ -90,7 +90,7 @@ export function CallModal({
   muted,
   deafened,
   screenShareTrackRef,
-  hideBadges: isFocused,
+  hideBadges: isFocused = false,
   onPopout,
 }: Readonly<{
   title: string;
@@ -165,8 +165,22 @@ export function CallModal({
     };
   }, [handleFullscreenChange]);
 
-  const renderScreenShareContent = () => {
-    // Own Screen Share
+  const renderAvatar = useCallback(() => {
+    return (
+      <div className="w-full h-full flex justify-center items-center">
+        <Avatar
+          image={icon}
+          display={title}
+          size={12}
+          addBorder
+          loading={false}
+        />
+      </div>
+    );
+  }, [icon, title]);
+
+  const renderScreenShareContent = useCallback(() => {
+    // Own screen share (big)
     if (isLocal && (isFocused || inGridView)) {
       return (
         <>
@@ -193,7 +207,25 @@ export function CallModal({
       );
     }
 
-    // Watching someone
+    // Own screen share (small)
+    if (isLocal && !isFocused && !inGridView) {
+      return (
+        <>
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Stream Preview"
+              className={cn(
+                "blur-xs select-none bg-black absolute inset-0 w-full h-full object-contain z-0",
+                isAtMax && isFocused ? "" : "rounded-xl",
+              )}
+            />
+          )}
+        </>
+      );
+    }
+
+    // Active screen share
     if (currentIsWatching && !isLocal) {
       return (
         <div
@@ -222,7 +254,7 @@ export function CallModal({
 
     // Preview
     if (previewImage) {
-      return inGridView ? (
+      return (
         <>
           <img
             src={previewImage}
@@ -237,15 +269,6 @@ export function CallModal({
             Watch Stream
           </Button>
         </>
-      ) : (
-        <img
-          src={previewImage}
-          alt="Stream Preview"
-          className={cn(
-            "blur-xs select-none bg-black absolute inset-0 w-full h-full object-contain z-0",
-            isAtMax && isFocused ? "" : "rounded-xl",
-          )}
-        />
       );
     }
 
@@ -258,21 +281,19 @@ export function CallModal({
         </div>
       </div>
     );
-  };
-
-  const renderAvatar = () => {
-    return (
-      <div className="w-full h-full flex justify-center items-center">
-        <Avatar
-          image={icon}
-          display={title}
-          size={12}
-          addBorder
-          loading={false}
-        />
-      </div>
-    );
-  };
+  }, [
+    isLocal,
+    isFocused,
+    inGridView,
+    previewImage,
+    isAtMax,
+    currentIsWatching,
+    screenShareTrackRef,
+    isFullscreen,
+    handleFullscreen,
+    handlePopout,
+    renderAvatar,
+  ]);
 
   return loading ? (
     <Card
@@ -340,7 +361,7 @@ export function CallModal({
             <Avatar
               image={icon}
               display={title}
-              size={inGridView ? 54 : 32}
+              size={inGridView || isFocused ? 54 : 32}
               addBorder
               loading={false}
             />

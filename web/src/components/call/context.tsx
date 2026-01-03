@@ -3,7 +3,11 @@ import type {
   ParticipantClickEvent,
   TrackReferenceOrPlaceholder,
 } from "@livekit/components-core";
-import { isTrackReference, TrackReference } from "@livekit/components-core";
+import {
+  getTrackReferenceId,
+  isTrackReference,
+  TrackReference,
+} from "@livekit/components-core";
 import { useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import {
@@ -114,9 +118,7 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
     }
 
     return participantTracks.find(
-      (track) =>
-        isTrackReference(track) &&
-        track.publication?.trackSid === focusedTrackSid,
+      (track) => getTrackReferenceId(track) === focusedTrackSid,
     );
   }, [participantTracks, focusedTrackSid]);
 
@@ -143,28 +145,19 @@ export function CallPageProvider({ children }: { children: ReactNode }) {
 
   // click handling
   const resolveTrackSid = useCallback(
-    (participantIdentity: string, publicationSid?: string | null) => {
-      if (publicationSid) {
-        return publicationSid;
-      }
-
-      const fallbackTrack = participantTracks.find(
-        (track) =>
-          isTrackReference(track) &&
-          track.participant.identity === participantIdentity,
+    (participantIdentity: string) => {
+      const track = participantTracks.find(
+        (track) => track.participant.identity === participantIdentity,
       );
 
-      return fallbackTrack?.publication?.trackSid ?? null;
+      return track ? getTrackReferenceId(track) : null;
     },
     [participantTracks],
   );
 
   const handleParticipantClick = useCallback(
     (event: ParticipantClickEvent) => {
-      const trackSid = resolveTrackSid(
-        event.participant.identity,
-        event.track?.trackSid,
-      );
+      const trackSid = resolveTrackSid(event.participant.identity);
       if (!trackSid) {
         return;
       }

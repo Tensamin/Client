@@ -1,5 +1,9 @@
 // Package Imports
-import { isTrackReference, TrackReference } from "@livekit/components-core";
+import {
+  getTrackReferenceId,
+  isTrackReference,
+  TrackReference,
+} from "@livekit/components-core";
 import {
   useMaybeTrackRefContext,
   useParticipantContext,
@@ -175,11 +179,11 @@ export function FocusDuplicateOverlay({
   focusedTrackSid: string | null;
 }) {
   const trackRef = useMaybeTrackRefContext();
-  if (!focusedTrackSid || !trackRef || !isTrackReference(trackRef)) {
+  if (!focusedTrackSid || !trackRef) {
     return null;
   }
 
-  const isDuplicate = trackRef.publication?.trackSid === focusedTrackSid;
+  const isDuplicate = getTrackReferenceId(trackRef) === focusedTrackSid;
   if (!isDuplicate) {
     return null;
   }

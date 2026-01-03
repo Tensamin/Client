@@ -53,7 +53,7 @@ import { Switch } from "@/components/ui/switch";
 // Main
 function CallPageContent() {
   const { conversations } = useUserContext();
-  const { disconnect } = useCallContext();
+  const { disconnect, inGridView, setCurrentLayout, callId } = useCallContext();
   const { stopWatching, isWatching } = useSubCallContext();
   const {
     focusedTrackRef,
@@ -63,7 +63,14 @@ function CallPageContent() {
     popoutScreenShare,
     closePopout,
   } = useCallPageContext();
-  const { callId } = useCallContext();
+
+  useEffect(() => {
+    if (focusedTrackRef) {
+      setCurrentLayout("focus");
+    } else {
+      setCurrentLayout("grid");
+    }
+  }, [focusedTrackRef, setCurrentLayout]);
 
   const innerCallPageContainer = useRef<HTMLDivElement>(null);
 
@@ -112,7 +119,7 @@ function CallPageContent() {
         </AnimatePresence>
       </div>
       <div className="flex-1" ref={innerCallPageContainer}>
-        {focusedTrackRef ? <CallFocus /> : <CallGrid className="h-full" />}
+        {inGridView ? <CallGrid className="h-full" /> : <CallFocus />}
       </div>
       <div className="absolute bottom-3 left-0 flex justify-center w-full">
         <div className="flex gap-3 bg-card p-1.5 rounded-lg border">
