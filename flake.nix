@@ -21,11 +21,11 @@
         archMapping = {
           x86_64-linux = {
             debArch = "amd64";
-            hash = "sha256-sRbrWBiQ5Wsk4Vm4qBQlmvakJtp0+2rNhJYHRlodX5o="; # nix-update will manage this
+            hash = "sha256-bFuqpUQ4RRIHZZZ1zK8lrLJQXSYXAVjn7uTXP2vs0Ng="; # nix-update will manage this
           };
           aarch64-linux = {
             debArch = "arm64";
-            hash = "sha256-f2ci62f3h1CuSdHYe7qPx3HLR7VbB0HGNsLarcnf1Sw="; # nix-update will manage this
+            hash = "sha256-eSchhRY4Au0tPjPAFJ6MBZu13ISqPpIzZyeT3iQXJoQ="; # nix-update will manage this
           };
         };
         
@@ -33,7 +33,7 @@
       in {
         packages.default = pkgs.stdenv.mkDerivation rec {
           pname = "tensamin";
-          version = "0.1.32"; # nix-update will manage this
+          version = "0.1.34"; # nix-update will manage this
 
           src = pkgs.fetchurl {
             url = "https://github.com/Tensamin/Client/releases/download/v${version}/tensamin_${version}_${archConfig.debArch}.deb";
