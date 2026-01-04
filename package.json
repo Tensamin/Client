@@ -15,9 +15,7 @@
   "productName": "Tensamin",
   "scripts": {
     "format": "bunx prettier --write .",
-    "lint": "eslint",
-    "dev": "next dev",
-    "build": "next telemetry disable && next build",
-    "build:electron": "cd desktop && bun run build && cd .."
+    "build:mobile": "cd mobile && bun run build:android && bun run build:ios",
+    "build:web": "cd web && bun run build"
   }
 }

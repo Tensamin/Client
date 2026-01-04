@@ -1,0 +1,14 @@
+{
+  "name": "tensamin",
+  "scripts": {
+    "dev:desktop": "tauri dev",
+    "dev:android": "tauri android dev",
+    "dev:ios": "tauri ios dev",
+    "build:desktop": "NO_STRIP=true tauri build",
+    "build:android": "tauri android build",
+    "build:ios": "tauri ios build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.6"
+  }
+}

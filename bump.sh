@@ -8,7 +8,8 @@ FILES=(
 	"desktop/package.json"
 	"desktop/aur/bin/PKGBUILD"
 	"mobile/package.json"
-	"mobile/app.json"
+	"mobile/Cargo.toml"
+	"mobile/tauri.conf.json"
 	"web/package.json"
 )
 
