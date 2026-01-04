@@ -208,14 +208,17 @@ export function SocketProvider({
           };
 
           const timeoutId = setTimeout(() => {
-            pendingRequests.current.delete(id);
+            const error = new Error("Request timed out", {
+              cause: "Request timed out",
+            });
             rawDebugLog(
               "Socket Context",
-              "Request timed out",
+              error.message,
               { id, type: requestType, data },
               "red",
             );
-            reject();
+            reject(error);
+            pendingRequests.current.delete(id);
           }, responseTimeout);
 
           pendingRequests.current.set(id, { resolve, reject, timeoutId });
@@ -294,7 +297,7 @@ export function SocketProvider({
             default:
               setError(
                 "Identification Failed",
-                "This could be a broken Omikron or an unkown error.",
+                "This error is caused by a broken Omikron, \n an outdated Client or an unknown error.",
               );
               return;
           }

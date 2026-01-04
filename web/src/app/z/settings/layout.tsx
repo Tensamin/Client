@@ -29,7 +29,7 @@ export const Pages = [
   "-Account",
   "Iota",
   "Profile",
-  "Privacy",
+  "Security",
   "-Appearance",
   "Theme",
   "CSS",
