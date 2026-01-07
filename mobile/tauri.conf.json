@@ -13,6 +13,9 @@
   "app": {
     "windows": [
       {
+        "label": "main",
+        "zoomHotkeysEnabled": false,
+
         "title": "Tensamin",
         "width": 854,
         "height": 480,

@@ -32,6 +32,15 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: packageJson.productName,
   },
+  viewport: {
+    width: "device-width",
+    initialScale: 1.0,
+    viewportFit: "cover",
+    userScalable: false,
+    maximumScale: 1.0,
+    minimumScale: 1.0,
+    interactiveWidget: "overlays-content",
+  },
   title: packageJson.productName,
   description: packageJson.description,
 };
@@ -45,7 +54,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         data-lk-theme="default"
-        className={`antialiased max-h-screen overflow-hidden ${sans.className}`}
+        className={`antialiased pt-[env(safe-area-inset-top)] max-h-screen overflow-hidden ${sans.className}`}
       >
         <ThemeProvider
           attribute="class"

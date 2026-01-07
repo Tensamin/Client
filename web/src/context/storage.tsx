@@ -95,6 +95,7 @@ export function StorageProvider({
   const [bypass, setBypass] = useState(false);
   const [ready, setReady] = useState(false);
   const [isElectron, setIsElectron] = useState(false);
+  const [isTauri, setIsTauri] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
   const [, setRawThemeTint] = useState<string | null>(null);
   const [themeCSS, setRawThemeCSS] = useState<string | null>(null);
@@ -109,6 +110,16 @@ export function StorageProvider({
       setIsElectron(true);
     } else {
       setIsElectron(false);
+    }
+  }, []);
+
+  // Check if running in Tauri
+  useEffect(() => {
+    // @ts-expect-error ElectronAPI only available in Electron
+    if (window.__TAURI_INTERNALS__) {
+      setIsTauri(true);
+    } else {
+      setIsTauri(false);
     }
   }, []);
 
@@ -292,6 +303,7 @@ export function StorageProvider({
         setThemeTintType,
         bypass,
         isElectron,
+        isTauri,
         setBypass,
       }}
     >
@@ -318,5 +330,6 @@ type StorageContextType = {
   setThemeTintType: (tintType: string) => void;
   bypass: boolean;
   isElectron: boolean;
+  isTauri: boolean;
   setBypass: (bypass: boolean) => void;
 };
