@@ -100,37 +100,38 @@ export function CallButton({
   calls: string[];
   moreRounded?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(calls[0] || "");
+  const { getCallToken, setDontSendInvite, connect } = useCallContext();
 
-  return (
-    <CallButtonPopover open={open} setOpen={setOpen} callId={value}>
-      {calls.length === 1 ? (
-        <Button className="w-9 h-9">
-          <Icon.Phone />
-        </Button>
-      ) : calls.length > 1 ? (
-        <Select
-          value=""
-          onValueChange={(value) => {
-            setOpen(true);
-            setValue(value);
-          }}
-        >
-          <SelectTrigger className={moreRounded ? "rounded-xl" : "rounded-lg"}>
-            <Icon.Phone color="var(--foreground)" scale={80} />
-          </SelectTrigger>
-          <SelectContent>
-            {calls.map((callId, index) => (
-              <SelectItem key={`${callId}-${index}`} value={callId}>
-                {displayCallId(callId)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : null}
+  const [open, setOpen] = useState(false);
+
+  return calls.length === 1 ? (
+    <CallButtonPopover callId={calls[0]} open={open} setOpen={setOpen}>
+      <Button className="w-9 h-9">
+        <Icon.Phone />
+      </Button>
     </CallButtonPopover>
-  );
+  ) : calls.length > 1 ? (
+    <Select
+      value=""
+      onValueChange={(value) => {
+        getCallToken(value).then((token) => {
+          setDontSendInvite(true);
+          connect(token, value);
+        });
+      }}
+    >
+      <SelectTrigger className={moreRounded ? "rounded-xl" : "rounded-lg"}>
+        <Icon.Phone color="var(--foreground)" scale={80} />
+      </SelectTrigger>
+      <SelectContent>
+        {calls.map((callId, index) => (
+          <SelectItem key={index} value={callId}>
+            {displayCallId(callId)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  ) : null;
 }
 
 export function CallButtonPopover({

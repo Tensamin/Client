@@ -13,6 +13,7 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSub,
+  ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
@@ -69,6 +70,7 @@ export function UserModal({
     conversations.find((conv) => conv?.user_id === user.id)?.calls || [];
 
   const [profileOpen, setProfileOpen] = useState(false);
+  const [callSubMenuOpen, setCallSubMenuOpen] = useState(false);
 
   switch (size) {
     case "big":
@@ -90,13 +92,17 @@ export function UserModal({
             </ContextMenuTrigger>
             <ContextMenuContent>
               {currentUserCalls.length > 1 ? (
-                <ContextMenuSub>
+                <ContextMenuSub
+                  open={callSubMenuOpen}
+                  onOpenChange={setCallSubMenuOpen}
+                >
                   <ContextMenuSubTrigger>Calls</ContextMenuSubTrigger>
-                  <ContextMenuContent>
+                  <ContextMenuSubContent>
                     {currentUserCalls.map((callId) => (
                       <ContextMenuItem
                         key={callId}
                         onSelect={() => {
+                          setCallSubMenuOpen(false);
                           getCallToken(callId).then((token) => {
                             setDontSendInvite(true);
                             connect(token, callId);
@@ -110,7 +116,7 @@ export function UserModal({
                         {displayCallId(callId)}
                       </ContextMenuItem>
                     ))}
-                  </ContextMenuContent>
+                  </ContextMenuSubContent>
                 </ContextMenuSub>
               ) : currentUserCalls.length === 1 ? (
                 <ContextMenuItem
