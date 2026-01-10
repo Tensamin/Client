@@ -1,6 +1,6 @@
 // Package Imports
 import * as Icon from "lucide-react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 import packageJson from "../../package.json";
@@ -26,20 +26,20 @@ import { CryptoProvider } from "@/context/crypto";
 import { PageProvider } from "@/context/page";
 
 // Main
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  userScalable: false,
+  maximumScale: 1,
+  minimumScale: 1,
+  viewportFit: "contain",
+};
+
 export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: packageJson.productName,
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1.0,
-    viewportFit: "cover",
-    userScalable: false,
-    maximumScale: 1.0,
-    minimumScale: 1.0,
-    interactiveWidget: "overlays-content",
   },
   title: packageJson.productName,
   description: packageJson.description,

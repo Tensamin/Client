@@ -32,3 +32,6 @@ yarn-error.*
 # Examples/test
 app-example
 packageTest/
+
+mobile/gen/android
+mobile/target
