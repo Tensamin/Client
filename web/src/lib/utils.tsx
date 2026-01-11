@@ -185,3 +185,33 @@ export function calculateOptimalLayout(
 
   return { width: bestWidth, height: bestHeight, cols: bestCols };
 }
+
+// Display Call ID
+import { mono } from "@/lib/fonts";
+export function displayCallId(callId: string) {
+  try {
+    const hex = callId.replace(/-/g, "");
+
+    const int = BigInt(`0x${hex}`);
+    const chars =
+      "!#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~";
+    let result = "";
+    let n = int;
+
+    while (n > BigInt(0)) {
+      result = chars[Number(n % BigInt(85))] + result;
+      n = n / BigInt(85);
+    }
+
+    return (
+      <p className={mono.className}>
+        {result
+          .replaceAll(/[^a-zA-Z0-9]/g, "")
+          .slice(4, 12)
+          .toUpperCase() || "0"}
+      </p>
+    );
+  } catch {
+    return "0";
+  }
+}

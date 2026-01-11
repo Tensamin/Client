@@ -18,7 +18,7 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import { MotionDivWrapper } from "@/components/animation/presence";
-import { CallButtonWrapper } from "@/components/call/components/call-button";
+import { CallButtonWrapper } from "@/components/call/components/CallButton";
 import { Button } from "@/components/ui/button";
 import {
   HoverCard,

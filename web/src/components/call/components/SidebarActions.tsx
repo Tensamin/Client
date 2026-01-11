@@ -14,7 +14,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
 // Lib Imports
-import { cn } from "@/lib/utils";
+import { cn, displayCallId } from "@/lib/utils";
 
 // Context Imports
 import { useCallContext, useSubCallContext } from "@/context/call";
@@ -44,10 +44,9 @@ import {
 } from "@/components/ui/tooltip";
 import { useSocketContext } from "@/context/socket";
 import { DeafButton, MuteButton, ScreenShareButton } from "./buttons";
-import { displayCallId } from "./call-button";
 
 // Main
-export function VoiceActions() {
+export default function VoiceActions() {
   const { shouldConnect, disconnect } = useCallContext();
   const { name } = useRoomInfo();
   const { setPage } = usePageContext();

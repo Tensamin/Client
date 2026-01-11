@@ -7,13 +7,13 @@ import { calculateOptimalLayout, cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 // Context
-import { useCallPageContext } from "./context";
+import { useCallPageContext } from "../context";
 
 // Components
-import { TileContent } from "./modals/wrapper";
+import Tile from "../components/Tile";
 
 // Main
-export function CallGrid({ className }: { className?: string }) {
+export default function Grid({ className }: { className?: string }) {
   const { participantTracks, handleParticipantClick, openPopout } =
     useCallPageContext();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -67,7 +67,7 @@ export function CallGrid({ className }: { className?: string }) {
                   "w-full h-full relative border-0 flex justify-center items-center px-5"
                 }
               >
-                <TileContent onPopout={openPopout} />
+                <Tile onPopout={openPopout} />
               </ParticipantTile>
             </div>
           ))}

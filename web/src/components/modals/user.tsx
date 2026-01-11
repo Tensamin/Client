@@ -6,7 +6,7 @@ import { usePageContext } from "@/context/page";
 import { useUserContext } from "@/context/user";
 
 // Components
-import { displayCallId } from "@/components/call/components/call-button";
+import { displayCallId } from "@/lib/utils";
 import * as RawModal from "@/components/modals/raw";
 import {
   ContextMenu,

@@ -18,9 +18,14 @@ import {
 } from "@/components/ui/context-menu";
 import { useUserContext } from "@/context/user";
 import { useEffect, useState } from "react";
-import { Button } from "../ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { useCallPageContext } from "./context";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useCallPageContext } from "../context";
 
 // Main
 export default function ParticipantContextMenu({

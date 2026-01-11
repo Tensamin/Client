@@ -1,33 +1,18 @@
 // Package Imports
-import type { TrackReferenceOrPlaceholder } from "@livekit/components-core";
-import { isTrackReference } from "@livekit/components-core";
 import { FocusLayout, ParticipantTile } from "@livekit/components-react";
-import { Track } from "livekit-client";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 // Lib Imports
 import { calculateOptimalLayout } from "@/lib/utils";
 
 // Components
-import { FocusDuplicateOverlay, TileContent } from "./modals/wrapper";
-
-// Helper Functions
-function getTrackKey(track: TrackReferenceOrPlaceholder) {
-  if (isTrackReference(track)) {
-    return (
-      track.publication?.trackSid ??
-      `${track.participant.identity}-${track.source ?? Track.Source.Camera}`
-    );
-  }
-
-  return `${track.participant.identity}-${track.source ?? Track.Source.Camera}`;
-}
+import Tile, { FocusDuplicateOverlay } from "../components/Tile";
 
 // Context
-import { useCallPageContext } from "./context";
+import { useCallPageContext } from "../context";
 
 // Main
-export function CallFocus() {
+export default function Focus() {
   const {
     focusedTrackRef,
     participantTracks,
@@ -81,7 +66,7 @@ export function CallFocus() {
             height: layout.height,
           }}
         >
-          <TileContent
+          <Tile
             containerSize={containerSize}
             hideBadges
             onPopout={openPopout}
@@ -90,15 +75,15 @@ export function CallFocus() {
         {!hideParticipants && (
           <div className="w-full max-w-5xl">
             <div className="h-37 flex items-center justify-center gap-3 overflow-x-auto px-2">
-              {participantTracks.map((track) => (
+              {participantTracks.map((track, index) => (
                 <ParticipantTile
-                  key={getTrackKey(track)}
+                  key={index}
                   trackRef={track}
                   disableSpeakingIndicator
                   onParticipantClick={handleParticipantClick}
                   className="relative h-full aspect-video flex-none"
                 >
-                  <TileContent onPopout={openPopout} />
+                  <Tile onPopout={openPopout} />
                   <FocusDuplicateOverlay focusedTrackSid={focusedTrackSid} />
                 </ParticipantTile>
               ))}

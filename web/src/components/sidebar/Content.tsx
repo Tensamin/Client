@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, ViewTransition } from "react";
 
 import { useCallContext } from "@/context/call";
 
-import { VoiceActions } from "@/components/call/components/voice-actions";
+import VoiceActions from "@/components/call/components/SidebarActions";
 import { Communities, Conversations } from "@/components/modals/category";
 
 export default function Content({

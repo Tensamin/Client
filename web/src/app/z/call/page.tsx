@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 // Lib Imports
 import { User } from "@/lib/types";
+import { displayCallId } from "@/lib/utils";
 
 // Context Imports
 import { useCallContext, useSubCallContext } from "@/context/call";
@@ -24,14 +25,13 @@ import {
   MuteButton,
   ScreenShareButton,
 } from "@/components/call/components/buttons";
-import { displayCallId } from "@/components/call/components/call-button";
 import {
   CallPageProvider,
   useCallPageContext,
 } from "@/components/call/context";
-import { CallFocus } from "@/components/call/focus";
-import { CallGrid } from "@/components/call/grid";
-import { PopoutScreenShare } from "@/components/call/modals/PopoutScreenShare";
+import CallFocus from "@/components/call/view/Focus";
+import CallGrid from "@/components/call/view/Grid";
+import { PopoutScreenShare } from "@/components/call/view/ScreenSharePopout";
 import Avatar from "@/components/modals/Avatar";
 import { UserModal } from "@/components/modals/user";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ import { Switch } from "@/components/ui/switch";
 function CallPageContent() {
   const { conversations } = useUserContext();
   const { disconnect, inGridView, setCurrentLayout, callId } = useCallContext();
-  const { stopWatching, isWatching, streamViewers } = useSubCallContext();
+  const { stopWatching, streamViewers } = useSubCallContext();
   const {
     focusedTrackRef,
     setFocusedTrackSid,

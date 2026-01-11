@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 // Lib Imports
 import { username_to_id } from "@/lib/endpoints";
-import { cn } from "@/lib/utils";
+import { cn, displayCallId } from "@/lib/utils";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
@@ -15,10 +15,7 @@ import { rawDebugLog } from "@/context/storage";
 import { useUserContext } from "@/context/user";
 
 // Components
-import {
-  CallInteraction,
-  displayCallId,
-} from "@/components/call/components/call-button";
+import { CallInteraction } from "@/components/call/components/CallButton";
 import { LoadingIcon } from "@/components/loading";
 import { Text } from "@/components/markdown/text";
 import { UserModal } from "@/components/modals/user";
