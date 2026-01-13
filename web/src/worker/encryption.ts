@@ -11,7 +11,7 @@ export async function encrypt(
   password: string,
 ): Promise<BasicSuccessMessage> {
   try {
-    const decodedData = Uint8Array.from(input, (c) => c.charCodeAt(0));
+    const decodedData = new TextEncoder().encode(input);
 
     const passwordHash = await crypto.subtle.digest(
       "SHA-256",
@@ -78,7 +78,7 @@ export async function decrypt(
     const decryptedData = new Uint8Array(decryptedBuffer);
     return {
       success: true,
-      message: String.fromCharCode(...decryptedData),
+      message: new TextDecoder().decode(decryptedData),
     };
   } catch {
     return { success: false, message: "ERROR_ENCRYPTION_WORKER_DECRYPT" };

@@ -51,6 +51,7 @@ type UserContextType = {
   fetchedUsers: Map<number, User>;
   ownState: UserState;
   setOwnState: (state: UserState) => void;
+  updateConversationPosition: (userId: number) => void;
 
   ownUserData: User | null;
   ownUserHasPremium: boolean;
@@ -203,6 +204,23 @@ export function UserProvider({
     [get],
   );
 
+  // Put user at the top of the conversations list
+  const updateConversationPosition = useCallback(
+    (userId: number) => {
+      setConversationsState((prev) => {
+        const index = prev.findIndex((c) => c.user_id === userId);
+        if (index === -1) return prev;
+
+        const conversation = prev[index];
+        const newConversations = [...prev];
+        newConversations.splice(index, 1);
+        newConversations.unshift(conversation);
+        return newConversations;
+      });
+    },
+    [],
+  );
+
   // Get own user
   useEffect(() => {
     get(ownId).then((user) => {
@@ -229,7 +247,11 @@ export function UserProvider({
           };
         });
 
-        setConversationsAndSync(convertedUserIds);
+        const sortedConversations = convertedUserIds.sort((a, b) => {
+          return b.last_message_at - a.last_message_at;
+        });
+
+        setConversationsAndSync(sortedConversations);
       })
       .catch((err) => {
         toast.error("Failed to get conversations");
@@ -242,6 +264,7 @@ export function UserProvider({
       });
   }, [send, setConversationsAndSync]);
 
+  // Set current receiver shared secret
   useEffect(() => {
     setFailedMessagesAmount(0);
 
@@ -295,6 +318,7 @@ export function UserProvider({
     refetchConversations();
   }, [isReady, refetchConversations]);
 
+  // Get initial communities
   useEffect(() => {
     if (!isReady) return;
 
@@ -308,6 +332,7 @@ export function UserProvider({
       });
   }, [isReady, send]);
 
+  // Handle socket messages
   const handleSocketMessage = useEffectEvent(
     async (
       message: CommunicationValue.Parent<
@@ -373,6 +398,7 @@ export function UserProvider({
     void handleSocketMessage(data);
   }, [lastMessage]);
 
+  // Custom Edit
   const doCustomEdit = useCallback(
     (id: number, user: User) => {
       const newUser = {
@@ -476,6 +502,7 @@ export function UserProvider({
         fetchedUsers,
         ownState,
         setOwnState,
+        updateConversationPosition,
 
         ownUserData,
         ownUserHasPremium,

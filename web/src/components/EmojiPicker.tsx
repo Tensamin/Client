@@ -3,7 +3,7 @@ import { EmojiPicker } from "frimousse";
 import { useState } from "react";
 import { Input } from "./ui/input";
 
-export function StyledEmojiPicker({
+export default function StyledEmojiPicker({
   onInsert,
 }: {
   onInsert: (emoji: string) => void;
@@ -49,10 +49,7 @@ export function StyledEmojiPicker({
                   {...props}
                   onClick={(e) => {
                     if (typeof props.onClick === "function") props.onClick(e);
-                    const b64Emoji = Buffer.from(emoji.emoji).toString(
-                      "base64",
-                    );
-                    onInsert("```emoji\n" + b64Emoji + "\n```");
+                    onInsert(emoji.emoji);
                   }}
                 >
                   {emoji.emoji}

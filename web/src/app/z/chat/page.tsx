@@ -15,7 +15,7 @@ import { useUserContext } from "@/context/user";
 
 // Components
 import { Box } from "@/components/chat/box";
-import { StyledEmojiPicker } from "@/components/emojiPicker";
+import EmojiPicker from "@/components/EmojiPicker";
 import { PageDiv } from "@/components/pageDiv";
 import { Button } from "@/components/ui/button";
 import {
@@ -89,7 +89,7 @@ export default function Page() {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto">
-            <StyledEmojiPicker
+            <EmojiPicker
               onInsert={(emoji) => setMessage((prev) => prev + emoji)}
             />
           </PopoverContent>

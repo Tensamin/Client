@@ -55,7 +55,8 @@ export function MessageProvider({
 }>) {
   const { send, isReady, lastMessage } = useSocketContext();
   const { pageData: id } = usePageContext();
-  const { ownId, currentReceiverId, get } = useUserContext();
+  const { ownId, currentReceiverId, get, updateConversationPosition } =
+    useUserContext();
   const { get_shared_secret, encrypt, privateKey } = useCryptoContext();
   const newUserNotification = useNewUserNotification();
   const [addRealtimeMessageToBox, setAddRealtimeMessageToBox] =
@@ -115,7 +116,7 @@ export function MessageProvider({
 
       return grouped;
     },
-    [],
+    []
   );
 
   const getMessages = useCallback(
@@ -152,7 +153,7 @@ export function MessageProvider({
         previous: loaded - amount,
       };
     },
-    [currentReceiverId, groupMessages, id, isReady, ownId, send],
+    [currentReceiverId, groupMessages, id, isReady, ownId, send]
   );
 
   const sendMessage = useCallback(
@@ -162,16 +163,17 @@ export function MessageProvider({
       if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
       setAddRealtimeMessageToBox(message);
       const ownPublicKey = await get(ownId, false).then(
-        (data) => data.public_key,
+        (data) => data.public_key
       );
       const otherPublicKey = await get(currentReceiverId, false).then(
-        (data) => data.public_key,
+        (data) => data.public_key
       );
       const sharedSecret = await get_shared_secret(
         privateKey,
         ownPublicKey,
-        otherPublicKey,
+        otherPublicKey
       );
+      updateConversationPosition(currentReceiverId);
       const encrypted = await encrypt(message.content, sharedSecret.message);
       return await send("message_send", {
         ...(files && { files }),
@@ -180,6 +182,7 @@ export function MessageProvider({
       });
     },
     [
+      updateConversationPosition,
       currentReceiverId,
       encrypt,
       get,
@@ -189,7 +192,7 @@ export function MessageProvider({
       ownId,
       privateKey,
       send,
-    ],
+    ]
   );
 
   return (
@@ -207,7 +210,8 @@ export function MessageProvider({
 }
 
 export function useNewUserNotification() {
-  const { get, ownId } = useUserContext();
+  const { get, ownId, updateConversationPosition, currentReceiverId } =
+    useUserContext();
   const { decrypt, get_shared_secret, privateKey } = useCryptoContext();
   const { data } = useStorageContext();
 
@@ -224,15 +228,17 @@ export function useNewUserNotification() {
           const sharedSecret = await get_shared_secret(
             privateKey,
             ownUser.public_key,
-            otherUser.public_key,
+            otherUser.public_key
           );
 
           const decrypted = await decrypt(
             encryptedMessage,
-            sharedSecret.message,
+            sharedSecret.message
           );
 
           if (!decrypted.success) return;
+
+          updateConversationPosition(currentReceiverId);
 
           const showFallback = () => {
             toast(otherUser.display, {
@@ -296,12 +302,14 @@ export function useNewUserNotification() {
       })();
     },
     [
+      updateConversationPosition,
+      currentReceiverId,
       decrypt,
       get,
       get_shared_secret,
       ownId,
       privateKey,
       data.enableNotifications,
-    ],
+    ]
   );
 }

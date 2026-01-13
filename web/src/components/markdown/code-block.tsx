@@ -31,11 +31,6 @@ export function CodeBlock({
     setTimeout(() => setCopied(false), 1000);
   };
 
-  if (language === "emoji") {
-    const emoji = Buffer.from(children, "base64").toString();
-    return emoji;
-  }
-
   return inline ? (
     <code
       onClick={copyCode}
