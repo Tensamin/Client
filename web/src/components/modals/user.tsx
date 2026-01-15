@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 
 // Context Imports
-import { usePageContext } from "@/context/page";
 import { useUserContext } from "@/context/user";
 
 // Components
@@ -23,6 +22,7 @@ import { v7 } from "uuid";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import Avatar from "./Avatar";
+import { useRouter } from "next/navigation";
 
 // Main
 export function UserModal({
@@ -44,9 +44,10 @@ export function UserModal({
     conversations,
     currentReceiverId,
   } = useUserContext();
-  const { setPage } = usePageContext();
   const { getCallToken, connect, outerState, setDontSendInvite } =
     useCallContext();
+
+  const router = useRouter();
 
   useEffect(() => {
     const cachedUser = fetchedUsers.get(id);
@@ -86,7 +87,7 @@ export function UserModal({
                 {...props}
                 description={user.status || ""}
                 onClick={() => {
-                  setPage("chat", String(user.id));
+                  router.push(`/chat/${user.id}`);
                 }}
               />
             </ContextMenuTrigger>
@@ -159,7 +160,7 @@ export function UserModal({
           <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
             <DialogContent
               aria-describedby={undefined}
-              className="!max-w-4xl h-auto"
+              className="max-w-4xl! h-auto"
             >
               <DialogTitle hidden>{user.id}</DialogTitle>
               <div className="w-full">

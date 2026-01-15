@@ -5,7 +5,6 @@ import packageJson from "@/../package.json";
 import React, { useCallback } from "react";
 
 // Context Imports
-import { usePageContext } from "@/context/page";
 import { useSocketContext } from "@/context/socket";
 import { useStorageContext } from "@/context/storage";
 
@@ -23,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { usePathname, useRouter } from "next/navigation";
 
 // Main
 export const Pages = [
@@ -74,19 +74,24 @@ function SettingsButton({
 export default function Page({ children }: { children: React.ReactNode }) {
   const { ownPing, iotaPing } = useSocketContext();
   const { data, set, clearAll } = useStorageContext();
-  const { setPage, page } = usePageContext();
+
+  const router = useRouter();
+  const pathname = usePathname().split("/");
+  const page = pathname[2] || "home";
 
   const selected =
     page.replace("settings/", "") ===
     ((data.lastSettingsMenu as string) ?? "").toLowerCase()
       ? (data.lastSettingsMenu as string)
       : undefined;
+
   const setSelected = useCallback(
     (page: string) => {
       set("lastSettingsMenu", page);
-      setPage(`settings/${page.toLowerCase()}`);
+
+      router.push(`/settings/${page.toLowerCase()}`);
     },
-    [set, setPage],
+    [set, router],
   );
 
   return (
@@ -142,7 +147,7 @@ export default function Page({ children }: { children: React.ReactNode }) {
                   <AlertDialogAction
                     onClick={() => {
                       clearAll();
-                      setPage("login");
+                      router.push("/login");
                     }}
                   >
                     Logout

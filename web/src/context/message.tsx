@@ -16,7 +16,6 @@ import * as CommunicationValue from "@/lib/communicationValues";
 
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
-import { usePageContext } from "@/context/page";
 import { useSocketContext } from "@/context/socket";
 import { useStorageContext } from "@/context/storage";
 import { useUserContext } from "@/context/user";
@@ -29,6 +28,7 @@ import Avatar from "@/components/modals/Avatar";
 import { DataContainer } from "@/lib/communicationValues";
 import { playSound } from "@/lib/sound";
 import { Message, MessageGroup, Messages } from "@/lib/types";
+import { usePathname } from "next/navigation";
 
 const GROUP_WINDOW_MS = 60 * 1000;
 
@@ -53,8 +53,11 @@ export function MessageProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { send, isReady, lastMessage } = useSocketContext();
-  const { pageData: id } = usePageContext();
+  const { send, identified, lastMessage } = useSocketContext();
+
+  const pathname = usePathname().split("/");
+  const id = Number(pathname[2]) || null;
+
   const { ownId, currentReceiverId, get, updateConversationPosition } =
     useUserContext();
   const { get_shared_secret, encrypt, privateKey } = useCryptoContext();
@@ -116,12 +119,12 @@ export function MessageProvider({
 
       return grouped;
     },
-    []
+    [],
   );
 
   const getMessages = useCallback(
     async (loaded: number, amount: number): Promise<Messages> => {
-      if (!isReady)
+      if (!identified)
         throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
       if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
       const groupedMessages = await send("messages_get", {
@@ -153,25 +156,25 @@ export function MessageProvider({
         previous: loaded - amount,
       };
     },
-    [currentReceiverId, groupMessages, id, isReady, ownId, send]
+    [currentReceiverId, groupMessages, id, identified, ownId, send],
   );
 
   const sendMessage = useCallback(
     async (message: Message, files?: File[]): Promise<DataContainer> => {
-      if (!isReady)
+      if (!identified)
         throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NOT_READY");
       if (!id) throw new Error("ERROR_SOCKET_CONTEXT_GET_MESSAGES_NO_USER_ID");
       setAddRealtimeMessageToBox(message);
       const ownPublicKey = await get(ownId, false).then(
-        (data) => data.public_key
+        (data) => data.public_key,
       );
       const otherPublicKey = await get(currentReceiverId, false).then(
-        (data) => data.public_key
+        (data) => data.public_key,
       );
       const sharedSecret = await get_shared_secret(
         privateKey,
         ownPublicKey,
-        otherPublicKey
+        otherPublicKey,
       );
       updateConversationPosition(currentReceiverId);
       const encrypted = await encrypt(message.content, sharedSecret.message);
@@ -188,11 +191,11 @@ export function MessageProvider({
       get,
       get_shared_secret,
       id,
-      isReady,
+      identified,
       ownId,
       privateKey,
       send,
-    ]
+    ],
   );
 
   return (
@@ -228,12 +231,12 @@ export function useNewUserNotification() {
           const sharedSecret = await get_shared_secret(
             privateKey,
             ownUser.public_key,
-            otherUser.public_key
+            otherUser.public_key,
           );
 
           const decrypted = await decrypt(
             encryptedMessage,
-            sharedSecret.message
+            sharedSecret.message,
           );
 
           if (!decrypted.success) return;
@@ -310,6 +313,6 @@ export function useNewUserNotification() {
       ownId,
       privateKey,
       data.enableNotifications,
-    ]
+    ],
   );
 }

@@ -62,23 +62,21 @@ export default function RootLayout({
           enableSystem
           storageKey="theme"
         >
+          <Toaster
+            position="top-right"
+            expand
+            icons={{
+              success: <Icon.Check size={19} />,
+              error: <Icon.X size={19} />,
+              warning: <Icon.AlertTriangle size={19} />,
+              info: <Icon.Book size={19} />,
+              loading: <Icon.Loader size={19} className="animate-spin" />,
+            }}
+          />
           <StorageProvider>
             <PageProvider>
               <CryptoProvider>
                 <Suspense fallback={<Loading progress={0} />}>
-                  <Toaster
-                    position="top-right"
-                    expand
-                    icons={{
-                      success: <Icon.Check size={19} />,
-                      error: <Icon.X size={19} />,
-                      warning: <Icon.AlertTriangle size={19} />,
-                      info: <Icon.Book size={19} />,
-                      loading: (
-                        <Icon.Loader size={19} className="animate-spin" />
-                      ),
-                    }}
-                  />
                   {children}
                 </Suspense>
               </CryptoProvider>

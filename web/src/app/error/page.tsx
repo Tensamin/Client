@@ -2,16 +2,25 @@
 
 import { Loading } from "@/components/loading";
 import { usePageContext } from "@/context/page";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Page() {
   const { errorMessage, errorDescription } = usePageContext();
+  const router = useRouter();
 
-  return (
+  useEffect(() => {
+    if (!errorMessage) {
+      router.replace("/");
+    }
+  }, [errorMessage, router]);
+
+  return errorMessage ? (
     <Loading
       message={errorMessage}
       extra={errorDescription}
       isError
       progress={100}
     />
-  );
+  ) : null;
 }

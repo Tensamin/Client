@@ -18,7 +18,6 @@ import { cn, displayCallId } from "@/lib/utils";
 
 // Context Imports
 import { useCallContext, useSubCallContext } from "@/context/call";
-import { usePageContext } from "@/context/page";
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -44,12 +43,13 @@ import {
 } from "@/components/ui/tooltip";
 import { useSocketContext } from "@/context/socket";
 import { DeafButton, MuteButton, ScreenShareButton } from "./buttons";
+import { useRouter } from "next/navigation";
 
 // Main
 export default function VoiceActions() {
   const { shouldConnect, disconnect } = useCallContext();
   const { name } = useRoomInfo();
-  const { setPage } = usePageContext();
+  const router = useRouter();
 
   // Connection Quality
   const { localParticipant, isScreenShareEnabled } = useLocalParticipant();
@@ -421,7 +421,7 @@ export default function VoiceActions() {
       <div className="flex gap-2 w-full">
         <Button
           className="flex justify-center flex-1"
-          onClick={() => setPage("call")}
+          onClick={() => router.push("/call")}
         >
           <Icon.Expand /> Expand
         </Button>

@@ -15,7 +15,6 @@ import * as Comlink from "comlink";
 import { progressBar, sha256 } from "@/lib/utils";
 
 // Context Imports
-import { usePageContext } from "@/context/page";
 import { useStorageContext } from "@/context/storage";
 
 // Types
@@ -23,6 +22,7 @@ import { BasicSuccessMessage } from "@/lib/types";
 
 // Components
 import { Loading } from "@/components/loading";
+import { usePathname, useRouter } from "next/navigation";
 
 type CryptoContextType = {
   encrypt: (message: string, password: string) => Promise<BasicSuccessMessage>;
@@ -74,8 +74,12 @@ export function CryptoProvider({
   const [privateKeyHash, setPrivateKeyHash] = useState("");
   const [ownId, setOwnId] = useState(0);
 
-  const { setPage, page } = usePageContext();
-  const { data, bypass } = useStorageContext();
+  const router = useRouter();
+
+  const pathname = usePathname().split("/");
+  const page = pathname[2] || "home";
+
+  const { data } = useStorageContext();
 
   const encrypt = useCallback(
     async (message: string, password: string): Promise<BasicSuccessMessage> => {
@@ -154,13 +158,15 @@ export function CryptoProvider({
     }
 
     Promise.resolve().then(() => {
-      if (!cancelled) setPage("login", "ERROR_AUTH_NO_PRIVATE_KEY");
+      if (!cancelled) {
+        router.push("/login");
+      }
     });
 
     return () => {
       cancelled = true;
     };
-  }, [data.privateKey, data.id, page, setPage]);
+  }, [data.privateKey, data.id, page, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,31 +198,6 @@ export function CryptoProvider({
         privateKey,
         privateKeyHash,
         ownId,
-      }}
-    >
-      {children}
-    </CryptoContext.Provider>
-  ) : bypass ? (
-    <CryptoContext.Provider
-      value={{
-        encrypt: () =>
-          Promise.resolve({
-            success: false,
-            message: "BYPASS_CRYPTO_CONTEXT_ENCRYPT",
-          }),
-        decrypt: () =>
-          Promise.resolve({
-            success: false,
-            message: "BYPASS_CRYPTO_CONTEXT_DECRYPT",
-          }),
-        get_shared_secret: () =>
-          Promise.resolve({
-            success: false,
-            message: "BYPASS_CRYPTO_CONTEXT_GET_SHARED_SECRET",
-          }),
-        privateKey: "",
-        privateKeyHash: "",
-        ownId: 0,
       }}
     >
       {children}

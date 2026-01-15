@@ -3,9 +3,6 @@
 // Lib Imports
 import { pp, tos } from "@/lib/endpoints";
 
-// Context Imports
-import { usePageContext } from "@/context/page";
-
 // Components
 import { Button } from "@/components/ui/button";
 import {
@@ -16,10 +13,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FixedWindowControls } from "@/components/windowControls";
+import { useRouter } from "next/navigation";
 
 // Main
 export default function Page() {
-  const { setPage } = usePageContext();
+  const router = useRouter();
 
   return (
     <>
@@ -75,7 +73,7 @@ export default function Page() {
             <Button
               variant="outline"
               onClick={() => {
-                setPage("login");
+                router.push("/login");
               }}
             >
               Login

@@ -27,9 +27,9 @@ import { getDisplayFromUsername } from "@/lib/utils";
 
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
-import { usePageContext } from "@/context/page";
 import { useSocketContext } from "@/context/socket";
 import { rawDebugLog, useStorageContext } from "@/context/storage";
+import { usePathname } from "next/navigation";
 
 // Types
 type UserContextType = {
@@ -77,10 +77,14 @@ export function UserProvider({
   const fetchedUsersRef = useRef(fetchedUsers);
   const prevLastMessageRef = useRef<unknown>(null);
 
+  const pathname = usePathname().split("/");
+  const page = pathname[2] || "home";
+  const pageData = pathname[3] || "";
+
   const { data } = useStorageContext();
   const { ownId, get_shared_secret, privateKey } = useCryptoContext();
-  const { send, isReady, lastMessage, initialUserState } = useSocketContext();
-  const { page, pageData } = usePageContext();
+  const { send, identified, lastMessage, initialUserState } =
+    useSocketContext();
   const currentReceiverId: number = page === "chat" ? Number(pageData) || 0 : 0;
   const [currentReceiverSharedSecret, setCurrentReceiverSharedSecret] =
     useState<string>("");
@@ -205,21 +209,18 @@ export function UserProvider({
   );
 
   // Put user at the top of the conversations list
-  const updateConversationPosition = useCallback(
-    (userId: number) => {
-      setConversationsState((prev) => {
-        const index = prev.findIndex((c) => c.user_id === userId);
-        if (index === -1) return prev;
+  const updateConversationPosition = useCallback((userId: number) => {
+    setConversationsState((prev) => {
+      const index = prev.findIndex((c) => c.user_id === userId);
+      if (index === -1) return prev;
 
-        const conversation = prev[index];
-        const newConversations = [...prev];
-        newConversations.splice(index, 1);
-        newConversations.unshift(conversation);
-        return newConversations;
-      });
-    },
-    [],
-  );
+      const conversation = prev[index];
+      const newConversations = [...prev];
+      newConversations.splice(index, 1);
+      newConversations.unshift(conversation);
+      return newConversations;
+    });
+  }, []);
 
   // Get own user
   useEffect(() => {
@@ -314,13 +315,13 @@ export function UserProvider({
   }, [currentReceiverId, get, get_shared_secret, ownId, privateKey]);
 
   useEffect(() => {
-    if (!isReady) return;
+    if (!identified) return;
     refetchConversations();
-  }, [isReady, refetchConversations]);
+  }, [identified, refetchConversations]);
 
   // Get initial communities
   useEffect(() => {
-    if (!isReady) return;
+    if (!identified) return;
 
     send("get_communities")
       .then((raw) => {
@@ -330,7 +331,7 @@ export function UserProvider({
       .catch(() => {
         toast.error("Failed to get communities");
       });
-  }, [isReady, send]);
+  }, [identified, send]);
 
   // Handle socket messages
   const handleSocketMessage = useEffectEvent(

@@ -92,7 +92,6 @@ export function StorageProvider({
 }>) {
   const [failed, setFailed] = useState(false);
   const [userData, setUserData] = useState<StoredSettings>({});
-  const [bypass, setBypass] = useState(false);
   const [ready, setReady] = useState(false);
   const [isElectron, setIsElectron] = useState(false);
   const [isTauri, setIsTauri] = useState(false);
@@ -269,22 +268,11 @@ export function StorageProvider({
     })();
   }, [dbPromise, loadData, setFailed]);
 
-  // global bypassLockScreen() function
-  if (typeof window !== "undefined") {
-    // @ts-expect-error window does not have bypassLockScreen
-    window.bypassLockScreen = () => {
-      setBypass(true);
-      void set("enableLockScreenBypass", true);
-      console.log("Set bypass to true!");
-    };
-  }
-
   if (failed) {
     return (
       <RawLoading
         debug={false}
         isError
-        addBypassButton={false}
         addClearButton={false}
         message="Unsupported Browser"
         extra="Please try another browser, the current one does not support IndexedDB. Tensamin was developed and tested on Chromium based browsers."
@@ -301,10 +289,8 @@ export function StorageProvider({
         setThemeCSS,
         setThemeTint,
         setThemeTintType,
-        bypass,
         isElectron,
         isTauri,
-        setBypass,
       }}
     >
       {children}
@@ -313,7 +299,6 @@ export function StorageProvider({
     <RawLoading
       debug={false}
       isError={false}
-      addBypassButton={false}
       addClearButton={false}
       message=""
       progress={progressBar.storage}
@@ -328,8 +313,6 @@ type StorageContextType = {
   setThemeCSS: (css: string) => void;
   setThemeTint: (tint: string) => void;
   setThemeTintType: (tintType: string) => void;
-  bypass: boolean;
   isElectron: boolean;
   isTauri: boolean;
-  setBypass: (bypass: boolean) => void;
 };

@@ -13,7 +13,6 @@ import {
 } from "react";
 
 // Context Imports
-import { usePageContext } from "@/context/page";
 import { useUserContext } from "@/context/user";
 
 // Components
@@ -26,12 +25,16 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { WindowControls } from "@/components/windowControls";
+import { usePathname, useRouter } from "next/navigation";
 
 // Main
 export default function Navbar() {
-  const { setPage, page } = usePageContext();
   const { failedMessagesAmount, currentReceiverId, get } = useUserContext();
   const [receiverUsername, setReceiverUsername] = useState("");
+
+  const router = useRouter();
+  const pathname = usePathname().split("/");
+  const page = pathname[2] || "home";
 
   useEffect(() => {
     if (!currentReceiverId) {
@@ -94,8 +97,11 @@ export default function Navbar() {
     };
   }, [getWidth]);
 
-  const handleHomeClick = useCallback(() => setPage("home"), [setPage]);
-  const handleSettingsClick = useCallback(() => setPage("settings"), [setPage]);
+  const handleHomeClick = useCallback(() => router.push("/"), [router]);
+  const handleSettingsClick = useCallback(
+    () => router.push("/settings"),
+    [router],
+  );
 
   const isChat = page === "chat";
   const showFailedMessages = failedMessagesAmount > 0 && isChat;

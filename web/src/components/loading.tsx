@@ -26,10 +26,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { progressBar } from "@/lib/utils";
 import { FixedWindowControls } from "./windowControls";
+import { useRouter } from "next/navigation";
 
 // Main
 function ClearButton() {
   const { clearAll } = useStorageContext();
+  const router = useRouter();
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -50,7 +53,7 @@ function ClearButton() {
           <AlertDialogAction
             onClick={() => {
               clearAll();
-              window.location.reload();
+              router.refresh();
             }}
           >
             {"Clear Storage"}
@@ -58,15 +61,6 @@ function ClearButton() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
-}
-
-function BypassButton() {
-  const { setBypass, bypass } = useStorageContext();
-  return (
-    <Button variant="outline" onClick={() => setBypass(true)} disabled={bypass}>
-      Bypass Screen
-    </Button>
   );
 }
 
@@ -100,7 +94,6 @@ export function Loading({
       extra={extra || ""}
       isError={isError}
       debug={(data?.debug as boolean) || false}
-      addBypassButton={(data?.enableLockScreenBypass as boolean) || false}
       addClearButton={showClearButton || isError}
       progress={progress}
     />
@@ -113,7 +106,6 @@ export function RawLoading({
   isError,
   debug,
   addClearButton,
-  addBypassButton,
   messageSize,
   progress,
 }: {
@@ -122,7 +114,6 @@ export function RawLoading({
   isError: boolean;
   debug: boolean;
   addClearButton?: boolean;
-  addBypassButton?: boolean;
   messageSize?: "small";
   progress?: number;
 }) {
@@ -169,11 +160,6 @@ export function RawLoading({
       </div>
       <div className="fixed bottom-0 right-0 m-3 flex gap-3">
         <AnimatePresence initial={false} mode="popLayout">
-          {addBypassButton ? (
-            <MotionDivWrapper key="bypass">
-              <BypassButton />
-            </MotionDivWrapper>
-          ) : null}
           {addClearButton ? (
             <MotionDivWrapper key="clear">
               <ClearButton />

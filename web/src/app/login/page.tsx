@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { pp, tos, username_to_id } from "@/lib/endpoints";
 
 // Context Imports
-import { usePageContext } from "@/context/page";
 import { rawDebugLog, useStorageContext } from "@/context/storage";
 
 // Components
@@ -20,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FixedWindowControls } from "@/components/windowControls";
+import { useRouter } from "next/navigation";
 
 // Main
 export default function Page() {
@@ -30,7 +30,8 @@ export default function Page() {
   const tuFileRef = React.useRef<HTMLInputElement>(null);
 
   const { set } = useStorageContext();
-  const { setPage } = usePageContext();
+
+  const router = useRouter();
 
   const login = useCallback(
     async (id: number, privateKey: string) => {
@@ -39,10 +40,10 @@ export default function Page() {
       if (id === 0 || privateKey === "") {
         toast.error("Empty Credentials Provided.");
       } else {
-        setPage("home");
+        router.replace("/");
       }
     },
-    [set, setPage],
+    [set, router],
   );
 
   const handleFileSelect = useCallback(
@@ -282,7 +283,7 @@ export default function Page() {
             <Button
               variant="outline"
               onClick={() => {
-                setPage("signup");
+                router.push("/signup");
               }}
             >
               Sign up

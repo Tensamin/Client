@@ -22,7 +22,7 @@ import { RetryCount, progressBar, responseTimeout } from "@/lib/utils";
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
 import { usePageContext } from "@/context/page";
-import { rawDebugLog, useStorageContext } from "@/context/storage";
+import { rawDebugLog } from "@/context/storage";
 
 // Components
 import { Loading } from "@/components/loading";
@@ -38,7 +38,7 @@ type SocketContextType = {
     data?: unknown,
     noResponse?: boolean,
   ) => Promise<CommunicationValue.DataContainer>;
-  isReady: boolean;
+  identified: boolean;
   initialUserState: UserState;
 };
 
@@ -57,11 +57,9 @@ export function SocketProvider({
 }>) {
   const pendingRequests = useRef(new Map());
 
-  const { bypass } = useStorageContext();
   const { setError } = usePageContext();
   const { privateKeyHash, ownId } = useCryptoContext();
 
-  const [isReady, setIsReady] = useState(false);
   const [identified, setIdentified] = useState(false);
   const [lastMessage, setLastMessage] = useState<CommunicationValue.Parent>({
     id: "",
@@ -71,21 +69,6 @@ export function SocketProvider({
   const [initialUserState, setInitialUserState] = useState<UserState>("NONE");
   const [ownPing, setOwnPing] = useState<number>(0);
   const [iotaPing, setIotaPing] = useState<number>(0);
-  const [showContent, setShowContent] = useState(false);
-
-  const actuallyBypass = bypass && !identified;
-
-  // Loading delay
-  useEffect(() => {
-    if (identified) {
-      const timer = setTimeout(() => {
-        setShowContent(true);
-      }, progressBar.DELAY);
-      return () => clearTimeout(timer);
-    } else {
-      setShowContent(false);
-    }
-  }, [identified]);
 
   // Handle Incoming Messages
   const handleMessage = useCallback(async (message: MessageEvent) => {
@@ -123,6 +106,9 @@ export function SocketProvider({
 
   // Init WebSocket
   const { sendMessage: sendRaw, readyState } = useWebSocket(client_wss, {
+    onError: (e) => {
+      rawDebugLog("Socket Context", "WebSocket Error", e, "red");
+    },
     onOpen: () =>
       rawDebugLog("Socket Context", "Connected to Omikron", "", "green"),
     onClose: () => {
@@ -139,11 +125,10 @@ export function SocketProvider({
       // Reset state
       pendingRequests.current.clear();
       setIdentified(false);
-      setIsReady(false);
       setInitialUserState("NONE");
     },
     onMessage: handleMessage,
-    shouldReconnect: () => !actuallyBypass,
+    shouldReconnect: () => true,
     share: true,
     reconnectAttempts: RetryCount,
     reconnectInterval: 3000,
@@ -165,7 +150,7 @@ export function SocketProvider({
       noResponse = false,
     ): Promise<CommunicationValue.DataContainer> => {
       if (
-        !actuallyBypass &&
+        (identified || requestType === "identification") &&
         readyState !== ReadyState.CLOSED &&
         readyState !== ReadyState.CLOSING
       ) {
@@ -244,10 +229,16 @@ export function SocketProvider({
           }
         });
       } else {
+        rawDebugLog(
+          "Socket Context",
+          "Socket is not ready",
+          { requestType, data },
+          "red",
+        );
         throw new Error("Socket is not ready");
       }
     },
-    [readyState, actuallyBypass, sendRaw],
+    [readyState, identified, sendRaw],
   );
 
   // Pings
@@ -267,11 +258,8 @@ export function SocketProvider({
         user_id: ownId,
         private_key_hash: privateKeyHash,
       })
-        .then((raw) => {
-          const data = raw as CommunicationValue.identification;
+        .then(() => {
           setIdentified(true);
-          setIsReady(true);
-          setInitialUserState(data.user_status);
           rawDebugLog(
             "Socket Context",
             "Successfully identified with Omikron",
@@ -291,13 +279,13 @@ export function SocketProvider({
             case "error_no_iota":
               setError(
                 "Iota Offline",
-                "Your Iota appears to be offline. Check your Iota's internet connection or restart it.",
+                "Your Iota appears to be offline. \n Check your Iota's internet connection or restart it.",
               );
               return;
             default:
               setError(
                 "Identification Failed",
-                "This error is caused by a broken Omikron, \n an outdated Client or an unknown error.",
+                "This error is caused by a broken Omikron, \n an outdated Client or some unknown error.",
               );
               return;
           }
@@ -306,7 +294,7 @@ export function SocketProvider({
   }, [connected, privateKeyHash, setError, identified, ownId, send]);
 
   useEffect(() => {
-    if (!isReady) return;
+    if (!identified) return;
 
     const interval = setInterval(() => {
       void sendPing();
@@ -314,61 +302,29 @@ export function SocketProvider({
     return () => {
       clearInterval(interval);
     };
-  }, [isReady]);
-
-  if (actuallyBypass) {
-    return (
-      <SocketContext.Provider
-        value={{
-          readyState: ReadyState.CLOSED,
-          send: async () => ({
-            id: "",
-            type: "error",
-            data: {},
-          }),
-          isReady: false,
-          lastMessage: {
-            id: "",
-            type: "",
-            data: {},
-          },
-          ownPing: 0,
-          iotaPing: 0,
-          initialUserState: "NONE",
-        }}
-      >
-        {children}
-      </SocketContext.Provider>
-    );
-  }
+  }, [identified]);
 
   switch (readyState) {
     case ReadyState.OPEN:
       if (identified) {
-        if (showContent) {
-          return (
-            <SocketContext.Provider
-              value={{
-                readyState,
-                send,
-                isReady,
-                lastMessage,
-                ownPing,
-                iotaPing,
-                initialUserState,
-              }}
-            >
-              {children}
-            </SocketContext.Provider>
-          );
-        }
-        return <Loading message="Connected" progress={progressBar.socket} />;
+        return (
+          <SocketContext.Provider
+            value={{
+              readyState,
+              send,
+              identified,
+              lastMessage,
+              ownPing,
+              iotaPing,
+              initialUserState,
+            }}
+          >
+            {children}
+          </SocketContext.Provider>
+        );
       }
       return (
-        <Loading
-          message="Identifying"
-          progress={progressBar.socket_indentify}
-        />
+        <Loading message="Identifying" progress={progressBar.socket_identify} />
       );
     case ReadyState.CONNECTING:
       return (
