@@ -281,6 +281,7 @@ export function SocketProvider({
           const solvedChallenge = await decrypt(
             data.challenge,
             sharedSecret.message,
+            true,
           );
 
           if (!solvedChallenge.success) {

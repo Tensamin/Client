@@ -45,10 +45,23 @@ export async function encrypt(
 }
 
 export async function decrypt(
-  input: Base64URLString,
+  input: Base64URLString | string,
   password: string,
+  isHex?: boolean,
 ): Promise<BasicSuccessMessage> {
   try {
+    if (isHex) {
+      const hexToBytes = (hex: string): Uint8Array => {
+      const bytes = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+      }
+      return bytes;
+      };
+      const decodedHex = hexToBytes(input);
+      input = btoa(String.fromCharCode(...decodedHex));
+    }
+
     const combinedDecoded = Uint8Array.from(atob(input), (c) =>
       c.charCodeAt(0),
     );
@@ -80,8 +93,9 @@ export async function decrypt(
       success: true,
       message: new TextDecoder().decode(decryptedData),
     };
-  } catch {
-    return { success: false, message: "ERROR_ENCRYPTION_WORKER_DECRYPT" };
+  } catch (err) {
+    // @ts-expect-error err type
+    return { success: false, message: err };
   }
 }
 
