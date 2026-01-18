@@ -16,7 +16,8 @@ export type ping = {
 };
 
 export type identification = {
-  user_status: UserState;
+  challenge: string;
+  public_key: string;
 };
 
 export type client_changed = {
@@ -62,7 +63,11 @@ export type settings_load = {
 
 export type Error = {
   id: string;
-  type: "error" | "error_invalid_private_key" | "error_no_iota";
+  type:
+    | "error"
+    | "error_invalid_private_key"
+    | "error_no_iota"
+    | "error_invalid_challenge";
   data: DataContainer;
 };
 export type DataContainer = unknown;

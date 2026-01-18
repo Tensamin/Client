@@ -23,6 +23,7 @@ import { RetryCount, progressBar, responseTimeout } from "@/lib/utils";
 import { useCryptoContext } from "@/context/crypto";
 import { usePageContext } from "@/context/page";
 import { rawDebugLog } from "@/context/storage";
+import { fetchUserData } from "@/lib/utils";
 
 // Components
 import { Loading } from "@/components/loading";
@@ -58,7 +59,7 @@ export function SocketProvider({
   const pendingRequests = useRef(new Map());
 
   const { setError } = usePageContext();
-  const { privateKeyHash, ownId } = useCryptoContext();
+  const { ownId } = useCryptoContext();
 
   const [identified, setIdentified] = useState(false);
   const [lastMessage, setLastMessage] = useState<CommunicationValue.Parent>({
@@ -252,30 +253,63 @@ export function SocketProvider({
     setIotaPing(data.ping_iota || 0);
   });
 
+  const { get_shared_secret, privateKey, decrypt } = useCryptoContext();
   useEffect(() => {
-    if (connected && !identified && privateKeyHash) {
+    if (connected && !identified) {
       send("identification", {
         user_id: ownId,
-        private_key_hash: privateKeyHash,
       })
-        .then(() => {
-          setIdentified(true);
-          rawDebugLog(
-            "Socket Context",
-            "Successfully identified with Omikron",
-            "",
-            "green",
+        .then(async (raw) => {
+          const ownUserData = await fetchUserData(ownId);
+          if (!ownUserData?.public_key) throw new Error();
+
+          const data = raw as CommunicationValue.identification;
+          const sharedSecret = await get_shared_secret(
+            privateKey,
+            ownUserData.public_key,
+            data.public_key,
           );
+
+          if (!sharedSecret.success) {
+            setError(
+              "Challenge decryption failed",
+              "Your private key is invalid. Try logging in again. \n If the issue persists, you may need to regenerate your private key.",
+            );
+            return;
+          }
+
+          const solvedChallenge = await decrypt(
+            data.challenge,
+            sharedSecret.message,
+          );
+
+          send("challenge_response", {
+            challenge: solvedChallenge.message,
+          })
+            .then(() => {
+              setIdentified(true);
+              rawDebugLog(
+                "Socket Context",
+                "Successfully identified with Omikron",
+                "",
+                "green",
+              );
+            })
+            .catch((raw) => {
+              const data = raw as CommunicationValue.Error | Error;
+              switch (data instanceof Error ? "error" : data.type) {
+                case "error_invalid_challenge":
+                  setError(
+                    "Challenge verification failed",
+                    "The challenge response was rejected by the Omikron. \n Caused by either an outdated Client or broken Omikron.",
+                  );
+                  return;
+              }
+            });
         })
         .catch((raw) => {
           const data = raw as CommunicationValue.Error | Error;
           switch (data instanceof Error ? "error" : data.type) {
-            case "error_invalid_private_key":
-              setError(
-                "Invalid Private Key",
-                "Your private key is invalid. Try logging in again. \n If the issue persists, you may need to regenerate your private key.",
-              );
-              return;
             case "error_no_iota":
               setError(
                 "Iota Offline",
@@ -291,7 +325,16 @@ export function SocketProvider({
           }
         });
     }
-  }, [connected, privateKeyHash, setError, identified, ownId, send]);
+  }, [
+    connected,
+    setError,
+    identified,
+    ownId,
+    send,
+    decrypt,
+    get_shared_secret,
+    privateKey,
+  ]);
 
   useEffect(() => {
     if (!identified) return;

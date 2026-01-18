@@ -1,7 +1,8 @@
 import { clsx, type ClassValue } from "clsx";
 import * as React from "react";
 import { twMerge } from "tailwind-merge";
-import { UnixTimestamp } from "./types";
+import { UnixTimestamp, User } from "./types";
+import { user as userEndpoint } from "./endpoints";
 
 const MOBILE_BREAKPOINT = 768;
 export const RetryCount = 10;
@@ -213,5 +214,37 @@ export function displayCallId(callId: string) {
     );
   } catch {
     return "0";
+  }
+}
+
+export async function fetchUserData(
+  userId: number,
+): Promise<Omit<User, "state" | "loading"> | null> {
+  try {
+    if (!userId || userId === 0) {
+      throw new Error("Invalid user ID");
+    }
+
+    const response = await fetch(`${userEndpoint}${userId}`);
+    const data = await response.json();
+
+    if (data.type !== "success") {
+      throw new Error(`API error: ${data.message || "Unknown error"}`);
+    }
+
+    return {
+      id: userId,
+      username: data.data.username,
+      display: getDisplayFromUsername(data.data.username, data.data.display),
+      avatar: data.data.avatar,
+      about: data.data.about,
+      status: data.data.status,
+      sub_level: data.data.sub_level,
+      sub_end: data.data.sub_end,
+      public_key: data.data.public_key,
+    };
+  } catch (error) {
+    console.error("Failed to fetch user data:", error);
+    return null;
   }
 }

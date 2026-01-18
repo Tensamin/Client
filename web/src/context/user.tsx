@@ -83,8 +83,7 @@ export function UserProvider({
 
   const { data } = useStorageContext();
   const { ownId, get_shared_secret, privateKey } = useCryptoContext();
-  const { send, identified, lastMessage, initialUserState } =
-    useSocketContext();
+  const { send, identified, lastMessage } = useSocketContext();
   const currentReceiverId: number = page === "chat" ? Number(pageData) || 0 : 0;
   const [currentReceiverSharedSecret, setCurrentReceiverSharedSecret] =
     useState<string>("");
@@ -92,7 +91,7 @@ export function UserProvider({
   const [communities, setCommunitiesState] = useState<Community[]>([]);
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
   const [reloadUsers, setReloadUsers] = useState<boolean>(false);
-  const [ownState, setOwnState] = useState<UserState>(initialUserState);
+  const [ownState, setOwnState] = useState<UserState>("ONLINE");
   const [ownUserHasPremium, setOwnUserHasPremium] = useState<boolean>(false);
   const [ownUserData, setOwnUserData] = useState<User | null>(null);
 
