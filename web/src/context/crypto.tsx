@@ -77,7 +77,7 @@ export function CryptoProvider({
   const router = useRouter();
 
   const pathname = usePathname().split("/");
-  const page = pathname[2] || "home";
+  const page = pathname[1] || "home";
 
   const { data } = useStorageContext();
 
@@ -140,17 +140,8 @@ export function CryptoProvider({
         if (cancelled) return;
         setPrivateKey(privateKeyValue);
         setOwnId(ownIdValue);
+        setIsReady(true);
       });
-
-      sha256(privateKeyValue)
-        .then((hash) => {
-          if (cancelled) return;
-          setPrivateKeyHash(hash);
-          setIsReady(true);
-        })
-        .catch(() => {
-          if (!cancelled) setIsReady(false);
-        });
 
       return () => {
         cancelled = true;
