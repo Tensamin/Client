@@ -29,7 +29,6 @@ type CryptoContextType = {
   decrypt: (
     encryptedMessage: string,
     password: string,
-    isHex?: boolean,
   ) => Promise<BasicSuccessMessage>;
   get_shared_secret: (
     own_private_key: string,

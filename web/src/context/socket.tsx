@@ -151,7 +151,7 @@ export function SocketProvider({
       noResponse = false,
     ): Promise<CommunicationValue.DataContainer> => {
       if (
-        (identified || requestType === "identification" || requestType === "challenge") &&
+        (identified || requestType === "identification" || requestType === "challenge_response") &&
         readyState !== ReadyState.CLOSED &&
         readyState !== ReadyState.CLOSING
       ) {
@@ -281,7 +281,6 @@ export function SocketProvider({
           const solvedChallenge = await decrypt(
             data.challenge,
             sharedSecret.message,
-            true,
           );
 
           if (!solvedChallenge.success) {

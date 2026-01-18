@@ -2,10 +2,11 @@
   "name": "tensamin",
   "productName": "Tensamin",
   "description": "True E2EE, decentralized messages. Open source and privacy first.",
-  "version": "0.1.37",
+  "version": "0.1.38",
   "scripts": {
     "lint": "eslint && tsc",
     "dev": "next dev",
+    "license-check": "bunx license-checker --json --production --relativeLicensePath --out public/licenses.json",
     "build": "next telemetry disable && next build"
   },
   "dependencies": {

@@ -11,87 +11,111 @@ export async function encrypt(
   password: string,
 ): Promise<BasicSuccessMessage> {
   try {
-    const decodedData = new TextEncoder().encode(input);
-
-    const passwordHash = await crypto.subtle.digest(
-      "SHA-256",
-      textEncoder.encode(password),
+    const sharedSecret = new Uint8Array(
+      password.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
     );
 
-    const derivedKey = await crypto.subtle.importKey(
+    const hkdfKey = await crypto.subtle.importKey(
       "raw",
-      passwordHash,
-      { name: "AES-CBC", length: 256 },
+      sharedSecret,
+      "HKDF",
+      false,
+      ["deriveBits"],
+    );
+
+    const okm = await crypto.subtle.deriveBits(
+      {
+        name: "HKDF",
+        hash: "SHA-256",
+        salt: new Uint8Array([]), // None in Rust
+        info: textEncoder.encode("x448-aes-gcm-no-overhead"),
+      },
+      hkdfKey,
+      44 * 8,
+    );
+
+    const okmBytes = new Uint8Array(okm);
+    const keyBytes = okmBytes.slice(0, 32);
+    const nonce = okmBytes.slice(32, 44);
+
+    const aesKey = await crypto.subtle.importKey(
+      "raw",
+      keyBytes,
+      { name: "AES-GCM" },
       false,
       ["encrypt"],
     );
 
-    const iv = crypto.getRandomValues(new Uint8Array(16));
-
     const encryptedBuffer = await crypto.subtle.encrypt(
-      { name: "AES-CBC", iv },
-      derivedKey,
-      decodedData,
+      { name: "AES-GCM", iv: nonce },
+      aesKey,
+      textEncoder.encode(input),
     );
 
-    const combined = new Uint8Array(iv.length + encryptedBuffer.byteLength);
-    combined.set(iv, 0);
-    combined.set(new Uint8Array(encryptedBuffer), iv.length);
-
-    return { success: true, message: btoa(String.fromCharCode(...combined)) };
-  } catch {
-    return { success: false, message: "ERROR_ENCRYPTION_WORKER_ENCRYPT" };
+    return {
+      success: true,
+      message: btoa(String.fromCharCode(...new Uint8Array(encryptedBuffer))),
+    };
+  } catch (err) {
+    // @ts-expect-error err type
+    return { success: false, message: err };
   }
 }
 
 export async function decrypt(
   input: Base64URLString | string,
   password: string,
-  isHex?: boolean,
 ): Promise<BasicSuccessMessage> {
   try {
-    if (isHex) {
-      const hexToBytes = (hex: string): Uint8Array => {
-      const bytes = new Uint8Array(hex.length / 2);
-      for (let i = 0; i < bytes.length; i++) {
-        bytes[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
-      }
-      return bytes;
-      };
-      const decodedHex = hexToBytes(input);
-      input = btoa(String.fromCharCode(...decodedHex));
-    }
-
-    const combinedDecoded = Uint8Array.from(atob(input), (c) =>
-      c.charCodeAt(0),
+    const sharedSecret = new Uint8Array(
+      password.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
     );
 
-    const iv = combinedDecoded.subarray(0, 16);
-    const ciphertext = combinedDecoded.subarray(16);
+    const ciphertext = Uint8Array.from(atob(input), (c) => c.charCodeAt(0));
 
-    const passwordHash = await crypto.subtle.digest(
-      "SHA-256",
-      textEncoder.encode(password),
-    );
-
-    const derivedKey = await crypto.subtle.importKey(
+    const hkdfKey = await crypto.subtle.importKey(
       "raw",
-      passwordHash,
-      { name: "AES-CBC", length: 256 },
+      sharedSecret,
+      "HKDF",
+      false,
+      ["deriveBits"],
+    );
+
+    const okm = await crypto.subtle.deriveBits(
+      {
+        name: "HKDF",
+        hash: "SHA-256",
+        salt: new Uint8Array([]), // None in Rust
+        info: textEncoder.encode("x448-aes-gcm-no-overhead"),
+      },
+      hkdfKey,
+      44 * 8,
+    );
+
+    const okmBytes = new Uint8Array(okm);
+    const keyBytes = okmBytes.slice(0, 32);
+    const nonce = okmBytes.slice(32, 44);
+
+    const aesKey = await crypto.subtle.importKey(
+      "raw",
+      keyBytes,
+      { name: "AES-GCM" },
       false,
       ["decrypt"],
     );
 
     const decryptedBuffer = await crypto.subtle.decrypt(
-      { name: "AES-CBC", iv },
-      derivedKey,
+      {
+        name: "AES-GCM",
+        iv: nonce,
+      },
+      aesKey,
       ciphertext,
     );
 
-    const decryptedData = new Uint8Array(decryptedBuffer);
     return {
       success: true,
-      message: new TextDecoder().decode(decryptedData),
+      message: new TextDecoder().decode(decryptedBuffer),
     };
   } catch (err) {
     // @ts-expect-error err type
