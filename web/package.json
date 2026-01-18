@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint && tsc",
     "dev": "next dev",
-    "license-check": "bunx license-checker --json --production --relativeLicensePath --out public/licenses.json",
+    "license-check": "bunx license-checker --json --production --relativeLicensePath --out public/licenses.json && bun run patchLicenses.ts",
     "build": "next telemetry disable && next build"
   },
   "dependencies": {

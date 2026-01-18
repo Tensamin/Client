@@ -2,28 +2,19 @@
 import * as Icon from "lucide-react";
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
-import { Suspense } from "react";
-import packageJson from "../../package.json";
+import packageJson from "../../../package.json";
 
 // Lib Imports
 import { sans } from "@/lib/fonts";
 
 // CSS Imports
 //import "@livekit/components-styles";
-import "highlight.js/styles/github-dark.css";
-import "katex/dist/katex.min.css";
-import "./globals.css";
+import "../globals.css";
 // (anti-format)
-import "./colors.css";
-
-// Context Imports
-import { StorageProvider } from "@/context/storage";
+import "../colors.css";
 
 // Components
-import { Loading } from "@/components/loading";
 import { Toaster } from "@/components/ui/sonner";
-import { CryptoProvider } from "@/context/crypto";
-import { PageProvider } from "@/context/page";
 
 // Main
 export const viewport: Viewport = {
@@ -53,7 +44,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        data-lk-theme="default"
         className={`antialiased pt-[env(safe-area-inset-top)] max-h-screen overflow-hidden ${sans.className}`}
       >
         <ThemeProvider
@@ -73,15 +63,7 @@ export default function RootLayout({
               loading: <Icon.Loader size={19} className="animate-spin" />,
             }}
           />
-          <StorageProvider>
-            <PageProvider>
-              <CryptoProvider>
-                <Suspense fallback={<Loading progress={0} />}>
-                  {children}
-                </Suspense>
-              </CryptoProvider>
-            </PageProvider>
-          </StorageProvider>
+          {children}
         </ThemeProvider>
       </body>
     </html>
