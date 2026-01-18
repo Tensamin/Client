@@ -298,10 +298,22 @@ export function SocketProvider({
             .catch((raw) => {
               const data = raw as CommunicationValue.Error | Error;
               switch (data instanceof Error ? "error" : data.type) {
-                case "error_invalid_challenge":
+                case "error_not_authenticated":
                   setError(
                     "Challenge verification failed",
                     "The challenge response was rejected by the Omikron. \n Caused by either an outdated Client or broken Omikron.",
+                  );
+                  return;
+                case "error_no_iota":
+                  setError(
+                    "Iota Offline",
+                    "Your Iota appears to be offline. \n Check your Iota's internet connection or restart it.",
+                  );
+                  return;
+                default:
+                  setError(
+                    "Unkown error occured",
+                    "This error is caused by a broken Omikron, \n an outdated Client or some unknown error.",
                   );
                   return;
               }
@@ -310,15 +322,27 @@ export function SocketProvider({
         .catch((raw) => {
           const data = raw as CommunicationValue.Error | Error;
           switch (data instanceof Error ? "error" : data.type) {
-            case "error_no_iota":
+            case "error_invalid_data":
               setError(
-                "Iota Offline",
-                "Your Iota appears to be offline. \n Check your Iota's internet connection or restart it.",
+                "Invalid identification data",
+                "The identification data sent to the Omikron was invalid. \n This is usually caused by an outdated Client.",
+              );
+              return;
+            case "error_internal":
+              setError(
+                "Internal Omikron error",
+                "An internal error occured on the Omikron. \n Try again later.",
+              );
+              return;
+            case "error_invalid_public_key":
+              setError(
+                "Internal Omikron error",
+                "An internal error occured on the Omikron. \n Try again later.",
               );
               return;
             default:
               setError(
-                "Identification Failed",
+                "Unkown error occured",
                 "This error is caused by a broken Omikron, \n an outdated Client or some unknown error.",
               );
               return;

@@ -5,12 +5,9 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
-import { change } from "@/lib/endpoints";
 import { convertStringToInitials, getColorFor } from "@/lib/utils";
 
 // Context Imports
-import { useCryptoContext } from "@/context/crypto";
-import { useSocketContext } from "@/context/socket";
 import { rawDebugLog } from "@/context/storage";
 import { useUserContext } from "@/context/user";
 
@@ -49,9 +46,7 @@ type FormState = {
 const profileFormCache = new Map<number, FormState>();
 
 export default function Page() {
-  const { send } = useSocketContext();
-  const { ownId, get, doCustomEdit, ownState, setOwnState } = useUserContext();
-  const { privateKeyHash } = useCryptoContext();
+  const { ownId, get, ownState, setOwnState } = useUserContext();
 
   const [form, setForm] = useState<FormState | null>(() => {
     return profileFormCache.get(ownId) ?? null;
@@ -227,31 +222,8 @@ export default function Page() {
               }
               setLoading(true);
               try {
-                const res = await fetch(change + ownId, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    private_key_hash: privateKeyHash,
-                    username: form.username,
-                    display: form.display,
-                    about: form.about,
-                    avatar: form.avatar,
-                    status: form.status,
-                  }),
-                });
-                if (!res.ok) throw new Error("request_failed");
-                const data = await res.json();
-                rawDebugLog("Profile Page", "Profile updated", data, "green");
-                if (data?.type === "error") throw new Error("api_error");
-
-                doCustomEdit(ownId, { ...data.data, state: ownState });
-
-                profileFormCache.set(ownId, { ...form });
-
-                await send("client_changed", { user_state: ownState }, true);
-                await get(ownId, true);
-
-                toast.success("Profile updated successfully!");
+                alert("This needs migration to WebSockets");
+                //toast.success("Profile updated successfully!");
               } catch (err: unknown) {
                 rawDebugLog(
                   "Profile Page",

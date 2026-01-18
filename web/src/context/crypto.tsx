@@ -12,7 +12,7 @@ import {
 import * as Comlink from "comlink";
 
 // Lib Imports
-import { progressBar, sha256 } from "@/lib/utils";
+import { progressBar } from "@/lib/utils";
 
 // Context Imports
 import { useStorageContext } from "@/context/storage";
@@ -36,7 +36,6 @@ type CryptoContextType = {
     other_public_key: string,
   ) => Promise<BasicSuccessMessage>;
   privateKey: string;
-  privateKeyHash: string;
   ownId: number;
 };
 
@@ -71,7 +70,6 @@ export function CryptoProvider({
   const [isWorkerReady, setIsWorkerReady] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [privateKey, setPrivateKey] = useState("");
-  const [privateKeyHash, setPrivateKeyHash] = useState("");
   const [ownId, setOwnId] = useState(0);
 
   const router = useRouter();
@@ -187,7 +185,6 @@ export function CryptoProvider({
         decrypt,
         get_shared_secret,
         privateKey,
-        privateKeyHash,
         ownId,
       }}
     >

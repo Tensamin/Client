@@ -65,9 +65,11 @@ export type Error = {
   id: string;
   type:
     | "error"
-    | "error_invalid_private_key"
     | "error_no_iota"
-    | "error_invalid_challenge";
+    | "error_invalid_public_key"
+    | "error_not_authenticated"
+    | "error_invalid_data"
+    | "error_internal";
   data: DataContainer;
 };
 export type DataContainer = unknown;
