@@ -151,7 +151,9 @@ export function SocketProvider({
       noResponse = false,
     ): Promise<CommunicationValue.DataContainer> => {
       if (
-        (identified || requestType === "identification" || requestType === "challenge_response") &&
+        (identified ||
+          requestType === "identification" ||
+          requestType === "challenge_response") &&
         readyState !== ReadyState.CLOSED &&
         readyState !== ReadyState.CLOSING
       ) {
@@ -284,7 +286,12 @@ export function SocketProvider({
           );
 
           if (!solvedChallenge.success) {
-            rawDebugLog("Socket Context", "Challenge decryption failed", solvedChallenge, "red");
+            rawDebugLog(
+              "Socket Context",
+              "Challenge decryption failed",
+              solvedChallenge,
+              "red",
+            );
             setError(
               "Challenge decryption failed",
               "Your private key is invalid. Try logging in again. \n If the issue persists, you may need to regenerate your private key.",

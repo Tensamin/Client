@@ -39,10 +39,12 @@ type MediaAccessType = Parameters<
 function emitUpdateAvailable(payload: UpdatePayload) {
   latestUpdatePayload = payload;
   mainWindow?.webContents.send(UPDATE_AVAILABLE_CHANNEL, payload);
+  splashWindow?.webContents.send(UPDATE_AVAILABLE_CHANNEL, payload);
 }
 
 function emitUpdateLog(payload: UpdateLogPayload) {
   mainWindow?.webContents.send(UPDATE_LOG_CHANNEL, payload);
+  splashWindow?.webContents.send(UPDATE_LOG_CHANNEL, payload);
 }
 
 function serializeErrorDetails(error: unknown) {
@@ -131,6 +133,7 @@ const UPDATE_LOG_CHANNEL = "app:update-log";
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 let mainWindow: BrowserWindow | null = null;
+let splashWindow: BrowserWindow | null = null;
 let latestUpdatePayload: UpdatePayload | null = null;
 let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
 let isUpdateDownloaded = false;
@@ -164,21 +167,23 @@ function isAutoUpdateSupported(): boolean {
   return process.platform === "darwin" || process.platform === "win32";
 }
 
-// Serup auto updater
-function setupAutoUpdater() {
+function getFeedURL(): string | null {
+  if (!isAutoUpdateSupported()) return null;
+  const server = "https://update.electronjs.org";
+  return `${server}/Tensamin/Frontend/${process.platform}-${process.arch}/${app.getVersion()}`;
+}
+
+// Setup auto updater
+function setupBackgroundAutoUpdater() {
   if (!isAutoUpdateSupported()) {
-    console.log(
-      `Auto-updates not supported on ${process.platform}. Users will be directed to manual download.`,
-    );
     return;
   }
 
   try {
-    const server = "https://update.electronjs.org";
-    const feed = `${server}/Tensamin/Frontend/${process.platform}-${process.arch}/${app.getVersion()}`;
-    autoUpdater.setFeedURL({
-      url: feed,
-    });
+    const feed = getFeedURL();
+    if (feed) {
+      autoUpdater.setFeedURL({ url: feed });
+    }
 
     // Error during update check or download
     autoUpdater.on("error", (error) => {
@@ -225,9 +230,6 @@ function setupAutoUpdater() {
       },
     );
 
-    // Check for updates immediately
-    autoUpdater.checkForUpdates();
-
     // Set up periodic update checks
     updateCheckInterval = setInterval(() => {
       autoUpdater.checkForUpdates();
@@ -243,7 +245,7 @@ function setupAutoUpdater() {
   }
 }
 
-function createWindow() {
+function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -266,7 +268,7 @@ function createWindow() {
 
   mainWindow.on("ready-to-show", () => {
     mainWindow?.show();
-    setupAutoUpdater();
+    setupBackgroundAutoUpdater();
   });
 
   mainWindow.webContents.on("did-finish-load", () => {
@@ -283,6 +285,110 @@ function createWindow() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
+}
+
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    width: 300,
+    height: 400,
+    frame: false,
+    show: false,
+    resizable: false,
+    center: true,
+    icon: "app://./assets/app/web-app-manifest-512x512.png",
+    webPreferences: {
+      preload: path.join(app.getAppPath(), "preload.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  const splashUrl =
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000/misc/loading"
+      : "app://./misc/loading.html";
+
+  splashWindow.loadURL(splashUrl);
+
+  splashWindow.on("ready-to-show", () => {
+    splashWindow?.show();
+
+    // Configure for startup check
+    const feed = getFeedURL();
+    if (!feed) {
+      closeSplashAndStartMain();
+      return;
+    }
+
+    try {
+      autoUpdater.setFeedURL({ url: feed });
+
+      emitUpdateLog({
+        level: "info",
+        message: "Checking for updates...",
+        timestamp: Date.now(),
+      });
+
+      // Handle startup specific events
+      const onUpdateDownloaded = () => {
+        emitUpdateLog({
+          level: "info",
+          message: "Update downloaded, installing...",
+          timestamp: Date.now(),
+        });
+        cleanup();
+        autoUpdater.quitAndInstall();
+      };
+
+      const onErrorOrNotAvailable = (err?: Error) => {
+        if (err) {
+          console.error("Auto-updater error/not-available during splash:", err);
+        }
+        cleanup();
+        closeSplashAndStartMain();
+      };
+
+      const onUpdateAvailable = () => {
+        emitUpdateLog({
+          level: "info",
+          message: "Update found, downloading...",
+          timestamp: Date.now(),
+        });
+      };
+
+      const cleanup = () => {
+        autoUpdater.removeListener("update-downloaded", onUpdateDownloaded);
+        autoUpdater.removeListener(
+          "update-not-available",
+          onErrorOrNotAvailable,
+        );
+        autoUpdater.removeListener("error", onErrorOrNotAvailable);
+        autoUpdater.removeListener("update-available", onUpdateAvailable);
+      };
+
+      autoUpdater.once("update-downloaded", onUpdateDownloaded);
+      autoUpdater.once("update-not-available", () => onErrorOrNotAvailable());
+      autoUpdater.once("error", (e) => onErrorOrNotAvailable(e));
+      autoUpdater.on("update-available", onUpdateAvailable);
+
+      autoUpdater.checkForUpdates();
+    } catch (error) {
+      console.error("Error during splash update check:", error);
+      closeSplashAndStartMain();
+    }
+  });
+
+  splashWindow.on("closed", () => {
+    splashWindow = null;
+  });
+}
+
+function closeSplashAndStartMain() {
+  if (splashWindow) {
+    splashWindow.close();
+    splashWindow = null;
+  }
+  createMainWindow();
 }
 
 app.whenReady().then(() => {
@@ -305,7 +411,13 @@ app.whenReady().then(() => {
     return net.fetch(pathToFileURL(filePath).toString());
   });
 
-  createWindow();
+  // Start with Splash Window logic if auto update is supported, otherwise go straight to main
+  // Linux doesn't support autoUpdater.quitAndInstall() in the same way, so we skip splash check
+  if (isAutoUpdateSupported()) {
+    createSplashWindow();
+  } else {
+    createMainWindow();
+  }
 });
 
 app.on("window-all-closed", () => {

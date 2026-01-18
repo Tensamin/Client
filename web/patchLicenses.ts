@@ -7,10 +7,7 @@ async function main() {
     file[key] = current;
   }
 
-  await Bun.write(
-    "public/licenses.json",
-    JSON.stringify(file, null, 2),
-  );
+  await Bun.write("public/licenses.json", JSON.stringify(file, null, 2));
 }
 
 main();

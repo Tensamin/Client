@@ -2,7 +2,7 @@
   "name": "tensamin",
   "productName": "Tensamin",
   "description": "True E2EE, decentralized messages. Open source and privacy first.",
-  "version": "0.1.38",
+  "version": "0.1.39",
   "scripts": {
     "lint": "eslint && tsc",
     "dev": "next dev",
@@ -78,6 +78,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
     "@tailwindcss/postcss": "^4.1.18",
+    "@types/bun": "^1.3.6",
     "@types/color": "^4.2.0",
     "@types/node": "^25.0.5",
     "@types/react": "^19.2.8",

@@ -2752,7 +2752,7 @@
     "repository": "https://github.com/tailwindlabs/tailwindcss",
     "licenseFile": "node_modules/tailwindcss/LICENSE"
   },
-  "tensamin@0.1.38": {
+  "tensamin@0.1.39": {
     "licenses": "UNKNOWN"
   },
   "tiny-invariant@1.3.3": {

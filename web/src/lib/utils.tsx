@@ -132,12 +132,13 @@ export function getCreationString(creationTimestamp: UnixTimestamp) {
 }
 
 export const progressBar = {
+  layout: 45,
   storage: 15,
-  crypto: 35,
+  crypto: 30,
   socket: 100,
-  socket_connecting: 55,
-  socket_identify: 75,
-  socket_base: 45,
+  socket_connecting: 75,
+  socket_identify: 100,
+  socket_base: 60,
   DELAY: 250,
 };
 

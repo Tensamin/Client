@@ -24,6 +24,7 @@ import { Loading } from "@/components/loading";
 import { Toaster } from "@/components/ui/sonner";
 import { CryptoProvider } from "@/context/crypto";
 import { PageProvider } from "@/context/page";
+import { progressBar } from "@/lib/utils";
 
 // Main
 export const viewport: Viewport = {
@@ -76,7 +77,7 @@ export default function RootLayout({
           <StorageProvider>
             <PageProvider>
               <CryptoProvider>
-                <Suspense fallback={<Loading progress={0} />}>
+                <Suspense fallback={<Loading progress={progressBar.layout} />}>
                   {children}
                 </Suspense>
               </CryptoProvider>
