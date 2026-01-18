@@ -27,11 +27,11 @@
         archMapping = {
           x86_64-linux = {
             debArch = "amd64";
-            hash = "sha256-gUgSZt5y8In0pNuny2p/tu6gcO9C8pSoTgYQwOalPCQ=";
+            hash = "sha256-ILZS6/DHCnEXYo/Tl+e6bkvS4HvnPEX+fAcTqIx3vxw=";
           };
           aarch64-linux = {
             debArch = "arm64";
-            hash = "sha256-9Q6LrXdRhXxYflj470/Tdldt2270hBFxTsX8lbAJFIM=";
+            hash = "sha256-RJNC+1V5EqGe9wgy1xdiJT2S8cAoIFi0Xf+ps1ZSXvI=";
           };
         };
 
@@ -92,7 +92,7 @@
       in {
         packages.default = pkgs.stdenv.mkDerivation rec {
           pname = "tensamin";
-          version = "0.1.35";
+          version = "0.1.36";
 
           src = pkgs.fetchurl {
             url = "https://github.com/Tensamin/Client/releases/download/v${version}/tensamin_${version}_${archConfig.debArch}.deb";
