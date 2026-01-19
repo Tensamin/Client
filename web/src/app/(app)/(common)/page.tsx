@@ -6,12 +6,10 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
-import { username_to_id } from "@/lib/endpoints";
 import { cn, displayCallId } from "@/lib/utils";
 
 // Context Imports
 import { useSocketContext } from "@/context/socket";
-import { rawDebugLog } from "@/context/storage";
 import { useUserContext } from "@/context/user";
 
 // Components
@@ -55,34 +53,18 @@ export default function Page() {
 
   const [open, setOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const addConversation = useCallback(async () => {
-    setLoading(true);
-    try {
-      await fetch(username_to_id + newUsername)
-        .then((res) => res.json())
-        .then(async (data) => {
-          if (data.type === "error") {
-            toast.error(
-              "Failed to add conversation (the user probably does not exist)",
-            );
-          } else {
-            send("add_chat", {
-              user_id: data.data.user_id,
-            }).then(() => {
-              refetchConversations();
-            });
-          }
-        });
-    } catch (err: unknown) {
-      toast.error("Failed to add conversation");
-      rawDebugLog("Homepage", "Failed to add conversation", err, "red");
-    } finally {
-      setOpen(false);
-      setNewUsername("");
-      setLoading(false);
-    }
+    await send("add_conversation", { chat_partner_name: newUsername })
+      .then(() => {
+        toast.success("Conversation added successfully");
+        refetchConversations();
+      })
+      .catch(() => {
+        toast.error("Failed to add conversation");
+      });
+    setOpen(false);
+    setNewUsername("");
   }, [newUsername, refetchConversations, send]);
 
   const [updateLoading, setUpdateLoading] = useState(false);
@@ -129,9 +111,9 @@ export default function Page() {
                     <Button
                       size="sm"
                       onClick={addConversation}
-                      disabled={!newUsername || loading}
+                      disabled={!newUsername}
                     >
-                      {loading ? <LoadingIcon invert /> : "Add"}
+                      Add
                     </Button>
                   </div>
                 </div>

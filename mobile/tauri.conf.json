@@ -31,5 +31,14 @@
     "active": true,
     "targets": ["app", "dmg", "deb", "rpm", "msi", "nsis"],
     "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"]
+  },
+  "plugins": {
+    "deep-link": {
+      "mobile": [
+        {
+          "scheme": ["tensamin"]
+        }
+      ]
+    }
   }
 }

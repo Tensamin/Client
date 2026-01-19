@@ -87,7 +87,7 @@ export function UserModal({
                 {...props}
                 description={user.status || ""}
                 onClick={() => {
-                  router.push(`/chat/${user.id}`);
+                  router.push(`/chat?id=${user.id}`);
                 }}
               />
             </ContextMenuTrigger>

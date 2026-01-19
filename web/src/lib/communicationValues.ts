@@ -5,7 +5,10 @@ import {
   CallId,
   RawMessage,
   Community,
+  User,
 } from "./types";
+
+export type get_user_data = User;
 
 export type get_chats = {
   user_ids: Conversation[];

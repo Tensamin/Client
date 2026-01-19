@@ -14,7 +14,6 @@ import { toast } from "sonner";
 
 // Lib Imports
 import * as CommunicationValue from "@/lib/communicationValues";
-import { user } from "@/lib/endpoints";
 import {
   Community,
   Conversation,
@@ -29,7 +28,7 @@ import { getDisplayFromUsername } from "@/lib/utils";
 import { useCryptoContext } from "@/context/crypto";
 import { useSocketContext } from "@/context/socket";
 import { rawDebugLog, useStorageContext } from "@/context/storage";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 // Types
 type UserContextType = {
@@ -78,13 +77,13 @@ export function UserProvider({
   const prevLastMessageRef = useRef<unknown>(null);
 
   const pathname = usePathname().split("/");
-  const page = pathname[2] || "home";
-  const pageData = pathname[3] || "";
+  const searchParams = useSearchParams();
+  const page = pathname[1] || "home";
+  const currentReceiverId = page === "chat" ? Number(searchParams.get("id")) ?? 0 : 0;
 
   const { data } = useStorageContext();
   const { ownId, get_shared_secret, privateKey } = useCryptoContext();
   const { send, identified, lastMessage } = useSocketContext();
-  const currentReceiverId: number = page === "chat" ? Number(pageData) || 0 : 0;
   const [currentReceiverSharedSecret, setCurrentReceiverSharedSecret] =
     useState<string>("");
   const [conversations, setConversationsState] = useState<Conversation[]>([]);
@@ -128,39 +127,30 @@ export function UserProvider({
 
         setReloadUsers(true);
         rawDebugLog("User Context", "Fetching user", { id }, "yellow");
-        const response = await fetch(`${user}${id}`);
-        const data = await response.json();
+        const data = (await send("get_user_data", {
+          user_id: id,
+        })) as CommunicationValue.get_user_data;
 
-        if (data.type !== "success") {
-          throw new Error(`API error: ${data.message || "Unknown error"}`);
-        }
-
-        const apiUserData: Omit<User, "state" | "loading"> = {
+        const apiUserData: User = {
           id,
-          username: data.data.username,
-          display: getDisplayFromUsername(
-            data.data.username,
-            data.data.display,
-          ),
-          avatar: data.data.avatar,
-          about: data.data.about,
-          status: data.data.status,
-          sub_level: data.data.sub_level,
-          sub_end: data.data.sub_end,
-          public_key: data.data.public_key,
-        };
-
-        const latest = fetchedUsersRef.current.get(id);
-        const newUser: User = {
-          ...(latest ?? { state: "NONE", loading: true }),
-          ...apiUserData,
+          username: data.username,
+          display: getDisplayFromUsername(data.username, data.display),
+          avatar: data.avatar
+            ? `data:image/webp;base64,${data.avatar}`
+            : undefined,
+          about: data.about,
+          status: data.status,
+          sub_level: data.sub_level,
+          sub_end: data.sub_end,
+          public_key: data.public_key,
+          state: data.state,
           loading: false,
         };
 
         updateFetchedUsers((draft) => {
-          draft.set(id, newUser);
+          draft.set(id, apiUserData);
         });
-        return newUser;
+        return apiUserData;
       } catch (error: unknown) {
         const currentExisting = fetchedUsersRef.current.get(id);
         if (currentExisting) {
@@ -191,7 +181,7 @@ export function UserProvider({
         } as User;
       }
     },
-    [updateFetchedUsers],
+    [updateFetchedUsers, send],
   );
 
   const setConversationsAndSync = useCallback(

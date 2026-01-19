@@ -8,4 +8,5 @@ export default {
   experimental: {
     optimizeCss: true,
   },
+  images: { unoptimized: true },
 } as NextConfig;

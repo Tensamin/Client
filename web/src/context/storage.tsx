@@ -11,6 +11,7 @@ import {
 } from "react";
 import { openDB, IDBPDatabase } from "idb";
 import { useTheme } from "next-themes";
+import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
 
 // Lib Imports
 import { handleError, progressBar } from "@/lib/utils";
@@ -99,6 +100,7 @@ export function StorageProvider({
   const [, setRawThemeTint] = useState<string | null>(null);
   const [themeCSS, setRawThemeCSS] = useState<string | null>(null);
   const [, setRawThemeTintType] = useState<string | null>(null);
+  const [currentDeepLink, setCurrentDeepLink] = useState<string[] | null>(null);
 
   const { resolvedTheme, systemTheme } = useTheme();
 
@@ -122,6 +124,27 @@ export function StorageProvider({
     }
   }, []);
 
+  // Tauri Stuff
+  useEffect(() => {
+    if (isTauri) {
+      const setupDeeplink = async () => {
+        await onOpenUrl(async (urls) => {
+          if (!urls?.length) return;
+
+          const action = urls[0].replace("tensamin://", "");
+          const data = action.split(":");
+
+          rawDebugLog("Tauri", "Deep Link Opened", data, "yellow");
+
+          setCurrentDeepLink(data);
+        });
+      };
+
+      setupDeeplink();
+    }
+  }, [isTauri]);
+
+  // Other Stuff
   const dbPromise = useMemo(() => createDBPromise(), []);
 
   const loadData = useCallback(async () => {
@@ -291,6 +314,7 @@ export function StorageProvider({
         setThemeTintType,
         isElectron,
         isTauri,
+        currentDeepLink,
       }}
     >
       {children}
@@ -315,4 +339,5 @@ type StorageContextType = {
   setThemeTintType: (tintType: string) => void;
   isElectron: boolean;
   isTauri: boolean;
+  currentDeepLink: string[] | null;
 };

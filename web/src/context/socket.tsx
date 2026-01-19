@@ -16,14 +16,13 @@ import { v7 } from "uuid";
 // Lib Imports
 import * as CommunicationValue from "@/lib/communicationValues";
 import { client_wss } from "@/lib/endpoints";
-import { UserState } from "@/lib/types";
+import { User, UserState } from "@/lib/types";
 import { RetryCount, progressBar, responseTimeout } from "@/lib/utils";
 
 // Context Imports
 import { useCryptoContext } from "@/context/crypto";
 import { usePageContext } from "@/context/page";
 import { rawDebugLog } from "@/context/storage";
-import { fetchUserData } from "@/lib/utils";
 
 // Components
 import { Loading } from "@/components/loading";
@@ -153,7 +152,8 @@ export function SocketProvider({
       if (
         (identified ||
           requestType === "identification" ||
-          requestType === "challenge_response") &&
+          requestType === "challenge_response" ||
+          requestType === "get_user_data") &&
         readyState !== ReadyState.CLOSED &&
         readyState !== ReadyState.CLOSING
       ) {
@@ -262,7 +262,10 @@ export function SocketProvider({
         user_id: ownId,
       })
         .then(async (raw) => {
-          const ownUserData = await fetchUserData(ownId);
+          const ownUserData = (await send("get_user_data", {
+            user_id: ownId,
+          })) as User;
+
           if (!ownUserData?.public_key) throw new Error();
 
           const data = raw as CommunicationValue.identification;

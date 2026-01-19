@@ -28,7 +28,7 @@ import Avatar from "@/components/modals/Avatar";
 import { DataContainer } from "@/lib/communicationValues";
 import { playSound } from "@/lib/sound";
 import { Message, MessageGroup, Messages } from "@/lib/types";
-import { usePathname } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 const GROUP_WINDOW_MS = 60 * 1000;
 
@@ -55,8 +55,8 @@ export function MessageProvider({
 }>) {
   const { send, identified, lastMessage } = useSocketContext();
 
-  const pathname = usePathname().split("/");
-  const id = Number(pathname[2]) || null;
+  const searchParams = useSearchParams();
+  const id = Number(searchParams.get("id"));
 
   const { ownId, currentReceiverId, get, updateConversationPosition } =
     useUserContext();
