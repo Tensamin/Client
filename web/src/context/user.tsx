@@ -75,19 +75,21 @@ export function UserProvider({
   );
   const fetchedUsersRef = useRef(fetchedUsers);
   const prevLastMessageRef = useRef<unknown>(null);
+  const inFlightRef = useRef<Map<number, Promise<User>>>(new Map());
 
   const pathname = usePathname().split("/");
   const searchParams = useSearchParams();
   const page = pathname[1] || "home";
-  const currentReceiverId = page === "chat" ? Number(searchParams.get("id")) ?? 0 : 0;
+  const currentReceiverId =
+    page === "chat" ? (Number(searchParams.get("id")) ?? 0) : 0;
 
   const { data } = useStorageContext();
   const { ownId, get_shared_secret, privateKey } = useCryptoContext();
   const { send, identified, lastMessage } = useSocketContext();
   const [currentReceiverSharedSecret, setCurrentReceiverSharedSecret] =
     useState<string>("");
-  const [conversations, setConversationsState] = useState<Conversation[]>([]);
-  const [communities, setCommunitiesState] = useState<Community[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [communities, setCommunities] = useState<Community[]>([]);
   const [failedMessagesAmount, setFailedMessagesAmount] = useState<number>(0);
   const [reloadUsers, setReloadUsers] = useState<boolean>(false);
   const [ownState, setOwnState] = useState<UserState>("ONLINE");
@@ -113,12 +115,15 @@ export function UserProvider({
           throw new Error("Invalid ID");
         }
 
+        if (inFlightRef.current.has(id) && !refetch) {
+          return inFlightRef.current.get(id)!;
+        }
+
         const hasUser = fetchedUsersRef.current.has(id);
         const existingUser = hasUser
           ? fetchedUsersRef.current.get(id)
           : undefined;
-        const shouldFetch =
-          refetch || !hasUser || !!(existingUser && existingUser.loading);
+        const shouldFetch = refetch || !hasUser;
 
         if (hasUser && !shouldFetch) {
           rawDebugLog("User Context", "User already fetched", "", "yellow");
@@ -126,80 +131,83 @@ export function UserProvider({
         }
 
         setReloadUsers(true);
-        rawDebugLog("User Context", "Fetching user", { id }, "yellow");
-        const data = (await send("get_user_data", {
-          user_id: id,
-        })) as CommunicationValue.get_user_data;
 
-        const apiUserData: User = {
-          id,
-          username: data.username,
-          display: getDisplayFromUsername(data.username, data.display),
-          avatar: data.avatar
-            ? `data:image/webp;base64,${data.avatar}`
-            : undefined,
-          about: data.about,
-          status: data.status,
-          sub_level: data.sub_level,
-          sub_end: data.sub_end,
-          public_key: data.public_key,
-          state: data.state,
-          loading: false,
-        };
+        const fetchPromise = (async () => {
+          try {
+            rawDebugLog("User Context", "Fetching user", { id }, "yellow");
+            const data = (await send("get_user_data", {
+              user_id: id,
+            })) as CommunicationValue.get_user_data;
 
-        updateFetchedUsers((draft) => {
-          draft.set(id, apiUserData);
-        });
-        return apiUserData;
+            const apiUserData: User = {
+              id,
+              username: data.username,
+              display: getDisplayFromUsername(data.username, data.display),
+              avatar: data.avatar
+                ? `data:image/webp;base64,${data.avatar}`
+                : undefined,
+              about: data.about,
+              status: data.status,
+              sub_level: data.sub_level,
+              sub_end: data.sub_end,
+              public_key: data.public_key,
+              state: data.state,
+              loading: false,
+            };
+
+            updateFetchedUsers((draft) => {
+              draft.set(id, apiUserData);
+            });
+
+            inFlightRef.current.delete(id);
+
+            return apiUserData;
+          } catch (error: unknown) {
+            inFlightRef.current.delete(id);
+
+            const currentExisting = fetchedUsersRef.current.get(id);
+            if (currentExisting) {
+              const failedUser: User = {
+                ...currentExisting,
+                about: String(error),
+                loading: false,
+              };
+              updateFetchedUsers((draft) => {
+                draft.set(id, failedUser);
+              });
+              return failedUser;
+            }
+
+            return {
+              id: 0,
+              username: "failed",
+              display: "Failed to load",
+              avatar: undefined,
+              about: String(error),
+              status: "",
+              sub_level: 0,
+              sub_end: 0,
+              public_key: "",
+              created_at: new Date().toISOString(),
+              state: "NONE",
+              loading: false,
+            } as User;
+          }
+        })();
+
+        inFlightRef.current.set(id, fetchPromise);
+        return fetchPromise;
       } catch (error: unknown) {
-        const currentExisting = fetchedUsersRef.current.get(id);
-        if (currentExisting) {
-          const failedUser: User = {
-            ...currentExisting,
-            about: String(error),
-            loading: false,
-          };
-          updateFetchedUsers((draft) => {
-            draft.set(id, failedUser);
-          });
-          return failedUser;
-        }
-
-        return {
-          id: 0,
-          username: "failed",
-          display: "Failed to load",
-          avatar: undefined,
-          about: String(error),
-          status: "",
-          sub_level: 0,
-          sub_end: 0,
-          public_key: "",
-          created_at: new Date().toISOString(),
-          state: "NONE",
-          loading: false,
-        } as User;
+        inFlightRef.current.delete(id);
+        throw error;
       }
     },
     [updateFetchedUsers, send],
   );
 
-  const setConversationsAndSync = useCallback(
-    (next: Conversation[]) => {
-      setConversationsState(next);
-
-      next.forEach((c) => {
-        if (c.user_id && c.user_id !== 0) {
-          void get(c.user_id, true);
-        }
-      });
-    },
-    [get],
-  );
-
   // Put user at the top of the conversations list
   const updateConversationPosition = useCallback((userId: number) => {
-    setConversationsState((prev) => {
+    setConversations((prev) => {
       const index = prev.findIndex((c) => c.user_id === userId);
       if (index === -1) return prev;
 
@@ -241,7 +249,7 @@ export function UserProvider({
           return b.last_message_at - a.last_message_at;
         });
 
-        setConversationsAndSync(sortedConversations);
+        setConversations(sortedConversations);
       })
       .catch((err) => {
         toast.error("Failed to get conversations");
@@ -252,7 +260,7 @@ export function UserProvider({
           "red",
         );
       });
-  }, [send, setConversationsAndSync]);
+  }, [send]);
 
   // Set current receiver shared secret
   useEffect(() => {
@@ -315,7 +323,7 @@ export function UserProvider({
     send("get_communities")
       .then((raw) => {
         const data = raw as CommunicationValue.get_communities;
-        setCommunitiesState(data.communities || []);
+        setCommunities(data.communities || []);
       })
       .catch(() => {
         toast.error("Failed to get communities");
@@ -443,7 +451,6 @@ export function UserProvider({
 
     const unsubscribeUpdate = electronAPI.onUpdateAvailable(
       (update: UpdatePayload) => {
-        console.log("Update available:", update);
         handleUpdatePayload(update, true);
       },
     );
@@ -483,8 +490,8 @@ export function UserProvider({
         setFailedMessagesAmount,
         conversations,
         communities,
-        setConversations: setConversationsAndSync,
-        setCommunities: setCommunitiesState,
+        setConversations,
+        setCommunities,
         refetchConversations,
         reloadUsers,
         setReloadUsers,

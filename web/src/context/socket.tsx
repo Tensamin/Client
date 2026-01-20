@@ -92,6 +92,7 @@ export function SocketProvider({
       // Log Message
       if (
         parsedMessage.type !== "pong" &&
+        parsedMessage.type !== "get_user_data" &&
         !parsedMessage.type.startsWith("error")
       ) {
         rawDebugLog("Socket Context", "Received", {
@@ -164,7 +165,10 @@ export function SocketProvider({
           };
 
           try {
-            if (messageToSend.type !== "ping") {
+            if (
+              messageToSend.type !== "ping" &&
+              messageToSend.type !== "get_user_data"
+            ) {
               rawDebugLog("Socket Context", "Sent", {
                 type: messageToSend.type,
                 data: messageToSend.data,
@@ -212,7 +216,10 @@ export function SocketProvider({
           pendingRequests.current.set(id, { resolve, reject, timeoutId });
 
           try {
-            if (messageToSend.type !== "ping") {
+            if (
+              messageToSend.type !== "ping" &&
+              messageToSend.type !== "get_user_data"
+            ) {
               rawDebugLog("Socket Context", "Sent", {
                 type: messageToSend.type,
                 data: messageToSend.data,
