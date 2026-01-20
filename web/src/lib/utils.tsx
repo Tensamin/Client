@@ -135,10 +135,10 @@ export const progressBar = {
   layout: 45,
   storage: 15,
   crypto: 30,
-  socket: 100,
-  socket_connecting: 75,
+  socket: 60,
+  socket_connecting: 90,
   socket_identify: 100,
-  socket_base: 60,
+  socket_base: 75,
   DELAY: 250,
 };
 

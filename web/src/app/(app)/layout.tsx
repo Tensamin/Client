@@ -52,7 +52,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className="pt-[env(safe-area-inset-top)]" lang="en" suppressHydrationWarning>
+    <html
+      className="pt-[env(safe-area-inset-top)]"
+      lang="en"
+      suppressHydrationWarning
+    >
       <body
         data-lk-theme="default"
         className={`antialiased max-h-screen overflow-hidden ${sans.className}`}

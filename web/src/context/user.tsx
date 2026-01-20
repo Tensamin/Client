@@ -96,6 +96,10 @@ export function UserProvider({
   const [ownUserHasPremium, setOwnUserHasPremium] = useState<boolean>(false);
   const [ownUserData, setOwnUserData] = useState<User | null>(null);
 
+  const initialConvFetchRef = useRef(false);
+
+  const storageContext = useStorageContext();
+
   const updateFetchedUsers = useCallback(
     (updater: (next: Map<number, User>) => void) => {
       setFetchedUsers((prev) => {
@@ -126,7 +130,9 @@ export function UserProvider({
         const shouldFetch = refetch || !hasUser;
 
         if (hasUser && !shouldFetch) {
-          rawDebugLog("User Context", "User already fetched", "", "yellow");
+          if (storageContext.data.showExtraUserContextDebugLogs) {
+            rawDebugLog("User Context", "User already fetched", "", "yellow");
+          }
           return existingUser!;
         }
 
@@ -134,7 +140,9 @@ export function UserProvider({
 
         const fetchPromise = (async () => {
           try {
-            rawDebugLog("User Context", "Fetching user", { id }, "yellow");
+            if (storageContext.data.showExtraUserContextDebugLogs) {
+              rawDebugLog("User Context", "Fetching user", { id }, "yellow");
+            }
             const data = (await send("get_user_data", {
               user_id: id,
             })) as CommunicationValue.get_user_data;
@@ -202,7 +210,11 @@ export function UserProvider({
         throw error;
       }
     },
-    [updateFetchedUsers, send],
+    [
+      updateFetchedUsers,
+      send,
+      storageContext.data.showExtraUserContextDebugLogs,
+    ],
   );
 
   // Put user at the top of the conversations list
@@ -311,14 +323,12 @@ export function UserProvider({
     };
   }, [currentReceiverId, get, get_shared_secret, ownId, privateKey]);
 
-  useEffect(() => {
-    if (!identified) return;
-    refetchConversations();
-  }, [identified, refetchConversations]);
-
   // Get initial communities
   useEffect(() => {
-    if (!identified) return;
+    if (!identified || initialConvFetchRef.current) return;
+    initialConvFetchRef.current = true;
+
+    void refetchConversations();
 
     send("get_communities")
       .then((raw) => {
@@ -328,7 +338,7 @@ export function UserProvider({
       .catch(() => {
         toast.error("Failed to get communities");
       });
-  }, [identified, send]);
+  }, [identified, send, refetchConversations]);
 
   // Handle socket messages
   const handleSocketMessage = useEffectEvent(
