@@ -214,7 +214,7 @@ export const LOADER_NAMES = [
 ];
 export function LoadingIcon({
   invert,
-  size = 17,
+  size = 1,
 }: {
   invert?: boolean;
   size?: number;
