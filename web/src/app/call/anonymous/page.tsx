@@ -37,7 +37,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loading } from "@/components/loading";
 
@@ -113,8 +112,6 @@ function AnonymousCallUI({
   callId: string;
   onLeave: () => void;
 }) {
-  const { get, fetchedUsers } = useAnonymousContext();
-  const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
 
   // Audio state management
@@ -207,16 +204,6 @@ function AnonymousCallUI({
       }
     }
   }, [isDeafened, localTrack]);
-
-  // Fetch user data for all participants
-  useEffect(() => {
-    participants.forEach((p) => {
-      const userId = Number(p.identity);
-      if (userId && !fetchedUsers.has(userId)) {
-        get(userId, false);
-      }
-    });
-  }, [participants, get, fetchedUsers]);
 
   return (
     <div className="flex flex-col w-full h-full gap-5 relative pb-11">
@@ -391,16 +378,10 @@ function AnonymousCallGrid({
 function PreConnectScreen({
   onConnect,
 }: {
-  onConnect: (name: string) => void;
+  onConnect: () => void;
 }) {
-  const { userData, callData, customName, setCustomName } =
+  const { userData, callData } =
     useAnonymousContext();
-  const [name, setName] = useState(customName || userData?.display || "");
-
-  // Update custom name when input changes
-  useEffect(() => {
-    setCustomName(name);
-  }, [name, setCustomName]);
 
   if (!userData || !callData) {
     return <Loading message="Loading call data..." />;
@@ -430,7 +411,7 @@ function PreConnectScreen({
               )}
             </div>
             <div className="flex-1">
-              <p className="font-medium">{name || userData.display}</p>
+              <p className="font-medium">{userData.display}</p>
               <p className="text-sm text-muted-foreground">
                 @{userData.username}
               </p>
@@ -440,17 +421,6 @@ function PreConnectScreen({
           {/* Custom Name Input */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="display-name">Display Name</Label>
-            <Input
-              id="display-name"
-              placeholder="Enter your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  onConnect(name.trim() || userData.display);
-                }
-              }}
-            />
             <p className="text-xs text-muted-foreground">
               This name will be shown to other participants (leave empty to use
               default)
@@ -468,7 +438,7 @@ function PreConnectScreen({
           <Button
             className="w-full"
             size="lg"
-            onClick={() => onConnect(name.trim() || userData.display)}
+            onClick={() => onConnect()}
           >
             <Icon.Phone className="mr-2 h-4 w-4" />
             Connect
@@ -488,7 +458,6 @@ function AnonymousCallContent({ callId }: { callId: string }) {
     userData,
     callData,
     identify,
-    setCustomName,
   } = useAnonymousContext();
 
   const [shouldConnect, setShouldConnect] = useState(false);
@@ -510,17 +479,16 @@ function AnonymousCallContent({ callId }: { callId: string }) {
   }, [connected, identificationState, callId, identify]);
 
   const handleConnect = useCallback(
-    (name: string) => {
+    () => {
       if (!callData) {
         toast.error("Call data not available");
         return;
       }
 
-      setCustomName(name);
       setShouldConnect(true);
       setHasJoined(true);
     },
-    [callData, setCustomName],
+    [callData],
   );
 
   const handleLeave = useCallback(() => {

@@ -15,7 +15,6 @@ import useWebSocket, { ReadyState } from "react-use-websocket";
 import * as CommunicationValue from "@/lib/communicationValues";
 import {
   createSendFunction,
-  createGetUserFunction,
   handlePendingRequest,
   clearPendingRequests,
   PendingRequest,
@@ -49,9 +48,6 @@ type AnonymousContextType = {
   userData: AnonymousUserData | null;
   callData: CommunicationValue.anonymous_call_data | null;
   identify: (callId: string) => Promise<void>;
-  get: (id: number, refetch?: boolean) => Promise<User>;
-  customName: string;
-  setCustomName: (name: string) => void;
   fetchedUsers: Map<number, User>;
   send: (
     requestType: string,
@@ -77,12 +73,10 @@ export function AnonymousProvider({
   children: React.ReactNode;
 }>) {
   const pendingRequests = useRef<Map<string, PendingRequest>>(new Map());
-  const [customName, setCustomName] = useState("");
   const [fetchedUsers, setFetchedUsers] = useState<Map<number, User>>(
     new Map(),
   );
   const fetchedUsersRef = useRef(fetchedUsers);
-  const inFlightRef = useRef<Map<number, Promise<User>>>(new Map());
 
   // Identification state
   const [identificationState, setIdentificationState] =
@@ -297,53 +291,6 @@ export function AnonymousProvider({
     [connected, send, updateFetchedUsers],
   );
 
-  // Get user data function using shared utility
-  const baseGet = useCallback(
-    async (id: number, refetch: boolean = false): Promise<User> => {
-      return createGetUserFunction({
-        contextName: "Anonymous Context",
-        send,
-        fetchedUsersRef,
-        inFlightRef,
-        updateFetchedUsers,
-      })(id, refetch);
-    },
-    [send, updateFetchedUsers],
-  );
-
-  // Wrap get to apply custom name override for the anonymous user
-  const get = useCallback(
-    async (id: number, refetch: boolean = false): Promise<User> => {
-      const user = await baseGet(id, refetch);
-
-      // If this is the anonymous user themselves and they have a custom name, override
-      if (userData && id === userData.user_id && customName.trim()) {
-        return { ...user, display: customName.trim() };
-      }
-
-      return user;
-    },
-    [baseGet, userData, customName],
-  );
-
-  // When custom name changes, update the fetched user for this user
-  useEffect(() => {
-    if (userData && customName.trim()) {
-      const existingUser = fetchedUsersRef.current.get(userData.user_id);
-      if (existingUser) {
-        updateFetchedUsers((draft) => {
-          const user = draft.get(userData.user_id);
-          if (user) {
-            draft.set(userData.user_id, {
-              ...user,
-              display: customName.trim(),
-            });
-          }
-        });
-      }
-    }
-  }, [customName, userData, updateFetchedUsers]);
-
   return (
     <AnonymousContext.Provider
       value={{
@@ -354,9 +301,6 @@ export function AnonymousProvider({
         userData,
         callData,
         identify,
-        get,
-        customName,
-        setCustomName,
         fetchedUsers,
         send,
       }}
