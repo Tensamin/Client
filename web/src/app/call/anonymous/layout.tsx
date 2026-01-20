@@ -73,9 +73,7 @@ export default function AnonymousCallLayout({
             }}
           />
           <StorageProvider>
-            <PageProvider>
-              {children}
-            </PageProvider>
+            <PageProvider>{children}</PageProvider>
           </StorageProvider>
         </ThemeProvider>
       </body>

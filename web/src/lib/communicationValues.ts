@@ -12,6 +12,27 @@ export type call_set_anonymous_joining = {
   link: string;
 };
 
+export type anonymous_call_member = {
+  user_id: number;
+  username: string;
+  display: string;
+  avatar: string;
+};
+
+export type anonymous_call_data = {
+  call_id: string;
+  call_members: anonymous_call_member[];
+  call_token: string;
+};
+
+export type anonymous_identification_response = {
+  username: string;
+  display: string;
+  avatar: string;
+  user_id: number;
+  call_state: anonymous_call_data;
+};
+
 export type get_user_data = User;
 
 export type get_chats = {

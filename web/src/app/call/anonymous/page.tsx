@@ -9,18 +9,20 @@ import {
   useTracks,
   VideoTrack,
 } from "@livekit/components-react";
-import {
-  createLocalAudioTrack,
-  LocalAudioTrack,
-  Track,
-} from "livekit-client";
+import { createLocalAudioTrack, LocalAudioTrack, Track } from "livekit-client";
 import * as Icon from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 
 // Lib Imports
-import * as CommunicationValue from "@/lib/communicationValues";
 import { displayCallId } from "@/lib/utils";
 
 // Context Imports
@@ -104,18 +106,26 @@ function SimpleLeaveButton({
 }
 
 // Anonymous Call UI (stripped down version)
-function AnonymousCallUI({ callId, onLeave }: { callId: string; onLeave: () => void }) {
+function AnonymousCallUI({
+  callId,
+  onLeave,
+}: {
+  callId: string;
+  onLeave: () => void;
+}) {
   const { get, fetchedUsers } = useAnonymousContext();
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
-  
+
   // Audio state management
   const [localTrack, setLocalTrack] = useState<LocalAudioTrack | null>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [isDeafened, setIsDeafened] = useState(false);
 
   // Get video tracks for display
-  const videoTracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
+  const videoTracks = useTracks([Track.Source.Camera], {
+    onlySubscribed: false,
+  });
 
   // Initialize audio track
   useEffect(() => {
@@ -138,7 +148,7 @@ function AnonymousCallUI({ callId, onLeave }: { callId: string; onLeave: () => v
         }
 
         await localParticipant.publishTrack(track);
-        
+
         // Start muted
         await track.mute();
 
@@ -223,8 +233,16 @@ function AnonymousCallUI({ callId, onLeave }: { callId: string; onLeave: () => v
       {/* Controls */}
       <div className="absolute bottom-3 left-0 flex justify-center w-full">
         <div className="flex gap-3 bg-card p-1.5 rounded-lg border">
-          <SimpleMuteButton isMuted={isMuted} onToggle={toggleMute} className="w-10" />
-          <SimpleDeafButton isDeafened={isDeafened} onToggle={toggleDeafen} className="w-10" />
+          <SimpleMuteButton
+            isMuted={isMuted}
+            onToggle={toggleMute}
+            className="w-10"
+          />
+          <SimpleDeafButton
+            isDeafened={isDeafened}
+            onToggle={toggleDeafen}
+            className="w-10"
+          />
           <SimpleLeaveButton onLeave={onLeave} className="w-10" />
         </div>
       </div>
@@ -233,9 +251,13 @@ function AnonymousCallUI({ callId, onLeave }: { callId: string; onLeave: () => v
 }
 
 // Anonymous Grid Component
-function AnonymousCallGrid({ videoTracks }: { videoTracks: ReturnType<typeof useTracks> }) {
+function AnonymousCallGrid({
+  videoTracks,
+}: {
+  videoTracks: ReturnType<typeof useTracks>;
+}) {
   const participants = useParticipants();
-  const { get, fetchedUsers } = useAnonymousContext();
+  const { fetchedUsers } = useAnonymousContext();
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
@@ -297,10 +319,12 @@ function AnonymousCallGrid({ videoTracks }: { videoTracks: ReturnType<typeof use
           {participants.map((participant) => {
             const userId = Number(participant.identity);
             const user = fetchedUsers.get(userId);
-            
+
             // Check if this participant has a video track
             const videoTrack = videoTracks.find(
-              (t) => t.participant.identity === participant.identity && t.publication?.track
+              (t) =>
+                t.participant.identity === participant.identity &&
+                t.publication?.track,
             );
             const hasVideo = !!videoTrack?.publication?.track;
 
@@ -318,7 +342,9 @@ function AnonymousCallGrid({ videoTracks }: { videoTracks: ReturnType<typeof use
                 {hasVideo && videoTrack.publication ? (
                   // Show video track
                   <VideoTrack
-                    trackRef={videoTrack as import("@livekit/components-core").TrackReference}
+                    trackRef={
+                      videoTrack as import("@livekit/components-core").TrackReference
+                    }
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -361,26 +387,57 @@ function AnonymousCallGrid({ videoTracks }: { videoTracks: ReturnType<typeof use
   );
 }
 
-// Pre-connect Screen
+// Pre-connect Screen with user preview
 function PreConnectScreen({
   onConnect,
-  callId,
 }: {
   onConnect: (name: string) => void;
-  callId: string;
 }) {
-  const [name, setName] = useState("");
+  const { userData, callData, customName, setCustomName } =
+    useAnonymousContext();
+  const [name, setName] = useState(customName || userData?.display || "");
+
+  // Update custom name when input changes
+  useEffect(() => {
+    setCustomName(name);
+  }, [name, setCustomName]);
+
+  if (!userData || !callData) {
+    return <Loading message="Loading call data..." />;
+  }
 
   return (
     <div className="w-full h-screen flex items-center justify-center bg-background">
-      <Card className="w-full max-w-md mx-4">
+      <Card className="w-full max-w-lg mx-4">
         <CardHeader>
           <CardTitle className="text-2xl">Join Call</CardTitle>
           <CardDescription>
-            You&apos;re about to join call {displayCallId(callId)}
+            You&apos;re about to join call {displayCallId(callData.call_id)}
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-6">
+          {/* User Preview */}
+          <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+            <div className="w-16 h-16 rounded-full bg-background flex items-center justify-center overflow-hidden border">
+              {userData.avatar ? (
+                <img
+                  src={`data:image/webp;base64,${userData.avatar}`}
+                  alt={userData.display}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Icon.User className="w-8 h-8 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex-1">
+              <p className="font-medium">{name || userData.display}</p>
+              <p className="text-sm text-muted-foreground">
+                @{userData.username}
+              </p>
+            </div>
+          </div>
+
+          {/* Custom Name Input */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="display-name">Display Name</Label>
             <Input
@@ -389,19 +446,29 @@ function PreConnectScreen({
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && name.trim()) {
-                  onConnect(name.trim());
+                if (e.key === "Enter") {
+                  onConnect(name.trim() || userData.display);
                 }
               }}
             />
             <p className="text-xs text-muted-foreground">
-              This name will be shown to other participants
+              This name will be shown to other participants (leave empty to use
+              default)
             </p>
           </div>
+
+          {/* Call Data Preview (temporary for debugging) */}
+          <div className="flex flex-col gap-2">
+            <Label>Call Data (Debug)</Label>
+            <pre className="p-3 bg-muted rounded-lg text-xs overflow-auto max-h-40 font-mono">
+              {JSON.stringify(callData, null, 2)}
+            </pre>
+          </div>
+
           <Button
             className="w-full"
             size="lg"
-            onClick={() => onConnect(name.trim())}
+            onClick={() => onConnect(name.trim() || userData.display)}
           >
             <Icon.Phone className="mr-2 h-4 w-4" />
             Connect
@@ -413,72 +480,92 @@ function PreConnectScreen({
 }
 
 // Main Anonymous Call Content (inside provider)
-function AnonymousCallContent({
-  callId,
-  userId,
-}: {
-  callId: string;
-  userId: number;
-}) {
-  const { send, connected, setCustomName, customName } = useAnonymousContext();
-  const [token, setToken] = useState("");
-  const [isConnecting, setIsConnecting] = useState(false);
+function AnonymousCallContent({ callId }: { callId: string }) {
+  const {
+    connected,
+    identificationState,
+    identificationError,
+    userData,
+    callData,
+    identify,
+    setCustomName,
+  } = useAnonymousContext();
+
   const [shouldConnect, setShouldConnect] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
+  const identifyAttempted = useRef(false);
 
-  const handleConnect = async (name: string) => {
-    if (!connected) {
-      toast.error("Not connected to server. Please wait...");
-      return;
+  // Identify when connected
+  useEffect(() => {
+    if (
+      connected &&
+      identificationState === "connecting" &&
+      !identifyAttempted.current
+    ) {
+      identifyAttempted.current = true;
+      identify(callId).catch(() => {
+        // Error handling is done in the context
+      });
     }
+  }, [connected, identificationState, callId, identify]);
 
-    setIsConnecting(true);
-    setCustomName(name);
-
-    try {
-      // Get call token via anonymous WebSocket
-      const response = (await send("call_token", {
-        call_id: callId,
-        user_id: userId,
-        display_name: name,
-      })) as CommunicationValue.call_token;
-
-      if (response.call_token) {
-        setToken(response.call_token);
-        setShouldConnect(true);
-        setHasJoined(true);
-      } else {
-        toast.error("Failed to get call token");
+  const handleConnect = useCallback(
+    (name: string) => {
+      if (!callData) {
+        toast.error("Call data not available");
+        return;
       }
-    } catch (error) {
-      console.error("Failed to get call token:", error);
-      toast.error("Failed to join call. Please try again.");
-    } finally {
-      setIsConnecting(false);
-    }
-  };
+
+      setCustomName(name);
+      setShouldConnect(true);
+      setHasJoined(true);
+    },
+    [callData, setCustomName],
+  );
 
   const handleLeave = useCallback(() => {
     setShouldConnect(false);
     setHasJoined(false);
-    setToken("");
   }, []);
 
-  if (!connected) {
+  // Loading states
+  if (!connected || identificationState === "connecting") {
     return <Loading message="Connecting to server..." />;
   }
 
-  if (isConnecting) {
-    return <Loading message="Joining call..." />;
+  if (identificationState === "identifying") {
+    return <Loading message="Loading call information..." />;
+  }
+
+  if (identificationState === "error") {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-background">
+        <Card className="w-full max-w-md mx-4">
+          <CardHeader>
+            <CardTitle className="text-2xl text-destructive">
+              Connection Error
+            </CardTitle>
+            <CardDescription>
+              {identificationError ||
+                "Failed to connect to the call. Please check your link and try again."}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
   }
 
   if (!hasJoined) {
-    return <PreConnectScreen onConnect={handleConnect} callId={callId} />;
+    return <PreConnectScreen onConnect={handleConnect} />;
+  }
+
+  if (!callData || !userData) {
+    return <Loading message="Preparing call..." />;
   }
 
   return (
     <LiveKitRoom
-      token={token}
+      token={callData.call_token}
       serverUrl="wss://call.tensamin.net"
       connect={shouldConnect}
       audio={false}
@@ -494,7 +581,7 @@ function AnonymousCallContent({
       }}
     >
       <RoomAudioRenderer />
-      <AnonymousCallUI callId={callId} onLeave={handleLeave} />
+      <AnonymousCallUI callId={callData.call_id} onLeave={handleLeave} />
     </LiveKitRoom>
   );
 }
@@ -503,10 +590,8 @@ function AnonymousCallContent({
 function PageContent() {
   const searchParams = useSearchParams();
   const callId = searchParams.get("call_id");
-  const userIdParam = searchParams.get("user_id");
-  const userId = userIdParam ? Number(userIdParam) : 0;
 
-  if (!callId || !userId) {
+  if (!callId) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-background">
         <Card className="w-full max-w-md mx-4">
@@ -515,14 +600,12 @@ function PageContent() {
               Invalid Link
             </CardTitle>
             <CardDescription>
-              This anonymous call link is missing required parameters. Please
-              check the link and try again.
+              This anonymous call link is missing the call ID. Please check the
+              link and try again.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Required: call_id and user_id
-            </p>
+            <p className="text-sm text-muted-foreground">Required: call_id</p>
           </CardContent>
         </Card>
       </div>
@@ -530,8 +613,8 @@ function PageContent() {
   }
 
   return (
-    <AnonymousProvider userId={userId}>
-      <AnonymousCallContent callId={callId} userId={userId} />
+    <AnonymousProvider>
+      <AnonymousCallContent callId={callId} />
     </AnonymousProvider>
   );
 }
