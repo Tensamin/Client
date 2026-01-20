@@ -238,6 +238,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [outerState, setOuterState] = useState("DISCONNECTED");
   const [dontSendInvite, setDontSendInvite] = useState(false);
   const [callId, setCallId] = useState("");
+  const [callInvite, setCallInvite] = useState<string | null>(null);
 
   const router = useRouter();
   const pathname = usePathname().split("/");
@@ -518,6 +519,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         setIsAtMax,
         setCurrentLayout,
         inGridView,
+        callInvite,
+        setCallInvite,
       }}
     >
       <AlertDialog
@@ -748,15 +751,18 @@ function SubCallProvider({ children }: { children: React.ReactNode }) {
 
   // Get own and call metadata
   useEffect(() => {
+    if (connectionState !== ConnectionState.Connected) return;
     if (!localParticipant.metadata) return;
+
     const parsedData = JSON.parse(localParticipant.metadata);
     setOwnMetadata(parsedData);
-  }, [localParticipant.metadata]);
+  }, [localParticipant.metadata, connectionState]);
   useEffect(() => {
+    if (connectionState !== ConnectionState.Connected) return;
     if (!room.metadata) return;
     const parsedData = JSON.parse(room.metadata);
     setCallMetadata(parsedData);
-  }, [room.metadata]);
+  }, [room.metadata, connectionState]);
 
   // Data channel listener for participant data
   useEffect(() => {
@@ -1380,6 +1386,8 @@ type CallContextValue = {
   setIsAtMax: (input: boolean) => void;
   setCurrentLayout: (input: "grid" | "focus") => void;
   inGridView: boolean;
+  callInvite: string | null;
+  setCallInvite: (input: string | null) => void;
 };
 
 type OwnMetadata = {

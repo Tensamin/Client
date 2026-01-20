@@ -15,6 +15,7 @@ import { toast } from "sonner";
 
 // Lib Imports
 import { cn, displayCallId } from "@/lib/utils";
+import * as CommunicationValue from "@/lib/communicationValues";
 
 // Context Imports
 import { useCallContext, useSubCallContext } from "@/context/call";
@@ -163,6 +164,7 @@ export default function VoiceActions() {
   const [loading, setLoading] = useState(false);
   const { send } = useSocketContext();
   const { ownMetadata, callMetadata } = useSubCallContext();
+  const { callId, callInvite, setCallInvite } = useCallContext();
 
   // Dialog for expanded preview
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -346,9 +348,10 @@ export default function VoiceActions() {
           <p className="font-medium">Connection Status</p>
           <div className="flex gap-3 items-center">
             <Button
+              disabled={!callInvite}
               onClick={() => {
                 try {
-                  navigator.clipboard.writeText(name || "");
+                  navigator.clipboard.writeText(callInvite || "");
                   setCopyCallId(true);
                 } catch {
                   toast.error("Failed to copy Call ID to clipboard");
@@ -358,7 +361,7 @@ export default function VoiceActions() {
               variant="outline"
             >
               {copyCallId ? <Icon.Check /> : <Icon.Copy />}
-              <span>Copy Call ID</span>
+              <span>Copy Invite</span>
             </Button>
             <div className="w-px h-6 bg-ring rounded-full" />
             {name !== "" ? displayCallId(name) : <p>...</p>}
@@ -370,6 +373,7 @@ export default function VoiceActions() {
           </div>
           <div className="flex w-full justify-start gap-2">
             <Checkbox
+              key={ownMetadata.isAdmin ? "admin" : "not-admin"}
               id="enableAnonymousJoining"
               disabled={!ownMetadata.isAdmin || loading}
               checked={callMetadata.anonymousJoining}
@@ -377,9 +381,16 @@ export default function VoiceActions() {
                 setLoading(true);
                 await send("call_set_anonymous_joining", {
                   enabled: value,
-                }).catch(() => {
-                  toast.error("Failed to enable anonymous joining");
-                });
+                  call_id: callId,
+                })
+                  .then((raw) => {
+                    const data =
+                      raw as CommunicationValue.call_set_anonymous_joining;
+                    setCallInvite(data.link);
+                  })
+                  .catch(() => {
+                    toast.error("Failed to enable anonymous joining");
+                  });
                 setLoading(false);
               }}
             />

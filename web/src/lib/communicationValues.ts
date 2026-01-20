@@ -8,6 +8,10 @@ import {
   User,
 } from "./types";
 
+export type call_set_anonymous_joining = {
+  link: string;
+};
+
 export type get_user_data = User;
 
 export type get_chats = {
