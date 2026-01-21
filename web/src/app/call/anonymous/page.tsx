@@ -375,13 +375,8 @@ function AnonymousCallGrid({
 }
 
 // Pre-connect Screen with user preview
-function PreConnectScreen({
-  onConnect,
-}: {
-  onConnect: () => void;
-}) {
-  const { userData, callData } =
-    useAnonymousContext();
+function PreConnectScreen({ onConnect }: { onConnect: () => void }) {
+  const { userData, callData } = useAnonymousContext();
 
   if (!userData || !callData) {
     return <Loading message="Loading call data..." />;
@@ -435,11 +430,7 @@ function PreConnectScreen({
             </pre>
           </div>
 
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={() => onConnect()}
-          >
+          <Button className="w-full" size="lg" onClick={() => onConnect()}>
             <Icon.Phone className="mr-2 h-4 w-4" />
             Connect
           </Button>
@@ -478,18 +469,15 @@ function AnonymousCallContent({ callId }: { callId: string }) {
     }
   }, [connected, identificationState, callId, identify]);
 
-  const handleConnect = useCallback(
-    () => {
-      if (!callData) {
-        toast.error("Call data not available");
-        return;
-      }
+  const handleConnect = useCallback(() => {
+    if (!callData) {
+      toast.error("Call data not available");
+      return;
+    }
 
-      setShouldConnect(true);
-      setHasJoined(true);
-    },
-    [callData],
-  );
+    setShouldConnect(true);
+    setHasJoined(true);
+  }, [callData]);
 
   const handleLeave = useCallback(() => {
     setShouldConnect(false);
