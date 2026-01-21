@@ -251,6 +251,11 @@ export function SocketProvider({
     [readyState, identified, sendRaw],
   );
 
+  useEffect(() => {
+    // @ts-expect-error Global send command
+    window.send = send;
+  }, [send]);
+
   // Pings
   const sendPing = useEffectEvent(async () => {
     const originalNow = Date.now();
