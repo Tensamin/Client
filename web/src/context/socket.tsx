@@ -267,6 +267,17 @@ export function SocketProvider({
     setIotaPing(data.ping_iota || 0);
   });
 
+  useEffect(() => {
+    if (!identified) return;
+
+    const interval = setInterval(() => {
+      void sendPing();
+    }, 5000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [identified]);
+
   const { get_shared_secret, privateKey, decrypt } = useCryptoContext();
   useEffect(() => {
     if (connected && !identified) {
@@ -390,17 +401,6 @@ export function SocketProvider({
     get_shared_secret,
     privateKey,
   ]);
-
-  useEffect(() => {
-    if (!identified) return;
-
-    const interval = setInterval(() => {
-      void sendPing();
-    }, 5000);
-    return () => {
-      clearInterval(interval);
-    };
-  }, [identified]);
 
   switch (readyState) {
     case ReadyState.OPEN:

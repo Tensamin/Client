@@ -128,6 +128,7 @@ export function AnonymousProvider({
       // Log Message
       if (
         parsedMessage.type !== "get_user_data" &&
+        parsedMessage.type !== "pong" &&
         !parsedMessage.type.startsWith("error")
       ) {
         rawDebugLog("Anonymous Context", "Received", {
@@ -201,7 +202,7 @@ export function AnonymousProvider({
         sendRaw,
         pendingRequests,
         identified: true,
-        skipLogTypes: ["get_user_data"],
+        skipLogTypes: ["get_user_data", "ping"],
       })(requestType, data, noResponse);
     },
     [readyState, sendRaw],
@@ -290,6 +291,18 @@ export function AnonymousProvider({
     },
     [connected, send, updateFetchedUsers],
   );
+
+  // Pings
+  useEffect(() => {
+    if (identificationState !== "identified") return;
+
+    const interval = setInterval(() => {
+      send("ping", {});
+    }, 5000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [identificationState, send]);
 
   return (
     <AnonymousContext.Provider
