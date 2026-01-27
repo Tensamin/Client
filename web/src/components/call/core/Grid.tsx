@@ -40,7 +40,7 @@ export default function Grid({ className }: { className?: string }) {
       participantTracks.length,
       containerSize.width,
       containerSize.height,
-      16 // gap-4
+      16, // gap-4
     );
   }, [participantTracks.length, containerSize]);
 

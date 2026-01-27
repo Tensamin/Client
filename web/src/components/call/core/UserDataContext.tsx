@@ -62,7 +62,8 @@ export function UserDataProvider({
   ownId?: number | null;
   fetchUser?: (userId: number) => Promise<UserData | null>;
 }) {
-  const [fetchedUsers, setFetchedUsers] = useState<Map<number, UserData>>(initialUsers);
+  const [fetchedUsers, setFetchedUsers] =
+    useState<Map<number, UserData>>(initialUsers);
 
   const get = useCallback(
     async (userId: number, forceRefresh = false): Promise<UserData | null> => {
@@ -112,7 +113,7 @@ export function UserDataProvider({
         }
       );
     },
-    [fetchedUsers, fetchUser]
+    [fetchedUsers, fetchUser],
   );
 
   const value: UserDataContextValue = {
@@ -123,7 +124,9 @@ export function UserDataProvider({
   };
 
   return (
-    <UserDataContext.Provider value={value}>{children}</UserDataContext.Provider>
+    <UserDataContext.Provider value={value}>
+      {children}
+    </UserDataContext.Provider>
   );
 }
 

@@ -5,9 +5,11 @@ export const playSound = async (
   loop = false,
 ): Promise<() => Promise<void>> => {
   try {
-    const audioContext = new (window.AudioContext ||
+    const audioContext = new (
+      window.AudioContext ||
       // @ts-expect-error idk
-      window.webkitAudioContext)();
+      window.webkitAudioContext
+    )();
     const response = await fetch(`/assets/sounds/${sound}.wav`);
     const arrayBuffer = await response.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);

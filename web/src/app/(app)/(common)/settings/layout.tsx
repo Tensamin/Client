@@ -23,6 +23,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Main
 export const Pages = [
@@ -35,6 +40,7 @@ export const Pages = [
   "CSS",
   "-General",
   "Calls",
+  "Shortcuts",
   "Notifications",
   "Accessability",
   "Premium",
@@ -52,13 +58,16 @@ function SettingsButton({
   page,
   selected,
   setSelected,
+  disabled,
 }: {
   page: string;
   selected?: string;
   setSelected?: (page: string) => void;
+  disabled?: boolean;
 }): React.JSX.Element {
   return (
     <Button
+      disabled={disabled}
       className="w-full my-1"
       variant={selected === page ? "outlineSelected" : "outline"}
       onClick={() => {
@@ -73,7 +82,7 @@ function SettingsButton({
 
 export default function Page({ children }: { children: React.ReactNode }) {
   const { ownPing, iotaPing } = useSocketContext();
-  const { data, set, clearAll } = useStorageContext();
+  const { data, set, clearAll, isElectron } = useStorageContext();
 
   const router = useRouter();
   const pathname = usePathname().split("/");
@@ -109,7 +118,23 @@ export default function Page({ children }: { children: React.ReactNode }) {
                     {page.replaceAll("-", "")}
                   </div>
                 );
-              return (
+              return page === "Shortcuts" && !isElectron ? (
+                <Tooltip key={page}>
+                  <TooltipTrigger asChild>
+                    <div className="w-full">
+                      <SettingsButton
+                        page={page}
+                        selected={selected}
+                        setSelected={setSelected}
+                        disabled
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Shortcuts only available in the desktop app.
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
                 <SettingsButton
                   key={page}
                   page={page}

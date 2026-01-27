@@ -17,7 +17,9 @@
   "main": "build/main.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun run prep && NODE_ENV=development electron-forge start",
+    "dev:app": "cross-env NODE_ENV=development electron-forge start",
+    "dev": "bun run prep && bun run dev:app",
+    "dev:win": "cmd /c \"rmdir /s /q build\" && mkdir build && cmd /c \"copy main.ts build\\ && copy preload.js build\\ \" && bun run dev:app",
     "prep": "rm -rf build && mkdir build && cp -r ../web/out/* ./build/ && cp ./main.ts ./build/ && cp ./preload.js ./build/",
     "publish": "bun run prep && electron-forge publish",
     "publish:win": "powershell -NoLogo -NoProfile -Command \"New-Item -ItemType Directory -Force -Path build | Out-Null; Copy-Item ..\\web\\out\\* .\\build\\ -Recurse -Force; Copy-Item main.ts build\\; Copy-Item preload.js build\\; electron-forge publish\"",
@@ -39,6 +41,7 @@
     "@electron-forge/shared-types": "^7.10.2",
     "@electron/fuses": "^2.0.0",
     "@felixrieseberg/electron-forge-maker-nsis": "^7.2.0",
+    "cross-env": "^10.1.0",
     "electron": "39.2.6"
   }
 }

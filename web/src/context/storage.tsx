@@ -144,6 +144,81 @@ export function StorageProvider({
     }
   }, [isTauri]);
 
+  // Electron Stuff
+  const [shortcuts, setShortcuts] = useState({});
+
+  useEffect(() => {
+    if (!isElectron) {
+      console.log("[Storage] Not in Electron, skipping shortcuts setup");
+      return;
+    }
+
+    console.log("[Storage] Setting up shortcuts in Electron");
+
+    const config = {
+      "CmdOrCtrl+K": "test",
+    };
+
+    // @ts-expect-error Electron API only available in Electron
+    if (window.electronAPI && window.electronAPI.updateShortcuts) {
+      console.log(
+        "[Storage] Sending shortcuts config to main process:",
+        config,
+      );
+      // @ts-expect-error Electron API only available in Electron
+      window.electronAPI.updateShortcuts(config);
+      setShortcuts(config);
+      console.log("[Storage] Shortcuts config sent");
+    } else {
+      console.error("[Storage] electronAPI.updateShortcuts not available");
+    }
+  }, [isElectron]);
+
+  const updateShortcuts = (newShortcuts: Record<string, string>) => {
+    console.log("[Storage] updateShortcuts called:", newShortcuts);
+    if (!isElectron) {
+      console.warn("[Storage] Cannot update shortcuts: not in Electron");
+      return;
+    }
+    // @ts-expect-error Electron API only available in Electron
+    if (window.electronAPI && window.electronAPI.updateShortcuts) {
+      // @ts-expect-error Electron API only available in Electron
+      window.electronAPI.updateShortcuts(newShortcuts);
+      setShortcuts(newShortcuts);
+      console.log("[Storage] Shortcuts updated");
+    } else {
+      console.error("[Storage] electronAPI.updateShortcuts not available");
+    }
+  };
+
+  const onShortcut = (action: string, callback: () => void) => {
+    console.log("[Storage] onShortcut called for action:", action);
+
+    if (!isElectron) {
+      console.warn("[Storage] Cannot register shortcut: not in Electron");
+      return () => {};
+    }
+
+    // @ts-expect-error Electron API only available in Electron
+    if (!window.electronAPI || !window.electronAPI.onShortcut) {
+      console.error("[Storage] electronAPI.onShortcut not available");
+      return () => {};
+    }
+
+    console.log("[Storage] Registering shortcut listener for action:", action);
+    // @ts-expect-error Electron API only available in Electron
+    const cleanup = window.electronAPI.onShortcut(action, () => {
+      console.log("[Storage] Shortcut callback triggered for action:", action);
+      callback();
+    });
+
+    console.log(
+      "[Storage] Shortcut listener registered, cleanup function:",
+      typeof cleanup,
+    );
+    return cleanup;
+  };
+
   // Other Stuff
   const dbPromise = useMemo(() => createDBPromise(), []);
 
@@ -315,6 +390,9 @@ export function StorageProvider({
         isElectron,
         isTauri,
         currentDeepLink,
+        shortcuts,
+        updateShortcuts,
+        onShortcut,
       }}
     >
       {children}
@@ -340,4 +418,7 @@ type StorageContextType = {
   isElectron: boolean;
   isTauri: boolean;
   currentDeepLink: string[] | null;
+  shortcuts: Record<string, string>;
+  updateShortcuts: (newShortcuts: Record<string, string>) => void;
+  onShortcut: (action: string, callback: () => void) => void;
 };

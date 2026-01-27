@@ -14,7 +14,7 @@
   "homepage": "https://tensamin.net",
   "productName": "Tensamin",
   "scripts": {
-    "format": "bunx prettier --write .",
+    "format": "bun x prettier --write .",
     "build:mobile": "cd mobile && bun run build:android && bun run build:ios",
     "build:web": "cd web && bun run build"
   }

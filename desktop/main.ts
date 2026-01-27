@@ -9,6 +9,7 @@ import {
   protocol,
   shell,
   systemPreferences,
+  globalShortcut,
 } from "electron";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -123,7 +124,30 @@ async function listAudioSources() {
   return audioSources;
 }
 
-// Main
+const registerShortcuts = (win: BrowserWindow | null = null) => {
+  console.log("[Shortcuts] Registering shortcuts:", shortcuts);
+  const targetWindow = win || mainWindow;
+
+  if (!targetWindow) {
+    console.warn("[Shortcuts] No window available for shortcuts");
+    return;
+  }
+
+  Object.entries(shortcuts).forEach(([key, action]) => {
+    const registered = globalShortcut.register(key, () => {
+      console.log(`[Shortcuts] Shortcut triggered: ${key} -> ${action}`);
+      targetWindow.webContents.send(`shortcut:${action}`);
+    });
+
+    if (registered) {
+      console.log(`[Shortcuts] Successfully registered: ${key} -> ${action}`);
+    } else {
+      console.error(`[Shortcuts] Failed to register: ${key} -> ${action}`);
+    }
+  });
+};
+
+// Fixed variables
 const FILENAME = fileURLToPath(import.meta.url);
 const DIRNAME = path.dirname(FILENAME);
 const RELEASES_URL = "https://github.com/Tensamin/Frontend/releases";
@@ -132,6 +156,10 @@ const UPDATE_LOG_CHANNEL = "app:update-log";
 //const UPDATE_CHECK_INTERVAL_MS = 5 * 1000; // 5 seconds
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
+// Main
+let shortcuts: Record<string, string> = {
+  "CmdOrCtrl+K": "test",
+};
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
 let latestUpdatePayload: UpdatePayload | null = null;
@@ -269,6 +297,11 @@ function createMainWindow() {
   mainWindow.on("ready-to-show", () => {
     mainWindow?.show();
     setupBackgroundAutoUpdater();
+
+    // Register shortcuts after window is ready
+    console.log("[Main] Window ready, current shortcuts:", shortcuts);
+    console.log("[Main] Registering shortcuts");
+    registerShortcuts(mainWindow);
   });
 
   mainWindow.webContents.on("did-finish-load", () => {
@@ -425,6 +458,7 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
+  globalShortcut.unregisterAll();
   if (updateCheckInterval) {
     clearInterval(updateCheckInterval);
     updateCheckInterval = null;
@@ -542,3 +576,20 @@ ipcMain.handle("electronMain:audio:enumerateDevices", async () => {
     return { success: false, error: String(error) };
   }
 });
+
+ipcMain.on(
+  "update-shortcuts",
+  (event, newShortcuts: Record<string, string>) => {
+    try {
+      console.log("[IPC] Updating shortcuts:", newShortcuts);
+      globalShortcut.unregisterAll();
+      shortcuts = newShortcuts;
+      registerShortcuts(mainWindow);
+      console.log("[IPC] Shortcuts updated successfully");
+      event.reply("shortcuts-updated", { success: true });
+    } catch (err) {
+      console.error("[IPC] Failed to update shortcuts:", err);
+      event.reply("shortcuts-updated", { success: false, error: String(err) });
+    }
+  },
+);
