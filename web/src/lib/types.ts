@@ -10,6 +10,7 @@ export type RawMessage = {
   tint?: string;
   files?: File[];
   content: string;
+  message_state: string;
 };
 
 export type Message = {
@@ -21,6 +22,7 @@ export type Message = {
   showAvatar?: boolean;
   showName?: boolean;
   tint?: string;
+  message_state: string;
 };
 
 export type MessageGroup = {

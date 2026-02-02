@@ -193,6 +193,9 @@ function FinalMessage({ message: data }: { message: Message }) {
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
+        <ContextMenuItem disabled>
+          <Icon.Info /> {data.message_state}
+        </ContextMenuItem>
         <ContextMenuItem
           onClick={async () => {
             try {

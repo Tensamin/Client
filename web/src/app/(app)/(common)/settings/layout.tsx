@@ -39,6 +39,7 @@ export const Pages = [
   "Theme",
   "CSS",
   "-General",
+  "Chat",
   "Calls",
   "Shortcuts",
   "Notifications",
@@ -86,7 +87,7 @@ export default function Page({ children }: { children: React.ReactNode }) {
 
   const router = useRouter();
   const pathname = usePathname().split("/");
-  const page = pathname[2] || "home";
+  const page = pathname[1] || "home";
 
   const selected =
     page.replace("settings/", "") ===

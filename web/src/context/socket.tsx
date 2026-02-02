@@ -37,6 +37,7 @@ type SocketContextType = {
     requestType: string,
     data?: unknown,
     noResponse?: boolean,
+    CVid?: string,
   ) => Promise<CommunicationValue.DataContainer>;
   identified: boolean;
   initialUserState: UserState;
@@ -149,6 +150,7 @@ export function SocketProvider({
       requestType: string,
       data: unknown = {},
       noResponse = false,
+      CVid: string = v7(),
     ): Promise<CommunicationValue.DataContainer> => {
       if (
         (identified ||
@@ -160,6 +162,7 @@ export function SocketProvider({
       ) {
         if (noResponse) {
           const messageToSend = {
+            id: CVid,
             type: requestType,
             data,
           };
@@ -184,17 +187,15 @@ export function SocketProvider({
             );
           }
           return {
-            id: "",
+            id: CVid,
             type: "success",
             data: {},
           };
         }
 
         return new Promise((resolve, reject) => {
-          const id = v7();
-
           const messageToSend = {
-            id,
+            id: CVid,
             type: requestType,
             data,
           };
@@ -206,14 +207,14 @@ export function SocketProvider({
             rawDebugLog(
               "Socket Context",
               error.message,
-              { id, type: requestType, data },
+              { id: CVid, type: requestType, data },
               "red",
             );
             reject(error);
-            pendingRequests.current.delete(id);
+            pendingRequests.current.delete(CVid);
           }, responseTimeout);
 
-          pendingRequests.current.set(id, { resolve, reject, timeoutId });
+          pendingRequests.current.set(CVid, { resolve, reject, timeoutId });
 
           try {
             if (
@@ -228,7 +229,7 @@ export function SocketProvider({
             sendRaw(JSON.stringify(messageToSend));
           } catch (error: unknown) {
             clearTimeout(timeoutId);
-            pendingRequests.current.delete(id);
+            pendingRequests.current.delete(CVid);
             rawDebugLog(
               "Socket Context",
               "An unkown error occured",

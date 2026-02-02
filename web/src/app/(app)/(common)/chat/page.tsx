@@ -68,6 +68,7 @@ export default function Page() {
                 timestamp: Date.now(),
                 //files: [],
                 content: message,
+                message_state: "sending",
               }).then((data) => {
                 console.log("meeewwooo", data);
               });

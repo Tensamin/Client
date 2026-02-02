@@ -332,7 +332,7 @@ export function ScreenShareButton({
             height: dataWithDefaults.call_screenShare_height,
             frameRate: dataWithDefaults.call_screenShare_frameRate,
           },
-          "green",
+          "purple",
         );
       } catch (err) {
         rawDebugLog(
@@ -742,6 +742,8 @@ export function CameraButton({
         rawDebugLog(
           "Call",
           isCameraEnabled ? "Camera disabled" : "Camera enabled",
+          undefined,
+          "purple",
         );
       }
     } catch (error) {

@@ -242,7 +242,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   const router = useRouter();
   const pathname = usePathname().split("/");
-  const page = pathname[2] || "home";
+  const page = pathname[1] || "home";
 
   const memorizedReceiverId = useRef<number | null>(null);
   const explicitlySetReceiverId = useRef(false);

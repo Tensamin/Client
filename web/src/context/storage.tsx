@@ -63,7 +63,9 @@ export function rawDebugLog(
         ? "color: #e78284;"
         : color === "yellow"
           ? "color: #f9e2af;"
-          : "");
+          : color === "purple"
+            ? "color: #ca9ee6;"
+            : "");
 
   console.log(
     "%c%s%c %c%s%c",

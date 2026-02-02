@@ -29,6 +29,7 @@ import { DataContainer } from "@/lib/communicationValues";
 import { playSound } from "@/lib/sound";
 import { Message, MessageGroup, Messages } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
+import { defaults } from "@/lib/defaults";
 
 const GROUP_WINDOW_MS = 60 * 1000;
 
@@ -55,6 +56,7 @@ export function MessageProvider({
 }>) {
   const { send, identified, lastMessage } = useSocketContext();
 
+  const { data: storageData } = useStorageContext();
   const searchParams = useSearchParams();
   const id = Number(searchParams.get("id"));
 
@@ -82,11 +84,42 @@ export function MessageProvider({
         timestamp: Number(data.send_time) ?? 0,
         showAvatar: true,
         showName: true,
+        message_state:
+          (storageData.sendMessageReadFeedback ??
+          defaults.sendMessageReadFeedback)
+            ? "read"
+            : "received",
       });
+      send(
+        "message_live",
+        {
+          message_state:
+            (storageData.sendMessageReadFeedback ??
+            defaults.sendMessageReadFeedback)
+              ? "read"
+              : "received",
+        },
+        true,
+        lastMessage.id,
+      );
     } else {
       newUserNotification(data.sender_id, data.message);
+      send(
+        "message_live",
+        {
+          message_state: "received",
+        },
+        true,
+        lastMessage.id,
+      );
     }
-  }, [currentReceiverId, lastMessage, newUserNotification]);
+  }, [
+    currentReceiverId,
+    lastMessage,
+    newUserNotification,
+    storageData.sendMessageReadFeedback,
+    send,
+  ]);
 
   const groupMessages = useCallback(
     (messagesList: Message[]): MessageGroup[] => {

@@ -34,7 +34,7 @@ export default function Navbar() {
 
   const router = useRouter();
   const pathname = usePathname().split("/");
-  const page = pathname[2] || "home";
+  const page = pathname[1] || "home";
 
   useEffect(() => {
     if (!currentReceiverId) {

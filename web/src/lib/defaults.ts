@@ -1,6 +1,8 @@
 export const defaults = {
   showLinesInCodeBlocks: false,
   codeBlockShikiTheme: "houston",
+  sendMessageReadFeedback: true,
+
   call_screenShare_audio: false,
   call_screenShare_audioSource: "none",
 
