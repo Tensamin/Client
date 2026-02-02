@@ -27,11 +27,11 @@
         archMapping = {
           x86_64-linux = {
             debArch = "amd64";
-            hash = "sha256-w6kN8iEudicVVS6BmFH799Ead+pKT2LvBLJMIvb+5H4=";
+            hash = "sha256-ePQ2rfflD7Hcc3e69vB3194CJR6cJTpZCDRKlRrFFz4=";
           };
           aarch64-linux = {
             debArch = "arm64";
-            hash = "sha256-1AJOzeVEkjYRjE6DPRuTf8U+/enA6YTbT891gwTOcnI=";
+            hash = "sha256-zzk+w9gh1fswiGEPQpWDiS4wuQJy7pXg+J2MS3KmULk=";
           };
         };
 
