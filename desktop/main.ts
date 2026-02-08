@@ -287,6 +287,19 @@ function createMainWindow() {
     },
   });
 
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("mailto:")
+    ) {
+      shell.openExternal(url);
+      return { action: "deny" };
+    }
+
+    return { action: "allow" };
+  });
+
   const url =
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
@@ -534,10 +547,6 @@ ipcMain.handle("do-update", async () => {
 });
 
 ipcMain.handle("get-latest-update", async () => latestUpdatePayload);
-
-ipcMain.handle("open-link", async (_event, url: string) => {
-  shell.openExternal(url);
-});
 
 // Calling
 ipcMain.handle("electronMain:getScreenAccess", () =>

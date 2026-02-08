@@ -46,6 +46,7 @@ import * as CommunicationValue from "@/lib/communicationValues";
 import { defaults } from "@/lib/utils";
 
 // Context Imports
+import { ScreenShareAudioProvider } from "@/context/screenShareAudio";
 import { useSocketContext } from "@/context/socket";
 import { rawDebugLog, useStorageContext } from "@/context/storage";
 import { useUserContext } from "@/context/user";
@@ -636,7 +637,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         }}
       >
         <RoomAudioRenderer />
-        <SubCallProvider>{children}</SubCallProvider>
+        <ScreenShareAudioProvider>
+          <SubCallProvider>{children}</SubCallProvider>
+        </ScreenShareAudioProvider>
       </LiveKitRoom>
     </CallContext.Provider>
   );

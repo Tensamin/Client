@@ -17,6 +17,7 @@ import { rawDebugLog, useStorageContext } from "@/context/storage";
 // Components
 import { LoadingIcon } from "@/components/loading";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -126,7 +127,7 @@ function ScreenSharePickerDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (videoId: string, audioId: string) => void;
+  onSelect: (videoId: string, audioId: string, includeAudio: boolean) => void;
   sources: DesktopSource[];
   audioSources: Array<{ id: string; name: string; type: string }>;
 }) {
@@ -135,7 +136,8 @@ function ScreenSharePickerDialog({
   const [selectedVideoSource, setSelectedVideoSource] = useState<string | null>(
     null,
   );
-  const [selectedAudioSource, setSelectedAudioSource] = useState<string>("");
+  const [selectedAudioSource, setSelectedAudioSource] = useState<string>("system");
+  const [includeAudio, setIncludeAudio] = useState<boolean>(true);
 
   // Auto-select video source if only one available (but still show dialog for audio selection)
   useEffect(() => {
@@ -144,13 +146,27 @@ function ScreenSharePickerDialog({
     }
   }, [sources, selectedVideoSource, open]);
 
+  // Reset state when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSelectedAudioSource("system");
+      setIncludeAudio(true);
+    }
+  }, [open]);
+
   const handleShare = () => {
     if (selectedVideoSource) {
-      onSelect(selectedVideoSource, selectedAudioSource || "none");
+      // If audio is disabled, pass "none" regardless of selection
+      const audioId = includeAudio ? (selectedAudioSource || "system") : "none";
+      onSelect(selectedVideoSource, audioId, includeAudio);
       setSelectedVideoSource(null);
-      setSelectedAudioSource("");
+      setSelectedAudioSource("system");
+      setIncludeAudio(true);
     }
   };
+
+  // Filter audio sources to exclude "none" since we have a checkbox now
+  const filteredAudioSources = audioSources.filter((s) => s.id !== "none");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -231,24 +247,52 @@ function ScreenSharePickerDialog({
             </TabsContent>
           </Tabs>
 
-          {/* Audio Source Selection */}
-          <div className="flex flex-col gap-2 pt-4 border-t">
-            <Label className="text-sm font-medium">Audio Source</Label>
-            <Select
-              value={selectedAudioSource}
-              onValueChange={setSelectedAudioSource}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select audio source..." />
-              </SelectTrigger>
-              <SelectContent>
-                {audioSources.map((source) => (
-                  <SelectItem key={source.id} value={source.id}>
-                    {source.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Audio Settings Section */}
+          <div className="flex flex-col gap-3 pt-4 border-t">
+            {/* Include Audio Checkbox */}
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="include-audio"
+                checked={includeAudio}
+                onCheckedChange={(checked) => setIncludeAudio(checked === true)}
+              />
+              <Label htmlFor="include-audio" className="text-sm font-medium cursor-pointer">
+                Include Audio
+              </Label>
+              <span className="text-xs text-muted-foreground">
+                (Share system/application audio with viewers)
+              </span>
+            </div>
+
+            {/* Audio Source Selection - Only shown when audio is enabled */}
+            {includeAudio && filteredAudioSources.length > 0 && (
+              <div className="flex flex-col gap-2 pl-6">
+                <Label className="text-sm text-muted-foreground">Audio Source</Label>
+                <Select
+                  value={selectedAudioSource}
+                  onValueChange={setSelectedAudioSource}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select audio source..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredAudioSources.map((source) => (
+                      <SelectItem key={source.id} value={source.id}>
+                        <div className="flex items-center gap-2">
+                          {source.type === "system" && <Icon.Volume2 className="h-4 w-4" />}
+                          {source.type === "pipewire" && <Icon.AudioLines className="h-4 w-4" />}
+                          {source.type === "monitor" && <Icon.Monitor className="h-4 w-4" />}
+                          <span>{source.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Note: Changing the audio source requires restarting the screen share.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Share Button */}
@@ -257,7 +301,8 @@ function ScreenSharePickerDialog({
               Cancel
             </Button>
             <Button onClick={handleShare} disabled={!selectedVideoSource}>
-              Share
+              <Icon.MonitorPlay className="h-4 w-4 mr-2" />
+              Start Sharing
             </Button>
           </div>
         </div>
@@ -387,6 +432,13 @@ export function ScreenShareButton({
   const handleElectronShare = useCallback(
     async (videoId: string, audioId: string) => {
       setPickerOpen(false);
+      rawDebugLog(
+        "ScreenShare",
+        "Starting screen share",
+        { videoId, audioId, includesAudio: audioId !== "none" },
+        "purple",
+      );
+
       try {
         const videoStream = await navigator.mediaDevices.getUserMedia({
           audio: false,
@@ -417,14 +469,18 @@ export function ScreenShareButton({
               maxFramerate: dataWithDefaults.call_screenShare_frameRate,
             },
           });
+          rawDebugLog("ScreenShare", "Video track published", undefined, "green");
         }
 
-        // Capture audio
+        // Capture audio (only if not "none")
+        // IMPORTANT: We do NOT fall back to microphone to avoid users hearing audio twice
         if (audioId !== "none") {
           try {
             let audioStream: MediaStream | null = null;
 
             if (audioId === "system") {
+              // System audio capture - uses the video source ID for loopback
+              rawDebugLog("ScreenShare", "Capturing system audio", { videoId }, "purple");
               audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                   mandatory: {
@@ -435,6 +491,8 @@ export function ScreenShareButton({
                 video: false,
               } as MediaStreamConstraints);
             } else if (audioId.startsWith("pipewire:") || audioId.length > 20) {
+              // PipeWire or device ID based capture (Linux)
+              rawDebugLog("ScreenShare", "Capturing PipeWire/device audio", { audioId }, "purple");
               audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                   deviceId: { exact: audioId },
@@ -442,6 +500,8 @@ export function ScreenShareButton({
                 video: false,
               } as MediaStreamConstraints);
             } else {
+              // Other audio source types
+              rawDebugLog("ScreenShare", "Capturing other audio source", { audioId }, "purple");
               audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                   mandatory: {
@@ -461,18 +521,42 @@ export function ScreenShareButton({
                 await localParticipant.publishTrack(localAudioTrack, {
                   source: Track.Source.ScreenShareAudio,
                 });
-                console.log("[ScreenShare] Audio track published successfully");
+                rawDebugLog("ScreenShare", "Audio track published successfully", undefined, "green");
+              } else {
+                // No audio tracks captured - notify user but continue with video
+                rawDebugLog("ScreenShare", "No audio tracks captured", undefined, "yellow");
+                toast.error("Audio capture unavailable for this source. Continuing with video only.", {
+                  description: "Try selecting a different audio source.",
+                  duration: 5000,
+                });
               }
             }
           } catch (audioErr) {
-            console.error("[ScreenShare] Failed to capture audio:", audioErr);
-            toast.error(
-              "Screen sharing started but audio capture failed. Check audio source settings.",
-            );
+            // Audio capture failed - continue with video-only (no mic fallback!)
+            const errorMessage = audioErr instanceof Error ? audioErr.message : String(audioErr);
+            rawDebugLog("ScreenShare", "Audio capture failed", { error: errorMessage }, "red");
+
+            // Provide platform-specific error messages
+            let description = "Check audio source settings.";
+            if (errorMessage.includes("Permission denied") || errorMessage.includes("NotAllowedError")) {
+              description = "Permission denied. Check your system privacy settings.";
+            } else if (errorMessage.includes("NotFoundError")) {
+              description = "Audio device not found. Ensure audio is playing.";
+            } else if (errorMessage.includes("NotReadableError")) {
+              description = "Audio device is busy or unavailable.";
+            }
+
+            toast.error("Screen sharing started but audio capture failed.", {
+              description,
+              duration: 5000,
+            });
           }
+        } else {
+          rawDebugLog("ScreenShare", "Audio disabled by user choice", undefined, "purple");
         }
       } catch (err) {
-        console.error("Failed to share screen", err);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        rawDebugLog("ScreenShare", "Failed to share screen", { error: errorMessage }, "red");
         toast.error("Failed to share screen");
       }
     },
@@ -630,8 +714,10 @@ export function ScreenShareButton({
       <ScreenSharePickerDialog
         open={pickerOpen}
         onOpenChange={setPickerOpen}
-        onSelect={(videoId, audioId) => {
-          handleElectronShare(videoId, audioId);
+        onSelect={(videoId, audioId, includeAudio) => {
+          // If audio is not included, pass "none" to ensure no audio capture is attempted
+          const effectiveAudioId = includeAudio ? audioId : "none";
+          handleElectronShare(videoId, effectiveAudioId);
         }}
         sources={sources}
         audioSources={audioSources}

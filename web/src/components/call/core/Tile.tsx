@@ -33,18 +33,76 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+// Import screen share audio context for viewer-side muting
+import { useScreenShareAudioContext } from "@/context/screenShareAudio";
+
+// Screen Share Audio Mute Button (for viewers)
+function ScreenShareAudioMuteButton({
+  participantIdentity,
+  hasAudio,
+}: {
+  participantIdentity: string;
+  hasAudio: boolean;
+}) {
+  const { isParticipantAudioMuted, toggleParticipantAudioMute } =
+    useScreenShareAudioContext();
+
+  const isMuted = isParticipantAudioMuted(participantIdentity);
+
+  // Don't show if there's no audio to mute
+  if (!hasAudio) {
+    return null;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="h-8 w-8 bg-background rounded-xl">
+          <Button
+            variant={isMuted ? "destructive" : "outline"}
+            size="icon"
+            className="h-full w-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleParticipantAudioMute(participantIdentity);
+            }}
+          >
+            {isMuted ? (
+              <Icon.VolumeX className="h-4 w-4" />
+            ) : (
+              <Icon.Volume2 className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        {isMuted ? "Unmute Screen Audio" : "Mute Screen Audio"}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 // Screen Share Controls Component
 function ScreenShareControls({
   onFullscreen,
   onPopout,
   isFullscreen,
+  participantIdentity,
+  hasAudio,
 }: {
   onFullscreen: () => void;
   onPopout: () => void;
   isFullscreen: boolean;
+  participantIdentity: string;
+  hasAudio: boolean;
 }) {
   return (
     <div className="absolute top-2 right-2 z-40 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      {/* Mute Button for screen share audio (viewer-side only) */}
+      <ScreenShareAudioMuteButton
+        participantIdentity={participantIdentity}
+        hasAudio={hasAudio}
+      />
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="h-8 w-8 bg-background rounded-xl">
@@ -144,6 +202,12 @@ export default function Tile({
     Track.Source.Microphone,
   );
   const muted = audioPublication?.isMuted ?? false;
+
+  // Check if this participant has screen share audio (for viewer mute button)
+  const screenShareAudioPublication = participant?.getTrackPublication(
+    Track.Source.ScreenShareAudio,
+  );
+  const hasScreenShareAudio = !!screenShareAudioPublication?.track;
 
   // Speaking state
   const speakingFromMap = participant.identity
@@ -361,6 +425,8 @@ export default function Tile({
             onFullscreen={handleFullscreen}
             onPopout={handlePopout}
             isFullscreen={isFullscreen}
+            participantIdentity={participant.identity}
+            hasAudio={hasScreenShareAudio && !isLocal}
           />
         </div>
       );
@@ -458,6 +524,19 @@ export default function Tile({
               >
                 {isScreenShare ? `${title}'s screen` : title}
               </Badge>
+              {/* Show audio indicator for screen shares with audio */}
+              {isScreenShare && hasScreenShareAudio && !isLocal && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge className="h-5.5 select-none bg-background/75 border-input pointer-events-auto">
+                      <Icon.Volume2 size={12} color="var(--foreground)" />
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    This screen share includes audio
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {muted && (
                 <Badge className="h-5.5 select-none bg-background/75 border-input">
                   <Icon.MicOff color="var(--foreground)" />
@@ -513,6 +592,8 @@ export default function Tile({
     isAdmin,
     inGridView,
     renderScreenShareContent,
+    hasScreenShareAudio,
+    isLocal,
   ]);
 
   return (
