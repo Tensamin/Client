@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, ViewTransition } from "react";
 
-import { useCallContext } from "@/context/call";
+import { useCallContext } from "@/context/call/CallContext";
 
 import VoiceActions from "@/components/call/components/SidebarActions";
-import { Communities, Conversations } from "@/components/modals/category";
+import { Communities, Conversations } from "@/components/modals/CategoryModal";
 
 export default function Content({
   category,

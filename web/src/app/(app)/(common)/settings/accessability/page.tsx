@@ -2,7 +2,7 @@
 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useStorageContext } from "@/context/storage";
+import { useStorageContext } from "@/context/StorageContext";
 import { Top } from "../page";
 
 export default function Page() {

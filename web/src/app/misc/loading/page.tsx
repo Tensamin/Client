@@ -1,6 +1,6 @@
 "use client";
 
-import { LoadingIcon } from "@/components/loading";
+import LoadingIcon from "@/components/Loading/LoadingIcon";
 import { useEffect, useState } from "react";
 
 export default function Page() {

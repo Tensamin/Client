@@ -9,7 +9,7 @@ import { bundledThemes } from "shiki";
 import { generateColors } from "@/lib/theme";
 
 // Context Imports
-import { useStorageContext } from "@/context/storage";
+import { useStorageContext } from "@/context/StorageContext";
 import { useTheme } from "next-themes";
 
 // Components
@@ -25,10 +25,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { defaults } from "@/lib/defaults";
+import { defaults } from "@/config/defaults";
 import { capitalizeFirstLetter } from "@/lib/utils";
 
-import { CodeBlock } from "@/components/markdown/code-block";
+import { CodeBlock } from "@/components/markdown/CodeBlock";
 import {
   Card,
   CardContent,

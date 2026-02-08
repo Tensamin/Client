@@ -13,8 +13,8 @@ import "../../globals.css";
 import "../../colors.css";
 
 // Context Imports
-import { StorageProvider } from "@/context/storage";
-import { PageProvider } from "@/context/page";
+import { StorageProvider } from "@/context/StorageContext";
+import { PageProvider } from "@/context/PageContext";
 
 // Components
 import { Toaster } from "@/components/ui/sonner";

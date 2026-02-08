@@ -22,8 +22,8 @@ import { useUserData } from "./UserDataContext";
 import { useMaybeCallPageContext } from "./CallPageContext";
 
 // Components
-import { LoadingIcon } from "@/components/loading";
-import Avatar from "@/components/modals/Avatar";
+import LoadingIcon from "@/components/Loading/LoadingIcon";
+import Avatar from "@/components/common/Avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/tooltip";
 
 // Import screen share audio context for viewer-side muting
-import { useScreenShareAudioContext } from "@/context/screenShareAudio";
+import { useScreenShareAudioContext } from "@/context/ScreenShareAudioContext";
 
 // Screen Share Audio Mute Button (for viewers)
 function ScreenShareAudioMuteButton({
@@ -473,6 +473,8 @@ export default function Tile({
     handleFullscreen,
     handlePopout,
     renderAvatar,
+    participant.identity,
+    hasScreenShareAudio,
   ]);
 
   const renderContent = useCallback(() => {

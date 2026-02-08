@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { displayCallId } from "@/lib/utils";
 
 // Context Imports
-import { AnonymousProvider, useAnonymousContext } from "@/context/anonymous";
+import { AnonymousProvider, useAnonymousContext } from "@/context/AnonymousContext";
 
 // Core Call Components
 import {
@@ -31,7 +31,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loading } from "@/components/loading";
+import { default as Loading } from "@/components/Loading/LoadingScreen";
 
 // Pre-connect Screen with user preview
 function PreConnectScreen({ onConnect }: { onConnect: () => void }) {

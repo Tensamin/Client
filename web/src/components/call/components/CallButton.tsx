@@ -4,12 +4,12 @@ import { useState } from "react";
 import { v7 } from "uuid";
 
 // Context Imports
-import { useCallContext } from "@/context/call";
-import { useUserContext } from "@/context/user";
+import { useCallContext } from "@/context/call/CallContext";
+import { useUserContext } from "@/context/UserContext";
 
 // Components
-import { MotionDivWrapper } from "@/components/animation/presence";
-import { LoadingIcon } from "@/components/loading";
+import { MotionDivWrapper } from "@/components/animation/Presence";
+import LoadingIcon from "@/components/Loading/LoadingIcon";
 import { Button } from "@/components/ui/button";
 import {
   Popover,

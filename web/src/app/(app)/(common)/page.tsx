@@ -9,15 +9,15 @@ import { toast } from "sonner";
 import { cn, displayCallId } from "@/lib/utils";
 
 // Context Imports
-import { useSocketContext } from "@/context/socket";
-import { useUserContext } from "@/context/user";
+import { useSocketContext } from "@/context/SocketContext";
+import { useUserContext } from "@/context/UserContext";
 
 // Components
 import { CallInteraction } from "@/components/call/components/CallButton";
-import { LoadingIcon } from "@/components/loading";
-import { Text } from "@/components/markdown/text";
-import { UserModal } from "@/components/modals/user";
-import { PageDiv } from "@/components/pageDiv";
+import LoadingIcon from "@/components/Loading/LoadingIcon";
+import { Text } from "@/components/markdown/MarkdownText";
+import { UserModal } from "@/components/modals/UserModal";
+import { PageDiv } from "@/components/PageDiv";
 import { Button } from "@/components/ui/button";
 import {
   Card,

@@ -1,8 +1,8 @@
-import { CallProvider } from "@/context/call";
-import { MessageProvider } from "@/context/message";
-import { SocketProvider } from "@/context/socket";
-import { UserProvider } from "@/context/user";
-import TauriWrapper from "@/context/tauri";
+import { CallProvider } from "@/context/call/CallContext";
+import { MessageProvider } from "@/context/MessageContext";
+import { SocketProvider } from "@/context/SocketContext";
+import { UserProvider } from "@/context/UserContext";
+import TauriWrapper from "@/context/TauriContext";
 
 import Navbar from "@/components/Navbar";
 import Main from "@/components/sidebar/Main";

@@ -1,7 +1,7 @@
 "use client";
 
 // Lib Imports
-import { pp, tos } from "@/lib/endpoints";
+import { pp, tos } from "@/config/endpoints";
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { FixedWindowControls } from "@/components/windowControls";
+import { FixedWindowControls } from "@/components/WindowControls";
 import { useRouter } from "next/navigation";
 
 // Main

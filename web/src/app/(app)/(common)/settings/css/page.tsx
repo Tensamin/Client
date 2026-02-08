@@ -1,10 +1,10 @@
 "use client";
 
 // Context Imports
-import { useStorageContext } from "@/context/storage";
+import { useStorageContext } from "@/context/StorageContext";
 
 // Components
-import { CodeEditor } from "@/components/code";
+import { CodeEditor } from "@/components/CssEditor";
 import { Top } from "../page";
 
 // Main

@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import * as React from "react";
 import { twMerge } from "tailwind-merge";
 import { UnixTimestamp, User } from "./types";
-import { user as userEndpoint } from "./endpoints";
+import { user as userEndpoint } from "@/config/endpoints";
 
 const MOBILE_BREAKPOINT = 768;
 export const RetryCount = 10;

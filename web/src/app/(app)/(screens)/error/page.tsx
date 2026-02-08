@@ -1,7 +1,7 @@
 "use client";
 
-import { Loading } from "@/components/loading";
-import { usePageContext } from "@/context/page";
+import { default as Loading } from "@/components/Loading/LoadingScreen";
+import { usePageContext } from "@/context/PageContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 

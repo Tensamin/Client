@@ -1,11 +1,11 @@
 "use client";
 
-import Wrap from "@/components/Wrap";
+import Wrap from "@/components/common/UserDataLoader";
 import Content from "./Content";
 
-import { BigModal } from "../modals/raw";
+import { BigModal } from "../modals/ModalPrimitives";
 
-import { useUserContext } from "@/context/user";
+import { useUserContext } from "@/context/UserContext";
 import { useState } from "react";
 import CategorySwitcher from "./CategorySwitcher";
 

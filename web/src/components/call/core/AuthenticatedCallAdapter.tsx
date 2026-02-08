@@ -16,7 +16,7 @@ import { type ReactNode } from "react";
 import { UserDataProvider, type UserData } from "./UserDataContext";
 
 // Authenticated Context Imports
-import { useUserContext } from "@/context/user";
+import { useUserContext } from "@/context/UserContext";
 
 // Types
 type AuthenticatedCallAdapterProps = {

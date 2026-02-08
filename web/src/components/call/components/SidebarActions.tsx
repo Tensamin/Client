@@ -15,10 +15,10 @@ import { toast } from "sonner";
 
 // Lib Imports
 import { cn, displayCallId } from "@/lib/utils";
-import * as CommunicationValue from "@/lib/communicationValues";
+import * as CommunicationValue from "@/lib/wsMessageTypes";
 
 // Context Imports
-import { useCallContext, useSubCallContext } from "@/context/call";
+import { useCallContext, useSubCallContext } from "@/context/call/CallContext";
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -42,8 +42,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useSocketContext } from "@/context/socket";
-import { DeafButton, MuteButton, ScreenShareButton } from "./buttons";
+import { useSocketContext } from "@/context/SocketContext";
+import DeafenButton from "@/components/call/buttons/DeafenButton";
+import MicButton from "@/components/call/buttons/MicButton";
+import ScreenShareButton from "@/components/call/buttons/ScreenShareButton";
 import { useRouter } from "next/navigation";
 
 // Main
@@ -425,8 +427,8 @@ export default function VoiceActions() {
         </PopoverContent>
       </Popover>
       <div className="flex gap-2 w-full">
-        <MuteButton />
-        <DeafButton />
+        <MicButton />
+        <DeafenButton />
         <ScreenShareButton />
       </div>
       <div className="flex gap-2 w-full">

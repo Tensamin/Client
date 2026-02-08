@@ -6,11 +6,11 @@ import { useEffect, useEffectEvent, useState } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
-import * as CommunicationValue from "@/lib/communicationValues";
+import * as CommunicationValue from "@/lib/wsMessageTypes";
 import { cn } from "@/lib/utils";
 
 // Context Imports
-import { useSocketContext } from "@/context/socket";
+import { useSocketContext } from "@/context/SocketContext";
 
 // Components
 import {
@@ -53,7 +53,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useStorageContext } from "@/context/storage";
+import { useStorageContext } from "@/context/StorageContext";
 import { StoredSettings } from "@/lib/types";
 import { Top } from "../page";
 

@@ -9,14 +9,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { MaxSendBoxSize } from "@/lib/utils";
 
 // Context Imports
-import { useMessageContext } from "@/context/message";
-import { useStorageContext } from "@/context/storage";
-import { useUserContext } from "@/context/user";
+import { useMessageContext } from "@/context/MessageContext";
+import { useStorageContext } from "@/context/StorageContext";
+import { useUserContext } from "@/context/UserContext";
 
 // Components
-import { Box } from "@/components/chat/box";
+import { Box } from "@/components/chat/ChatBox";
 import EmojiPicker from "@/components/EmojiPicker";
-import { PageDiv } from "@/components/pageDiv";
+import { PageDiv } from "@/components/PageDiv";
 import { Button } from "@/components/ui/button";
 import {
   Popover,

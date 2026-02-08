@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 
 // Context Imports
-import { useUserContext } from "@/context/user";
+import { useUserContext } from "@/context/UserContext";
 import { Top } from "../page";
 
 // Main

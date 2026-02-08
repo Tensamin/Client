@@ -9,7 +9,7 @@ import { calculateOptimalLayout } from "@/lib/utils";
 import Tile, { FocusDuplicateOverlay } from "../components/Tile";
 
 // Context
-import { useCallPageContext } from "../context";
+import { useCallPageContext } from "../CallContextMenu";
 
 // Main
 export default function Focus() {

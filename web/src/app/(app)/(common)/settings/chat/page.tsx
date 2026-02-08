@@ -3,8 +3,8 @@
 import { Switch } from "@/components/ui/switch";
 import { Top } from "../page";
 import { Label } from "@/components/ui/label";
-import { useStorageContext } from "@/context/storage";
-import { defaults } from "@/lib/defaults";
+import { useStorageContext } from "@/context/StorageContext";
+import { defaults } from "@/config/defaults";
 
 export default function Page() {
   const { set, data } = useStorageContext();

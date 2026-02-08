@@ -1,0 +1,234 @@
+// Package Imports
+import Link from "next/link";
+import React from "react";
+import type { Components } from "react-markdown";
+import { isInlineCode } from "react-shiki";
+
+// Components
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+import { CodeBlock } from "./CodeBlock";
+
+// Types
+type HProps = React.HTMLAttributes<HTMLHeadingElement>;
+type PProps = React.HTMLAttributes<HTMLParagraphElement>;
+type AProps = React.AnchorHTMLAttributes<HTMLAnchorElement>;
+type QuoteProps = React.HTMLAttributes<HTMLQuoteElement>;
+type UlProps = React.HTMLAttributes<HTMLUListElement>;
+type OlProps = React.HTMLAttributes<HTMLOListElement>;
+type LiProps = React.LiHTMLAttributes<HTMLLIElement>;
+type PreProps = React.HTMLAttributes<HTMLPreElement>;
+type HrProps = React.HTMLAttributes<HTMLHRElement>;
+type ImgProps = React.ImgHTMLAttributes<HTMLImageElement>;
+type EmProps = React.HTMLAttributes<HTMLElement>;
+type StrongProps = React.HTMLAttributes<HTMLElement>;
+
+// Main
+export const H1 = ({ className, ...props }: HProps) => {
+  return (
+    <h1
+      className={cn(
+        "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl",
+        className,
+      )}
+      {...props}
+    />
+  );
+};
+
+export const H2 = ({ className, ...props }: HProps) => {
+  return (
+    <h2
+      className={cn(
+        "scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0",
+        className,
+      )}
+      {...props}
+    />
+  );
+};
+
+export const H3 = ({ className, ...props }: HProps) => {
+  return (
+    <h3
+      className={cn(
+        "scroll-m-20 text-2xl font-semibold tracking-tight",
+        className,
+      )}
+      {...props}
+    />
+  );
+};
+
+export const H4 = ({ className, ...props }: HProps) => {
+  return (
+    <h4
+      className={cn(
+        "scroll-m-20 text-xl font-semibold tracking-tight",
+        className,
+      )}
+      {...props}
+    />
+  );
+};
+
+export const P = ({ className, ...props }: PProps) => {
+  return <p className={cn("leading-6 not-first:mt-6", className)} {...props} />;
+};
+
+export const A = ({ href = "", className, ...props }: AProps) => {
+  const isExternal = /^https?:\/\//.test(href);
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "font-medium text-primary underline underline-offset-4",
+        className,
+      )}
+      {...(isExternal ? { target: "_blank", rel: "noreferrer noopener" } : {})}
+      {...props}
+    />
+  );
+};
+
+export const Blockquote = ({ className, children, ...props }: QuoteProps) => {
+  const betterChildren = React.Children.map(children, (child) => {
+    if (typeof child === "string") return null;
+    return child;
+  });
+
+  return (
+    <blockquote
+      className={cn("border-l-2 pl-3 mt-3 flex flex-col", className)}
+      {...props}
+    >
+      {betterChildren}
+    </blockquote>
+  );
+};
+
+export const UL = ({ className, children, ...props }: UlProps) => {
+  const betterChildren = React.Children.map(children, (child) => {
+    if (typeof child === "string") return null;
+    return child;
+  });
+  return (
+    <ul className={cn("ml-6 list-disc [&>li]:mt-2", className)} {...props}>
+      {betterChildren}
+    </ul>
+  );
+};
+
+export const OL = ({ className, ...props }: OlProps) => {
+  return (
+    <ol className={cn("ml-6 list-decimal [&>li]:mt-2", className)} {...props} />
+  );
+};
+
+export const LI = ({ className, ...props }: LiProps) => {
+  return <li className={cn("mt-2", className)} {...props} />;
+};
+
+export const HR = ({ className, ...props }: HrProps) => {
+  return <hr className={cn("border-muted", className)} {...props} />;
+};
+
+export const Img = ({ className, alt, src, ...props }: ImgProps) => {
+  const isBase64 =
+    typeof src === "string" && /^data:image\/[a-z0-9.+-]+;base64,/i.test(src);
+
+  if (src && !isBase64) {
+    return null;
+  }
+
+  if (!src) {
+    return null;
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt ?? ""}
+      className={cn(
+        "h-auto max-w-full rounded-md border border-border object-cover",
+        className,
+      )}
+      {...props}
+    />
+  );
+};
+
+export const TableComponent = ({
+  className,
+  ...props
+}: React.TableHTMLAttributes<HTMLTableElement>) => {
+  return (
+    <Table
+      className={cn("w-full overflow-hidden rounded-md", className)}
+      {...props}
+    />
+  );
+};
+
+export const Strong = ({ className, ...props }: StrongProps) => {
+  return <strong className={cn("font-semibold", className)} {...props} />;
+};
+
+export const Em = ({ className, ...props }: EmProps) => {
+  return <em className={cn("italic", className)} {...props} />;
+};
+
+export const Pre = ({ className, ...props }: PreProps) => {
+  return (
+    <pre
+      className={cn(
+        "mb-4 mt-6 overflow-x-auto rounded-lg border bg-muted p-4",
+        className,
+      )}
+      {...props}
+    />
+  );
+};
+
+export const markdownComponents: Components = {
+  h1: H1,
+  h2: H2,
+  h3: H3,
+  h4: H4,
+  p: P,
+  a: A,
+  blockquote: Blockquote,
+  ul: UL,
+  ol: OL,
+  li: LI,
+  hr: HR,
+  img: Img,
+  table: TableComponent,
+  thead: TableHeader,
+  tbody: TableBody,
+  tr: TableRow,
+  th: TableHead,
+  td: TableCell,
+  strong: Strong,
+  em: Em,
+  code: ({ className, children, node }) => {
+    const code = String(children).trim();
+    const match = className?.match(/language-(\w+)/);
+    const language = match ? match[1] : "text";
+    const isInline = node ? isInlineCode(node) : false;
+
+    return (
+      <CodeBlock empty={!children} language={language} inline={isInline}>
+        {code}
+      </CodeBlock>
+    );
+  },
+};
+

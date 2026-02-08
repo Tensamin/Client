@@ -13,27 +13,25 @@ import { User } from "@/lib/types";
 import { displayCallId } from "@/lib/utils";
 
 // Context Imports
-import { useCallContext, useSubCallContext } from "@/context/call";
-import { useSocketContext } from "@/context/socket";
-import { useUserContext } from "@/context/user";
+import { useCallContext, useSubCallContext } from "@/context/call/CallContext";
+import { useSocketContext } from "@/context/SocketContext";
+import { useUserContext } from "@/context/UserContext";
 
 // Components
-import { MotionDivWrapper } from "@/components/animation/presence";
-import {
-  CameraButton,
-  DeafButton,
-  MuteButton,
-  ScreenShareButton,
-} from "@/components/call/components/buttons";
+import { MotionDivWrapper } from "@/components/animation/Presence";
+import CameraButton from "@/components/call/buttons/CameraButton";
+import DeafenButton from "@/components/call/buttons/DeafenButton";
+import MicButton from "@/components/call/buttons/MicButton";
+import ScreenShareButton from "@/components/call/buttons/ScreenShareButton";
 import {
   CallPageProvider,
   useCallPageContext,
-} from "@/components/call/context";
+} from "@/components/call/CallContextMenu";
 import CallFocus from "@/components/call/view/Focus";
 import CallGrid from "@/components/call/view/Grid";
 import { PopoutScreenShare } from "@/components/call/view/ScreenSharePopout";
-import Avatar from "@/components/modals/Avatar";
-import { UserModal } from "@/components/modals/user";
+import Avatar from "@/components/common/Avatar";
+import { UserModal } from "@/components/modals/UserModal";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -131,9 +129,9 @@ function CallPageContent() {
       <div className="absolute bottom-3 left-0 flex justify-center w-full">
         <div className="flex gap-3 bg-card p-1.5 rounded-lg border">
           {/* Mute Button */}
-          <MuteButton ghostMode className="w-10" />
+          <MicButton ghostMode className="w-10" />
           {/* Deaf Button */}
-          <DeafButton ghostMode className="w-10" />
+          <DeafenButton ghostMode className="w-10" />
           {/* Screen Share Button */}
           <ScreenShareButton ghostMode className="w-10" />
           {/* Camera Button */}

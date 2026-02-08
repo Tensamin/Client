@@ -17,13 +17,13 @@ import "../globals.css";
 import "../colors.css";
 
 // Context Imports
-import { StorageProvider } from "@/context/storage";
+import { StorageProvider } from "@/context/StorageContext";
 
 // Components
-import { Loading } from "@/components/loading";
+import { default as Loading } from "@/components/Loading/LoadingScreen";
 import { Toaster } from "@/components/ui/sonner";
-import { CryptoProvider } from "@/context/crypto";
-import { PageProvider } from "@/context/page";
+import { CryptoProvider } from "@/context/CryptoContext";
+import { PageProvider } from "@/context/PageContext";
 import { progressBar } from "@/lib/utils";
 
 // Main

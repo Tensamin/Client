@@ -8,17 +8,17 @@ import React, { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 // Lib Imports
-import { pp, tos, username_to_id } from "@/lib/endpoints";
+import { pp, tos, username_to_id } from "@/config/endpoints";
 
 // Context Imports
-import { rawDebugLog, useStorageContext } from "@/context/storage";
+import { rawDebugLog, useStorageContext } from "@/context/StorageContext";
 
 // Components
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FixedWindowControls } from "@/components/windowControls";
+import { FixedWindowControls } from "@/components/WindowControls";
 import { useRouter } from "next/navigation";
 
 // Main

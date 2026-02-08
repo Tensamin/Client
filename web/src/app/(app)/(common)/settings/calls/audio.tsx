@@ -13,11 +13,11 @@ import * as Icon from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // Lib Imports
-import { audioService } from "@/lib/audioService";
+import { audioService } from "@/features/audio/pipeline";
 import { cn } from "@/lib/utils";
 
 // Context Imports
-import { useStorageContext } from "@/context/storage";
+import { useStorageContext } from "@/context/StorageContext";
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { defaults } from "@/lib/defaults";
+import { defaults } from "@/config/defaults";
 import { SettingsPageTitle } from "../layout";
 
 // Main

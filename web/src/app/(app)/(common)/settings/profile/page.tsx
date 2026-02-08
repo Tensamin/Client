@@ -8,12 +8,12 @@ import { toast } from "sonner";
 import { convertStringToInitials, getColorFor } from "@/lib/utils";
 
 // Context Imports
-import { rawDebugLog } from "@/context/storage";
-import { useUserContext } from "@/context/user";
+import { rawDebugLog } from "@/context/StorageContext";
+import { useUserContext } from "@/context/UserContext";
 
 // Components
-import { LoadingIcon } from "@/components/loading";
-import { Profile } from "@/components/modals/raw";
+import LoadingIcon from "@/components/Loading/LoadingIcon";
+import { Profile } from "@/components/modals/ModalPrimitives";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import Wrap from "@/components/Wrap";
+import Wrap from "@/components/common/UserDataLoader";
 
 import { Top } from "../page";
 

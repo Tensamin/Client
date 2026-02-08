@@ -5,11 +5,11 @@ import packageJson from "@/../package.json";
 import React, { useCallback } from "react";
 
 // Context Imports
-import { useSocketContext } from "@/context/socket";
-import { useStorageContext } from "@/context/storage";
+import { useSocketContext } from "@/context/SocketContext";
+import { useStorageContext } from "@/context/StorageContext";
 
 // Components
-import { PageDiv } from "@/components/pageDiv";
+import { PageDiv } from "@/components/PageDiv";
 import {
   AlertDialog,
   AlertDialogAction,

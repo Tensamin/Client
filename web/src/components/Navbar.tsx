@@ -13,10 +13,10 @@ import {
 } from "react";
 
 // Context Imports
-import { useUserContext } from "@/context/user";
+import { useUserContext } from "@/context/UserContext";
 
 // Components
-import { MotionDivWrapper } from "@/components/animation/presence";
+import { MotionDivWrapper } from "@/components/animation/Presence";
 import { CallButtonWrapper } from "@/components/call/components/CallButton";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +24,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { WindowControls } from "@/components/windowControls";
+import { WindowControls } from "@/components/WindowControls";
 import { usePathname, useRouter } from "next/navigation";
 
 // Main

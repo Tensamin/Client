@@ -5,7 +5,7 @@ import { Track } from "livekit-client";
 import * as Icon from "lucide-react";
 
 // Context Imports
-import { useSubCallContext } from "@/context/call";
+import { useSubCallContext } from "@/context/call/CallContext";
 
 // Components
 import {
@@ -16,7 +16,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { useUserContext } from "@/context/user";
+import { useUserContext } from "@/context/UserContext";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useCallPageContext } from "../context";
+import { useCallPageContext } from "../CallContextMenu";
 
 // Main
 export default function ParticipantContextMenu({

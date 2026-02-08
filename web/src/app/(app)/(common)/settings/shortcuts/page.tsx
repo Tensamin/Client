@@ -1,6 +1,6 @@
 "use client";
 
-import { useStorageContext } from "@/context/storage";
+import { useStorageContext } from "@/context/StorageContext";
 import { Top } from "../page";
 import { toast } from "sonner";
 import { useEffect, useCallback, useMemo } from "react";
@@ -8,7 +8,7 @@ import {
   SHORTCUT_ACTIONS,
   shortcutsToActionMap,
   actionMapToShortcuts,
-} from "@/lib/shortcuts";
+} from "@/config/shortcuts";
 import {
   ShortcutRecorder,
   ShortcutCliDisplay,
