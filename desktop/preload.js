@@ -89,4 +89,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.removeListener(`shortcut:${action}`, subscription);
     };
   },
+  getPlatformInfo: () => ipcRenderer.invoke("get-platform-info"),
 });

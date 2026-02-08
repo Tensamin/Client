@@ -16,6 +16,30 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 // @ts-ignore Squirrel startup
 import squirrelStartup from "electron-squirrel-startup";
 
+// Platform detection - robust Wayland detection
+const isLinux = process.platform === "linux";
+const ozonePlatformArg = process.argv.find((arg) =>
+  arg.startsWith("--ozone-platform="),
+);
+const ozonePlatformValue = ozonePlatformArg?.split("=")[1];
+const isWayland =
+  isLinux &&
+  (ozonePlatformValue === "wayland" ||
+    process.env.ELECTRON_OZONE_PLATFORM_HINT === "wayland" ||
+    process.env.XDG_SESSION_TYPE === "wayland" ||
+    !!process.env.WAYLAND_DISPLAY);
+
+// CLI argument parsing for --shortcut <action>
+function parseShortcutArg(): string | null {
+  const shortcutIndex = process.argv.indexOf("--shortcut");
+  if (shortcutIndex !== -1 && process.argv[shortcutIndex + 1]) {
+    return process.argv[shortcutIndex + 1];
+  }
+  return null;
+}
+
+const cliShortcutAction = parseShortcutArg();
+
 // Types
 type UpdatePayload = {
   version: string | null;
@@ -168,6 +192,53 @@ let isUpdateDownloaded = false;
 
 // Squirrel Startup Handling
 if (squirrelStartup) app.quit();
+
+// Single instance lock with CLI shortcut support
+const gotTheLock = app.requestSingleInstanceLock({
+  shortcutAction: cliShortcutAction,
+});
+
+if (!gotTheLock) {
+  // Another instance is running
+  // If we have a shortcut action, the other instance will handle it via second-instance event
+  // Either way, quit this instance
+  app.quit();
+} else {
+  // Handle second instance attempting to start
+  app.on(
+    "second-instance",
+    (
+      _event: Electron.Event,
+      _commandLine: string[],
+      _workingDirectory: string,
+      additionalData: unknown,
+    ) => {
+      const data = additionalData as { shortcutAction?: string | null } | undefined;
+      
+      // If the second instance was launched with --shortcut, trigger it
+      if (data?.shortcutAction && mainWindow) {
+        console.log(
+          `[CLI] Triggering shortcut action: ${data.shortcutAction}`,
+        );
+        mainWindow.webContents.send(
+          `shortcut:${data.shortcutAction}`,
+        );
+      }
+
+      // Focus the main window if it exists
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+      }
+    },
+  );
+}
+
+// If this instance was launched with --shortcut but we got the lock,
+// it means no other instance was running - just quit silently
+if (cliShortcutAction && gotTheLock) {
+  app.quit();
+}
 
 // Force Wayland and PipeWire on Linux
 if (process.platform === "linux") {
@@ -444,21 +515,23 @@ app.whenReady().then(() => {
   const isWayland =
     ozonePlatform === "wayland" ||
     (ozonePlatform === "auto" && !!process.env.WAYLAND_DISPLAY);
-  const platform = isWayland ? "Wayland" : "X11";
-  const color = isWayland ? "\x1b[32m" : "\x1b[33m"; // Wayland: green, x11: yellow
-  const reset = "\x1b[0m";
 
-  console.log(`${color}[INFO] Running with ${platform}${reset}`);
+  if (isWayland) {
+    console.log("\x1b[32m" + `[INFO] Running with Wayland` + "\x1b[0m");
+  }
 
   protocol.handle("app", (request) => {
     const { pathname } = new URL(request.url);
-    const filePath = path.join(DIRNAME, decodeURIComponent(pathname));
+
+    const filePath = path.join(
+      app.getAppPath(),
+      "public",
+      decodeURIComponent(pathname),
+    );
 
     return net.fetch(pathToFileURL(filePath).toString());
   });
 
-  // Start with Splash Window logic if auto update is supported, otherwise go straight to main
-  // Linux doesn't support autoUpdater.quitAndInstall() in the same way, so we skip splash check
   if (isAutoUpdateSupported()) {
     createSplashWindow();
   } else {
@@ -602,3 +675,12 @@ ipcMain.on(
     }
   },
 );
+
+// Platform info handler
+ipcMain.handle("get-platform-info", () => {
+  return {
+    isLinux,
+    isWayland,
+    platform: process.platform,
+  };
+});

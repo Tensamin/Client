@@ -16,6 +16,7 @@ import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
 // Lib Imports
 import { handleError, progressBar } from "@/lib/utils";
 import { generateColors, readThemeFromCSS } from "@/lib/theme";
+import { shortcuts } from "@/lib/defaults";
 
 // Components
 import { RawLoading } from "@/components/loading";
@@ -98,6 +99,8 @@ export function StorageProvider({
   const [ready, setReady] = useState(false);
   const [isElectron, setIsElectron] = useState(false);
   const [isTauri, setIsTauri] = useState(false);
+  const [isLinux, setIsLinux] = useState(false);
+  const [isWayland, setIsWayland] = useState(false);
   const [db, setDb] = useState<IDBPDatabase<DBType> | null>(null);
   const [, setRawThemeTint] = useState<string | null>(null);
   const [themeCSS, setRawThemeCSS] = useState<string | null>(null);
@@ -106,11 +109,26 @@ export function StorageProvider({
 
   const { resolvedTheme, systemTheme } = useTheme();
 
-  // Check if running in Electron
+  // Check if running in Electron and get platform info
   useEffect(() => {
     // @ts-expect-error ElectronAPI only available in Electron
     if (window.electronAPI) {
       setIsElectron(true);
+      // Get platform info including Wayland detection
+      // @ts-expect-error Electron API only available in Electron
+      if (window.electronAPI.getPlatformInfo) {
+        // @ts-expect-error Electron API only available in Electron
+        window.electronAPI
+          .getPlatformInfo()
+          .then((info: { isLinux: boolean; isWayland: boolean }) => {
+            setIsLinux(info.isLinux);
+            setIsWayland(info.isWayland);
+            rawDebugLog("Storage", "Platform info", info, "green");
+          })
+          .catch((err: unknown) => {
+            rawDebugLog("Storage", "Failed to get platform info", err, "red");
+          });
+      }
     } else {
       setIsElectron(false);
     }
@@ -146,52 +164,107 @@ export function StorageProvider({
     }
   }, [isTauri]);
 
-  // Electron Stuff
-  const [shortcuts, setShortcuts] = useState({});
+  // Electron Shortcuts
+  const [shortcuts, setShortcutsState] = useState<Record<string, string>>({});
+  const [shortcutsLoaded, setShortcutsLoaded] = useState(false);
 
+  // Load shortcuts from IndexedDB on init
   useEffect(() => {
-    if (!isElectron) {
-      console.log("[Storage] Not in Electron, skipping shortcuts setup");
-      return;
-    }
+    if (!isElectron || !db || shortcutsLoaded) return;
 
-    console.log("[Storage] Setting up shortcuts in Electron");
+    const loadShortcuts = async () => {
+      try {
+        const storedShortcuts = await db.get("data", "shortcuts");
+        const config =
+          (storedShortcuts?.value as Record<string, string>) || shortcuts;
 
-    const config = {
-      "CmdOrCtrl+K": "test",
+        // @ts-expect-error Electron API only available in Electron
+        if (window.electronAPI && window.electronAPI.updateShortcuts) {
+          // @ts-expect-error Electron API only available in Electron
+          window.electronAPI.updateShortcuts(config);
+          setShortcutsState(config);
+          rawDebugLog(
+            "Storage",
+            "Shortcuts loaded and synced to Electron",
+            config,
+            "green",
+          );
+        } else {
+          setShortcutsState(config);
+          rawDebugLog(
+            "Storage",
+            "Shortcuts loaded but Electron API not available",
+            config,
+            "yellow",
+          );
+        }
+      } catch (err) {
+        rawDebugLog("Storage", "Failed to load shortcuts", err, "red");
+        setShortcutsState(shortcuts);
+      } finally {
+        setShortcutsLoaded(true);
+      }
     };
 
-    // @ts-expect-error Electron API only available in Electron
-    if (window.electronAPI && window.electronAPI.updateShortcuts) {
-      console.log(
-        "[Storage] Sending shortcuts config to main process:",
-        config,
-      );
-      // @ts-expect-error Electron API only available in Electron
-      window.electronAPI.updateShortcuts(config);
-      setShortcuts(config);
-      console.log("[Storage] Shortcuts config sent");
-    } else {
-      console.error("[Storage] electronAPI.updateShortcuts not available");
-    }
-  }, [isElectron]);
+    loadShortcuts();
+  }, [isElectron, db, shortcutsLoaded, shortcuts]);
 
-  const updateShortcuts = (newShortcuts: Record<string, string>) => {
-    console.log("[Storage] updateShortcuts called:", newShortcuts);
-    if (!isElectron) {
-      console.warn("[Storage] Cannot update shortcuts: not in Electron");
-      return;
-    }
-    // @ts-expect-error Electron API only available in Electron
-    if (window.electronAPI && window.electronAPI.updateShortcuts) {
+  const updateShortcuts = useCallback(
+    async (newShortcuts: Record<string, string>) => {
+      if (!isElectron) {
+        rawDebugLog(
+          "Storage",
+          "Cannot update shortcuts: not in Electron",
+          undefined,
+          "yellow",
+        );
+        return;
+      }
+
+      // Save to IndexedDB
+      if (db) {
+        try {
+          await db.put("data", { key: "shortcuts", value: newShortcuts });
+          rawDebugLog(
+            "Storage",
+            "Shortcuts saved to IndexedDB",
+            newShortcuts,
+            "green",
+          );
+        } catch (err) {
+          rawDebugLog(
+            "Storage",
+            "Failed to save shortcuts to IndexedDB",
+            err,
+            "red",
+          );
+        }
+      }
+
+      // Update Electron
       // @ts-expect-error Electron API only available in Electron
-      window.electronAPI.updateShortcuts(newShortcuts);
-      setShortcuts(newShortcuts);
-      console.log("[Storage] Shortcuts updated");
-    } else {
-      console.error("[Storage] electronAPI.updateShortcuts not available");
-    }
-  };
+      if (window.electronAPI && window.electronAPI.updateShortcuts) {
+        // @ts-expect-error Electron API only available in Electron
+        window.electronAPI.updateShortcuts(newShortcuts);
+        setShortcutsState(newShortcuts);
+        rawDebugLog(
+          "Storage",
+          "Shortcuts synced to Electron",
+          newShortcuts,
+          "green",
+        );
+      } else {
+        setShortcutsState(newShortcuts);
+        rawDebugLog(
+          "Storage",
+          "electronAPI.updateShortcuts not available",
+          undefined,
+          "red",
+        );
+      }
+    },
+    [isElectron, db],
+  );
 
   const onShortcut = (action: string, callback: () => void) => {
     console.log("[Storage] onShortcut called for action:", action);
@@ -391,6 +464,8 @@ export function StorageProvider({
         setThemeTintType,
         isElectron,
         isTauri,
+        isLinux,
+        isWayland,
         currentDeepLink,
         shortcuts,
         updateShortcuts,
@@ -419,8 +494,10 @@ type StorageContextType = {
   setThemeTintType: (tintType: string) => void;
   isElectron: boolean;
   isTauri: boolean;
+  isLinux: boolean;
+  isWayland: boolean;
   currentDeepLink: string[] | null;
   shortcuts: Record<string, string>;
   updateShortcuts: (newShortcuts: Record<string, string>) => void;
-  onShortcut: (action: string, callback: () => void) => void;
+  onShortcut: (action: string, callback: () => void) => () => void;
 };

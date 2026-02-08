@@ -14,3 +14,7 @@ export const defaults = {
   sampleSize: 16,
   sampleRate: 48000,
 };
+
+export const shortcuts = {
+  "CmdOrCtrl+K": "test",
+};
