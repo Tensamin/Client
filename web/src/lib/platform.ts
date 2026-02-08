@@ -36,10 +36,10 @@ export function checkIsTauri(): boolean {
 export async function getPlatformInfo(): Promise<PlatformInfo> {
   const isElectron = checkIsElectron();
   const isTauri = checkIsTauri();
-  
+
   let isLinux = false;
   let isWayland = false;
-  
+
   if (isElectron) {
     try {
       // @ts-expect-error Electron API only available in Electron
@@ -53,7 +53,7 @@ export async function getPlatformInfo(): Promise<PlatformInfo> {
       // Ignore errors, use defaults
     }
   }
-  
+
   return {
     isElectron,
     isTauri,
@@ -66,10 +66,13 @@ export async function getPlatformInfo(): Promise<PlatformInfo> {
 /**
  * Synchronous platform check (limited info)
  */
-export function getPlatformInfoSync(): Pick<PlatformInfo, "isElectron" | "isTauri" | "isBrowser"> {
+export function getPlatformInfoSync(): Pick<
+  PlatformInfo,
+  "isElectron" | "isTauri" | "isBrowser"
+> {
   const isElectron = checkIsElectron();
   const isTauri = checkIsTauri();
-  
+
   return {
     isElectron,
     isTauri,

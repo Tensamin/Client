@@ -60,7 +60,8 @@ export default function LoadingIcon({ invert, size = 1 }: LoadingIconProps) {
         if (l?.register) l.register();
       });
 
-      const random = LOADER_NAMES[Math.floor(Math.random() * LOADER_NAMES.length)];
+      const random =
+        LOADER_NAMES[Math.floor(Math.random() * LOADER_NAMES.length)];
       setLoader(random);
     };
     init();

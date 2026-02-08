@@ -33,7 +33,7 @@ export function createDatabaseConnection(): Promise<TensaminDB | null> {
   if (typeof window === "undefined") {
     return Promise.resolve(null);
   }
-  
+
   return openDB<DatabaseSchema>(DB_NAME, DB_VERSION, {
     upgrade(db) {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -87,13 +87,18 @@ export async function getAllFromDatabase(
 ): Promise<Record<string, Value>> {
   const allData = await db.getAll(STORE_NAME);
   const result: Record<string, Value> = {};
-  
+
   for (const entry of allData) {
-    if (entry && typeof entry === "object" && "key" in entry && "value" in entry) {
+    if (
+      entry &&
+      typeof entry === "object" &&
+      "key" in entry &&
+      "value" in entry
+    ) {
       result[entry.key as string] = entry.value as Value;
     }
   }
-  
+
   return result;
 }
 

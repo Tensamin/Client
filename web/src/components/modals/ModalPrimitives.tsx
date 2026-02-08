@@ -1,7 +1,7 @@
 /**
  * Modal primitive components
  * Building blocks for various modal/card displays
- * 
+ *
  * Renamed from raw.tsx for clarity
  */
 
@@ -157,10 +157,7 @@ export interface CallOnHomepageProps {
   avatar?: string;
 }
 
-export function CallOnHomepage({
-  display,
-  avatar,
-}: CallOnHomepageProps) {
+export function CallOnHomepage({ display, avatar }: CallOnHomepageProps) {
   return (
     <div className="flex gap-2 items-center">
       <p>{display}</p>

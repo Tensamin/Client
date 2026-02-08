@@ -10,7 +10,10 @@ import { toast } from "sonner";
 import { displayCallId } from "@/lib/utils";
 
 // Context Imports
-import { AnonymousProvider, useAnonymousContext } from "@/context/AnonymousContext";
+import {
+  AnonymousProvider,
+  useAnonymousContext,
+} from "@/context/AnonymousContext";
 
 // Core Call Components
 import {

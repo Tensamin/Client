@@ -1,7 +1,7 @@
 /**
  * Avatar component
  * Displays user avatars with loading states and status indicators
- * 
+ *
  * Moved from components/modals/Avatar.tsx to components/common/
  */
 

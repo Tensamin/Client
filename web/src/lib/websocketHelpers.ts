@@ -1,7 +1,7 @@
 /**
  * WebSocket communication helpers
  * Utilities for WebSocket message handling, pending requests, and user fetching
- * 
+ *
  * Renamed from contextUtils.ts for clarity
  */
 

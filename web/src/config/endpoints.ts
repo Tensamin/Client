@@ -11,7 +11,8 @@ export const change = authServer + "/api/change/";
 export const callToken = authServer + "/api/call_token/";
 
 // Documentation links
-export const termsOfService = "https://docs.tensamin.net/legal/terms-of-service";
+export const termsOfService =
+  "https://docs.tensamin.net/legal/terms-of-service";
 export const privacyPolicy = "https://docs.tensamin.net/legal/privacy-policy";
 
 // WebSocket endpoints

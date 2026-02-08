@@ -1,7 +1,7 @@
 /**
  * Call ID display utility
  * Converts UUIDs to short, readable codes
- * 
+ *
  * Extracted from lib/utils.tsx
  */
 
@@ -57,10 +57,12 @@ export function getCallCode(callId: string): string {
       n = n / BigInt(85);
     }
 
-    return result
-      .replaceAll(/[^a-zA-Z0-9]/g, "")
-      .slice(4, 12)
-      .toUpperCase() || "0";
+    return (
+      result
+        .replaceAll(/[^a-zA-Z0-9]/g, "")
+        .slice(4, 12)
+        .toUpperCase() || "0"
+    );
   } catch {
     return "0";
   }

@@ -1,7 +1,7 @@
 /**
  * Sound playback utility
  * Handles playing UI sounds for various app events
- * 
+ *
  * Extracted from lib/sound.ts
  */
 

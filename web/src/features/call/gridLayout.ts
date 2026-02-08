@@ -1,7 +1,7 @@
 /**
  * Grid layout calculation utility
  * Calculates optimal tile sizes for video call grids
- * 
+ *
  * Extracted from lib/utils.tsx
  */
 
@@ -13,7 +13,7 @@ export interface GridLayoutResult {
 
 /**
  * Calculate optimal grid layout for video call tiles
- * 
+ *
  * @param count - Number of tiles to display
  * @param containerWidth - Available container width in pixels
  * @param containerHeight - Available container height in pixels

@@ -145,7 +145,8 @@ export function StorageProvider({
       try {
         const storedShortcuts = await db.get("data", "shortcuts");
         const config =
-          (storedShortcuts?.value as Record<string, string>) || defaultShortcuts;
+          (storedShortcuts?.value as Record<string, string>) ||
+          defaultShortcuts;
 
         // @ts-expect-error Electron API only available in Electron
         if (window.electronAPI && window.electronAPI.updateShortcuts) {

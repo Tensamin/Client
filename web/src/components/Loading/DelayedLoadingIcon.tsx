@@ -11,7 +11,9 @@ interface DelayedLoadingIconProps {
   invert?: boolean;
 }
 
-export default function DelayedLoadingIcon({ invert }: DelayedLoadingIconProps) {
+export default function DelayedLoadingIcon({
+  invert,
+}: DelayedLoadingIconProps) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {

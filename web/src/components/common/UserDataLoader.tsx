@@ -1,7 +1,7 @@
 /**
  * UserDataLoader component
  * Wraps components that need user data, handling loading states
- * 
+ *
  * Renamed from Wrap.tsx for clarity
  */
 

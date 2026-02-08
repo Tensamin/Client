@@ -29,7 +29,9 @@ export default function ClearStorageButton() {
         <AlertDialogHeader>
           <AlertDialogTitle>{"Clear Storage"}</AlertDialogTitle>
           <AlertDialogDescription>
-            {"This will clear all your settings and log you out of your account."}
+            {
+              "This will clear all your settings and log you out of your account."
+            }
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

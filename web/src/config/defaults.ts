@@ -40,14 +40,14 @@ export const uiDefaults = {
 export const defaults = {
   // Audio
   ...audioDefaults,
-  
+
   // Screen share (prefixed for storage keys)
   call_screenShare_audio: screenShareDefaults.audio,
   call_screenShare_audioSource: screenShareDefaults.audioSource,
   call_screenShare_width: screenShareDefaults.width,
   call_screenShare_height: screenShareDefaults.height,
   call_screenShare_frameRate: screenShareDefaults.frameRate,
-  
+
   // Chat
   ...chatDefaults,
 } as const;

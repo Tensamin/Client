@@ -122,8 +122,8 @@ export default function Page() {
                   </code>
                 </li>
                 <li>
-                  <strong>KDE/GNOME:</strong> Use the keyboard shortcuts settings
-                  to add a custom shortcut running the command
+                  <strong>KDE/GNOME:</strong> Use the keyboard shortcuts
+                  settings to add a custom shortcut running the command
                 </li>
               </ul>
             </AlertDescription>

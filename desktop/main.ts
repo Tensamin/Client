@@ -213,16 +213,14 @@ if (!gotTheLock) {
       _workingDirectory: string,
       additionalData: unknown,
     ) => {
-      const data = additionalData as { shortcutAction?: string | null } | undefined;
-      
+      const data = additionalData as
+        | { shortcutAction?: string | null }
+        | undefined;
+
       // If the second instance was launched with --shortcut, trigger it
       if (data?.shortcutAction && mainWindow) {
-        console.log(
-          `[CLI] Triggering shortcut action: ${data.shortcutAction}`,
-        );
-        mainWindow.webContents.send(
-          `shortcut:${data.shortcutAction}`,
-        );
+        console.log(`[CLI] Triggering shortcut action: ${data.shortcutAction}`);
+        mainWindow.webContents.send(`shortcut:${data.shortcutAction}`);
       }
 
       // Focus the main window if it exists
@@ -523,11 +521,7 @@ app.whenReady().then(() => {
   protocol.handle("app", (request) => {
     const { pathname } = new URL(request.url);
 
-    const filePath = path.join(
-      app.getAppPath(),
-      "public",
-      decodeURIComponent(pathname),
-    );
+    const filePath = path.join(DIRNAME, decodeURIComponent(pathname));
 
     return net.fetch(pathToFileURL(filePath).toString());
   });

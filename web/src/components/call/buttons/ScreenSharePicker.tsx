@@ -51,8 +51,11 @@ export default function ScreenSharePicker({
 }: ScreenSharePickerProps) {
   const screens = sources.filter((s) => s.id.startsWith("screen:"));
   const apps = sources.filter((s) => s.id.startsWith("window:"));
-  const [selectedVideoSource, setSelectedVideoSource] = useState<string | null>(null);
-  const [selectedAudioSource, setSelectedAudioSource] = useState<string>("system");
+  const [selectedVideoSource, setSelectedVideoSource] = useState<string | null>(
+    null,
+  );
+  const [selectedAudioSource, setSelectedAudioSource] =
+    useState<string>("system");
   const [includeAudio, setIncludeAudio] = useState<boolean>(true);
 
   // Auto-select video source if only one available
@@ -72,7 +75,7 @@ export default function ScreenSharePicker({
 
   const handleShare = () => {
     if (selectedVideoSource) {
-      const audioId = includeAudio ? (selectedAudioSource || "system") : "none";
+      const audioId = includeAudio ? selectedAudioSource || "system" : "none";
       onSelect(selectedVideoSource, audioId, includeAudio);
       setSelectedVideoSource(null);
       setSelectedAudioSource("system");
@@ -169,7 +172,10 @@ export default function ScreenSharePicker({
                 checked={includeAudio}
                 onCheckedChange={(checked) => setIncludeAudio(checked === true)}
               />
-              <Label htmlFor="include-audio" className="text-sm font-medium cursor-pointer">
+              <Label
+                htmlFor="include-audio"
+                className="text-sm font-medium cursor-pointer"
+              >
                 Include Audio
               </Label>
               <span className="text-xs text-muted-foreground">
@@ -179,7 +185,9 @@ export default function ScreenSharePicker({
 
             {includeAudio && filteredAudioSources.length > 0 && (
               <div className="flex flex-col gap-2 pl-6">
-                <Label className="text-sm text-muted-foreground">Audio Source</Label>
+                <Label className="text-sm text-muted-foreground">
+                  Audio Source
+                </Label>
                 <Select
                   value={selectedAudioSource}
                   onValueChange={setSelectedAudioSource}
@@ -191,9 +199,15 @@ export default function ScreenSharePicker({
                     {filteredAudioSources.map((source) => (
                       <SelectItem key={source.id} value={source.id}>
                         <div className="flex items-center gap-2">
-                          {source.type === "system" && <Icon.Volume2 className="h-4 w-4" />}
-                          {source.type === "pipewire" && <Icon.AudioLines className="h-4 w-4" />}
-                          {source.type === "monitor" && <Icon.Monitor className="h-4 w-4" />}
+                          {source.type === "system" && (
+                            <Icon.Volume2 className="h-4 w-4" />
+                          )}
+                          {source.type === "pipewire" && (
+                            <Icon.AudioLines className="h-4 w-4" />
+                          )}
+                          {source.type === "monitor" && (
+                            <Icon.Monitor className="h-4 w-4" />
+                          )}
                           <span>{source.name}</span>
                         </div>
                       </SelectItem>
@@ -201,7 +215,8 @@ export default function ScreenSharePicker({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Note: Changing the audio source requires restarting the screen share.
+                  Note: Changing the audio source requires restarting the screen
+                  share.
                 </p>
               </div>
             )}

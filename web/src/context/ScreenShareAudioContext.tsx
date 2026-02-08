@@ -32,7 +32,8 @@ export interface ScreenShareAudioMuteState {
   mutedParticipants: Record<string, boolean>;
 }
 
-export interface ScreenShareAudioContextValue extends ScreenShareAudioMuteState {
+export interface ScreenShareAudioContextValue
+  extends ScreenShareAudioMuteState {
   /** Mute a specific participant's screen share audio (viewer-side only) */
   muteParticipantAudio: (participantIdentity: string) => void;
   /** Unmute a specific participant's screen share audio */
@@ -49,15 +50,22 @@ export interface ScreenShareAudioContextValue extends ScreenShareAudioMuteState 
 // Context
 // ============================================================================
 
-const ScreenShareAudioContext = createContext<ScreenShareAudioContextValue | null>(null);
+const ScreenShareAudioContext =
+  createContext<ScreenShareAudioContextValue | null>(null);
 
 // ============================================================================
 // Provider
 // ============================================================================
 
-export function ScreenShareAudioProvider({ children }: { children: ReactNode }) {
+export function ScreenShareAudioProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   // Track muted participants (viewer-side muting)
-  const [mutedParticipants, setMutedParticipants] = useState<Record<string, boolean>>({});
+  const [mutedParticipants, setMutedParticipants] = useState<
+    Record<string, boolean>
+  >({});
 
   // Get all screen share audio tracks for managing volume
   const screenShareAudioTracks = useTracks([Track.Source.ScreenShareAudio], {
@@ -74,10 +82,13 @@ export function ScreenShareAudioProvider({ children }: { children: ReactNode }) 
     (participantIdentity: string, muted: boolean) => {
       // Find the audio track for this participant
       const trackRef = screenShareAudioTracks.find(
-        (t) => t.participant.identity === participantIdentity
+        (t) => t.participant.identity === participantIdentity,
       );
 
-      if (trackRef?.publication && trackRef.publication instanceof RemoteTrackPublication) {
+      if (
+        trackRef?.publication &&
+        trackRef.publication instanceof RemoteTrackPublication
+      ) {
         // For remote tracks, we can control the volume/mute state
         const track = trackRef.publication.track;
         if (track) {
@@ -88,7 +99,7 @@ export function ScreenShareAudioProvider({ children }: { children: ReactNode }) 
             if (audio.srcObject instanceof MediaStream) {
               const audioTracks = audio.srcObject.getAudioTracks();
               const matchingTrack = audioTracks.find(
-                (t) => t.id === track.mediaStreamTrack?.id
+                (t) => t.id === track.mediaStreamTrack?.id,
               );
               if (matchingTrack) {
                 audio.muted = muted;
@@ -99,7 +110,7 @@ export function ScreenShareAudioProvider({ children }: { children: ReactNode }) 
         }
       }
     },
-    [screenShareAudioTracks]
+    [screenShareAudioTracks],
   );
 
   /**
@@ -116,10 +127,10 @@ export function ScreenShareAudioProvider({ children }: { children: ReactNode }) 
         "ScreenShareAudio",
         "Muted participant audio",
         { participantIdentity },
-        "purple"
+        "purple",
       );
     },
-    [applyMuteState]
+    [applyMuteState],
   );
 
   /**
@@ -137,10 +148,10 @@ export function ScreenShareAudioProvider({ children }: { children: ReactNode }) 
         "ScreenShareAudio",
         "Unmuted participant audio",
         { participantIdentity },
-        "purple"
+        "purple",
       );
     },
-    [applyMuteState]
+    [applyMuteState],
   );
 
   /**
@@ -161,7 +172,7 @@ export function ScreenShareAudioProvider({ children }: { children: ReactNode }) 
         }
       });
     },
-    [applyMuteState]
+    [applyMuteState],
   );
 
   /**
@@ -171,7 +182,7 @@ export function ScreenShareAudioProvider({ children }: { children: ReactNode }) 
     (participantIdentity: string) => {
       return mutedParticipants[participantIdentity] ?? false;
     },
-    [mutedParticipants]
+    [mutedParticipants],
   );
 
   /**
@@ -181,7 +192,7 @@ export function ScreenShareAudioProvider({ children }: { children: ReactNode }) 
     (participantIdentity: string) => {
       return mutedParticipants[participantIdentity] ? 0 : 1;
     },
-    [mutedParticipants]
+    [mutedParticipants],
   );
 
   // Reapply mute states when screen share audio tracks change
@@ -216,7 +227,7 @@ export function ScreenShareAudioProvider({ children }: { children: ReactNode }) 
       toggleParticipantAudioMute,
       isParticipantAudioMuted,
       getParticipantVolume,
-    ]
+    ],
   );
 
   return (
@@ -234,7 +245,7 @@ export function useScreenShareAudioContext(): ScreenShareAudioContextValue {
   const context = useContext(ScreenShareAudioContext);
   if (!context) {
     throw new Error(
-      "useScreenShareAudioContext must be used within ScreenShareAudioProvider"
+      "useScreenShareAudioContext must be used within ScreenShareAudioProvider",
     );
   }
   return context;

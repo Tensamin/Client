@@ -14,7 +14,10 @@ interface CameraButtonProps {
   className?: string;
 }
 
-export default function CameraButton({ ghostMode, className }: CameraButtonProps) {
+export default function CameraButton({
+  ghostMode,
+  className,
+}: CameraButtonProps) {
   const { localParticipant, isCameraEnabled } = useLocalParticipant();
   const [loading, setLoading] = useState(false);
 

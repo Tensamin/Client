@@ -10,7 +10,10 @@ interface DeafenButtonProps {
   className?: string;
 }
 
-export default function DeafenButton({ ghostMode, className }: DeafenButtonProps) {
+export default function DeafenButton({
+  ghostMode,
+  className,
+}: DeafenButtonProps) {
   const { isDeafened, toggleDeafen } = useSubCallContext();
 
   return (

@@ -1,7 +1,7 @@
 /**
  * WebSocket message type definitions
  * TypeScript types for all WebSocket communication payloads
- * 
+ *
  * Renamed from communicationValues.ts for clarity
  */
 

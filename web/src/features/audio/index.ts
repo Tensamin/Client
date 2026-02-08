@@ -3,7 +3,12 @@
  */
 
 // Pipeline
-export { audioPipeline, audioService, AudioPipelineService, type ProcessingConfig } from "./pipeline";
+export {
+  audioPipeline,
+  audioService,
+  AudioPipelineService,
+  type ProcessingConfig,
+} from "./pipeline";
 
 // Sound player
 export { playSound, preloadSound, type SoundName } from "./soundPlayer";

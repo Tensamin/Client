@@ -41,13 +41,55 @@ interface ScreenShareButtonProps {
 }
 
 const QUALITY_PRESETS = [
-  { label: "480p / 30", width: 854, height: 480, frameRate: 30, premium: false },
-  { label: "720p / 60", width: 1280, height: 720, frameRate: 60, premium: false },
-  { label: "1080p / 30", width: 1920, height: 1080, frameRate: 30, premium: false },
-  { label: "1080p / 60", width: 1920, height: 1080, frameRate: 60, premium: true },
-  { label: "1080p / 120", width: 1920, height: 1080, frameRate: 120, premium: true },
-  { label: "1440p / 60", width: 2560, height: 1440, frameRate: 60, premium: true },
-  { label: "1440p / 120", width: 2560, height: 1440, frameRate: 120, premium: true },
+  {
+    label: "480p / 30",
+    width: 854,
+    height: 480,
+    frameRate: 30,
+    premium: false,
+  },
+  {
+    label: "720p / 60",
+    width: 1280,
+    height: 720,
+    frameRate: 60,
+    premium: false,
+  },
+  {
+    label: "1080p / 30",
+    width: 1920,
+    height: 1080,
+    frameRate: 30,
+    premium: false,
+  },
+  {
+    label: "1080p / 60",
+    width: 1920,
+    height: 1080,
+    frameRate: 60,
+    premium: true,
+  },
+  {
+    label: "1080p / 120",
+    width: 1920,
+    height: 1080,
+    frameRate: 120,
+    premium: true,
+  },
+  {
+    label: "1440p / 60",
+    width: 2560,
+    height: 1440,
+    frameRate: 60,
+    premium: true,
+  },
+  {
+    label: "1440p / 120",
+    width: 2560,
+    height: 1440,
+    frameRate: 120,
+    premium: true,
+  },
 ];
 
 export default function ScreenShareButton({
@@ -67,11 +109,14 @@ export default function ScreenShareButton({
   // Defaults
   const dataWithDefaults = {
     call_screenShare_width:
-      (data.call_screenShare_width as number) ?? defaults.call_screenShare_width,
+      (data.call_screenShare_width as number) ??
+      defaults.call_screenShare_width,
     call_screenShare_height:
-      (data.call_screenShare_height as number) ?? defaults.call_screenShare_height,
+      (data.call_screenShare_height as number) ??
+      defaults.call_screenShare_height,
     call_screenShare_frameRate:
-      (data.call_screenShare_frameRate as number) ?? defaults.call_screenShare_frameRate,
+      (data.call_screenShare_frameRate as number) ??
+      defaults.call_screenShare_frameRate,
   };
 
   // Apply constraints during screen share
@@ -201,7 +246,12 @@ export default function ScreenShareButton({
             let audioStream: MediaStream | null = null;
 
             if (audioId === "system") {
-              debugLog("ScreenShare", "Capturing system audio", { videoId }, "purple");
+              debugLog(
+                "ScreenShare",
+                "Capturing system audio",
+                { videoId },
+                "purple",
+              );
               audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                   mandatory: {
@@ -212,13 +262,23 @@ export default function ScreenShareButton({
                 video: false,
               } as MediaStreamConstraints);
             } else if (audioId.startsWith("pipewire:") || audioId.length > 20) {
-              debugLog("ScreenShare", "Capturing PipeWire/device audio", { audioId }, "purple");
+              debugLog(
+                "ScreenShare",
+                "Capturing PipeWire/device audio",
+                { audioId },
+                "purple",
+              );
               audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: { deviceId: { exact: audioId } },
                 video: false,
               } as MediaStreamConstraints);
             } else {
-              debugLog("ScreenShare", "Capturing other audio source", { audioId }, "purple");
+              debugLog(
+                "ScreenShare",
+                "Capturing other audio source",
+                { audioId },
+                "purple",
+              );
               audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                   mandatory: {
@@ -238,22 +298,45 @@ export default function ScreenShareButton({
                 await localParticipant.publishTrack(localAudioTrack, {
                   source: Track.Source.ScreenShareAudio,
                 });
-                debugLog("ScreenShare", "Audio track published successfully", undefined, "green");
+                debugLog(
+                  "ScreenShare",
+                  "Audio track published successfully",
+                  undefined,
+                  "green",
+                );
               } else {
-                debugLog("ScreenShare", "No audio tracks captured", undefined, "yellow");
-                toast.error("Audio capture unavailable for this source. Continuing with video only.", {
-                  description: "Try selecting a different audio source.",
-                  duration: 5000,
-                });
+                debugLog(
+                  "ScreenShare",
+                  "No audio tracks captured",
+                  undefined,
+                  "yellow",
+                );
+                toast.error(
+                  "Audio capture unavailable for this source. Continuing with video only.",
+                  {
+                    description: "Try selecting a different audio source.",
+                    duration: 5000,
+                  },
+                );
               }
             }
           } catch (audioErr) {
-            const errorMessage = audioErr instanceof Error ? audioErr.message : String(audioErr);
-            debugLog("ScreenShare", "Audio capture failed", { error: errorMessage }, "red");
+            const errorMessage =
+              audioErr instanceof Error ? audioErr.message : String(audioErr);
+            debugLog(
+              "ScreenShare",
+              "Audio capture failed",
+              { error: errorMessage },
+              "red",
+            );
 
             let description = "Check audio source settings.";
-            if (errorMessage.includes("Permission denied") || errorMessage.includes("NotAllowedError")) {
-              description = "Permission denied. Check your system privacy settings.";
+            if (
+              errorMessage.includes("Permission denied") ||
+              errorMessage.includes("NotAllowedError")
+            ) {
+              description =
+                "Permission denied. Check your system privacy settings.";
             } else if (errorMessage.includes("NotFoundError")) {
               description = "Audio device not found. Ensure audio is playing.";
             } else if (errorMessage.includes("NotReadableError")) {
@@ -266,11 +349,21 @@ export default function ScreenShareButton({
             });
           }
         } else {
-          debugLog("ScreenShare", "Audio disabled by user choice", undefined, "purple");
+          debugLog(
+            "ScreenShare",
+            "Audio disabled by user choice",
+            undefined,
+            "purple",
+          );
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        debugLog("ScreenShare", "Failed to share screen", { error: errorMessage }, "red");
+        debugLog(
+          "ScreenShare",
+          "Failed to share screen",
+          { error: errorMessage },
+          "red",
+        );
         toast.error("Failed to share screen");
       }
     },
@@ -286,7 +379,9 @@ export default function ScreenShareButton({
   useEffect(() => {
     let mounted = true;
     if (!getSources) {
-      return () => { mounted = false; };
+      return () => {
+        mounted = false;
+      };
     }
 
     setLoading(true);
@@ -296,12 +391,16 @@ export default function ScreenShareButton({
       getAudioSources?: () => Promise<AudioSource[]>;
     };
 
-    const electronApi = (window as typeof window & { electronAPI?: ElectronAPI }).electronAPI;
+    const electronApi = (
+      window as typeof window & { electronAPI?: ElectronAPI }
+    ).electronAPI;
 
     if (!electronApi?.getScreenSources || !electronApi?.getAudioSources) {
       toast.error("Screen capture picker is unavailable in this environment.");
       setLoading(false);
-      return () => { mounted = false; };
+      return () => {
+        mounted = false;
+      };
     }
 
     const loadSources = async () => {
@@ -350,7 +449,9 @@ export default function ScreenShareButton({
 
     loadSources();
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [handleElectronShare, getSources]);
 
   return (
@@ -427,12 +528,17 @@ export default function ScreenShareButton({
                           set("call_screenShare_width", preset.width);
                           set("call_screenShare_height", preset.height);
                           set("call_screenShare_frameRate", preset.frameRate);
-                          toast.success(`Screen share quality ${preset.label} saved`);
+                          toast.success(
+                            `Screen share quality ${preset.label} saved`,
+                          );
                         }}
                       >
                         {preset.label}
                         {isPremium && (
-                          <Icon.Gem size={15} className="ml-auto text-blue-300" />
+                          <Icon.Gem
+                            size={15}
+                            className="ml-auto text-blue-300"
+                          />
                         )}
                       </MenubarRadioItem>
                     );

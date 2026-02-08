@@ -138,7 +138,9 @@ interface ElectronWindow extends Window {
  */
 export async function getAudioSources(): Promise<AudioSource[]> {
   const platform = detectPlatform();
-  const sources: AudioSource[] = [{ id: "none", name: "No Audio", type: "none" }];
+  const sources: AudioSource[] = [
+    { id: "none", name: "No Audio", type: "none" },
+  ];
 
   try {
     if (platform === "web") {
@@ -177,7 +179,10 @@ export async function getAudioSources(): Promise<AudioSource[]> {
       sources.push(...monitorDevices);
     }
   } catch (error) {
-    console.error("[SystemAudioCapture] Failed to enumerate audio sources:", error);
+    console.error(
+      "[SystemAudioCapture] Failed to enumerate audio sources:",
+      error,
+    );
     // Return at least the basic sources
   }
 
@@ -236,7 +241,10 @@ async function getLinuxMonitorDevices(): Promise<AudioSource[]> {
       }
     }
   } catch (error) {
-    console.warn("[SystemAudioCapture] Failed to enumerate Linux monitor devices:", error);
+    console.warn(
+      "[SystemAudioCapture] Failed to enumerate Linux monitor devices:",
+      error,
+    );
   }
 
   return sources;
@@ -253,7 +261,7 @@ async function getLinuxMonitorDevices(): Promise<AudioSource[]> {
  * If capture fails, it returns an error and lets the caller decide how to proceed.
  */
 export async function captureSystemAudio(
-  options: CaptureOptions
+  options: CaptureOptions,
 ): Promise<SystemAudioCaptureResult> {
   const { sourceId, videoSourceId } = options;
 
@@ -320,7 +328,7 @@ export async function captureSystemAudio(
  */
 async function captureMacOSAudio(
   sourceId: string,
-  videoSourceId?: string
+  videoSourceId?: string,
 ): Promise<SystemAudioCaptureResult> {
   try {
     // System audio capture on macOS requires the video source ID
@@ -331,7 +339,6 @@ async function captureMacOSAudio(
       // Capture system audio using desktop capturer constraints
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          
           mandatory: {
             chromeMediaSource: "desktop",
             chromeMediaSourceId: videoSourceId,
@@ -345,7 +352,8 @@ async function captureMacOSAudio(
         return {
           stream: null,
           track: null,
-          error: "No audio track captured. macOS may require screen recording permission.",
+          error:
+            "No audio track captured. macOS may require screen recording permission.",
           success: false,
         };
       }
@@ -361,7 +369,6 @@ async function captureMacOSAudio(
     // For other source types, try device-based capture
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
-        
         mandatory: {
           chromeMediaSource: "desktop",
           chromeMediaSourceId: captureSourceId,
@@ -390,11 +397,15 @@ async function captureMacOSAudio(
     const message = error instanceof Error ? error.message : String(error);
 
     // Check for specific macOS permission errors
-    if (message.includes("Permission denied") || message.includes("NotAllowedError")) {
+    if (
+      message.includes("Permission denied") ||
+      message.includes("NotAllowedError")
+    ) {
       return {
         stream: null,
         track: null,
-        error: "Screen recording permission required. Enable it in System Preferences > Security & Privacy.",
+        error:
+          "Screen recording permission required. Enable it in System Preferences > Security & Privacy.",
         success: false,
       };
     }
@@ -417,14 +428,13 @@ async function captureMacOSAudio(
  */
 async function captureWindowsAudio(
   sourceId: string,
-  videoSourceId?: string
+  videoSourceId?: string,
 ): Promise<SystemAudioCaptureResult> {
   try {
     if (sourceId === "system" && videoSourceId) {
       // Capture entire system audio using the video source
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          
           mandatory: {
             chromeMediaSource: "desktop",
             chromeMediaSourceId: videoSourceId,
@@ -454,7 +464,6 @@ async function captureWindowsAudio(
     // For specific audio source
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
-        
         mandatory: {
           chromeMediaSource: "desktop",
           chromeMediaSourceId: sourceId,
@@ -487,7 +496,8 @@ async function captureWindowsAudio(
       return {
         stream: null,
         track: null,
-        error: "Audio device is busy or unavailable. Try closing other applications using audio.",
+        error:
+          "Audio device is busy or unavailable. Try closing other applications using audio.",
         success: false,
       };
     }
@@ -511,7 +521,7 @@ async function captureWindowsAudio(
  */
 async function captureLinuxAudio(
   sourceId: string,
-  videoSourceId?: string
+  videoSourceId?: string,
 ): Promise<SystemAudioCaptureResult> {
   try {
     // Handle PipeWire-specific sources
@@ -546,7 +556,6 @@ async function captureLinuxAudio(
     if (sourceId === "system" && videoSourceId) {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          
           mandatory: {
             chromeMediaSource: "desktop",
             chromeMediaSourceId: videoSourceId,
@@ -560,7 +569,8 @@ async function captureLinuxAudio(
         return {
           stream: null,
           track: null,
-          error: "System audio not available. You may need to configure PipeWire/PulseAudio.",
+          error:
+            "System audio not available. You may need to configure PipeWire/PulseAudio.",
           success: false,
         };
       }
@@ -605,7 +615,6 @@ async function captureLinuxAudio(
     // Fallback: Try desktop capturer
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
-        
         mandatory: {
           chromeMediaSource: "desktop",
           chromeMediaSourceId: sourceId,
@@ -619,7 +628,8 @@ async function captureLinuxAudio(
       return {
         stream: null,
         track: null,
-        error: "No audio track available. Check your PipeWire/PulseAudio configuration.",
+        error:
+          "No audio track available. Check your PipeWire/PulseAudio configuration.",
         success: false,
       };
     }
@@ -634,11 +644,15 @@ async function captureLinuxAudio(
     const message = error instanceof Error ? error.message : String(error);
 
     // Provide helpful Linux-specific error messages
-    if (message.includes("NotFoundError") || message.includes("Requested device not found")) {
+    if (
+      message.includes("NotFoundError") ||
+      message.includes("Requested device not found")
+    ) {
       return {
         stream: null,
         track: null,
-        error: "Audio device not found. If using PipeWire, ensure the application is outputting audio first.",
+        error:
+          "Audio device not found. If using PipeWire, ensure the application is outputting audio first.",
         success: false,
       };
     }
@@ -647,7 +661,8 @@ async function captureLinuxAudio(
       return {
         stream: null,
         track: null,
-        error: "Audio permission denied. Check your browser/system permissions.",
+        error:
+          "Audio permission denied. Check your browser/system permissions.",
         success: false,
       };
     }
@@ -669,7 +684,9 @@ async function captureLinuxAudio(
  * - Firefox and Safari have limited or no system audio support
  * - Audio capture is tied to the display/window being shared
  */
-async function captureWebAudio(sourceId: string): Promise<SystemAudioCaptureResult> {
+async function captureWebAudio(
+  sourceId: string,
+): Promise<SystemAudioCaptureResult> {
   try {
     // Web browsers use getDisplayMedia for screen share with audio
     // The audio is captured as part of the display media request
@@ -681,7 +698,8 @@ async function captureWebAudio(sourceId: string): Promise<SystemAudioCaptureResu
     return {
       stream: null,
       track: null,
-      error: "Web audio capture should be handled through getDisplayMedia options.",
+      error:
+        "Web audio capture should be handled through getDisplayMedia options.",
       success: false,
     };
   } catch (error) {
@@ -721,7 +739,9 @@ export function isPermissionError(error: string): boolean {
     "access",
   ];
   const lowerError = error.toLowerCase();
-  return permissionKeywords.some((keyword) => lowerError.includes(keyword.toLowerCase()));
+  return permissionKeywords.some((keyword) =>
+    lowerError.includes(keyword.toLowerCase()),
+  );
 }
 
 /**

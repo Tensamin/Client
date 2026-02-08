@@ -58,7 +58,8 @@ function keyEventToAccelerator(e: KeyboardEvent): string | null {
   else if (key === "PageUp") keyName = "PageUp";
   else if (key === "PageDown") keyName = "PageDown";
   else if (key === "Insert") keyName = "Insert";
-  else if (key.startsWith("F") && /^F\d+$/.test(key)) keyName = key; // F1-F12
+  else if (key.startsWith("F") && /^F\d+$/.test(key))
+    keyName = key; // F1-F12
   else if (key.length === 1) keyName = key.toUpperCase(); // Single characters
 
   parts.push(keyName);
@@ -75,9 +76,11 @@ function acceleratorToDisplay(accelerator: string): string[] {
   if (!accelerator) return [];
 
   return accelerator.split("+").map((part) => {
-    if (part === "CmdOrCtrl") return navigator.platform.includes("Mac") ? "⌘" : "Ctrl";
+    if (part === "CmdOrCtrl")
+      return navigator.platform.includes("Mac") ? "⌘" : "Ctrl";
     if (part === "Alt") return navigator.platform.includes("Mac") ? "⌥" : "Alt";
-    if (part === "Shift") return navigator.platform.includes("Mac") ? "⇧" : "Shift";
+    if (part === "Shift")
+      return navigator.platform.includes("Mac") ? "⇧" : "Shift";
     if (part === "Space") return "␣";
     return part;
   });

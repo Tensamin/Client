@@ -19,7 +19,12 @@
  */
 
 import { useLocalParticipant } from "@livekit/components-react";
-import { LocalAudioTrack, LocalVideoTrack, Track, VideoPresets } from "livekit-client";
+import {
+  LocalAudioTrack,
+  LocalVideoTrack,
+  Track,
+  VideoPresets,
+} from "livekit-client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -62,7 +67,7 @@ export interface ScreenShareAudioActions {
   /** Start screen share with optional audio */
   startScreenShareWithAudio: (
     videoSourceId: string,
-    videoConstraints: ScreenShareVideoConstraints
+    videoConstraints: ScreenShareVideoConstraints,
   ) => Promise<boolean>;
   /** Stop screen share and audio */
   stopScreenShare: () => Promise<void>;
@@ -76,7 +81,8 @@ export interface ScreenShareVideoConstraints {
   frameRate: number;
 }
 
-export type UseScreenShareAudioReturn = ScreenShareAudioState & ScreenShareAudioActions;
+export type UseScreenShareAudioReturn = ScreenShareAudioState &
+  ScreenShareAudioActions;
 
 // ============================================================================
 // Hook Implementation
@@ -89,9 +95,11 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
   const [audioSources, setAudioSources] = useState<AudioSource[]>([
     { id: "none", name: "No Audio", type: "none" },
   ]);
-  const [selectedAudioSource, setSelectedAudioSource] = useState<string>("none");
+  const [selectedAudioSource, setSelectedAudioSource] =
+    useState<string>("none");
   const [isAudioEnabled, setIsAudioEnabled] = useState<boolean>(false);
-  const [isLoadingAudioSources, setIsLoadingAudioSources] = useState<boolean>(false);
+  const [isLoadingAudioSources, setIsLoadingAudioSources] =
+    useState<boolean>(false);
 
   // Refs for tracking published tracks
   const screenShareVideoTrackRef = useRef<LocalVideoTrack | null>(null);
@@ -99,7 +107,10 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
 
   // Derived state
   const platform = useMemo(() => detectPlatform(), []);
-  const isAudioCaptureAvailable = useMemo(() => isSystemAudioCaptureAvailable(), []);
+  const isAudioCaptureAvailable = useMemo(
+    () => isSystemAudioCaptureAvailable(),
+    [],
+  );
 
   // ============================================================================
   // Audio Source Management
@@ -117,7 +128,7 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
         "ScreenShareAudio",
         "Loaded audio sources",
         { count: sources.length, sources },
-        "purple"
+        "purple",
       );
     } catch (error) {
       console.error("[ScreenShareAudio] Failed to load audio sources:", error);
@@ -140,14 +151,14 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
 
   /**
    * Start screen sharing with optional system audio.
-   * 
+   *
    * IMPORTANT: If audio capture fails, we continue with video-only.
    * We do NOT fall back to microphone to avoid users hearing audio twice.
    */
   const startScreenShareWithAudio = useCallback(
     async (
       videoSourceId: string,
-      videoConstraints: ScreenShareVideoConstraints
+      videoConstraints: ScreenShareVideoConstraints,
     ): Promise<boolean> => {
       if (!localParticipant) {
         toast.error("Not connected to call");
@@ -160,7 +171,7 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
           "ScreenShareAudio",
           "Starting screen share",
           { videoSourceId, videoConstraints, audioEnabled: isAudioEnabled },
-          "purple"
+          "purple",
         );
 
         const videoStream = await navigator.mediaDevices.getUserMedia({
@@ -198,7 +209,12 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
         });
 
         screenShareVideoTrackRef.current = localVideoTrack;
-        debugLog("ScreenShareAudio", "Video track published", undefined, "green");
+        debugLog(
+          "ScreenShareAudio",
+          "Video track published",
+          undefined,
+          "green",
+        );
 
         // Step 3: Capture and publish audio (if enabled)
         if (isAudioEnabled && selectedAudioSource !== "none") {
@@ -219,7 +235,7 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
                 "ScreenShareAudio",
                 "Audio track published",
                 { sourceId: selectedAudioSource },
-                "green"
+                "green",
               );
             } else if (audioResult.error) {
               // Audio failed, but continue with video-only
@@ -228,7 +244,9 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
           } catch (audioError) {
             // Audio failed, but continue with video-only
             const errorMessage =
-              audioError instanceof Error ? audioError.message : String(audioError);
+              audioError instanceof Error
+                ? audioError.message
+                : String(audioError);
             handleAudioCaptureError(errorMessage);
           }
         }
@@ -241,7 +259,9 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
         // Clean up any partial state
         if (screenShareVideoTrackRef.current) {
           try {
-            await localParticipant.unpublishTrack(screenShareVideoTrackRef.current);
+            await localParticipant.unpublishTrack(
+              screenShareVideoTrackRef.current,
+            );
             screenShareVideoTrackRef.current.stop();
           } catch {
             // Ignore cleanup errors
@@ -252,7 +272,7 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
         return false;
       }
     },
-    [localParticipant, isAudioEnabled, selectedAudioSource]
+    [localParticipant, isAudioEnabled, selectedAudioSource],
   );
 
   /**
@@ -265,10 +285,15 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
       // Stop audio track
       if (screenShareAudioTrackRef.current) {
         try {
-          await localParticipant.unpublishTrack(screenShareAudioTrackRef.current);
+          await localParticipant.unpublishTrack(
+            screenShareAudioTrackRef.current,
+          );
           screenShareAudioTrackRef.current.stop();
         } catch (error) {
-          console.error("[ScreenShareAudio] Error stopping audio track:", error);
+          console.error(
+            "[ScreenShareAudio] Error stopping audio track:",
+            error,
+          );
         }
         screenShareAudioTrackRef.current = null;
       }
@@ -276,10 +301,15 @@ export function useScreenShareAudio(): UseScreenShareAudioReturn {
       // Stop video track
       if (screenShareVideoTrackRef.current) {
         try {
-          await localParticipant.unpublishTrack(screenShareVideoTrackRef.current);
+          await localParticipant.unpublishTrack(
+            screenShareVideoTrackRef.current,
+          );
           screenShareVideoTrackRef.current.stop();
         } catch (error) {
-          console.error("[ScreenShareAudio] Error stopping video track:", error);
+          console.error(
+            "[ScreenShareAudio] Error stopping video track:",
+            error,
+          );
         }
         screenShareVideoTrackRef.current = null;
       }

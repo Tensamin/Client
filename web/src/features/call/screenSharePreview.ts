@@ -1,7 +1,7 @@
 /**
  * Screen share preview management
  * Handles capturing and broadcasting screen share preview images
- * 
+ *
  * Extracted from context/call.tsx
  */
 
