@@ -327,7 +327,7 @@ export function SocketProvider({
           }
 
           send("challenge_response", {
-            challenge: solvedChallenge.message,
+            challenge: btoa(solvedChallenge.message),
           })
             .then(() => {
               setIdentified(true);
