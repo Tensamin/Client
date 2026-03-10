@@ -28,7 +28,7 @@
         "@tensamin/core-user": "workspace:*",
         "@tensamin/markdown": "workspace:*",
         "@tensamin/shared": "workspace:*",
-        "@tensamin/ttp": "git+https://github.com/Tensamin/TTP.git",
+        "@tensamin/ttp": "workspace:*",
         "@tensamin/ui": "workspace:*",
         "lucide-solid": "^0.564.0",
         "solid-js": "^1.9.11",
@@ -53,7 +53,7 @@
         "@codemirror/commands": "^6.10.2",
         "@codemirror/lang-markdown": "^6.5.0",
         "@codemirror/state": "^6.5.4",
-        "@codemirror/view": "^6.39.16",
+        "@codemirror/view": "^6.39.15",
         "@tensamin/ui": "workspace:*",
         "solid-js": "^1.9.11",
       },
@@ -67,12 +67,28 @@
         "solid-js": "^1.9.11",
       },
     },
+    "packages/core/ttp": {
+      "name": "@tensamin/ttp",
+      "version": "0.0.0",
+      "dependencies": {
+        "@solidjs/router": "^0.15.4",
+        "@tensamin/core-crypto": "workspace:*",
+        "@tensamin/core-storage": "workspace:*",
+        "@tensamin/shared": "workspace:*",
+        "@tensamin/ui": "workspace:*",
+        "solid-js": "^1.9.10",
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "eslint": "^10.0.3",
+      },
+    },
     "packages/core/user": {
       "name": "@tensamin/core-user",
       "version": "0.0.0",
       "dependencies": {
         "@tensamin/shared": "workspace:*",
-        "@tensamin/ttp": "git+https://github.com/Tensamin/TTP.git",
+        "@tensamin/ttp": "workspace:*",
         "solid-js": "^1.9.11",
         "zod": "^4.3.6",
       },
@@ -148,7 +164,7 @@
         "@tensamin/core-storage": "workspace:*",
         "@tensamin/core-user": "workspace:*",
         "@tensamin/shared": "workspace:*",
-        "@tensamin/ttp": "git+https://github.com/Tensamin/TTP.git",
+        "@tensamin/ttp": "workspace:*",
         "@tensamin/ui": "workspace:*",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -507,7 +523,7 @@
 
     "@tensamin/shared": ["@tensamin/shared@workspace:packages/shared"],
 
-    "@tensamin/ttp": ["@tensamin/ttp@github:Tensamin/TTP#58a5e2b", { "dependencies": { "@solidjs/router": "^0.15.4", "@tensamin/core-crypto": "workspace:*", "@tensamin/core-storage": "workspace:*", "@tensamin/shared": "workspace:*", "@tensamin/ui": "workspace:*", "solid-js": "^1.9.10", "zod": "^4.3.6" } }, "Tensamin-TTP-58a5e2b"],
+    "@tensamin/ttp": ["@tensamin/ttp@workspace:packages/core/ttp"],
 
     "@tensamin/ui": ["@tensamin/ui@workspace:packages/ui"],
 
@@ -1035,20 +1051,6 @@
 
     "@babel/helper-compilation-targets/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
-    "@codemirror/autocomplete/@codemirror/view": ["@codemirror/view@6.39.15", "", { "dependencies": { "@codemirror/state": "^6.5.0", "crelt": "^1.0.6", "style-mod": "^4.1.0", "w3c-keyname": "^2.2.4" } }, "sha512-aCWjgweIIXLBHh7bY6cACvXuyrZ0xGafjQ2VInjp4RM4gMfscK5uESiNdrH0pE+e1lZr2B4ONGsjchl2KsKZzg=="],
-
-    "@codemirror/commands/@codemirror/view": ["@codemirror/view@6.39.15", "", { "dependencies": { "@codemirror/state": "^6.5.0", "crelt": "^1.0.6", "style-mod": "^4.1.0", "w3c-keyname": "^2.2.4" } }, "sha512-aCWjgweIIXLBHh7bY6cACvXuyrZ0xGafjQ2VInjp4RM4gMfscK5uESiNdrH0pE+e1lZr2B4ONGsjchl2KsKZzg=="],
-
-    "@codemirror/lang-html/@codemirror/view": ["@codemirror/view@6.39.15", "", { "dependencies": { "@codemirror/state": "^6.5.0", "crelt": "^1.0.6", "style-mod": "^4.1.0", "w3c-keyname": "^2.2.4" } }, "sha512-aCWjgweIIXLBHh7bY6cACvXuyrZ0xGafjQ2VInjp4RM4gMfscK5uESiNdrH0pE+e1lZr2B4ONGsjchl2KsKZzg=="],
-
-    "@codemirror/lang-javascript/@codemirror/view": ["@codemirror/view@6.39.15", "", { "dependencies": { "@codemirror/state": "^6.5.0", "crelt": "^1.0.6", "style-mod": "^4.1.0", "w3c-keyname": "^2.2.4" } }, "sha512-aCWjgweIIXLBHh7bY6cACvXuyrZ0xGafjQ2VInjp4RM4gMfscK5uESiNdrH0pE+e1lZr2B4ONGsjchl2KsKZzg=="],
-
-    "@codemirror/lang-markdown/@codemirror/view": ["@codemirror/view@6.39.15", "", { "dependencies": { "@codemirror/state": "^6.5.0", "crelt": "^1.0.6", "style-mod": "^4.1.0", "w3c-keyname": "^2.2.4" } }, "sha512-aCWjgweIIXLBHh7bY6cACvXuyrZ0xGafjQ2VInjp4RM4gMfscK5uESiNdrH0pE+e1lZr2B4ONGsjchl2KsKZzg=="],
-
-    "@codemirror/language/@codemirror/view": ["@codemirror/view@6.39.15", "", { "dependencies": { "@codemirror/state": "^6.5.0", "crelt": "^1.0.6", "style-mod": "^4.1.0", "w3c-keyname": "^2.2.4" } }, "sha512-aCWjgweIIXLBHh7bY6cACvXuyrZ0xGafjQ2VInjp4RM4gMfscK5uESiNdrH0pE+e1lZr2B4ONGsjchl2KsKZzg=="],
-
-    "@codemirror/lint/@codemirror/view": ["@codemirror/view@6.39.15", "", { "dependencies": { "@codemirror/state": "^6.5.0", "crelt": "^1.0.6", "style-mod": "^4.1.0", "w3c-keyname": "^2.2.4" } }, "sha512-aCWjgweIIXLBHh7bY6cACvXuyrZ0xGafjQ2VInjp4RM4gMfscK5uESiNdrH0pE+e1lZr2B4ONGsjchl2KsKZzg=="],
-
     "@corvu/dialog/solid-presence": ["solid-presence@0.2.0", "", { "dependencies": { "@corvu/utils": "~0.4.2" }, "peerDependencies": { "solid-js": "^1.8" } }, "sha512-YM92o+jvpzX3XGaD4rLYmq/Kc2ZVh47GSCLEufHBFQQIurvZTs8SoGJxO8BJGNDxBKdcS8F3dYhW1SDXp4BNjA=="],
 
     "@eslint-community/eslint-utils/eslint-visitor-keys": ["eslint-visitor-keys@3.4.3", "", {}, "sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag=="],
@@ -1066,6 +1068,8 @@
     "@tailwindcss/oxide-wasm32-wasi/@tybys/wasm-util": ["@tybys/wasm-util@0.10.1", "", { "dependencies": { "tslib": "^2.4.0" }, "bundled": true }, "sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg=="],
 
     "@tailwindcss/oxide-wasm32-wasi/tslib": ["tslib@2.8.1", "", { "bundled": true }, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
+
+    "@tensamin/notifications/@tensamin/ttp": ["TTP@github:Tensamin/TTP#42bee9c", {}, "Tensamin-TTP-42bee9c"],
 
     "@typescript-eslint/eslint-plugin/@typescript-eslint/utils": ["@typescript-eslint/utils@8.57.0", "", { "dependencies": { "@eslint-community/eslint-utils": "^4.9.1", "@typescript-eslint/scope-manager": "8.57.0", "@typescript-eslint/types": "8.57.0", "@typescript-eslint/typescript-estree": "8.57.0" }, "peerDependencies": { "eslint": "^8.57.0 || ^9.0.0 || ^10.0.0", "typescript": ">=4.8.4 <6.0.0" } }, "sha512-5iIHvpD3CZe06riAsbNxxreP+MuYgVUsV0n4bwLH//VJmgtt54sQeY2GszntJ4BjYCpMzrfVh2SBnUQTtys2lQ=="],
 

@@ -13,7 +13,7 @@
   "dependencies": {
     "@tensamin/chat": "workspace:*",
     "@tensamin/core-crypto": "workspace:*",
-    "@tensamin/ttp": "git+https://github.com/Tensamin/TTP.git",
+    "@tensamin/ttp": "workspace:*",
     "@tensamin/core-storage": "workspace:*",
     "@tensamin/core-user": "workspace:*",
     "@tensamin/shared": "workspace:*",

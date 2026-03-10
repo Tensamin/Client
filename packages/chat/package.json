@@ -19,7 +19,7 @@
     "@tanstack/solid-query": "^5.90.23",
     "@tanstack/solid-virtual": "^3.13.21",
     "@tensamin/core-crypto": "workspace:*",
-    "@tensamin/ttp": "git+https://github.com/Tensamin/TTP.git",
+    "@tensamin/ttp": "workspace:*",
     "@tensamin/core-storage": "workspace:*",
     "@tensamin/core-user": "workspace:*",
     "@tensamin/markdown": "workspace:*",

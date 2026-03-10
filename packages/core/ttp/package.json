@@ -1,0 +1,29 @@
+{
+  "name": "@tensamin/ttp",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./core": "./src/core.ts",
+    "./context": "./src/context.tsx",
+    "./send": "./src/send.ts",
+    "./values": "./src/values.ts"
+  },
+  "scripts": {
+    "format": "bunx prettier --write .",
+    "lint": "eslint src --ext .ts,.tsx",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@solidjs/router": "^0.15.4",
+    "@tensamin/core-crypto": "workspace:*",
+    "@tensamin/core-storage": "workspace:*",
+    "@tensamin/shared": "workspace:*",
+    "@tensamin/ui": "workspace:*",
+    "solid-js": "^1.9.10",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "eslint": "^10.0.3"
+  }
+}
