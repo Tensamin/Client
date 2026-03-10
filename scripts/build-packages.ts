@@ -34,10 +34,9 @@ for (const fullPath of packageDirs) {
   const entry = fullPath.replace(packagesDir + "/", "");
   console.log(`Building ${entry}...`);
   try {
-    execSync("bun run format", { cwd: fullPath, stdio: "inherit" });
     execSync("bun run build", { cwd: fullPath, stdio: "inherit" });
     console.log(`${entry} built successfully.`);
-  } catch (error) {
+  } catch {
     console.error(`Failed to build ${entry}.`);
     process.exit(1);
   }
