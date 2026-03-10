@@ -1,0 +1,1 @@
+- Calculate message height and pass to virtualizer (-> packages/chat/src/components/input.tsx)

@@ -1,0 +1,33 @@
+{
+  "name": "@tensamin/chat",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./context": "./src/context.tsx",
+    "./screen": "./src/screen.tsx",
+    "./behaviour-conversation": "./src/behaviour/conversation.ts",
+    "./behaviour-community": "./src/behaviour/community.ts"
+  },
+  "scripts": {
+    "format": "bunx prettier --write .",
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@solidjs/router": "^0.15.4",
+    "@tanstack/solid-query": "^5.90.23",
+    "@tanstack/solid-virtual": "^3.13.21",
+    "@tensamin/core-crypto": "workspace:*",
+    "@tensamin/ttp": "git+https://github.com/Tensamin/TTP.git",
+    "@tensamin/core-storage": "workspace:*",
+    "@tensamin/core-user": "workspace:*",
+    "@tensamin/markdown": "workspace:*",
+    "@tensamin/shared": "workspace:*",
+    "@tensamin/ui": "workspace:*",
+    "lucide-solid": "^0.564.0",
+    "solid-js": "^1.9.11",
+    "solid-sonner": "^0.2.8",
+    "zod": "^4.3.6"
+  }
+}

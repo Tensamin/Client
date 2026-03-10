@@ -1,0 +1,22 @@
+{
+  "name": "@tensamin/core-user",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./context": "./src/context.tsx",
+    "./wrapper": "./src/wrapper.tsx",
+    "./values": "./src/values.ts"
+  },
+  "scripts": {
+    "format": "bunx prettier --write .",
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tensamin/ttp": "git+https://github.com/Tensamin/TTP.git",
+    "@tensamin/shared": "workspace:*",
+    "solid-js": "^1.9.11",
+    "zod": "^4.3.6"
+  }
+}

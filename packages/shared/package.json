@@ -1,0 +1,23 @@
+{
+  "name": "@tensamin/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./data": "./src/data.ts",
+    "./log": "./src/log.tsx",
+    "./features/legal/schema": "./src/features/legal/schema.ts",
+    "./features/conversation/schema": "./src/features/conversation/schema.ts"
+  },
+  "scripts": {
+    "format": "bunx prettier --write .",
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "lucide-solid": "^0.564.0",
+    "solid-js": "^1.9.11",
+    "solid-sonner": "^0.2.8",
+    "zod": "^4.3.6"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@tensamin/core-storage",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./context": "./src/context.tsx",
+    "./indexed-db": "./src/indexed-db.ts"
+  },
+  "scripts": {
+    "format": "bunx prettier --write .",
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tensamin/shared": "workspace:*",
+    "@tensamin/ui": "workspace:*",
+    "solid-js": "^1.9.11"
+  }
+}

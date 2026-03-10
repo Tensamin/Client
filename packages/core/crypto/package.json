@@ -1,0 +1,21 @@
+{
+  "name": "@tensamin/core-crypto",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./context": "./src/context.tsx",
+    "./worker": "./src/worker.ts"
+  },
+  "scripts": {
+    "format": "bunx prettier --write .",
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@noble/curves": "^2.0.1",
+    "@tensamin/ui": "workspace:*",
+    "comlink": "^4.4.2",
+    "solid-js": "^1.9.11"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@tensamin/ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./*": "./src/ui/*.tsx",
+    "./screens/*": "./src/screens/*.tsx",
+    "./link": "./src/link.tsx"
+  },
+  "scripts": {
+    "format": "bunx prettier --write .",
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@ark-ui/solid": "^5.34.1",
+    "@corvu/drawer": "^0.2.4",
+    "@corvu/otp-field": "^0.1.4",
+    "@corvu/resizable": "^0.2.5",
+    "@kobalte/core": "^0.13.11",
+    "@tanstack/solid-virtual": "^3.13.21",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk-solid": "^1.1.2",
+    "embla-carousel-solid": "^8.6.0",
+    "lucide-solid": "^0.564.0",
+    "solid-js": "^1.9.11",
+    "solid-sonner": "^0.2.8",
+    "tailwind-merge": "^3.5.0"
+  }
+}

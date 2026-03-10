@@ -1,0 +1,23 @@
+{
+  "name": "@tensamin/markdown",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./text": "./src/text.tsx",
+    "./input": "./src/input.tsx"
+  },
+  "scripts": {
+    "format": "bunx prettier --write .",
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.10.2",
+    "@codemirror/lang-markdown": "^6.5.0",
+    "@codemirror/state": "^6.5.4",
+    "@codemirror/view": "^6.39.16",
+    "@tensamin/ui": "workspace:*",
+    "solid-js": "^1.9.11"
+  }
+}

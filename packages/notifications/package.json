@@ -1,0 +1,22 @@
+{
+  "name": "@tensamin/notifications",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./context": "./src/context.tsx"
+  },
+  "scripts": {
+    "format": "bunx prettier --write .",
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tensamin/ttp": "git+https://github.com/Tensamin/TTP.git",
+    "@solidjs/router": "^0.15.4",
+    "lucide-solid": "^0.564.0",
+    "solid-js": "^1.9.11",
+    "solid-sonner": "^0.2.8",
+    "zod": "^4.3.6"
+  }
+}
