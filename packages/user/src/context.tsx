@@ -3,7 +3,6 @@ import { useSocket } from "@tensamin/ttp/context";
 
 import { socket as schemas } from "@tensamin/shared/data";
 import type z from "zod";
-import { failedUser } from "./values";
 
 export type User = z.infer<typeof schemas.get_user_data.response>;
 
@@ -20,20 +19,17 @@ export default function UserProvider(props: { children: React.ReactNode }) {
 
   async function get(userId: number): Promise<User> {
     if (storageRef.current[userId] === undefined) {
-      try {
-        const userData = await send("get_user_data", { user_id: userId });
+      const userData = await send("get_user_data", { user_id: userId });
 
-        // Temp, add base64 stuff
-        userData.data.avatar = userData.data.avatar
-          ? `data:image/png;base64,${userData.data.avatar}`
-          : undefined;
-        // Temp end
+      // Temp, add base64 stuff
+      userData.data.avatar = userData.data.avatar
+        ? `data:image/png;base64,${userData.data.avatar}`
+        : undefined;
+      // Temp end
 
-        storageRef.current[userId] = userData.data;
-      } catch {
-        storageRef.current[userId] = failedUser;
-      }
+      storageRef.current[userId] = userData.data;
     }
+
     return storageRef.current[userId];
   }
 

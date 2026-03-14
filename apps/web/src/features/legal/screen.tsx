@@ -1,11 +1,7 @@
 import * as React from "react";
 import { useStorage } from "@tensamin/storage/context";
-import { Button } from "@tensamin/ui/button";
-import {
-  Checkbox,
-  CheckboxLabel,
-  CheckboxControl,
-} from "@tensamin/ui/checkbox";
+import { Button } from "@tensamin/ui/cmp/button";
+import { Checkbox } from "@tensamin/ui/cmp/checkbox";
 import { z } from "zod";
 
 import ErrorScreen from "@tensamin/ui/screens/error";
@@ -13,6 +9,7 @@ import ErrorScreen from "@tensamin/ui/screens/error";
 import { legalDocsSchema } from "@tensamin/shared/features/legal/schema";
 import { log } from "@tensamin/shared/log";
 import Link from "@tensamin/ui/link";
+import { Label } from "@tensamin/ui/cmp/label";
 
 export default function Screen(props: { children: React.ReactNode }) {
   const { load, save } = useStorage();
@@ -74,7 +71,13 @@ export default function Screen(props: { children: React.ReactNode }) {
         setErrorDescription(
           "The legal documents data received from the server is invalid. Please try again later.",
         );
-        log(0, "Legal", "red", "Invalid legal documents data", safeCurrent.error);
+        log(
+          0,
+          "Legal",
+          "red",
+          "Invalid legal documents data",
+          safeCurrent.error,
+        );
         return;
       }
 
@@ -213,9 +216,11 @@ export default function Screen(props: { children: React.ReactNode }) {
                 const currentCrashReports = crashReports;
                 const currentUsageData = usageData;
 
-                void save("analytics_crash_reports", currentCrashReports).then(() => {
-                  setCrashReports(currentCrashReports);
-                });
+                void save("analytics_crash_reports", currentCrashReports).then(
+                  () => {
+                    setCrashReports(currentCrashReports);
+                  },
+                );
                 void save("analytics_usage_data", currentUsageData).then(() => {
                   setUsageData(currentUsageData);
                 });
@@ -252,13 +257,13 @@ export function BigCheckbox(props: {
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <Checkbox
-      checked={props.checked}
-      onChange={props.onChange}
-      className="flex items-center space-x-2"
-    >
-      <CheckboxControl className="size-5.5 rounded-md flex items-center justify-center" />
-      <CheckboxLabel className="text-lg">{props.label}</CheckboxLabel>
-    </Checkbox>
+    <div className="flex items-center space-x-2">
+      <Checkbox
+        checked={props.checked}
+        onCheckedChange={props.onChange}
+        className="size-5.5 rounded-md flex items-center justify-center"
+      />
+      <Label className="text-lg">{props.label}</Label>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Button } from "@tensamin/ui/button";
+import { Button } from "@tensamin/ui/cmp/button";
 import { House } from "lucide-react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import * as React from "react";

@@ -5,7 +5,7 @@ import Crypto from "@tensamin/crypto/context";
 
 import LegalWrapper from "@/features/legal/screen";
 
-import { Toaster } from "@tensamin/ui/sonner";
+import { Toaster } from "@tensamin/ui/cmp/sonner";
 
 export default function Layout(props: { children: ReactNode }) {
   return (

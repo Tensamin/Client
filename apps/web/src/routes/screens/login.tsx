@@ -1,5 +1,5 @@
 import Form from "@/components/screens/login/form";
-import { Button } from "@tensamin/ui/button";
+import { Button } from "@tensamin/ui/cmp/button";
 import { Link } from "@tanstack/react-router";
 
 export default function Page() {

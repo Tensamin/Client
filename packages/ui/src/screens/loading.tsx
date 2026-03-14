@@ -2,7 +2,14 @@ import * as React from "react";
 
 const DELAY = 250;
 
-export default function Screen(props: { progress: number }) {
+type ScreenProps = {
+  progress: number;
+  title?: string;
+  description?: string;
+  fullscreen?: boolean;
+};
+
+export default function Screen(props: ScreenProps) {
   const [displayProgress, setDisplayProgress] = React.useState(0);
   const displayProgressRef = React.useRef(0);
 
@@ -41,8 +48,24 @@ export default function Screen(props: { progress: number }) {
     };
   }, [props.progress]);
 
+  const wrapperClass = props.fullscreen
+    ? "fixed inset-0 z-50 bg-background"
+    : "bg-background w-full h-screen";
+
   return (
-    <div className="bg-background w-full h-screen flex flex-col justify-center items-center">
+    <div
+      className={`${wrapperClass} flex flex-col justify-center items-center px-6`}
+    >
+      <h2 className="text-base font-semibold text-foreground">
+        {props.title ?? "Loading"}
+      </h2>
+      {props.description ? (
+        <p className="text-sm text-muted-foreground mt-1 mb-5">
+          {props.description}
+        </p>
+      ) : (
+        <div className="mb-5" />
+      )}
       <div className="w-64 h-1.5 bg-secondary rounded-full overflow-hidden relative">
         <div
           className="h-full bg-primary absolute left-0 top-0"

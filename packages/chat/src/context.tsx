@@ -41,20 +41,27 @@ export default function Provider(
 
     let active = true;
 
-    void get(recipientId).then(async (recipientData) => {
-      const ownId = await load("user_id");
-      const privateKey = await load("private_key");
-      const ownData = await get(ownId);
-      const sharedSecret = await get_shared_secret(
-        privateKey,
-        ownData.public_key,
-        recipientData.public_key,
-      );
+    void (async () => {
+      try {
+        const recipientData = await get(recipientId);
+        const ownId = await load("user_id");
+        const privateKey = await load("private_key");
+        const ownData = await get(ownId);
+        const sharedSecret = await get_shared_secret(
+          privateKey,
+          ownData.public_key,
+          recipientData.public_key,
+        );
 
-      if (active) {
-        setCurrentSharedSecret(sharedSecret);
+        if (active) {
+          setCurrentSharedSecret(sharedSecret);
+        }
+      } catch {
+        if (active) {
+          setCurrentSharedSecret("");
+        }
       }
-    });
+    })();
 
     return () => {
       active = false;

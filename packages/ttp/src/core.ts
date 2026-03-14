@@ -269,6 +269,7 @@ registerDataKinds("number", [
   "omikron_id",
   "send_time",
   "sub_level",
+  "sub_end",
 ]);
 
 registerDataKinds("string", [
@@ -301,6 +302,7 @@ registerDataKinds("string", [
   "new_token",
   "call_token",
   "challenge",
+  "online_status",
 ]);
 
 registerDataKinds({ array: "container" }, [
@@ -351,10 +353,8 @@ registerDataKinds("null", [
   "watcher",
   "created_at",
   "status",
-  "sub_end",
   "community_address",
   "community_title",
-  "online_status",
   "call_invited",
   "call_members",
   "calls",
@@ -476,9 +476,31 @@ export function createTransportClient<T extends SchemaMap>(
     notifyClosed(connection, error);
   };
 
+  const closeFromStopSending = (
+    connection: ActiveConnection,
+    error: unknown,
+  ) => {
+    if (!isStopSendingError(error)) {
+      return;
+    }
+
+    try {
+      connection.transport.close({
+        closeCode: APPLICATION_CLOSE_CODE,
+        reason: "stop-sending",
+      });
+    } catch {
+      // Ignore close failures while handling STOP_SENDING.
+    }
+
+    handleConnectionFailure(connection, error);
+  };
+
   const handleIncomingMessage = (message: TypedMessage) => {
     if (message.type !== "pong") {
-      log(2, "Socket", "blue", message.type, message.data);
+      log(2, "Socket", "blue", "Received:", message.type, message.data, {
+        id: message.id,
+      });
     }
 
     if (message.id !== 0) {
@@ -728,13 +750,20 @@ export function createTransportClient<T extends SchemaMap>(
         payload = coercePayload(input ?? {});
       }
 
+      if (!options?.id && !options?.noResponse) {
+        const array = new Uint32Array(1);
+        crypto.getRandomValues(array);
+        options = options ?? {};
+        options.id = array[0];
+      }
+
       if (type !== "ping") {
-        log(2, "Socket", "purple", type, payload);
+        log(2, "Socket", "purple", "Sent:", type, payload, { id: options.id });
       }
 
       const expectsResponse = !options?.noResponse;
       const requestId = resolveRequestId(
-        options?.id,
+        options.id,
         expectsResponse,
         pending,
         () => {
@@ -751,7 +780,10 @@ export function createTransportClient<T extends SchemaMap>(
       });
 
       if (!expectsResponse) {
-        return writeMessage(connection.transport, messageBytes);
+        return writeMessage(connection.transport, messageBytes).catch((error) => {
+          closeFromStopSending(connection, error);
+          throw error;
+        });
       }
 
       return new Promise<TypedMessage>((resolve, reject) => {
@@ -772,6 +804,7 @@ export function createTransportClient<T extends SchemaMap>(
         });
 
         void writeMessage(connection.transport, messageBytes).catch((error) => {
+          closeFromStopSending(connection, error);
           clearTimeout(timeoutId);
           pending.delete(requestId);
           reject(error);
@@ -827,6 +860,34 @@ function getWebTransportCtor() {
 
 function normalizeName(value: string) {
   return value.toLowerCase().replaceAll("_", "");
+}
+
+function isStopSendingError(error: unknown) {
+  if (typeof error === "string") {
+    return error.includes("STOP_SENDING");
+  }
+
+  if (error instanceof Error) {
+    if (error.message.includes("STOP_SENDING")) {
+      return true;
+    }
+
+    const errorWithCause = error as Error & { cause?: unknown };
+    if (errorWithCause.cause !== undefined) {
+      return isStopSendingError(errorWithCause.cause);
+    }
+
+    return false;
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === "string") {
+      return maybeMessage.includes("STOP_SENDING");
+    }
+  }
+
+  return false;
 }
 
 function coercePayload(value: unknown): Record<string, unknown> {
@@ -1175,7 +1236,9 @@ function encodeArrayPayload(
 
     if (!isBoolKindMarker(encodedItem.kind)) {
       if (encodedItem.payload.byteLength > 0xffff) {
-        throw new Error(`Array item at "${path}" is too large for protocol encoding`);
+        throw new Error(
+          `Array item at "${path}" is too large for protocol encoding`,
+        );
       }
 
       totalLength += 2 + encodedItem.payload.byteLength;
@@ -1222,10 +1285,13 @@ function encodeContainerPayload(value: Record<string, unknown>, path: string) {
   );
 
   if (entries.length > 0xffff) {
-    throw new Error(`Container at "${path}" has too many entries for protocol encoding`);
+    throw new Error(
+      `Container at "${path}" has too many entries for protocol encoding`,
+    );
   }
 
-  const encodedEntries: Array<{ keyIndex: number; value: EncodedDataValue }> = [];
+  const encodedEntries: Array<{ keyIndex: number; value: EncodedDataValue }> =
+    [];
   let totalLength = 2;
 
   for (const [name, entry] of entries) {
@@ -1242,7 +1308,9 @@ function encodeContainerPayload(value: Record<string, unknown>, path: string) {
       totalLength += 2;
     } else {
       if (encodedValue.payload.byteLength > 0xffff) {
-        throw new Error(`Container entry "${pathForEntry}" is too large for protocol encoding`);
+        throw new Error(
+          `Container entry "${pathForEntry}" is too large for protocol encoding`,
+        );
       }
 
       totalLength += 4 + encodedValue.payload.byteLength;
@@ -1365,7 +1433,10 @@ function decodeContainerPayload(reader: ByteReader) {
       );
     }
 
-    value[key] = normalizeIncomingValue(key, decodeValuePayload(marker, payload));
+    value[key] = normalizeIncomingValue(
+      key,
+      decodeValuePayload(marker, payload),
+    );
   }
 
   return value;
@@ -1382,7 +1453,8 @@ function getDataTypeNameByIndex(index: number) {
 
 function isBoolKindMarker(marker: number) {
   return (
-    marker === DATA_VALUE_KIND_BOOL_TRUE || marker === DATA_VALUE_KIND_BOOL_FALSE
+    marker === DATA_VALUE_KIND_BOOL_TRUE ||
+    marker === DATA_VALUE_KIND_BOOL_FALSE
   );
 }
 

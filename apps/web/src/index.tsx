@@ -1,4 +1,3 @@
-import * as React from "react";
 import { createRoot } from "react-dom/client";
 import {
   Outlet,
@@ -20,6 +19,8 @@ import ChatContext from "@tensamin/chat/context";
 import Login from "@/routes/screens/login";
 import Signup from "@/routes/screens/signup";
 
+import { ThemeProvider } from "@tensamin/ui/theme";
+
 const wrapper = document.getElementById("root");
 
 if (!wrapper) {
@@ -33,32 +34,14 @@ window.setLogLevelToMax = () => {
 };
 
 function RootShell() {
-  React.useEffect(() => {
-    try {
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-      document.documentElement.classList.toggle("dark", mediaQuery.matches);
-
-      const handleChange = (event: MediaQueryListEvent) => {
-        document.documentElement.classList.toggle("dark", event.matches);
-      };
-
-      mediaQuery.addEventListener("change", handleChange);
-
-      return () => {
-        mediaQuery.removeEventListener("change", handleChange);
-      };
-    } catch {
-      return;
-    }
-  }, []);
-
   return (
-    <div className="w-screen h-screen overflow-hidden">
-      <RootLayout>
-        <Outlet />
-      </RootLayout>
-    </div>
+    <ThemeProvider>
+      <div className="w-screen h-screen overflow-hidden">
+        <RootLayout>
+          <Outlet />
+        </RootLayout>
+      </div>
+    </ThemeProvider>
   );
 }
 

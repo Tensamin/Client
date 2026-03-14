@@ -24,9 +24,19 @@ const message = z.object({
 // Socket
 export const socket = {
   identification: {
-    request: z.object({
-      user_id: z.number(),
-    }),
+    request: z
+      .object({
+        user_id: z.number().optional(),
+        iota_id: z.number().optional(),
+      })
+      .refine(
+        (value) =>
+          (typeof value.user_id === "number") !==
+          (typeof value.iota_id === "number"),
+        {
+          message: "Either user_id or iota_id must be provided",
+        },
+      ),
     response: z.object({
       challenge: z.string(),
       public_key: z.base64(),
@@ -66,7 +76,9 @@ export const socket = {
     request: z.object({
       challenge: z.base64(),
     }),
-    response: z.object({}),
+    response: z.object({
+      accepted: z.boolean(),
+    }),
   },
   ping: {
     request: z.object({

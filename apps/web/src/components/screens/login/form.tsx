@@ -1,7 +1,7 @@
-import { Button } from "@tensamin/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@tensamin/ui/card";
-import { Input } from "@tensamin/ui/input";
-import { Label } from "@tensamin/ui/label";
+import { Button } from "@tensamin/ui/cmp/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@tensamin/ui/cmp/card";
+import { Input } from "@tensamin/ui/cmp/input";
+import { Label } from "@tensamin/ui/cmp/label";
 import { useStorage } from "@tensamin/storage/context";
 import { log, toast } from "@tensamin/shared/log";
 import { useNavigate } from "@tanstack/react-router";

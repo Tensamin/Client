@@ -1,8 +1,8 @@
 import Input from "@tensamin/markdown/input";
-import { Card, CardHeader } from "@tensamin/ui/card";
+import { Card, CardHeader } from "@tensamin/ui/cmp/card";
 import { useStorage } from "@tensamin/storage/context";
 import * as React from "react";
-import { Button } from "@tensamin/ui/button";
+import { Button } from "@tensamin/ui/cmp/button";
 
 import { Plus, Laugh, Clapperboard } from "lucide-react";
 import { useChat } from "../context";

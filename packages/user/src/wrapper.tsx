@@ -10,11 +10,18 @@ export default function Wrapper(props: {
 
   React.useEffect(() => {
     let active = true;
-    get(props.userId).then((value) => {
-      if (active) {
-        setUser(value);
-      }
-    });
+
+    void get(props.userId)
+      .then((value) => {
+        if (active) {
+          setUser(value);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setUser(null);
+        }
+      });
 
     return () => {
       active = false;
