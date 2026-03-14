@@ -1,17 +1,10 @@
-import {
-  createContext,
-  createSignal,
-  Show,
-  useContext,
-  type ParentProps,
-} from "solid-js";
+import * as React from "react";
 import {
   type Storage as StorageSchema,
   storageDefaults as defaults,
 } from "@tensamin/shared/data";
 import { getEntry, setEntry, deleteEntry } from "./indexed-db";
 import ErrorScreen from "@tensamin/ui/screens/error";
-import { createStore } from "solid-js/store";
 import { log } from "@tensamin/shared/log";
 
 interface StorageContextValue {
@@ -23,107 +16,119 @@ interface StorageContextValue {
   clear: () => Promise<void>;
 }
 
-const StorageContext = createContext<StorageContextValue>();
+const StorageContext = React.createContext<StorageContextValue | undefined>(
+  undefined,
+);
 
 const isIndexedDBSupported = typeof indexedDB !== "undefined";
 
-export default function StorageProvider(props: ParentProps) {
-  const [storage, setStorage] = createStore<StorageSchema>(defaults);
+export default function StorageProvider(props: { children: React.ReactNode }) {
+  const [storage, setStorage] = React.useState<StorageSchema>(defaults);
+  const storageRef = React.useRef(storage);
 
-  const [error, setError] = createSignal<string>("");
-  const [errorDescription, setErrorDescription] = createSignal<string>("");
+  const [error, setError] = React.useState("");
+  const [errorDescription, setErrorDescription] = React.useState("");
 
-  async function loadIO<K extends keyof StorageSchema>(
-    key: K,
-  ): Promise<StorageSchema[K]> {
-    let stored;
-    try {
-      stored = await getEntry(key);
-    } catch (err) {
-      setError("Failed to load data");
-      setErrorDescription(
-        "An error occurred while loading data from IndexedDB. Please try again.",
-      );
-      log(0, "Storage", "red", err);
-    }
-    if (stored !== undefined) {
-      setStorage(key, stored);
-      return stored;
-    }
-    return defaults[key];
-  }
+  React.useEffect(() => {
+    storageRef.current = storage;
+  }, [storage]);
 
-  async function saveIO<K extends keyof StorageSchema>(
-    key: K,
-    value: StorageSchema[K],
-  ): Promise<void> {
-    if (JSON.stringify(value) === JSON.stringify(defaults[key])) {
-      await deleteEntry(key);
-      setStorage(key, defaults[key]);
-    } else {
-      await setEntry(key, value);
-      setStorage(key, value);
-    }
-  }
+  const loadIO = React.useCallback(
+    async <K extends keyof StorageSchema>(key: K): Promise<StorageSchema[K]> => {
+      let stored: StorageSchema[K] | undefined;
 
-  const value: StorageContextValue = {
-    async load<K extends keyof StorageSchema>(
-      key: K,
-    ): Promise<StorageSchema[K]> {
-      if (
-        storage[key] === undefined ||
-        JSON.stringify(storage[key]) === JSON.stringify(defaults[key])
-      ) {
-        const value = await loadIO(key);
-        setStorage(key, value);
+      try {
+        stored = await getEntry(key);
+      } catch (err) {
+        setError("Failed to load data");
+        setErrorDescription(
+          "An error occurred while loading data from IndexedDB. Please try again.",
+        );
+        log(0, "Storage", "red", err);
       }
 
-      return storage[key];
-    },
+      if (stored !== undefined) {
+        setStorage((prev) => ({ ...prev, [key]: stored }));
+        return stored;
+      }
 
-    async save<K extends keyof StorageSchema>(
+      return defaults[key];
+    },
+    [],
+  );
+
+  const saveIO = React.useCallback(
+    async <K extends keyof StorageSchema>(
       key: K,
       value: StorageSchema[K],
-    ): Promise<void> {
-      await saveIO(key, value);
-      setStorage(key, value);
-    },
-
-    async clear() {
-      const keys = Object.keys(defaults) as (keyof StorageSchema)[];
-      await Promise.all(keys.map((key) => deleteEntry(key)));
-    },
-  };
-
-  // @ts-expect-error development utility
-  window.save = value.save;
-
-  return (
-    <Show
-      when={error() !== "" && errorDescription() !== ""}
-      fallback={
-        <Show
-          when={isIndexedDBSupported}
-          fallback={
-            <ErrorScreen
-              error="Unsupported Browser"
-              description="Your browser does not support IndexedDB, which is required for this application to function."
-            />
-          }
-        >
-          <StorageContext.Provider value={value}>
-            {props.children}
-          </StorageContext.Provider>
-        </Show>
+    ): Promise<void> => {
+      if (JSON.stringify(value) === JSON.stringify(defaults[key])) {
+        await deleteEntry(key);
+        setStorage((prev) => ({ ...prev, [key]: defaults[key] }));
+      } else {
+        await setEntry(key, value);
+        setStorage((prev) => ({ ...prev, [key]: value }));
       }
-    >
-      <ErrorScreen error={error()} description={errorDescription()} />
-    </Show>
+    },
+    [],
   );
+
+  const value = React.useMemo<StorageContextValue>(
+    () => ({
+      async load<K extends keyof StorageSchema>(key: K): Promise<StorageSchema[K]> {
+        const current = storageRef.current[key];
+
+        if (
+          current === undefined ||
+          JSON.stringify(current) === JSON.stringify(defaults[key])
+        ) {
+          const loadedValue = await loadIO(key);
+          setStorage((prev) => ({ ...prev, [key]: loadedValue }));
+          return loadedValue;
+        }
+
+        return current;
+      },
+
+      async save<K extends keyof StorageSchema>(
+        key: K,
+        nextValue: StorageSchema[K],
+      ): Promise<void> {
+        await saveIO(key, nextValue);
+      },
+
+      async clear() {
+        const keys = Object.keys(defaults) as (keyof StorageSchema)[];
+        await Promise.all(keys.map((key) => deleteEntry(key)));
+        setStorage(defaults);
+      },
+    }),
+    [loadIO, saveIO],
+  );
+
+  React.useEffect(() => {
+    // @ts-expect-error development utility
+    window.save = value.save;
+  }, [value]);
+
+  if (error !== "" && errorDescription !== "") {
+    return <ErrorScreen error={error} description={errorDescription} />;
+  }
+
+  if (!isIndexedDBSupported) {
+    return (
+      <ErrorScreen
+        error="Unsupported Browser"
+        description="Your browser does not support IndexedDB, which is required for this application to function."
+      />
+    );
+  }
+
+  return <StorageContext.Provider value={value}>{props.children}</StorageContext.Provider>;
 }
 
 export function useStorage(): StorageContextValue {
-  const context = useContext(StorageContext);
+  const context = React.useContext(StorageContext);
   if (!context) {
     throw new Error("useStorage must be used within a StorageProvider");
   }

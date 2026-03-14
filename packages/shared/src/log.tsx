@@ -1,5 +1,5 @@
-import { toast as sonnerToast } from "solid-sonner";
-import { Ban, Check, Info, TriangleAlert } from "lucide-solid";
+import { toast as sonnerToast } from "sonner";
+import { Ban, Check, Info, TriangleAlert } from "lucide-react";
 
 export function log(
   logLevel: number,

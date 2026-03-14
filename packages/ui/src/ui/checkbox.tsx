@@ -1,55 +1,104 @@
+import * as React from "react";
 import { cn } from "../libs/cn";
-import type { CheckboxControlProps } from "@kobalte/core/checkbox";
-import { Checkbox as CheckboxPrimitive } from "@kobalte/core/checkbox";
-import type { PolymorphicProps } from "@kobalte/core/polymorphic";
-import type { ValidComponent, VoidProps } from "solid-js";
-import { splitProps } from "solid-js";
 
-export const CheckboxLabel = CheckboxPrimitive.Label;
-export const Checkbox = CheckboxPrimitive;
-export const CheckboxErrorMessage = CheckboxPrimitive.ErrorMessage;
-export const CheckboxDescription = CheckboxPrimitive.Description;
+type CheckboxContextValue = {
+  checked: boolean;
+  disabled?: boolean;
+};
 
-type checkboxControlProps<T extends ValidComponent = "div"> = VoidProps<
-  CheckboxControlProps<T> & { class?: string }
->;
+const CheckboxContext = React.createContext<CheckboxContextValue | null>(null);
 
-export const CheckboxControl = <T extends ValidComponent = "div">(
-  props: PolymorphicProps<T, checkboxControlProps<T>>,
-) => {
-  const [local, rest] = splitProps(props as checkboxControlProps, [
-    "class",
-    "children",
-  ]);
+export type CheckboxProps = {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+};
+
+export function Checkbox({
+  checked,
+  onChange,
+  disabled,
+  className,
+  children,
+}: CheckboxProps) {
+  return (
+    <CheckboxContext.Provider value={{ checked, disabled }}>
+      <label className={cn("inline-flex items-center", className)}>
+        <input
+          type="checkbox"
+          className="sr-only peer"
+          checked={checked}
+          disabled={disabled}
+          onChange={(event) => onChange(event.currentTarget.checked)}
+        />
+        {children}
+      </label>
+    </CheckboxContext.Provider>
+  );
+}
+
+export function CheckboxControl({
+  className,
+}: {
+  className?: string;
+}): React.ReactElement {
+  const context = React.useContext(CheckboxContext);
 
   return (
-    <>
-      <CheckboxPrimitive.Input class="[&:focus-visible+div]:outline-none [&:focus-visible+div]:ring-[1.5px] [&:focus-visible+div]:ring-ring [&:focus-visible+div]:ring-offset-2 [&:focus-visible+div]:ring-offset-background" />
-      <CheckboxPrimitive.Control
-        class={cn(
-          "h-4 w-4 shrink-0 rounded-sm border border-primary shadow transition-shadow focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ring data-[disabled]:cursor-not-allowed data-[checked]:bg-primary data-[checked]:text-primary-foreground data-[disabled]:opacity-50",
-          local.class,
-        )}
-        {...rest}
-      >
-        <CheckboxPrimitive.Indicator class="flex items-center justify-center text-current">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            class="h-4 w-4"
-          >
-            <path
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="m5 12l5 5L20 7"
-            />
-            <title>Checkbox</title>
-          </svg>
-        </CheckboxPrimitive.Indicator>
-      </CheckboxPrimitive.Control>
-    </>
+    <span
+      className={cn(
+        "h-4 w-4 shrink-0 rounded-sm border border-primary shadow transition-shadow peer-focus-visible:ring-[1.5px] peer-focus-visible:ring-ring peer-disabled:cursor-not-allowed",
+        context?.checked && "bg-primary text-primary-foreground",
+        context?.disabled && "opacity-50",
+        className,
+      )}
+    >
+      {context?.checked ? (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          className="h-4 w-4"
+        >
+          <path
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="m5 12l5 5L20 7"
+          />
+        </svg>
+      ) : null}
+    </span>
   );
-};
+}
+
+export function CheckboxLabel({
+  className,
+  ...props
+}: React.ComponentProps<"span">) {
+  return (
+    <span
+      className={cn("text-sm leading-none font-medium", className)}
+      {...props}
+    />
+  );
+}
+
+export function CheckboxErrorMessage({
+  className,
+  ...props
+}: React.ComponentProps<"p">) {
+  return <p className={cn("text-sm text-destructive", className)} {...props} />;
+}
+
+export function CheckboxDescription({
+  className,
+  ...props
+}: React.ComponentProps<"p">) {
+  return (
+    <p className={cn("text-sm text-muted-foreground", className)} {...props} />
+  );
+}

@@ -1,4 +1,4 @@
-import type { RouteSectionProps } from "@solidjs/router";
+import type { ReactNode } from "react";
 
 import Storage from "@tensamin/core-storage/context";
 import Crypto from "@tensamin/core-crypto/context";
@@ -7,7 +7,7 @@ import LegalWrapper from "@/features/legal/screen";
 
 import { Toaster } from "@tensamin/ui/sonner";
 
-export default function Layout(props: RouteSectionProps) {
+export default function Layout(props: { children: ReactNode }) {
   return (
     <>
       <Toaster />

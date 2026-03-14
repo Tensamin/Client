@@ -7,7 +7,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@tensamin/ui/context-menu";
-import { useNavigate } from "@solidjs/router";
+import { useNavigate } from "@tanstack/react-router";
 
 export default function ConversationModal(props: { userId: number }) {
   const navigate = useNavigate();
@@ -16,9 +16,9 @@ export default function ConversationModal(props: { userId: number }) {
     <ContextMenu>
       <ContextMenuTrigger>
         <div
-          class="select-none cursor-pointer"
+          className="select-none cursor-pointer"
           onClick={() => {
-            navigate("/chat?id=" + props.userId);
+            void navigate({ to: "/chat", search: { id: props.userId } });
           }}
         >
           <Wrapper

@@ -21,12 +21,9 @@ import {
   indentWithTab,
 } from "@codemirror/commands";
 import {
-  createEffect,
-  createMemo,
-  onCleanup,
-  onMount,
-  type Setter,
-} from "solid-js";
+  useEffect,
+  useRef,
+} from "react";
 
 import { collectInlineRanges, ensureMarkdownStyles } from "./markdown";
 
@@ -34,7 +31,7 @@ export type InputProps = {
   ref?: HTMLDivElement;
   placeholder?: string;
   value: string;
-  setValue: Setter<string>;
+  setValue: (value: string) => void;
   onSubmit?: () => void;
   invertEnterBehavior?: boolean;
 };
@@ -79,21 +76,18 @@ const markdownDecorations = ViewPlugin.fromClass(
 export default function Input(props: InputProps) {
   ensureMarkdownStyles();
 
-  // eslint-disable-next-line no-unassigned-vars
-  let element: HTMLDivElement | undefined;
-  let view: EditorView | undefined;
-  let ignoreSync = false;
+  const elementRef = useRef<HTMLDivElement | null>(null);
+  const viewRef = useRef<EditorView | undefined>(undefined);
+  const ignoreSyncRef = useRef(false);
 
-  const externalValue = createMemo(() => props.value);
-
-  onMount(() => {
-    if (!element) return;
+  useEffect(() => {
+    if (!elementRef.current) return;
 
     const state = EditorState.create({
       doc: props.value,
       extensions: createEditorExtensions(
         (value) => {
-          ignoreSync = true;
+          ignoreSyncRef.current = true;
           props.setValue(value);
         },
         () => props.placeholder,
@@ -102,21 +96,28 @@ export default function Input(props: InputProps) {
       ),
     });
 
-    view = new EditorView({
+    viewRef.current = new EditorView({
       state,
-      parent: element,
+      parent: elementRef.current,
     });
-  });
 
-  createEffect(() => {
-    const editor = view;
+    return () => {
+      viewRef.current?.destroy();
+      viewRef.current = undefined;
+    };
+    // Run once to initialize/destroy the editor instance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const editor = viewRef.current;
     if (!editor) return;
 
-    const next = externalValue();
+    const next = props.value;
     const current = editor.state.doc.toString();
 
-    if (ignoreSync) {
-      ignoreSync = false;
+    if (ignoreSyncRef.current) {
+      ignoreSyncRef.current = false;
       return;
     }
 
@@ -129,14 +130,9 @@ export default function Input(props: InputProps) {
         insert: next,
       },
     });
-  });
+  }, [props.value]);
 
-  onCleanup(() => {
-    view?.destroy();
-    view = undefined;
-  });
-
-  return <div ref={element} class="tm-md-root" />;
+  return <div ref={elementRef} className="tm-md-root" />;
 }
 
 function createEditorExtensions(

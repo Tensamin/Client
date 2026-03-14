@@ -15,6 +15,14 @@ const APPLICATION_CLOSE_CODE = 0;
 const APPLICATION_CLOSE_REASON = "epsilon-close";
 const MAX_REQUEST_ID = 0xffff_fffe;
 
+const DATA_VALUE_KIND_BOOL_TRUE = 0x01;
+const DATA_VALUE_KIND_BOOL_FALSE = 0x02;
+const DATA_VALUE_KIND_NUMBER = 0x03;
+const DATA_VALUE_KIND_STRING = 0x04;
+const DATA_VALUE_KIND_ARRAY = 0x05;
+const DATA_VALUE_KIND_CONTAINER = 0x06;
+const DATA_VALUE_KIND_NULL = 0x07;
+
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
@@ -966,34 +974,40 @@ function encodeCommunicationMessage(
   message: TypedMessage<Record<string, unknown>>,
 ) {
   const typeIndex = parseCommunicationType(message.type);
-  const dataBuffer = encodeValueForKind("container", message.data, "payload");
   const hasId = message.id !== 0;
-  const totalLength = 2 + (hasId ? 4 : 0) + 4 + dataBuffer.byteLength;
-  const buffer = new Uint8Array(totalLength);
+  const dataBuffer = encodeContainerPayload(message.data, "payload");
+  const payloadLength = 2 + (hasId ? 4 : 0) + dataBuffer.byteLength;
+  const buffer = new Uint8Array(4 + payloadLength);
 
-  buffer[0] = typeIndex;
-  buffer[1] = hasId ? 0b0010_0000 : 0;
+  writeU32(buffer, 0, payloadLength);
+  buffer[4] = typeIndex;
+  buffer[5] = hasId ? 0b0000_0100 : 0;
 
-  let offset = 2;
+  let offset = 6;
   if (hasId) {
     writeU32(buffer, offset, message.id);
     offset += 4;
   }
 
-  writeU32(buffer, offset, dataBuffer.byteLength);
-  offset += 4;
   buffer.set(dataBuffer, offset);
 
   return buffer;
 }
 
-function decodeCommunicationMessage(payload: Uint8Array): TypedMessage {
-  const reader = new ByteReader(payload);
+function decodeCommunicationMessage(frame: Uint8Array): TypedMessage {
+  const reader = new ByteReader(frame);
+  const payloadLength = reader.readU32();
+  if (payloadLength !== frame.byteLength - 4) {
+    throw new Error(
+      `Communication payload length mismatch: expected ${payloadLength}, received ${frame.byteLength - 4}`,
+    );
+  }
+
   const typeIndex = reader.readU8();
   const flags = reader.readU8();
-  const hasSender = (flags & 0b1000_0000) !== 0;
-  const hasReceiver = (flags & 0b0100_0000) !== 0;
-  const hasId = (flags & 0b0010_0000) !== 0;
+  const hasSender = (flags & 0b0000_0001) !== 0;
+  const hasReceiver = (flags & 0b0000_0010) !== 0;
+  const hasId = (flags & 0b0000_0100) !== 0;
 
   const id = hasId ? reader.readU32() : 0;
   if (hasSender) {
@@ -1003,11 +1017,18 @@ function decodeCommunicationMessage(payload: Uint8Array): TypedMessage {
     reader.readU48();
   }
 
-  const dataLength = reader.readU32();
-  const dataBytes = reader.readBytes(dataLength);
-  const decodedData = decodeValue(new ByteReader(dataBytes));
-  if (!isPlainObject(decodedData)) {
-    throw new Error("Protocol payload container was not decoded as an object");
+  const consumedHeaderBytes =
+    2 + (hasId ? 4 : 0) + (hasSender ? 6 : 0) + (hasReceiver ? 6 : 0);
+  if (consumedHeaderBytes > payloadLength) {
+    throw new Error("Communication header exceeds payload length");
+  }
+
+  const dataLength = payloadLength - consumedHeaderBytes;
+  const dataReader = new ByteReader(reader.readBytes(dataLength));
+  const decodedData = decodeContainerPayload(dataReader);
+
+  if (!dataReader.isAtEnd()) {
+    throw new Error("Trailing bytes found after communication data payload");
   }
 
   if (!reader.isAtEnd()) {
@@ -1051,13 +1072,21 @@ function getExpectedKind(type: string) {
   return kind;
 }
 
-function encodeValueForKind(
+type EncodedDataValue = {
+  kind: number;
+  payload: Uint8Array;
+};
+
+function encodeDataValueForKind(
   kind: DataKind,
   value: unknown,
   path: string,
-): Uint8Array {
+): EncodedDataValue {
   if (typeof kind === "object") {
-    return encodeArrayValue(kind.array, value, path);
+    return {
+      kind: DATA_VALUE_KIND_ARRAY,
+      payload: encodeArrayPayload(kind.array, value, path),
+    };
   }
 
   switch (kind) {
@@ -1066,35 +1095,50 @@ function encodeValueForKind(
         throw new Error(`Expected boolean at "${path}"`);
       }
 
-      return Uint8Array.of(0x03, value ? 1 : 0);
+      return {
+        kind: value ? DATA_VALUE_KIND_BOOL_TRUE : DATA_VALUE_KIND_BOOL_FALSE,
+        payload: new Uint8Array(0),
+      };
 
     case "number":
-      return encodeNumberValue(value, path);
+      return {
+        kind: DATA_VALUE_KIND_NUMBER,
+        payload: encodeNumberPayload(value, path),
+      };
 
     case "string":
       if (typeof value !== "string") {
         throw new Error(`Expected string at "${path}"`);
       }
 
-      return encodeStringValue(value);
+      return {
+        kind: DATA_VALUE_KIND_STRING,
+        payload: textEncoder.encode(value),
+      };
 
     case "container":
       if (!isPlainObject(value)) {
         throw new Error(`Expected object at "${path}"`);
       }
 
-      return encodeContainerValue(value, path);
+      return {
+        kind: DATA_VALUE_KIND_CONTAINER,
+        payload: encodeContainerPayload(value, path),
+      };
 
     case "null":
       if (value !== null && value !== undefined) {
         throw new Error(`Expected null at "${path}"`);
       }
 
-      return Uint8Array.of(0x06);
+      return {
+        kind: DATA_VALUE_KIND_NULL,
+        payload: new Uint8Array(0),
+      };
   }
 }
 
-function encodeNumberValue(value: unknown, path: string) {
+function encodeNumberPayload(value: unknown, path: string) {
   if (
     typeof value !== "number" ||
     !Number.isFinite(value) ||
@@ -1103,22 +1147,12 @@ function encodeNumberValue(value: unknown, path: string) {
     throw new Error(`Expected safe integer at "${path}"`);
   }
 
-  const buffer = new Uint8Array(9);
-  buffer[0] = 0x01;
-  writeI64(buffer, 1, value);
+  const buffer = new Uint8Array(8);
+  writeI64(buffer, 0, value);
   return buffer;
 }
 
-function encodeStringValue(value: string) {
-  const bytes = textEncoder.encode(value);
-  const buffer = new Uint8Array(5 + bytes.byteLength);
-  buffer[0] = 0x02;
-  writeU32(buffer, 1, bytes.byteLength);
-  buffer.set(bytes, 5);
-  return buffer;
-}
-
-function encodeArrayValue(
+function encodeArrayPayload(
   innerKind: PrimitiveDataKind | "container" | "null",
   value: unknown,
   path: string,
@@ -1132,28 +1166,44 @@ function encodeArrayValue(
   }
 
   const encodedItems = value.map((entry, index) =>
-    encodeValueForKind(innerKind, entry, `${path}[${index}]`),
+    encodeDataValueForKind(innerKind, entry, `${path}[${index}]`),
   );
 
-  const byteLength = encodedItems.reduce(
-    (sum, item) => sum + item.byteLength,
-    0,
-  );
-  const buffer = new Uint8Array(4 + byteLength);
-  buffer[0] = 0x04;
-  buffer[1] = value.length === 0 ? 0x00 : kindToMarker(innerKind);
-  writeU16(buffer, 2, value.length);
+  let totalLength = 2;
+  for (const encodedItem of encodedItems) {
+    totalLength += 1;
 
-  let offset = 4;
+    if (!isBoolKindMarker(encodedItem.kind)) {
+      if (encodedItem.payload.byteLength > 0xffff) {
+        throw new Error(`Array item at "${path}" is too large for protocol encoding`);
+      }
+
+      totalLength += 2 + encodedItem.payload.byteLength;
+    }
+  }
+
+  const buffer = new Uint8Array(totalLength);
+  writeU16(buffer, 0, value.length);
+
+  let offset = 2;
   for (const item of encodedItems) {
-    buffer.set(item, offset);
-    offset += item.byteLength;
+    buffer[offset] = item.kind;
+    offset += 1;
+
+    if (isBoolKindMarker(item.kind)) {
+      continue;
+    }
+
+    writeU16(buffer, offset, item.payload.byteLength);
+    offset += 2;
+    buffer.set(item.payload, offset);
+    offset += item.payload.byteLength;
   }
 
   return buffer;
 }
 
-function encodeContainerValue(value: Record<string, unknown>, path: string) {
+function encodeContainerPayload(value: Record<string, unknown>, path: string) {
   const normalizedEntries = new Map<
     string,
     { index: number; value: unknown }
@@ -1171,82 +1221,103 @@ function encodeContainerValue(value: Record<string, unknown>, path: string) {
     ([, left], [, right]) => left.index - right.index,
   );
 
-  const encodedEntries: Uint8Array[] = [];
-  let totalLength = 3;
+  if (entries.length > 0xffff) {
+    throw new Error(`Container at "${path}" has too many entries for protocol encoding`);
+  }
+
+  const encodedEntries: Array<{ keyIndex: number; value: EncodedDataValue }> = [];
+  let totalLength = 2;
 
   for (const [name, entry] of entries) {
     const expectedKind = getExpectedKind(name);
     const pathForEntry = `${path}.${name}`;
 
-    if (expectedKind === "bool") {
-      if (typeof entry.value !== "boolean") {
-        throw new Error(`Expected boolean at "${pathForEntry}"`);
-      }
-
-      const encoded = Uint8Array.of(entry.index, entry.value ? 1 : 0);
-      encodedEntries.push(encoded);
-      totalLength += encoded.byteLength;
-      continue;
-    }
-
-    const encodedValue = encodeValueForKind(
+    const encodedValue = encodeDataValueForKind(
       expectedKind,
       entry.value,
       pathForEntry,
     );
-    const body = encodedValue.subarray(1);
-    const encoded = new Uint8Array(5 + body.byteLength);
-    encoded[0] = entry.index;
-    writeU32(encoded, 1, body.byteLength);
-    encoded.set(body, 5);
-    encodedEntries.push(encoded);
-    totalLength += encoded.byteLength;
+
+    if (isBoolKindMarker(encodedValue.kind)) {
+      totalLength += 2;
+    } else {
+      if (encodedValue.payload.byteLength > 0xffff) {
+        throw new Error(`Container entry "${pathForEntry}" is too large for protocol encoding`);
+      }
+
+      totalLength += 4 + encodedValue.payload.byteLength;
+    }
+
+    encodedEntries.push({
+      keyIndex: entry.index,
+      value: encodedValue,
+    });
   }
 
   const buffer = new Uint8Array(totalLength);
-  buffer[0] = 0x05;
-  writeU16(buffer, 1, entries.length);
+  writeU16(buffer, 0, entries.length);
 
-  let offset = 3;
-  for (const encoded of encodedEntries) {
-    buffer.set(encoded, offset);
-    offset += encoded.byteLength;
+  let offset = 2;
+  for (const entry of encodedEntries) {
+    buffer[offset] = entry.value.kind;
+    offset += 1;
+
+    if (isBoolKindMarker(entry.value.kind)) {
+      buffer[offset] = entry.keyIndex;
+      offset += 1;
+      continue;
+    }
+
+    writeU16(buffer, offset, entry.value.payload.byteLength);
+    offset += 2;
+    buffer[offset] = entry.keyIndex;
+    offset += 1;
+    buffer.set(entry.value.payload, offset);
+    offset += entry.value.payload.byteLength;
   }
 
   return buffer;
 }
 
-function decodeValue(reader: ByteReader): unknown {
-  const marker = reader.readU8();
+function decodeValuePayload(marker: number, payload: Uint8Array): unknown {
+  const reader = new ByteReader(payload);
 
   switch (marker) {
-    case 0x01:
-      return reader.readI64();
-
-    case 0x02: {
-      const length = reader.readU32();
-      return textDecoder.decode(reader.readBytes(length));
-    }
-
-    case 0x03:
-      return reader.readU8() !== 0;
-
-    case 0x04: {
-      reader.readU8();
-      const length = reader.readU16();
-      const values: unknown[] = [];
-
-      for (let index = 0; index < length; index += 1) {
-        values.push(decodeValue(reader));
+    case DATA_VALUE_KIND_BOOL_TRUE:
+      if (!reader.isAtEnd()) {
+        throw new Error("Unexpected payload for boolean true value");
       }
 
-      return values;
-    }
+      return true;
 
-    case 0x05:
-      return decodeContainer(reader);
+    case DATA_VALUE_KIND_BOOL_FALSE:
+      if (!reader.isAtEnd()) {
+        throw new Error("Unexpected payload for boolean false value");
+      }
 
-    case 0x06:
+      return false;
+
+    case DATA_VALUE_KIND_NUMBER:
+      if (payload.byteLength !== 8) {
+        throw new Error(`Invalid number payload length ${payload.byteLength}`);
+      }
+
+      return reader.readI64();
+
+    case DATA_VALUE_KIND_STRING:
+      return textDecoder.decode(payload);
+
+    case DATA_VALUE_KIND_ARRAY:
+      return decodeArrayPayload(reader);
+
+    case DATA_VALUE_KIND_CONTAINER:
+      return decodeContainerPayload(reader);
+
+    case DATA_VALUE_KIND_NULL:
+      if (!reader.isAtEnd()) {
+        throw new Error("Unexpected payload for null value");
+      }
+
       return null;
 
     default:
@@ -1254,37 +1325,84 @@ function decodeValue(reader: ByteReader): unknown {
   }
 }
 
-function decodeContainer(reader: ByteReader) {
-  const length = reader.readU16();
-  const value: Record<string, unknown> = {};
+function decodeArrayPayload(reader: ByteReader) {
+  const itemCount = reader.readU16();
+  const values: unknown[] = [];
 
-  for (let index = 0; index < length; index += 1) {
-    const keyIndex = reader.readU8();
-    const key = DATA_TYPES[keyIndex];
-    if (!key) {
-      throw new Error(`Unknown data type index ${keyIndex}`);
-    }
+  for (let index = 0; index < itemCount; index += 1) {
+    const marker = reader.readU8();
 
-    const expectedKind = getExpectedKind(key);
-
-    if (expectedKind === "bool") {
-      value[key] = normalizeIncomingValue(key, reader.readU8() !== 0);
+    if (isBoolKindMarker(marker)) {
+      values.push(marker === DATA_VALUE_KIND_BOOL_TRUE);
       continue;
     }
 
-    const encodedLength = reader.readU32();
-    const encodedValue = reader.readBytes(encodedLength);
-    const fullValue = new Uint8Array(1 + encodedValue.byteLength);
-    fullValue[0] = kindToMarker(expectedKind);
-    fullValue.set(encodedValue, 1);
+    const payloadLength = reader.readU16();
+    const payload = reader.readBytes(payloadLength);
+    values.push(decodeValuePayload(marker, payload));
+  }
 
-    value[key] = normalizeIncomingValue(
-      key,
-      decodeValue(new ByteReader(fullValue)),
-    );
+  return values;
+}
+
+function decodeContainerPayload(reader: ByteReader) {
+  const entryCount = reader.readU16();
+  const value: Record<string, unknown> = {};
+
+  for (let index = 0; index < entryCount; index += 1) {
+    const marker = reader.readU8();
+    const payloadLength = isBoolKindMarker(marker) ? 0 : reader.readU16();
+    const keyIndex = reader.readU8();
+    const key = getDataTypeNameByIndex(keyIndex);
+    const payload = isBoolKindMarker(marker)
+      ? new Uint8Array(0)
+      : reader.readBytes(payloadLength);
+
+    const expectedKind = getExpectedKind(key);
+    if (!isMarkerCompatibleWithKind(marker, expectedKind)) {
+      throw new Error(
+        `Unexpected marker 0x${marker.toString(16)} for data type "${key}"`,
+      );
+    }
+
+    value[key] = normalizeIncomingValue(key, decodeValuePayload(marker, payload));
   }
 
   return value;
+}
+
+function getDataTypeNameByIndex(index: number) {
+  const key = DATA_TYPES[index];
+  if (!key) {
+    throw new Error(`Unknown data type index ${index}`);
+  }
+
+  return key;
+}
+
+function isBoolKindMarker(marker: number) {
+  return (
+    marker === DATA_VALUE_KIND_BOOL_TRUE || marker === DATA_VALUE_KIND_BOOL_FALSE
+  );
+}
+
+function isMarkerCompatibleWithKind(marker: number, kind: DataKind) {
+  if (typeof kind === "object") {
+    return marker === DATA_VALUE_KIND_ARRAY;
+  }
+
+  switch (kind) {
+    case "bool":
+      return isBoolKindMarker(marker);
+    case "number":
+      return marker === DATA_VALUE_KIND_NUMBER;
+    case "string":
+      return marker === DATA_VALUE_KIND_STRING;
+    case "container":
+      return marker === DATA_VALUE_KIND_CONTAINER;
+    case "null":
+      return marker === DATA_VALUE_KIND_NULL;
+  }
 }
 
 function normalizeOutgoingValue(type: string, value: unknown) {
@@ -1306,25 +1424,6 @@ function normalizeIncomingValue(type: string, value: unknown) {
   }
 
   return value;
-}
-
-function kindToMarker(kind: DataKind) {
-  if (typeof kind === "object") {
-    return 0x04;
-  }
-
-  switch (kind) {
-    case "number":
-      return 0x01;
-    case "string":
-      return 0x02;
-    case "bool":
-      return 0x03;
-    case "container":
-      return 0x05;
-    case "null":
-      return 0x06;
-  }
 }
 
 function writeU16(buffer: Uint8Array, offset: number, value: number) {

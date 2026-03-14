@@ -1,5 +1,4 @@
-import { createContext, useContext, type ParentProps } from "solid-js";
-import { createStore } from "solid-js/store";
+import * as React from "react";
 import { useSocket } from "@tensamin/ttp/context";
 
 import { socket as schemas } from "@tensamin/shared/data";
@@ -12,15 +11,15 @@ interface contextValue {
   get(userId: number): Promise<User>;
 }
 
-const UserContext = createContext<contextValue>();
+const UserContext = React.createContext<contextValue | undefined>(undefined);
 
-export default function UserProvider(props: ParentProps) {
-  const [storage, setStorage] = createStore<Record<number, User>>({});
+export default function UserProvider(props: { children: React.ReactNode }) {
+  const storageRef = React.useRef<Record<number, User>>({});
 
   const { send } = useSocket();
 
   async function get(userId: number): Promise<User> {
-    if (storage[userId] === undefined) {
+    if (storageRef.current[userId] === undefined) {
       try {
         const userData = await send("get_user_data", { user_id: userId });
 
@@ -30,12 +29,12 @@ export default function UserProvider(props: ParentProps) {
           : undefined;
         // Temp end
 
-        setStorage(userId, userData.data);
+        storageRef.current[userId] = userData.data;
       } catch {
-        setStorage(userId, failedUser);
+        storageRef.current[userId] = failedUser;
       }
     }
-    return storage[userId];
+    return storageRef.current[userId];
   }
 
   return (
@@ -46,7 +45,7 @@ export default function UserProvider(props: ParentProps) {
 }
 
 export function useUser(): contextValue {
-  const context = useContext(UserContext);
+  const context = React.useContext(UserContext);
   if (!context) {
     throw new Error("useUser must be used within a UserProvider");
   }

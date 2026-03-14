@@ -1,16 +1,25 @@
-import { createEffect, createSignal, type JSX } from "solid-js";
+import * as React from "react";
 import { useUser, type User } from "./context";
 
 export default function Wrapper(props: {
   userId: number;
-  component: (user: User) => JSX.Element;
+  component: (user: User) => React.ReactNode;
 }) {
   const { get } = useUser();
-  const [user, setUser] = createSignal<User | null>(null);
+  const [user, setUser] = React.useState<User | null>(null);
 
-  createEffect(() => {
-    get(props.userId).then(setUser);
-  });
+  React.useEffect(() => {
+    let active = true;
+    get(props.userId).then((value) => {
+      if (active) {
+        setUser(value);
+      }
+    });
 
-  return <>{user() ? props.component(user() as User) : null}</>;
+    return () => {
+      active = false;
+    };
+  }, [get, props.userId]);
+
+  return <>{user ? props.component(user) : null}</>;
 }

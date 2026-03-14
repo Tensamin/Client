@@ -1,63 +1,62 @@
-import { createSignal, For, Show } from "solid-js";
+import * as React from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useConversation } from "../context";
-import { createVirtualizer } from "@tanstack/solid-virtual";
 
 import Switch from "./switch";
 import ConversationModal from "../modal/conversation";
 import CommunityModal from "../modal/community";
 
 export default function List() {
-  const [category, setCategory] = createSignal<"conversations" | "communities">(
-    "conversations",
-  );
+  const [category, setCategory] = React.useState<
+    "conversations" | "communities"
+  >("conversations");
 
   const { conversations, communities } = useConversation();
 
-  // eslint-disable-next-line no-unassigned-vars
-  let scrollRef!: HTMLDivElement;
+  const scrollRef = React.useRef<HTMLDivElement | null>(null);
 
-  const virtualizer = createVirtualizer({
-    get count() {
-      return category() === "conversations"
-        ? conversations.length
-        : communities.length;
-    },
+  const virtualizer = useVirtualizer({
+    count: category === "conversations" ? conversations.length : communities.length,
     estimateSize: () => 80,
-    getScrollElement: () => scrollRef,
+    getScrollElement: () => scrollRef.current,
   });
 
   return (
-    <div class="flex flex-col gap-3">
-      <Switch category={category()} setCategory={setCategory} />
-      <div
-        ref={scrollRef}
-        id="conversation-list"
-        class="overflow-y-auto flex-1"
-      >
+    <div className="flex flex-col gap-3">
+      <Switch category={category} setCategory={setCategory} />
+      <div ref={scrollRef} id="conversation-list" className="overflow-y-auto flex-1">
         <div
-          class="relative w-full flex flex-col gap-2"
+          className="relative w-full flex flex-col gap-2"
           style={{
             height: `${virtualizer.getTotalSize()}px`,
           }}
         >
-          <For each={virtualizer.getVirtualItems()}>
-            {(virtualItem) => {
-              return (
-                <Show
-                  when={category() === "conversations"}
-                  fallback={
-                    <CommunityModal
-                      community={communities[virtualItem.index]}
+          {virtualizer.getVirtualItems().map((virtualItem) => {
+            const itemKey = `${category}-${virtualItem.index}`;
+
+            return (
+              <div
+                key={itemKey}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualItem.start}px)`,
+                }}
+              >
+                {category === "conversations" ? (
+                  conversations[virtualItem.index] ? (
+                    <ConversationModal
+                      userId={conversations[virtualItem.index].user_id}
                     />
-                  }
-                >
-                  <ConversationModal
-                    userId={conversations[virtualItem.index].user_id}
-                  />
-                </Show>
-              );
-            }}
-          </For>
+                  ) : null
+                ) : communities[virtualItem.index] ? (
+                  <CommunityModal community={communities[virtualItem.index]} />
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

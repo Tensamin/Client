@@ -1,21 +1,21 @@
 import Socket from "@tensamin/ttp/context";
 import User from "@tensamin/core-user/context";
-import type { RouteSectionProps } from "@solidjs/router";
+import type { ReactNode } from "react";
 
 import Sidebar from "@/components/sidebar";
 import Conversation from "@/features/conversation/context";
 import Navbar from "@/components/navbar";
 
-export default function Layout(props: RouteSectionProps) {
+export default function Layout(props: { children: ReactNode }) {
   return (
     <Socket>
       <User>
         <Conversation>
-          <div class="w-full h-full flex bg-sidebar">
+          <div className="w-full h-full flex bg-sidebar">
             <Sidebar />
-            <div class="w-full h-full flex flex-col">
+            <div className="w-full h-full flex flex-col">
               <Navbar />
-              <div class="bg-background h-full w-full rounded-tl-3xl border-t border-l">
+              <div className="bg-background h-full w-full rounded-tl-3xl border-t border-l">
                 {props.children}
               </div>
             </div>

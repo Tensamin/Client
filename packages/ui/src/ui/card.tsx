@@ -1,60 +1,35 @@
 import { cn } from "../libs/cn";
-import type { ComponentProps, ParentComponent } from "solid-js";
-import { splitProps } from "solid-js";
+import * as React from "react";
 
-export const Card = (props: ComponentProps<"div">) => {
-  const [local, rest] = splitProps(props, ["class"]);
+export const Card = ({ className, ...props }: React.ComponentProps<"div">) => (
+  <div
+    className={cn("rounded-xl border bg-card text-card-foreground shadow", className)}
+    {...props}
+  />
+);
 
-  return (
-    <div
-      class={cn(
-        "rounded-xl border bg-card text-card-foreground shadow",
-        local.class,
-      )}
-      {...rest}
-    />
-  );
-};
+export const CardHeader = ({ className, ...props }: React.ComponentProps<"div">) => (
+  <div className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
+);
 
-export const CardHeader = (props: ComponentProps<"div">) => {
-  const [local, rest] = splitProps(props, ["class"]);
+export const CardTitle = ({ className, ...props }: React.ComponentProps<"h1">) => (
+  <h1
+    className={cn("font-semibold leading-none tracking-tight", className)}
+    {...props}
+  />
+);
 
-  return (
-    <div class={cn("flex flex-col space-y-1.5 p-6", local.class)} {...rest} />
-  );
-};
+export const CardDescription = ({
+  className,
+  ...props
+}: React.ComponentProps<"h3">) => (
+  <h3 className={cn("text-sm text-muted-foreground", className)} {...props} />
+);
 
-export const CardTitle: ParentComponent<ComponentProps<"h1">> = (props) => {
-  const [local, rest] = splitProps(props, ["class"]);
+export const CardContent = ({ className, ...props }: React.ComponentProps<"div">) => (
+  <div className={cn("p-6 pt-0", className)} {...props} />
+);
 
-  return (
-    <h1
-      class={cn("font-semibold leading-none tracking-tight", local.class)}
-      {...rest}
-    />
-  );
-};
-
-export const CardDescription: ParentComponent<ComponentProps<"h3">> = (
-  props,
-) => {
-  const [local, rest] = splitProps(props, ["class"]);
-
-  return (
-    <h3 class={cn("text-sm text-muted-foreground", local.class)} {...rest} />
-  );
-};
-
-export const CardContent = (props: ComponentProps<"div">) => {
-  const [local, rest] = splitProps(props, ["class"]);
-
-  return <div class={cn("p-6 pt-0", local.class)} {...rest} />;
-};
-
-export const CardFooter = (props: ComponentProps<"div">) => {
-  const [local, rest] = splitProps(props, ["class"]);
-
-  return (
-    <div class={cn("flex items-center p-6 pt-0", local.class)} {...rest} />
-  );
-};
+export const CardFooter = ({ className, ...props }: React.ComponentProps<"div">) => (
+  <div className={cn("flex items-center p-6 pt-0", className)} {...props} />
+);

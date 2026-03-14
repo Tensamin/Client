@@ -1,10 +1,4 @@
-import {
-  createContext,
-  createEffect,
-  useContext,
-  type ParentProps,
-} from "solid-js";
-import { createStore } from "solid-js/store";
+import * as React from "react";
 import { useSocket } from "@tensamin/ttp/context";
 
 import { toast } from "@tensamin/shared/log";
@@ -18,40 +12,60 @@ interface contextValue {
   communities: Community[];
 }
 
-const ConversationContext = createContext<contextValue>();
+const ConversationContext = React.createContext<contextValue | undefined>(
+  undefined,
+);
 
-export default function ConversationProvider(props: ParentProps) {
-  const [conversations, setConversations] = createStore<Conversation[]>([]);
-  const [communities, setCommunities] = createStore<Community[]>([]);
+export default function ConversationProvider(props: {
+  children: React.ReactNode;
+}) {
+  const [conversations, setConversations] = React.useState<Conversation[]>([]);
+  const [communities, setCommunities] = React.useState<Community[]>([]);
 
   const { send } = useSocket();
 
-  createEffect(() => {
+  React.useEffect(() => {
+    let active = true;
+
     send("get_chats", {})
       .then((data) => {
-        setConversations(data.data.user_ids);
+        if (active) {
+          setConversations(data.data.user_ids);
+        }
       })
       .catch(() => {
         toast("error", "Failed to load conversations");
       });
+
     send("get_communities", {})
       .then((data) => {
-        setCommunities(data.data.communities);
+        if (active) {
+          setCommunities(data.data.communities);
+        }
       })
       .catch(() => {
         toast("error", "Failed to load communities");
       });
-  });
+
+    return () => {
+      active = false;
+    };
+  }, [send]);
+
+  const value = React.useMemo(
+    () => ({ conversations, communities }),
+    [communities, conversations],
+  );
 
   return (
-    <ConversationContext.Provider value={{ conversations, communities }}>
+    <ConversationContext.Provider value={value}>
       {props.children}
     </ConversationContext.Provider>
   );
 }
 
 export function useConversation(): contextValue {
-  const context = useContext(ConversationContext);
+  const context = React.useContext(ConversationContext);
   if (!context) {
     throw new Error(
       "useConversation must be used within a ConversationProvider",

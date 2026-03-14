@@ -14,19 +14,13 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@ark-ui/solid": "^5.34.1",
-    "@corvu/drawer": "^0.2.4",
-    "@corvu/otp-field": "^0.1.4",
-    "@corvu/resizable": "^0.2.5",
-    "@kobalte/core": "^0.13.11",
-    "@tanstack/solid-virtual": "^3.13.21",
+    "@radix-ui/react-context-menu": "^2.2.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cmdk-solid": "^1.1.2",
-    "embla-carousel-solid": "^8.6.0",
-    "lucide-solid": "^0.564.0",
-    "solid-js": "^1.9.11",
-    "solid-sonner": "^0.2.8",
+    "lucide-react": "^0.564.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "sonner": "^1.0.0",
     "tailwind-merge": "^3.5.0"
   }
 }

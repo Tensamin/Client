@@ -1,25 +1,30 @@
-import { createEffect } from "solid-js";
-import { render } from "solid-js/web";
-import { Route, Router } from "@solidjs/router";
+import * as React from "react";
+import { createRoot } from "react-dom/client";
+import {
+  Outlet,
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
 import "./index.css";
 
 import NotFound from "@/routes/404";
 
-// Layouts
 import RootLayout from "./routes/layout";
 import AppLayout from "./routes/app/layout";
 
-// Pages
 import Home from "@/routes/app/home";
 import ChatScreen from "@tensamin/chat/screen";
 import ChatContext from "@tensamin/chat/context";
 import Login from "@/routes/screens/login";
 import Signup from "@/routes/screens/signup";
 
-import { getMessages } from "@tensamin/chat/behaviour-conversation";
+const wrapper = document.getElementById("root");
 
-// Render
-const wrapper = document.getElementById("root")!;
+if (!wrapper) {
+  throw new Error("Missing root element");
+}
 
 // @ts-expect-error Declare global function
 window.setLogLevelToMax = () => {
@@ -27,67 +32,101 @@ window.setLogLevelToMax = () => {
   location.reload();
 };
 
-render(
-  () => (
-    <Router
-      root={(props) => {
-        // Theme Detection
-        createEffect(() => {
-          try {
-            const mediaQuery = window.matchMedia(
-              "(prefers-color-scheme: dark)",
-            );
+function RootShell() {
+  React.useEffect(() => {
+    try {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
-            // Initial check
-            document.documentElement.classList.toggle(
-              "dark",
-              mediaQuery.matches,
-            );
+      document.documentElement.classList.toggle("dark", mediaQuery.matches);
 
-            // Listen to changes
-            const handleChange = (e: MediaQueryListEvent) => {
-              document.documentElement.classList.toggle("dark", e.matches);
-            };
+      const handleChange = (event: MediaQueryListEvent) => {
+        document.documentElement.classList.toggle("dark", event.matches);
+      };
 
-            mediaQuery.addEventListener("change", handleChange);
+      mediaQuery.addEventListener("change", handleChange);
 
-            // Cleanup
-            return () => mediaQuery.removeEventListener("change", handleChange);
-          } catch {
-            /* theme detection not supported */
-          }
-        });
+      return () => {
+        mediaQuery.removeEventListener("change", handleChange);
+      };
+    } catch {
+      return;
+    }
+  }, []);
 
-        return (
-          <div class="w-screen h-screen overflow-hidden">{props.children}</div>
-        );
-      }}
-    >
-      <Route path="/" component={RootLayout}>
-        {/* App */}
-        <Route path="/" component={AppLayout}>
-          <Route path="/" component={Home} />
-          <Route path="/chat" component={Chat} />
-        </Route>
+  return (
+    <div className="w-screen h-screen overflow-hidden">
+      <RootLayout>
+        <Outlet />
+      </RootLayout>
+    </div>
+  );
+}
 
-        {/* Screens */}
-        <Route path="/">
-          <Route path="/login" component={Login} />
-          <Route path="/signup" component={Signup} />
-        </Route>
-      </Route>
-
-      {/* 404 */}
-      <Route path="*" component={NotFound} />
-    </Router>
-  ),
-  wrapper,
-);
+function AppShell() {
+  return (
+    <AppLayout>
+      <Outlet />
+    </AppLayout>
+  );
+}
 
 function Chat() {
   return (
-    <ChatContext getMessages={getMessages}>
+    <ChatContext>
       <ChatScreen />
     </ChatContext>
   );
 }
+
+const rootRoute = createRootRoute({
+  component: RootShell,
+});
+
+const appRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "app",
+  component: AppShell,
+});
+
+const homeRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/",
+  component: Home,
+});
+
+const chatRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "chat",
+  component: Chat,
+});
+
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "login",
+  component: Login,
+});
+
+const signupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "signup",
+  component: Signup,
+});
+
+const routeTree = rootRoute.addChildren([
+  appRoute.addChildren([homeRoute, chatRoute]),
+  loginRoute,
+  signupRoute,
+]);
+
+const router = createRouter({
+  routeTree,
+  defaultNotFoundComponent: NotFound,
+});
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+createRoot(wrapper).render(<RouterProvider router={router} />);

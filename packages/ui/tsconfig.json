@@ -3,8 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "jsx": "preserve",
-    "jsxImportSource": "solid-js",
+    "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
@@ -13,5 +12,18 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": [
+    "src/link.tsx",
+    "src/libs/cn.ts",
+    "src/screens/error.tsx",
+    "src/screens/loading.tsx",
+    "src/ui/avatar.tsx",
+    "src/ui/button.tsx",
+    "src/ui/card.tsx",
+    "src/ui/checkbox.tsx",
+    "src/ui/context-menu.tsx",
+    "src/ui/input.tsx",
+    "src/ui/label.tsx",
+    "src/ui/sonner.tsx"
+  ]
 }

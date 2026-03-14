@@ -1,49 +1,47 @@
-import {
-  createContext,
-  createEffect,
-  createSignal,
-  useContext,
-} from "solid-js";
-import type { ParentProps } from "solid-js";
-import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
+import * as React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useRouterState } from "@tanstack/react-router";
 import type { RawMessage, RawMessages } from "./values";
-import { useSearchParams } from "@solidjs/router";
 import { useCrypto } from "@tensamin/core-crypto/context";
 import { useUser } from "@tensamin/core-user/context";
 import { useStorage } from "@tensamin/core-storage/context";
+import { useSocket } from "@tensamin/ttp/context";
 
-export const context = createContext<contextType>();
+export const context = React.createContext<contextType | undefined>(undefined);
 
 const queryClient = new QueryClient();
 
 export default function Provider(
-  props: ParentProps & {
-    getMessages: (
-      amount: number,
-      offset: number,
-      user_id: number,
-    ) => Promise<RawMessages>;
-  },
+  props: { children: React.ReactNode },
 ) {
   const { get_shared_secret } = useCrypto();
   const { get } = useUser();
   const { load } = useStorage();
+  const { send } = useSocket();
 
-  const [liveMessages, setLiveMessages] = createSignal<RawMessages>([]);
-  const [currentSharedSecret, setCurrentSharedSecret] = createSignal("");
+  const [liveMessagesState, setLiveMessagesState] = React.useState<RawMessages>([]);
+  const [currentSharedSecret, setCurrentSharedSecret] = React.useState("");
 
-  const [searchParams] = useSearchParams();
-  const userId = () => Number(searchParams.id ?? 0);
+  const locationSearch = useRouterState({
+    select: (state) => state.location.search,
+  });
 
-  createEffect(() => {
-    const recipientId = userId();
+  const userIdValue = React.useMemo(() => {
+    const rawId = (locationSearch as unknown as { id?: unknown })?.id;
+    return Number(rawId ?? 0);
+  }, [locationSearch]);
+
+  React.useEffect(() => {
+    const recipientId = userIdValue;
 
     if (!recipientId) {
       setCurrentSharedSecret("");
       return;
     }
 
-    get(recipientId).then(async (recipientData) => {
+    let active = true;
+
+    void get(recipientId).then(async (recipientData) => {
       const ownId = await load("user_id");
       const privateKey = await load("private_key");
       const ownData = await get(ownId);
@@ -53,39 +51,58 @@ export default function Provider(
         recipientData.public_key,
       );
 
-      setCurrentSharedSecret(sharedSecret);
+      if (active) {
+        setCurrentSharedSecret(sharedSecret);
+      }
     });
-  });
 
-  async function customGetMessages(amount: number, offset: number) {
-    const messages = await props.getMessages(amount, offset, userId());
-    const sorted = [...messages].sort((a, b) => a.timestamp - b.timestamp);
+    return () => {
+      active = false;
+    };
+  }, [get, get_shared_secret, load, userIdValue]);
 
-    return sorted;
-  }
+  const customGetMessages = React.useCallback(
+    async (amount: number, offset: number) => {
+      const messages = await send("messages_get", {
+        amount,
+        offset,
+        user_id: userIdValue,
+      });
 
-  function addLiveMessage(message: RawMessage) {
-    setLiveMessages((prev) => [...prev, message]);
-  }
+      if (messages.type.startsWith("error")) {
+        throw new Error(messages.type);
+      }
 
-  function clearLiveMessages() {
-    setLiveMessages([]);
-  }
+      const rawMessages = messages.data.messages;
+      const sorted = [...rawMessages].sort((a, b) => a.timestamp - b.timestamp);
+      return sorted;
+    },
+    [send, userIdValue],
+  );
+
+  const addLiveMessage = React.useCallback((message: RawMessage) => {
+    setLiveMessagesState((prev) => [...prev, message]);
+  }, []);
+
+  const clearLiveMessages = React.useCallback(() => {
+    setLiveMessagesState([]);
+  }, []);
+
+  const value = React.useMemo<contextType>(
+    () => ({
+      getMessages: customGetMessages,
+      liveMessages: () => liveMessagesState,
+      addLiveMessage,
+      clearLiveMessages,
+      sharedSecret: () => currentSharedSecret,
+      userId: () => userIdValue,
+    }),
+    [addLiveMessage, clearLiveMessages, currentSharedSecret, customGetMessages, liveMessagesState, userIdValue],
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
-      <context.Provider
-        value={{
-          getMessages: customGetMessages,
-          liveMessages,
-          addLiveMessage,
-          clearLiveMessages,
-          sharedSecret: currentSharedSecret,
-          userId,
-        }}
-      >
-        {props.children}
-      </context.Provider>
+      <context.Provider value={value}>{props.children}</context.Provider>
     </QueryClientProvider>
   );
 }
@@ -100,7 +117,7 @@ type contextType = {
 };
 
 export function useChat(): contextType {
-  const ctx = useContext(context);
+  const ctx = React.useContext(context);
   if (!ctx) {
     throw new Error("useChat must be used within a ChatProvider");
   }

@@ -1,4 +1,4 @@
-import { createMemo } from "solid-js";
+import * as React from "react";
 
 import {
   ensureMarkdownStyles,
@@ -13,7 +13,7 @@ export type TextProps = {
 export default function Text(props: TextProps) {
   ensureMarkdownStyles();
 
-  const blocks = createMemo(() => parseMarkdownBlocks(props.value));
+  const blocks = React.useMemo(() => parseMarkdownBlocks(props.value), [props.value]);
 
-  return <div class="tm-md-root">{renderBlocks(blocks())}</div>;
+  return <div className="tm-md-root">{renderBlocks(blocks)}</div>;
 }

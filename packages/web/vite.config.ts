@@ -1,11 +1,10 @@
 import { defineConfig } from "vite";
-import solid from "vite-plugin-solid";
+import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
-import lucidePreprocess from "vite-plugin-lucide-preprocess";
 
 export default defineConfig({
-  plugins: [solid(), tsconfigPaths(), tailwindcss(), lucidePreprocess()],
+  plugins: [react(), tsconfigPaths(), tailwindcss()],
   worker: {
     format: "es",
   },

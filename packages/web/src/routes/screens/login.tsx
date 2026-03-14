@@ -1,15 +1,15 @@
 import Form from "@/components/screens/login/form";
 import { Button } from "@tensamin/ui/button";
-import { A } from "@solidjs/router";
+import { Link } from "@tanstack/react-router";
 
 export default function Page() {
   return (
-    <div class="w-full h-full flex flex-col gap-10 items-center justify-center">
+    <div className="w-full h-full flex flex-col gap-10 items-center justify-center">
       <Form />
-      <div class="flex">
-        <A href="/signup">
+      <div className="flex">
+        <Link to="/signup">
           <Button variant="outline">Sign up</Button>
-        </A>
+        </Link>
       </div>
     </div>
   );

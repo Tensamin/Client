@@ -1,42 +1,53 @@
-import { createSignal, createEffect, on } from "solid-js";
+import * as React from "react";
 
 const DELAY = 250;
 
 export default function Screen(props: { progress: number }) {
-  const [displayProgress, setDisplayProgress] = createSignal(0);
+  const [displayProgress, setDisplayProgress] = React.useState(0);
+  const displayProgressRef = React.useRef(0);
 
-  // Animation
-  createEffect(
-    on(
-      () => props.progress,
-      (target) => {
-        const start = displayProgress();
-        const delta = target - start;
-        if (delta === 0) return;
+  React.useEffect(() => {
+    displayProgressRef.current = displayProgress;
+  }, [displayProgress]);
 
-        const duration = DELAY;
-        const startTime = performance.now();
+  React.useEffect(() => {
+    const target = props.progress;
+    const start = displayProgressRef.current;
+    const delta = target - start;
 
-        function animate(now: number) {
-          const elapsed = now - startTime;
-          const t = Math.min(elapsed / duration, 1);
-          const eased = 1 - Math.pow(1 - t, 3);
-          setDisplayProgress(start + delta * eased);
-          if (t < 1) requestAnimationFrame(animate);
-        }
+    if (delta === 0) {
+      return;
+    }
 
-        requestAnimationFrame(animate);
-      },
-    ),
-  );
+    const duration = DELAY;
+    const startTime = performance.now();
+    let frameId = 0;
+
+    function animate(now: number) {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplayProgress(start + delta * eased);
+
+      if (t < 1) {
+        frameId = requestAnimationFrame(animate);
+      }
+    }
+
+    frameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, [props.progress]);
 
   return (
-    <div class="bg-background w-full h-screen flex flex-col justify-center items-center">
-      <div class="w-64 h-1.5 bg-secondary rounded-full overflow-hidden relative">
+    <div className="bg-background w-full h-screen flex flex-col justify-center items-center">
+      <div className="w-64 h-1.5 bg-secondary rounded-full overflow-hidden relative">
         <div
-          class="h-full bg-primary absolute left-0 top-0"
+          className="h-full bg-primary absolute left-0 top-0"
           style={{
-            width: `${displayProgress()}%`,
+            width: `${displayProgress}%`,
           }}
         />
       </div>

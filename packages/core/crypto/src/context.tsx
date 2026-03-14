@@ -1,45 +1,41 @@
-import {
-  createContext,
-  onMount,
-  onCleanup,
-  createSignal,
-  Show,
-  useContext,
-} from "solid-js";
-import type { ParentProps } from "solid-js";
-
+import * as React from "react";
 import * as Comlink from "comlink";
 import Loading from "@tensamin/ui/screens/loading";
 
-export const context = createContext<contextType>();
+export const context = React.createContext<contextType | undefined>(undefined);
 
-export default function Provider(props: ParentProps) {
-  let apiRef: ApiRef | null = null;
-  const [isWorkerReady, setIsWorkerReady] = createSignal(false);
+export default function Provider(props: { children: React.ReactNode }) {
+  const apiRef = React.useRef<ApiRef | null>(null);
+  const [isWorkerReady, setIsWorkerReady] = React.useState(false);
 
-  const { encrypt, decrypt, get_shared_secret } = createCryptoActions(
-    () => apiRef,
+  const { encrypt, decrypt, get_shared_secret } = React.useMemo(
+    () => createCryptoActions(() => apiRef.current),
+    [],
   );
 
-  onMount(() => {
+  React.useEffect(() => {
     const worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
     });
-    apiRef = Comlink.wrap(worker);
+
+    apiRef.current = Comlink.wrap(worker);
     setIsWorkerReady(true);
 
-    onCleanup(() => {
-      apiRef = null;
+    return () => {
+      apiRef.current = null;
       worker.terminate();
-    });
-  });
+      setIsWorkerReady(false);
+    };
+  }, []);
+
+  if (!isWorkerReady) {
+    return <Loading progress={10} />;
+  }
 
   return (
-    <Show when={isWorkerReady()} fallback={<Loading progress={10} />}>
-      <context.Provider value={{ encrypt, decrypt, get_shared_secret }}>
-        {props.children}
-      </context.Provider>
-    </Show>
+    <context.Provider value={{ encrypt, decrypt, get_shared_secret }}>
+      {props.children}
+    </context.Provider>
   );
 }
 
@@ -68,7 +64,7 @@ export function createCryptoActions(
 ): contextType {
   const encrypt = async (secret: string, message: string): Promise<string> => {
     const apiRef = getApiRef();
-    if (!apiRef) throw "API not initialized";
+    if (!apiRef) throw new Error("API not initialized");
     return await apiRef.encrypt(secret, message);
   };
 
@@ -77,7 +73,7 @@ export function createCryptoActions(
     encryptedMessage: string,
   ): Promise<string> => {
     const apiRef = getApiRef();
-    if (!apiRef) throw "API not initialized";
+    if (!apiRef) throw new Error("API not initialized");
     return await apiRef.decrypt(secret, encryptedMessage);
   };
 
@@ -87,7 +83,7 @@ export function createCryptoActions(
     other_public_key: string,
   ): Promise<string> => {
     const apiRef = getApiRef();
-    if (!apiRef) throw "API not initialized";
+    if (!apiRef) throw new Error("API not initialized");
     return await apiRef.get_shared_secret(
       own_private_key,
       own_public_key,
@@ -99,7 +95,7 @@ export function createCryptoActions(
 }
 
 export function useCrypto(): contextType {
-  const ctx = useContext(context);
+  const ctx = React.useContext(context);
   if (!ctx) {
     throw new Error("useCrypto must be used within a CryptoProvider");
   }

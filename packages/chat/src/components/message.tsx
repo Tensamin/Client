@@ -1,5 +1,5 @@
 import { useCrypto } from "@tensamin/core-crypto/context";
-import { createEffect, createSignal, onCleanup, Show } from "solid-js";
+import * as React from "react";
 import { useChat } from "../context";
 import type { RawMessage } from "../values";
 import { log } from "@tensamin/shared/log";
@@ -12,18 +12,17 @@ export default function Message(props: {
   const { sharedSecret } = useChat();
   const { decrypt } = useCrypto();
 
-  const message = () => props.message;
-  const [decodedContent, setDecodedContent] = createSignal("");
-  const [isReady, setIsReady] = createSignal(false);
+  const [decodedContent, setDecodedContent] = React.useState("");
+  const [isReady, setIsReady] = React.useState(false);
 
-  createEffect(() => {
+  React.useEffect(() => {
     if (props.notEncrypted) {
-      setDecodedContent(message().content);
+      setDecodedContent(props.message.content);
       setIsReady(true);
       return;
     }
 
-    const content = message().content;
+    const content = props.message.content;
     const secret = sharedSecret();
     let active = true;
 
@@ -57,23 +56,21 @@ export default function Message(props: {
         setIsReady(true);
       });
 
-    onCleanup(() => {
+    return () => {
       active = false;
-    });
-  });
+    };
+  }, [decrypt, props.message.content, props.notEncrypted, sharedSecret]);
 
   return (
-    <div class="w-full flex justify-start">
+    <div className="w-full flex justify-start">
       <div
-        class={`animate-in fade-in duration-200 max-w-[80%] rounded-xl px-2 py-1 whitespace-pre-wrap wrap-break-word ${
-          message().sent_by_self
+        className={`animate-in fade-in duration-200 max-w-[80%] rounded-xl px-2 py-1 whitespace-pre-wrap wrap-break-word ${
+          props.message.sent_by_self
             ? "bg-primary text-primary-foreground"
             : "bg-muted"
         }`}
       >
-        <Show when={isReady()}>
-          <Text value={decodedContent()} />
-        </Show>
+        {isReady ? <Text value={decodedContent} /> : null}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
-import { createVirtualizer } from "@tanstack/solid-virtual";
-import { useInfiniteQuery } from "@tanstack/solid-query";
+import * as React from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useChat } from "./context";
-import { createEffect, createMemo, createSignal, For } from "solid-js";
 
 import InputComponent from "./components/input";
 import Message from "./components/message";
@@ -11,21 +11,22 @@ const PAGE_SIZE = 50;
 export default function Screen() {
   const { getMessages, liveMessages, clearLiveMessages, userId } = useChat();
 
-  // eslint-disable-next-line no-unassigned-vars
-  let scrollRef!: HTMLDivElement;
+  const scrollRef = React.useRef<HTMLDivElement | null>(null);
 
   const [hasScrolledToBottomInitially, setHasScrolledToBottomInitially] =
-    createSignal(false);
-  const [lastLiveMessageCount, setLastLiveMessageCount] = createSignal(0);
-  const [prependAnchor, setPrependAnchor] = createSignal<{
+    React.useState(false);
+  const [lastLiveMessageCount, setLastLiveMessageCount] = React.useState(0);
+  const [prependAnchor, setPrependAnchor] = React.useState<{
     totalSize: number;
     scrollTop: number;
   } | null>(null);
 
-  const messagesQuery = useInfiniteQuery(() => ({
-    queryKey: ["chat-messages", String(userId())],
+  const chatUserId = userId();
+
+  const messagesQuery = useInfiniteQuery({
+    queryKey: ["chat-messages", String(chatUserId)],
     initialPageParam: 0,
-    queryFn: ({ pageParam }) => getMessages(PAGE_SIZE, pageParam),
+    queryFn: ({ pageParam }) => getMessages(PAGE_SIZE, Number(pageParam)),
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < PAGE_SIZE) {
         return undefined;
@@ -33,54 +34,30 @@ export default function Screen() {
 
       return allPages.length * PAGE_SIZE;
     },
-  }));
-
-  const historicalMessages = createMemo(() => {
-    const pages = messagesQuery.data?.pages ?? [];
-    return [...pages].reverse().flat();
   });
 
-  createEffect(() => {
-    userId();
+  const historicalMessages = React.useMemo(() => {
+    const pages = messagesQuery.data?.pages ?? [];
+    return [...pages].reverse().flat();
+  }, [messagesQuery.data]);
+
+  React.useEffect(() => {
     clearLiveMessages();
     setHasScrolledToBottomInitially(false);
     setLastLiveMessageCount(0);
     setPrependAnchor(null);
-  });
+  }, [chatUserId, clearLiveMessages]);
 
-  const messages = createMemo(() => [
-    ...historicalMessages(),
-    ...liveMessages(),
-  ]);
+  const messages = React.useMemo(
+    () => [...historicalMessages, ...liveMessages()],
+    [historicalMessages, liveMessages],
+  );
 
-  async function onScroll() {
-    if (!scrollRef) {
-      return;
-    }
-
-    if (scrollRef.scrollTop > 96) {
-      return;
-    }
-
-    if (messagesQuery.isFetchingNextPage || !messagesQuery.hasNextPage) {
-      return;
-    }
-
-    setPrependAnchor({
-      totalSize: virtualizer.getTotalSize(),
-      scrollTop: scrollRef.scrollTop,
-    });
-
-    await messagesQuery.fetchNextPage();
-  }
-
-  const virtualizer = createVirtualizer({
-    get count() {
-      return messages().length;
-    },
-    getScrollElement: () => scrollRef,
+  const virtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => scrollRef.current,
     estimateSize: (index) => {
-      const message = messages()[index];
+      const message = messages[index];
 
       if (!message) {
         return 56;
@@ -102,82 +79,107 @@ export default function Screen() {
     overscan: 6,
   });
 
-  createEffect(() => {
-    const currentMessages = messages();
+  const onScroll = React.useCallback(async () => {
+    if (!scrollRef.current) {
+      return;
+    }
 
+    if (scrollRef.current.scrollTop > 96) {
+      return;
+    }
+
+    if (messagesQuery.isFetchingNextPage || !messagesQuery.hasNextPage) {
+      return;
+    }
+
+    setPrependAnchor({
+      totalSize: virtualizer.getTotalSize(),
+      scrollTop: scrollRef.current.scrollTop,
+    });
+
+    await messagesQuery.fetchNextPage();
+  }, [messagesQuery, virtualizer]);
+
+  React.useEffect(() => {
     if (
-      !scrollRef ||
-      hasScrolledToBottomInitially() ||
-      currentMessages.length === 0
+      !scrollRef.current ||
+      hasScrolledToBottomInitially ||
+      messages.length === 0
     ) {
       return;
     }
 
     queueMicrotask(() => {
-      if (!scrollRef) {
+      if (!scrollRef.current) {
         return;
       }
 
-      scrollRef.scrollTop = scrollRef.scrollHeight;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       setHasScrolledToBottomInitially(true);
     });
-  });
+  }, [hasScrolledToBottomInitially, messages]);
 
-  createEffect(() => {
+  React.useEffect(() => {
     const count = liveMessages().length;
 
-    if (!scrollRef) {
+    if (!scrollRef.current) {
       return;
     }
 
-    if (count > lastLiveMessageCount()) {
+    if (count > lastLiveMessageCount) {
       queueMicrotask(() => {
-        if (!scrollRef) {
+        if (!scrollRef.current) {
           return;
         }
 
-        scrollRef.scrollTop = scrollRef.scrollHeight;
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       });
     }
 
     setLastLiveMessageCount(count);
-  });
+  }, [lastLiveMessageCount, liveMessages]);
 
-  createEffect(() => {
-    const anchor = prependAnchor();
-
-    if (!scrollRef || !anchor || messagesQuery.isFetchingNextPage) {
+  React.useEffect(() => {
+    if (!scrollRef.current || !prependAnchor || messagesQuery.isFetchingNextPage) {
       return;
     }
 
     queueMicrotask(() => {
-      if (!scrollRef) {
+      if (!scrollRef.current) {
         return;
       }
 
-      const delta = virtualizer.getTotalSize() - anchor.totalSize;
-      scrollRef.scrollTop = anchor.scrollTop + delta;
+      const delta = virtualizer.getTotalSize() - prependAnchor.totalSize;
+      scrollRef.current.scrollTop = prependAnchor.scrollTop + delta;
       setPrependAnchor(null);
     });
-  });
+  }, [messagesQuery.isFetchingNextPage, prependAnchor, virtualizer]);
 
   return (
-    <div class="w-full h-full flex flex-col overflow-hidden px-2">
+    <div className="w-full h-full flex flex-col overflow-hidden px-2">
       <div
         ref={scrollRef}
         id="chat_container"
-        class={`flex-1 max-h-[calc(100vh-151px)] overflow-y-auto px-2.5`}
-        onScroll={onScroll}
+        className="flex-1 max-h-[calc(100vh-151px)] overflow-y-auto px-2.5"
+        onScroll={() => {
+          void onScroll();
+        }}
       >
         <div
-          class="relative w-full"
+          className="relative w-full"
           style={{
             height: `${virtualizer.getTotalSize()}px`,
           }}
         >
-          <For each={virtualizer.getVirtualItems()}>
-            {(virtualRow) => (
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const message = messages[virtualRow.index];
+            if (!message) {
+              return null;
+            }
+
+            return (
               <div
+                key={virtualRow.key}
                 data-index={virtualRow.index}
                 ref={virtualizer.measureElement}
                 style={{
@@ -189,13 +191,10 @@ export default function Screen() {
                   padding: "4px 0",
                 }}
               >
-                <Message
-                  message={messages()[virtualRow.index]}
-                  notEncrypted={messages()[virtualRow.index].not_encrypted}
-                />
+                <Message message={message} notEncrypted={message.not_encrypted} />
               </div>
-            )}
-          </For>
+            );
+          })}
         </div>
       </div>
       <InputComponent />

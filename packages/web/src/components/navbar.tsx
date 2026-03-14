@@ -1,42 +1,45 @@
 import { Button } from "@tensamin/ui/button";
-import { House } from "lucide-solid";
-import { useNavigate, useSearchParams } from "@solidjs/router";
-import { createEffect, createSignal } from "solid-js";
+import { House } from "lucide-react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
+import * as React from "react";
 import { useUser, type User } from "@tensamin/core-user/context";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const { get } = useUser();
+  const search = useRouterState({ select: (state) => state.location.search });
 
-  const [user, setUser] = createSignal<User | null>(null);
+  const [user, setUser] = React.useState<User | null>(null);
 
-  createEffect(() => {
-    const [searchParams] = useSearchParams();
-    const id = Number(searchParams.id);
+  const currentId = React.useMemo(
+    () => Number((search as Record<string, unknown>).id ?? Number.NaN),
+    [search],
+  );
 
-    if (isNaN(id)) {
+  React.useEffect(() => {
+    if (Number.isNaN(currentId)) {
       setUser(null);
       return;
     }
 
-    get(id)
+    get(currentId)
       .then(setUser)
       .catch(() => setUser(null));
-  });
+  }, [currentId, get]);
 
   return (
-    <div class="w-full h-13.5 flex items-center justify-center">
+    <div className="w-full h-13.5 flex items-center justify-center">
       <Button
         onClick={() => {
-          navigate("/");
+          void navigate({ to: "/" });
         }}
-        class="w-9 h-9 aspect-square p-0 rounded-lg"
+        className="w-9 h-9 aspect-square p-0 rounded-lg"
         variant="outline"
       >
         <House size={18} />
       </Button>
-      <p class="font-medium pl-3 text-md">{user()?.display}</p>
-      <div class="w-full" />
+      <p className="font-medium pl-3 text-md">{user?.display}</p>
+      <div className="w-full" />
     </div>
   );
 }

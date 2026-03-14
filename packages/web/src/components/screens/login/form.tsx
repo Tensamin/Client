@@ -4,8 +4,9 @@ import { Input } from "@tensamin/ui/input";
 import { Label } from "@tensamin/ui/label";
 import { useStorage } from "@tensamin/core-storage/context";
 import { log, toast } from "@tensamin/shared/log";
-import { useNavigate } from "@solidjs/router";
-import { Upload } from "lucide-solid";
+import { useNavigate } from "@tanstack/react-router";
+import { Upload } from "lucide-react";
+import * as React from "react";
 import { z } from "zod";
 
 const fetchedUser = z.object({
@@ -27,25 +28,22 @@ const formSchema = z.object({
 });
 
 export default function Form() {
-  let uploadRef: HTMLInputElement | undefined = undefined;
-  const setUploadRef = (el: HTMLInputElement) => {
-    uploadRef = el;
-  };
+  const uploadRef = React.useRef<HTMLInputElement | null>(null);
   const { save } = useStorage();
   const navigate = useNavigate();
 
   return (
-    <div class="flex gap-5">
-      <Card class="w-75 h-80">
+    <div className="flex gap-5">
+      <Card className="w-75 h-80">
         <CardHeader>
           <CardTitle>Use .tu file</CardTitle>
         </CardHeader>
-        <CardContent class="h-full flex items-center justify-center">
+        <CardContent className="h-full flex items-center justify-center">
           <div
-            onClick={() => uploadRef?.click()}
-            class="cursor-pointer w-60 aspect-square mb-17 bg-input/13 hover:bg-input/30 transition-all duration-300 ease-in-out border-dotted border-input/75 border-3 flex items-center justify-center rounded-lg"
+            onClick={() => uploadRef.current?.click()}
+            className="cursor-pointer w-60 aspect-square mb-17 bg-input/13 hover:bg-input/30 transition-all duration-300 ease-in-out border-dotted border-input/75 border-3 flex items-center justify-center rounded-lg"
           >
-            <Upload class="text-input/75" size={34} />
+            <Upload className="text-input/75" size={34} />
           </div>
           <input
             onChange={async (e) => {
@@ -62,7 +60,7 @@ export default function Form() {
                   save("user_id", userId);
                   save("private_key", privateKey);
 
-                  navigate("/");
+                  void navigate({ to: "/" });
                 } else {
                   throw new Error("No file selected");
                 }
@@ -72,18 +70,18 @@ export default function Form() {
               }
             }}
             type="file"
-            ref={setUploadRef}
-            class="hidden"
+            ref={uploadRef}
+            className="hidden"
           />
         </CardContent>
       </Card>
-      <Card class="w-75 h-auto">
+      <Card className="w-75 h-auto">
         <CardHeader>
           <CardTitle>Use credentials</CardTitle>
         </CardHeader>
         <CardContent>
           <form
-            class="flex flex-col gap-5 h-full"
+            className="flex flex-col gap-5 h-full"
             onSubmit={async (e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
@@ -111,7 +109,7 @@ export default function Form() {
                     save("user_id", user.data.user_id);
                     save("private_key", inputParse.data.private_key);
 
-                    navigate("/");
+                    void navigate({ to: "/" });
                   } else {
                     log(0, "Login", "red", "Invalid response from server");
                     toast("error", "Invalid response from server");
@@ -123,13 +121,13 @@ export default function Form() {
                 });
             }}
           >
-            <div class="flex flex-col gap-2">
-              <Label for="username">Username</Label>
-              <Input type="text" id="username" />
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="username">Username</Label>
+              <Input type="text" id="username" name="username" />
             </div>
-            <div class="flex flex-col gap-2">
-              <Label for="private_key">Private Key</Label>
-              <Input type="password" id="private_key" />
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="private_key">Private Key</Label>
+              <Input type="password" id="private_key" name="private_key" />
             </div>
             <Button type="submit">Login</Button>
           </form>

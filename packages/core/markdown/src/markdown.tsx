@@ -1,4 +1,4 @@
-import { For, Index, type JSX } from "solid-js";
+import * as React from "react";
 
 type InlineNode =
   | { type: "text"; value: string }
@@ -345,31 +345,53 @@ export function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
   return blocks;
 }
 
-export function renderInline(nodes: InlineNode[]): JSX.Element[] {
-  return nodes.map((node) => {
+export function renderInline(nodes: InlineNode[]): React.ReactNode[] {
+  return nodes.map((node, index) => {
     if (node.type === "text") {
       return node.value;
     }
 
     if (node.type === "strong") {
-      return <strong class="tm-md-strong">{node.value}</strong>;
+      return (
+        <strong key={index} className="tm-md-strong">
+          {node.value}
+        </strong>
+      );
     }
 
     if (node.type === "em") {
-      return <em class="tm-md-em">{node.value}</em>;
+      return (
+        <em key={index} className="tm-md-em">
+          {node.value}
+        </em>
+      );
     }
 
     if (node.type === "del") {
-      return <del class="tm-md-del">{node.value}</del>;
+      return (
+        <del key={index} className="tm-md-del">
+          {node.value}
+        </del>
+      );
     }
 
     if (node.type === "code") {
-      return <code class="tm-md-code">{node.value}</code>;
+      return (
+        <code key={index} className="tm-md-code">
+          {node.value}
+        </code>
+      );
     }
 
     if (node.type === "link") {
       return (
-        <a class="tm-md-link" href={node.href} target="_blank" rel="noreferrer">
+        <a
+          key={index}
+          className="tm-md-link"
+          href={node.href}
+          target="_blank"
+          rel="noreferrer"
+        >
           {node.label}
         </a>
       );
@@ -377,7 +399,8 @@ export function renderInline(nodes: InlineNode[]): JSX.Element[] {
 
     return (
       <img
-        class="tm-md-image"
+        key={index}
+        className="tm-md-image"
         src={node.src}
         alt={node.alt}
         loading="lazy"
@@ -387,44 +410,44 @@ export function renderInline(nodes: InlineNode[]): JSX.Element[] {
   });
 }
 
-export function renderBlocks(blocks: MarkdownBlock[]): JSX.Element {
+export function renderBlocks(blocks: MarkdownBlock[]): React.ReactElement {
   return (
-    <For each={blocks}>
-      {(block) => {
+    <>
+      {blocks.map((block, blockIndex) => {
         if (block.type === "heading") {
           const className = `tm-md-heading tm-md-h${String(block.level)}`;
           if (block.level === 1)
             return (
-              <h1 class={className}>
+              <h1 key={blockIndex} className={className}>
                 {renderInline(parseInlineNodes(block.text))}
               </h1>
             );
           if (block.level === 2)
             return (
-              <h2 class={className}>
+              <h2 key={blockIndex} className={className}>
                 {renderInline(parseInlineNodes(block.text))}
               </h2>
             );
           if (block.level === 3)
             return (
-              <h3 class={className}>
+              <h3 key={blockIndex} className={className}>
                 {renderInline(parseInlineNodes(block.text))}
               </h3>
             );
           if (block.level === 4)
             return (
-              <h4 class={className}>
+              <h4 key={blockIndex} className={className}>
                 {renderInline(parseInlineNodes(block.text))}
               </h4>
             );
           if (block.level === 5)
             return (
-              <h5 class={className}>
+              <h5 key={blockIndex} className={className}>
                 {renderInline(parseInlineNodes(block.text))}
               </h5>
             );
           return (
-            <h6 class={className}>
+            <h6 key={blockIndex} className={className}>
               {renderInline(parseInlineNodes(block.text))}
             </h6>
           );
@@ -432,18 +455,18 @@ export function renderBlocks(blocks: MarkdownBlock[]): JSX.Element {
 
         if (block.type === "blockquote") {
           return (
-            <blockquote class="tm-md-blockquote">
-              <For each={block.text.split("\n")}>
-                {(line) => <p>{renderInline(parseInlineNodes(line))}</p>}
-              </For>
+            <blockquote key={blockIndex} className="tm-md-blockquote">
+              {block.text.split("\n").map((line, lineIndex) => (
+                <p key={lineIndex}>{renderInline(parseInlineNodes(line))}</p>
+              ))}
             </blockquote>
           );
         }
 
         if (block.type === "code") {
           return (
-            <pre class="tm-md-pre">
-              <code class="tm-md-codeblock" data-language={block.language}>
+            <pre key={blockIndex} className="tm-md-pre">
+              <code className="tm-md-codeblock" data-language={block.language}>
                 {block.code}
               </code>
             </pre>
@@ -453,51 +476,43 @@ export function renderBlocks(blocks: MarkdownBlock[]): JSX.Element {
         if (block.type === "list") {
           const Tag = block.ordered ? "ol" : "ul";
           return (
-            <Tag class={block.ordered ? "tm-md-ol" : "tm-md-ul"}>
-              <For each={block.items}>
-                {(item) => (
-                  <li class="tm-md-li">
+            <Tag key={blockIndex} className={block.ordered ? "tm-md-ol" : "tm-md-ul"}>
+              {block.items.map((item, itemIndex) => (
+                <li key={itemIndex} className="tm-md-li">
                     {item.checked !== null ? (
                       <input
                         type="checkbox"
                         checked={item.checked}
                         disabled
-                        class="tm-md-checkbox"
+                        className="tm-md-checkbox"
                       />
                     ) : null}
                     <span>{renderInline(parseInlineNodes(item.text))}</span>
                   </li>
-                )}
-              </For>
+              ))}
             </Tag>
           );
         }
 
         if (block.type === "table") {
           return (
-            <div class="tm-md-table-wrap">
-              <table class="tm-md-table">
+            <div key={blockIndex} className="tm-md-table-wrap">
+              <table className="tm-md-table">
                 <thead>
                   <tr>
-                    <For each={block.headers}>
-                      {(header) => (
-                        <th>{renderInline(parseInlineNodes(header))}</th>
-                      )}
-                    </For>
+                    {block.headers.map((header, headerIndex) => (
+                      <th key={headerIndex}>{renderInline(parseInlineNodes(header))}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  <For each={block.rows}>
-                    {(row) => (
-                      <tr>
-                        <For each={row}>
-                          {(cell) => (
-                            <td>{renderInline(parseInlineNodes(cell))}</td>
-                          )}
-                        </For>
+                  {block.rows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {row.map((cell, cellIndex) => (
+                        <td key={cellIndex}>{renderInline(parseInlineNodes(cell))}</td>
+                      ))}
                       </tr>
-                    )}
-                  </For>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -505,23 +520,21 @@ export function renderBlocks(blocks: MarkdownBlock[]): JSX.Element {
         }
 
         if (block.type === "hr") {
-          return <hr class="tm-md-hr" />;
+          return <hr key={blockIndex} className="tm-md-hr" />;
         }
 
         return (
-          <p class="tm-md-p">
-            <Index each={block.text.split("\n")}>
-              {(line, idx) => (
-                <>
-                  {idx > 0 ? <br /> : null}
-                  {renderInline(parseInlineNodes(line()))}
-                </>
-              )}
-            </Index>
+          <p key={blockIndex} className="tm-md-p">
+            {block.text.split("\n").map((line, lineIndex) => (
+              <React.Fragment key={lineIndex}>
+                {lineIndex > 0 ? <br /> : null}
+                {renderInline(parseInlineNodes(line))}
+              </React.Fragment>
+            ))}
           </p>
         );
-      }}
-    </For>
+      })}
+    </>
   );
 }
 
