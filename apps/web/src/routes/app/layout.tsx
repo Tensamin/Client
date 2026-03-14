@@ -1,5 +1,5 @@
 import Socket from "@tensamin/ttp/context";
-import User from "@tensamin/core-user/context";
+import User from "@tensamin/user/context";
 import type { ReactNode } from "react";
 
 import Sidebar from "@/components/sidebar";

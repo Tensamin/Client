@@ -1,5 +1,5 @@
 {
-  "name": "@tensamin/core-crypto",
+  "name": "@tensamin/crypto",
   "private": true,
   "version": "0.0.0",
   "type": "module",

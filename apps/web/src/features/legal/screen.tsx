@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useStorage } from "@tensamin/core-storage/context";
+import { useStorage } from "@tensamin/storage/context";
 import { Button } from "@tensamin/ui/button";
 import {
   Checkbox,

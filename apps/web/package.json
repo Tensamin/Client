@@ -12,10 +12,10 @@
   },
   "dependencies": {
     "@tensamin/chat": "workspace:*",
-    "@tensamin/core-crypto": "workspace:*",
+    "@tensamin/crypto": "workspace:*",
     "@tensamin/ttp": "workspace:*",
-    "@tensamin/core-storage": "workspace:*",
-    "@tensamin/core-user": "workspace:*",
+    "@tensamin/storage": "workspace:*",
+    "@tensamin/user": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/ui": "workspace:*",
     "@noble/curves": "^2.0.1",

@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "packages/core/*"
+    "apps/*"
   ],
   "type": "module",
   "scripts": {
@@ -11,7 +11,7 @@
     "lint": "bun scripts/lint-packages.ts",
     "build:packages": "bun scripts/build-packages.ts",
     "install:packages": "bun scripts/install-packages.ts",
-    "dev": "cd packages/web && bun dev"
+    "dev": "cd apps/web && bun dev"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

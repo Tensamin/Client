@@ -1,5 +1,5 @@
-import { useStorage } from "@tensamin/core-storage/context";
-import Wrapper from "@tensamin/core-user/wrapper";
+import { useStorage } from "@tensamin/storage/context";
+import Wrapper from "@tensamin/user/wrapper";
 import * as React from "react";
 import Basic from "./modals/basic";
 import List from "@/features/conversation/list/body";

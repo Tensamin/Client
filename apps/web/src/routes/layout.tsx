@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-import Storage from "@tensamin/core-storage/context";
-import Crypto from "@tensamin/core-crypto/context";
+import Storage from "@tensamin/storage/context";
+import Crypto from "@tensamin/crypto/context";
 
 import LegalWrapper from "@/features/legal/screen";
 

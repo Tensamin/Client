@@ -3,7 +3,7 @@
     "module": "esnext",
     "baseUrl": ".",
     "paths": {
-      "@app/*": ["packages/*/src", "packages/core/*/src"]
+      "@app/*": ["packages/*/src", "apps/*/src"]
     }
   }
 }

@@ -2,7 +2,7 @@ import { Button } from "@tensamin/ui/button";
 import { House } from "lucide-react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import * as React from "react";
-import { useUser, type User } from "@tensamin/core-user/context";
+import { useUser, type User } from "@tensamin/user/context";
 
 export default function Navbar() {
   const navigate = useNavigate();

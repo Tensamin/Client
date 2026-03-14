@@ -2,9 +2,9 @@ import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import type { RawMessage, RawMessages } from "./values";
-import { useCrypto } from "@tensamin/core-crypto/context";
-import { useUser } from "@tensamin/core-user/context";
-import { useStorage } from "@tensamin/core-storage/context";
+import { useCrypto } from "@tensamin/crypto/context";
+import { useUser } from "@tensamin/user/context";
+import { useStorage } from "@tensamin/storage/context";
 import { useSocket } from "@tensamin/ttp/context";
 
 export const context = React.createContext<contextType | undefined>(undefined);

@@ -1,12 +1,11 @@
 {
-  "name": "@tensamin/core-user",
+  "name": "@tensamin/storage",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "exports": {
     "./context": "./src/context.tsx",
-    "./wrapper": "./src/wrapper.tsx",
-    "./values": "./src/values.ts"
+    "./indexed-db": "./src/indexed-db.ts"
   },
   "scripts": {
     "format": "bunx prettier --write .",
@@ -14,10 +13,9 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@tensamin/ttp": "workspace:*",
     "@tensamin/shared": "workspace:*",
+    "@tensamin/ui": "workspace:*",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "zod": "^4.3.6"
+    "react-dom": "^19.2.0"
   }
 }

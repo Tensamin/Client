@@ -1,13 +1,13 @@
 import Input from "@tensamin/markdown/input";
 import { Card, CardHeader } from "@tensamin/ui/card";
-import { useStorage } from "@tensamin/core-storage/context";
+import { useStorage } from "@tensamin/storage/context";
 import * as React from "react";
 import { Button } from "@tensamin/ui/button";
 
 import { Plus, Laugh, Clapperboard } from "lucide-react";
 import { useChat } from "../context";
 import { useSocket } from "@tensamin/ttp/context";
-import { useCrypto } from "@tensamin/core-crypto/context";
+import { useCrypto } from "@tensamin/crypto/context";
 import { log, toast } from "@tensamin/shared/log";
 
 export default function InputComponent() {

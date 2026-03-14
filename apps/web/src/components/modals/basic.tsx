@@ -1,4 +1,4 @@
-import type { User } from "@tensamin/core-user/context";
+import type { User } from "@tensamin/user/context";
 import Avatar from "@tensamin/ui/avatar";
 import { reduceDisplay } from "./utils";
 import { Card, CardHeader } from "@tensamin/ui/card";

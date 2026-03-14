@@ -2,7 +2,7 @@ import { Button } from "@tensamin/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tensamin/ui/card";
 import { Input } from "@tensamin/ui/input";
 import { Label } from "@tensamin/ui/label";
-import { useStorage } from "@tensamin/core-storage/context";
+import { useStorage } from "@tensamin/storage/context";
 import { log, toast } from "@tensamin/shared/log";
 import { useNavigate } from "@tanstack/react-router";
 import { Upload } from "lucide-react";

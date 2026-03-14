@@ -1,5 +1,5 @@
 import Basic from "@/components/modals/basic";
-import Wrapper from "@tensamin/core-user/wrapper";
+import Wrapper from "@tensamin/user/wrapper";
 import {
   ContextMenu,
   ContextMenuContent,

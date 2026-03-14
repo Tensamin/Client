@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@tanstack/react-router": "^1.0.0",
-    "@tensamin/core-crypto": "workspace:*",
-    "@tensamin/core-storage": "workspace:*",
+    "@tensamin/crypto": "workspace:*",
+    "@tensamin/storage": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/ui": "workspace:*",
     "react": "^19.2.0",

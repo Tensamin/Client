@@ -1,4 +1,4 @@
-import { useCrypto } from "@tensamin/core-crypto/context";
+import { useCrypto } from "@tensamin/crypto/context";
 import * as React from "react";
 import { useChat } from "../context";
 import type { RawMessage } from "../values";

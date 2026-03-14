@@ -3,9 +3,9 @@
 @import "tw-animate-css";
 
 @source "./**/*.{ts,tsx}";
-@source "../../ui/src/**/*.{ts,tsx}";
-@source "../../core/**/src/**/*.{ts,tsx}";
-@source "../../chat/src/**/*.{ts,tsx}";
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../packages/**/src/**/*.{ts,tsx}";
+@source "../../../packages/chat/src/**/*.{ts,tsx}";
 
 @custom-variant dark (&:is(.dark *));
 

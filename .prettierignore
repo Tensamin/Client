@@ -4,4 +4,4 @@ coverage
 .tmp
 *.tsbuildinfo
 bun.lock
-packages/desktop/build
+apps/desktop/build
