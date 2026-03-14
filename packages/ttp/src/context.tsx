@@ -271,7 +271,9 @@ export default function Provider(props: { children: React.ReactNode }) {
         if (isStopSendingError(connectError)) {
           clearReconnectTimer();
           setError("Connection closed");
-          setErrorDescription("Connection closed");
+          setErrorDescription(
+            "The connection was forcefully closed by the Omikron.",
+          );
           return;
         }
 
@@ -366,7 +368,9 @@ export default function Provider(props: { children: React.ReactNode }) {
 
         if (isStopSendingError(identificationError)) {
           setError("Connection closed");
-          setErrorDescription("Connection closed");
+          setErrorDescription(
+            "The connection was forcefully closed by the Omikron.",
+          );
           setIdentified(false);
           return;
         }

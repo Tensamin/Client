@@ -62,6 +62,24 @@ type ActiveConnection = {
   closeNotified: boolean;
 };
 
+class RecoverableMessageDecodeError extends Error {
+  readonly messageId: number;
+
+  readonly messageType: string;
+
+  readonly cause: unknown;
+
+  constructor(messageId: number, messageType: string, cause: unknown) {
+    super(
+      `Failed to decode message payload for "${messageType}" (id=${messageId}): ${formatUnknownError(cause)}`,
+    );
+    this.name = "RecoverableMessageDecodeError";
+    this.messageId = messageId;
+    this.messageType = messageType;
+    this.cause = cause;
+  }
+}
+
 const COMMUNICATION_TYPES = [
   "error",
   "error_protocol",
@@ -573,6 +591,33 @@ export function createTransportClient<T extends SchemaMap>(
     }
   };
 
+  const handleRecoverableDecodeFailure = (
+    error: RecoverableMessageDecodeError,
+  ) => {
+    log(1, "Socket", "yellow", "Recoverable message decode failure", {
+      id: error.messageId,
+      type: error.messageType,
+      error: error.message,
+    });
+
+    if (error.messageId === 0) {
+      return;
+    }
+
+    const pendingRequest = pending.get(error.messageId);
+    if (!pendingRequest) {
+      return;
+    }
+
+    clearTimeout(pendingRequest.timeoutId);
+    pending.delete(error.messageId);
+    pendingRequest.reject(
+      new Error(
+        `Failed to decode response for "${pendingRequest.requestType}": ${formatUnknownError(error.cause)}`,
+      ),
+    );
+  };
+
   const startIncomingLoop = (connection: ActiveConnection) => {
     connection.streamReader =
       connection.transport.incomingUnidirectionalStreams.getReader();
@@ -585,7 +630,18 @@ export function createTransportClient<T extends SchemaMap>(
             break;
           }
 
-          const frame = await readFrame(result.value);
+          let frame: TypedMessage | null;
+          try {
+            frame = await readFrame(result.value);
+          } catch (error) {
+            if (error instanceof RecoverableMessageDecodeError) {
+              handleRecoverableDecodeFailure(error);
+              continue;
+            }
+
+            throw error;
+          }
+
           if (frame === null) {
             try {
               connection.transport.close({
@@ -780,10 +836,12 @@ export function createTransportClient<T extends SchemaMap>(
       });
 
       if (!expectsResponse) {
-        return writeMessage(connection.transport, messageBytes).catch((error) => {
-          closeFromStopSending(connection, error);
-          throw error;
-        });
+        return writeMessage(connection.transport, messageBytes).catch(
+          (error) => {
+            closeFromStopSending(connection, error);
+            throw error;
+          },
+        );
       }
 
       return new Promise<TypedMessage>((resolve, reject) => {
@@ -860,6 +918,22 @@ function getWebTransportCtor() {
 
 function normalizeName(value: string) {
   return value.toLowerCase().replaceAll("_", "");
+}
+
+function formatUnknownError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
 }
 
 function isStopSendingError(error: unknown) {
@@ -1084,12 +1158,24 @@ function decodeCommunicationMessage(frame: Uint8Array): TypedMessage {
     throw new Error("Communication header exceeds payload length");
   }
 
+  const messageType = COMMUNICATION_TYPES[typeIndex] ?? "error_protocol";
+
   const dataLength = payloadLength - consumedHeaderBytes;
   const dataReader = new ByteReader(reader.readBytes(dataLength));
-  const decodedData = decodeContainerPayload(dataReader);
+  let decodedData: Record<string, unknown>;
+
+  try {
+    decodedData = decodeContainerPayload(dataReader);
+  } catch (error) {
+    throw new RecoverableMessageDecodeError(id, messageType, error);
+  }
 
   if (!dataReader.isAtEnd()) {
-    throw new Error("Trailing bytes found after communication data payload");
+    throw new RecoverableMessageDecodeError(
+      id,
+      messageType,
+      new Error("Trailing bytes found after communication data payload"),
+    );
   }
 
   if (!reader.isAtEnd()) {
@@ -1098,7 +1184,7 @@ function decodeCommunicationMessage(frame: Uint8Array): TypedMessage {
 
   return {
     id,
-    type: COMMUNICATION_TYPES[typeIndex] ?? "error_protocol",
+    type: messageType,
     data: decodedData,
   };
 }
@@ -1427,7 +1513,7 @@ function decodeContainerPayload(reader: ByteReader) {
       : reader.readBytes(payloadLength);
 
     const expectedKind = getExpectedKind(key);
-    if (!isMarkerCompatibleWithKind(marker, expectedKind)) {
+    if (!isMarkerCompatibleWithKey(marker, expectedKind, key)) {
       throw new Error(
         `Unexpected marker 0x${marker.toString(16)} for data type "${key}"`,
       );
@@ -1475,6 +1561,21 @@ function isMarkerCompatibleWithKind(marker: number, kind: DataKind) {
     case "null":
       return marker === DATA_VALUE_KIND_NULL;
   }
+}
+
+function isMarkerCompatibleWithKey(
+  marker: number,
+  kind: DataKind,
+  key: string,
+) {
+  if (
+    SCALAR_NUMBER_ARRAY_DATA_TYPES.has(key) &&
+    marker === DATA_VALUE_KIND_NUMBER
+  ) {
+    return true;
+  }
+
+  return isMarkerCompatibleWithKind(marker, kind);
 }
 
 function normalizeOutgoingValue(type: string, value: unknown) {

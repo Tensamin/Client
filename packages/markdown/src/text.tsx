@@ -13,7 +13,10 @@ export type TextProps = {
 export default function Text(props: TextProps) {
   ensureMarkdownStyles();
 
-  const blocks = React.useMemo(() => parseMarkdownBlocks(props.value), [props.value]);
+  const blocks = React.useMemo(
+    () => parseMarkdownBlocks(props.value),
+    [props.value],
+  );
 
   return <div className="tm-md-root">{renderBlocks(blocks)}</div>;
 }

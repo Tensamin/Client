@@ -20,10 +20,7 @@ import {
   historyKeymap,
   indentWithTab,
 } from "@codemirror/commands";
-import {
-  useEffect,
-  useRef,
-} from "react";
+import { useEffect, useRef } from "react";
 
 import { collectInlineRanges, ensureMarkdownStyles } from "./markdown";
 

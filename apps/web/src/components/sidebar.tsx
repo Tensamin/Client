@@ -15,10 +15,7 @@ export default function Sidebar() {
   return (
     <div className="w-75 h-full flex flex-col gap-3 p-2">
       {userId !== 0 && (
-        <Wrapper
-          userId={userId}
-          component={(user) => <Basic user={user} />}
-        />
+        <Wrapper userId={userId} component={(user) => <Basic user={user} />} />
       )}
       <div className="h-full">
         <List />

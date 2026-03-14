@@ -34,7 +34,9 @@ export default function StorageProvider(props: { children: React.ReactNode }) {
   }, [storage]);
 
   const loadIO = React.useCallback(
-    async <K extends keyof StorageSchema>(key: K): Promise<StorageSchema[K]> => {
+    async <K extends keyof StorageSchema>(
+      key: K,
+    ): Promise<StorageSchema[K]> => {
       let stored: StorageSchema[K] | undefined;
 
       try {
@@ -75,7 +77,9 @@ export default function StorageProvider(props: { children: React.ReactNode }) {
 
   const value = React.useMemo<StorageContextValue>(
     () => ({
-      async load<K extends keyof StorageSchema>(key: K): Promise<StorageSchema[K]> {
+      async load<K extends keyof StorageSchema>(
+        key: K,
+      ): Promise<StorageSchema[K]> {
         const current = storageRef.current[key];
 
         if (
@@ -124,7 +128,11 @@ export default function StorageProvider(props: { children: React.ReactNode }) {
     );
   }
 
-  return <StorageContext.Provider value={value}>{props.children}</StorageContext.Provider>;
+  return (
+    <StorageContext.Provider value={value}>
+      {props.children}
+    </StorageContext.Provider>
+  );
 }
 
 export function useStorage(): StorageContextValue {

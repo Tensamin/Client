@@ -140,7 +140,11 @@ export default function Screen() {
   }, [lastLiveMessageCount, liveMessages]);
 
   React.useEffect(() => {
-    if (!scrollRef.current || !prependAnchor || messagesQuery.isFetchingNextPage) {
+    if (
+      !scrollRef.current ||
+      !prependAnchor ||
+      messagesQuery.isFetchingNextPage
+    ) {
       return;
     }
 
@@ -191,7 +195,10 @@ export default function Screen() {
                   padding: "4px 0",
                 }}
               >
-                <Message message={message} notEncrypted={message.not_encrypted} />
+                <Message
+                  message={message}
+                  notEncrypted={message.not_encrypted}
+                />
               </div>
             );
           })}

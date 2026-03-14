@@ -476,19 +476,22 @@ export function renderBlocks(blocks: MarkdownBlock[]): React.ReactElement {
         if (block.type === "list") {
           const Tag = block.ordered ? "ol" : "ul";
           return (
-            <Tag key={blockIndex} className={block.ordered ? "tm-md-ol" : "tm-md-ul"}>
+            <Tag
+              key={blockIndex}
+              className={block.ordered ? "tm-md-ol" : "tm-md-ul"}
+            >
               {block.items.map((item, itemIndex) => (
                 <li key={itemIndex} className="tm-md-li">
-                    {item.checked !== null ? (
-                      <input
-                        type="checkbox"
-                        checked={item.checked}
-                        disabled
-                        className="tm-md-checkbox"
-                      />
-                    ) : null}
-                    <span>{renderInline(parseInlineNodes(item.text))}</span>
-                  </li>
+                  {item.checked !== null ? (
+                    <input
+                      type="checkbox"
+                      checked={item.checked}
+                      disabled
+                      className="tm-md-checkbox"
+                    />
+                  ) : null}
+                  <span>{renderInline(parseInlineNodes(item.text))}</span>
+                </li>
               ))}
             </Tag>
           );
@@ -501,7 +504,9 @@ export function renderBlocks(blocks: MarkdownBlock[]): React.ReactElement {
                 <thead>
                   <tr>
                     {block.headers.map((header, headerIndex) => (
-                      <th key={headerIndex}>{renderInline(parseInlineNodes(header))}</th>
+                      <th key={headerIndex}>
+                        {renderInline(parseInlineNodes(header))}
+                      </th>
                     ))}
                   </tr>
                 </thead>
@@ -509,9 +514,11 @@ export function renderBlocks(blocks: MarkdownBlock[]): React.ReactElement {
                   {block.rows.map((row, rowIndex) => (
                     <tr key={rowIndex}>
                       {row.map((cell, cellIndex) => (
-                        <td key={cellIndex}>{renderInline(parseInlineNodes(cell))}</td>
+                        <td key={cellIndex}>
+                          {renderInline(parseInlineNodes(cell))}
+                        </td>
                       ))}
-                      </tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>

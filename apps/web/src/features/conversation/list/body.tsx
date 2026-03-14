@@ -16,7 +16,8 @@ export default function List() {
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
 
   const virtualizer = useVirtualizer({
-    count: category === "conversations" ? conversations.length : communities.length,
+    count:
+      category === "conversations" ? conversations.length : communities.length,
     estimateSize: () => 80,
     getScrollElement: () => scrollRef.current,
   });
@@ -24,7 +25,11 @@ export default function List() {
   return (
     <div className="flex flex-col gap-3">
       <Switch category={category} setCategory={setCategory} />
-      <div ref={scrollRef} id="conversation-list" className="overflow-y-auto flex-1">
+      <div
+        ref={scrollRef}
+        id="conversation-list"
+        className="overflow-y-auto flex-1"
+      >
         <div
           className="relative w-full flex flex-col gap-2"
           style={{

@@ -11,15 +11,15 @@ export const context = React.createContext<contextType | undefined>(undefined);
 
 const queryClient = new QueryClient();
 
-export default function Provider(
-  props: { children: React.ReactNode },
-) {
+export default function Provider(props: { children: React.ReactNode }) {
   const { get_shared_secret } = useCrypto();
   const { get } = useUser();
   const { load } = useStorage();
   const { send } = useSocket();
 
-  const [liveMessagesState, setLiveMessagesState] = React.useState<RawMessages>([]);
+  const [liveMessagesState, setLiveMessagesState] = React.useState<RawMessages>(
+    [],
+  );
   const [currentSharedSecret, setCurrentSharedSecret] = React.useState("");
 
   const locationSearch = useRouterState({
@@ -104,7 +104,14 @@ export default function Provider(
       sharedSecret: () => currentSharedSecret,
       userId: () => userIdValue,
     }),
-    [addLiveMessage, clearLiveMessages, currentSharedSecret, customGetMessages, liveMessagesState, userIdValue],
+    [
+      addLiveMessage,
+      clearLiveMessages,
+      currentSharedSecret,
+      customGetMessages,
+      liveMessagesState,
+      userIdValue,
+    ],
   );
 
   return (
