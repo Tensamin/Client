@@ -32,10 +32,117 @@ const formSchema = z.object({
   private_key: z.string().min(1).max(92),
 });
 
+/**
+ * Parses a .tu file payload into credentials.
+ * @param rawFileContent UTF-8 file content from an uploaded .tu file.
+ * @returns Parsed user id and private key credentials.
+ */
+function parseTuFileContent(rawFileContent: string): {
+  userId: number;
+  privateKey: string;
+} {
+  if (rawFileContent.length !== 92 || !rawFileContent.includes("::")) {
+    throw new Error("Invalid file");
+  }
+
+  const [userIdString, privateKey] = rawFileContent.split("::");
+  const userId = Number(userIdString);
+  if (!userId || !privateKey) {
+    throw new Error("Invalid file");
+  }
+
+  return { userId, privateKey };
+}
+
+/**
+ * Renders the login form for file upload and manual credential login.
+ * @returns Login form JSX.
+ */
 export default function Form() {
   const uploadRef = React.useRef<HTMLInputElement | null>(null);
   const { save } = useStorage();
   const navigate = useNavigate();
+
+  /**
+   * Opens the hidden file input when the upload tile is clicked.
+   * @returns Void.
+   */
+  const handleUploadTileClick = React.useCallback((): void => {
+    uploadRef.current?.click();
+  }, []);
+
+  /**
+   * Handles uploaded .tu files and stores resolved credentials.
+   * @param event Change event from the hidden file input.
+   * @returns Promise that resolves when processing has finished.
+   */
+  const handleFileInputChange = React.useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+      try {
+        const file = event.currentTarget.files?.[0];
+        if (!file) {
+          throw new Error("No file selected");
+        }
+
+        const raw = await file.text();
+        const parsed = parseTuFileContent(raw);
+
+        await save("user_id", parsed.userId);
+        await save("private_key", parsed.privateKey);
+
+        void navigate({ to: "/" });
+      } catch (error) {
+        log(0, "Login", "red", error);
+        toast("error", "Failed to load file");
+      }
+    },
+    [navigate, save],
+  );
+
+  /**
+   * Handles username and private key login submission.
+   * @param event Form submit event.
+   * @returns Promise that resolves after login processing.
+   */
+  const handleCredentialsSubmit = React.useCallback(
+    async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+      event.preventDefault();
+
+      const formData = new FormData(event.currentTarget);
+      const rawData = Object.fromEntries(formData);
+      const inputParse = formSchema.safeParse(rawData);
+
+      if (!inputParse.success) {
+        toast("error", "Please enter valid data");
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `https://omega.tensamin.net/api/get/id/${inputParse.data.username}`,
+        );
+        const data = await response.json();
+        const parse = fetchedUser.safeParse(data);
+
+        if (!parse.success) {
+          log(0, "Login", "red", "Invalid response from server");
+          toast("error", "Invalid response from server");
+          return;
+        }
+
+        const user = parse.data;
+
+        await save("user_id", user.data.user_id);
+        await save("private_key", inputParse.data.private_key);
+
+        void navigate({ to: "/" });
+      } catch (error) {
+        log(0, "Login", "red", error);
+        toast("error", "Failed to fetch user data");
+      }
+    },
+    [navigate, save],
+  );
 
   return (
     <div className="flex gap-5">
@@ -45,35 +152,13 @@ export default function Form() {
         </CardHeader>
         <CardContent className="h-full flex items-center justify-center">
           <div
-            onClick={() => uploadRef.current?.click()}
+            onClick={handleUploadTileClick}
             className="cursor-pointer w-60 aspect-square mb-17 bg-input/13 hover:bg-input/30 transition-all duration-300 ease-in-out border-dotted border-input/75 border-3 flex items-center justify-center rounded-lg"
           >
             <Upload className="text-input/75" size={34} />
           </div>
           <input
-            onChange={async (e) => {
-              try {
-                const file = e.currentTarget.files?.[0];
-                if (file) {
-                  const raw = await file.text();
-                  if (raw.length !== 92) throw new Error("Invalid file");
-                  if (!raw.includes("::")) throw new Error("Invalid file");
-                  const [userIdString, privateKey] = raw.split("::");
-                  const userId = Number(userIdString);
-                  if (!userId || !privateKey) throw new Error("Invalid file");
-
-                  save("user_id", userId);
-                  save("private_key", privateKey);
-
-                  void navigate({ to: "/" });
-                } else {
-                  throw new Error("No file selected");
-                }
-              } catch (err) {
-                log(0, "Login", "red", err);
-                toast("error", "Failed to load file");
-              }
-            }}
+            onChange={handleFileInputChange}
             type="file"
             ref={uploadRef}
             className="hidden"
@@ -87,44 +172,7 @@ export default function Form() {
         <CardContent>
           <form
             className="flex flex-col gap-5 h-full"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const rawData = Object.fromEntries(formData);
-              const inputParse = formSchema.safeParse(rawData);
-
-              if (!inputParse.success) {
-                toast("error", "Please enter valid data");
-                return;
-              }
-
-              const response = await fetch(
-                "https://omega.tensamin.net/api/get/id/" +
-                  inputParse.data.username,
-              );
-
-              response
-                .json()
-                .then((data) => {
-                  const parse = fetchedUser.safeParse(data);
-
-                  if (parse.success) {
-                    const user = parse.data;
-
-                    save("user_id", user.data.user_id);
-                    save("private_key", inputParse.data.private_key);
-
-                    void navigate({ to: "/" });
-                  } else {
-                    log(0, "Login", "red", "Invalid response from server");
-                    toast("error", "Invalid response from server");
-                  }
-                })
-                .catch((err) => {
-                  log(0, "Login", "red", err);
-                  toast("error", "Failed to fetch user data");
-                });
-            }}
+            onSubmit={handleCredentialsSubmit}
           >
             <div className="flex flex-col gap-2">
               <Label htmlFor="username">Username</Label>

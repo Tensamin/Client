@@ -8,6 +8,10 @@ import Message from "./components/message";
 
 const PAGE_SIZE = 50;
 
+/**
+ * Renders the chat screen with virtualized history and live message updates.
+ * @returns Chat screen JSX.
+ */
 export default function Screen() {
   const { getMessages, liveMessages, clearLiveMessages, userId } = useChat();
 
@@ -79,6 +83,10 @@ export default function Screen() {
     overscan: 6,
   });
 
+  /**
+   * Loads the next page when the scroll container reaches the top.
+   * @returns Promise that resolves once pagination handling completes.
+   */
   const onScroll = React.useCallback(async () => {
     if (!scrollRef.current) {
       return;
@@ -159,15 +167,21 @@ export default function Screen() {
     });
   }, [messagesQuery.isFetchingNextPage, prependAnchor, virtualizer]);
 
+  /**
+   * Triggers asynchronous scroll pagination without returning a promise to JSX.
+   * @returns Void.
+   */
+  const handleContainerScroll = React.useCallback((): void => {
+    void onScroll();
+  }, [onScroll]);
+
   return (
     <div className="w-full h-full flex flex-col overflow-hidden px-2">
       <div
         ref={scrollRef}
         id="chat_container"
         className="flex-1 max-h-[calc(100vh-151px)] overflow-y-auto px-2.5"
-        onScroll={() => {
-          void onScroll();
-        }}
+        onScroll={handleContainerScroll}
       >
         <div
           className="relative w-full"

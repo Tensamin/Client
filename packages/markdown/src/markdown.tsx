@@ -75,6 +75,11 @@ type MarkdownBlock =
 const INLINE_TOKEN_REGEX =
   /!\[([^\]]*)\]\(([^)\s]+(?:\s+"[^"]*")?)\)|\[([^\]]+)\]\(([^)\s]+(?:\s+"[^"]*")?)\)|`([^`\n]+)`|~~([^~\n]+)~~|\*\*([^*\n]+)\*\*|__([^_\n]+)__|\*([^*\n]+)\*|_([^_\n]+)_/g;
 
+/**
+ * Executes parseInlineNodes.
+ * @param input Parameter input.
+ * @returns InlineNode[].
+ */
 export function parseInlineNodes(input: string): InlineNode[] {
   const nodes: InlineNode[] = [];
 
@@ -121,6 +126,15 @@ export function parseInlineNodes(input: string): InlineNode[] {
   return nodes;
 }
 
+/**
+ * Executes collectInlineRanges.
+ * @param input Parameter input.
+ * @param offset Parameter offset.
+ * @returns {
+  styleRanges: InlineDecorationRange[];
+  tokenRanges: InlineTokenRange[];
+}.
+ */
 export function collectInlineRanges(
   input: string,
   offset = 0,
@@ -218,6 +232,11 @@ export function collectInlineRanges(
   return { styleRanges, tokenRanges };
 }
 
+/**
+ * Executes parseMarkdownBlocks.
+ * @param markdown Parameter markdown.
+ * @returns MarkdownBlock[].
+ */
 export function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const blocks: MarkdownBlock[] = [];
@@ -345,6 +364,11 @@ export function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
   return blocks;
 }
 
+/**
+ * Executes renderInline.
+ * @param nodes Parameter nodes.
+ * @returns React.ReactNode[].
+ */
 export function renderInline(nodes: InlineNode[]): React.ReactNode[] {
   return nodes.map((node, index) => {
     if (node.type === "text") {
@@ -410,6 +434,11 @@ export function renderInline(nodes: InlineNode[]): React.ReactNode[] {
   });
 }
 
+/**
+ * Executes renderBlocks.
+ * @param blocks Parameter blocks.
+ * @returns React.ReactElement.
+ */
 export function renderBlocks(blocks: MarkdownBlock[]): React.ReactElement {
   return (
     <>
@@ -545,6 +574,11 @@ export function renderBlocks(blocks: MarkdownBlock[]): React.ReactElement {
   );
 }
 
+/**
+ * Executes normalizeUrl.
+ * @param input Parameter input.
+ * @returns string.
+ */
 function normalizeUrl(input: string): string {
   const value = input.trim();
   if (/^(https?:|mailto:|tel:|\/)/i.test(value)) {
@@ -554,11 +588,22 @@ function normalizeUrl(input: string): string {
   return "#";
 }
 
+/**
+ * Executes splitTableRow.
+ * @param row Parameter row.
+ * @returns string[].
+ */
 function splitTableRow(row: string): string[] {
   const cleaned = row.trim().replace(/^\|/, "").replace(/\|$/, "");
   return cleaned.split("|").map((cell) => cell.trim());
 }
 
+/**
+ * Executes readTable.
+ * @param lines Parameter lines.
+ * @param index Parameter index.
+ * @returns { block: TableBlock; nextIndex: number } | null.
+ */
 function readTable(
   lines: string[],
   index: number,
@@ -630,6 +675,11 @@ export const markdownStyles = `
 .cm-editor.tm-md-editor .tm-md-code-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: var(--muted); border-radius: 0.3rem; }
 `;
 
+/**
+ * Executes ensureMarkdownStyles.
+ * @param none This function has no parameters.
+ * @returns void.
+ */
 export function ensureMarkdownStyles(): void {
   if (typeof document === "undefined") return;
 

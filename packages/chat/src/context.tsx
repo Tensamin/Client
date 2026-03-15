@@ -11,8 +11,13 @@ export const context = React.createContext<contextType | undefined>(undefined);
 
 const queryClient = new QueryClient();
 
+/**
+ * Executes Provider.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function Provider(props: { children: React.ReactNode }) {
-  const { get_shared_secret } = useCrypto();
+  const { getSharedSecret } = useCrypto();
   const { get } = useUser();
   const { load } = useStorage();
   const { send } = useSocket();
@@ -47,7 +52,7 @@ export default function Provider(props: { children: React.ReactNode }) {
         const ownId = await load("user_id");
         const privateKey = await load("private_key");
         const ownData = await get(ownId);
-        const sharedSecret = await get_shared_secret(
+        const sharedSecret = await getSharedSecret(
           privateKey,
           ownData.public_key,
           recipientData.public_key,
@@ -66,7 +71,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [get, get_shared_secret, load, userIdValue]);
+  }, [get, getSharedSecret, load, userIdValue]);
 
   const customGetMessages = React.useCallback(
     async (amount: number, offset: number) => {
@@ -130,6 +135,11 @@ type contextType = {
   userId: () => number;
 };
 
+/**
+ * Executes useChat.
+ * @param none This function has no parameters.
+ * @returns contextType.
+ */
 export function useChat(): contextType {
   const ctx = React.useContext(context);
   if (!ctx) {

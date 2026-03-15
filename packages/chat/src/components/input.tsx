@@ -10,6 +10,11 @@ import { useSocket } from "@tensamin/ttp/context";
 import { useCrypto } from "@tensamin/crypto/context";
 import { log, toast } from "@tensamin/shared/log";
 
+/**
+ * Executes InputComponent.
+ * @param none This function has no parameters.
+ * @returns unknown.
+ */
 export default function InputComponent() {
   const [value, setValue] = React.useState("");
   const [invertEnterBehavior, setInvertEnterBehavior] = React.useState(false);
@@ -25,6 +30,11 @@ export default function InputComponent() {
     });
   }, [load]);
 
+  /**
+   * Executes handleSubmit.
+   * @param none This function has no parameters.
+   * @returns unknown.
+   */
   async function handleSubmit() {
     if (value.trim() === "") return;
 

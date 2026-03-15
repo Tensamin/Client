@@ -12,11 +12,21 @@ interface contextValue {
 
 const UserContext = React.createContext<contextValue | undefined>(undefined);
 
+/**
+ * Executes UserProvider.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function UserProvider(props: { children: React.ReactNode }) {
   const storageRef = React.useRef<Record<number, User>>({});
 
   const { send } = useSocket();
 
+  /**
+   * Executes get.
+   * @param userId Parameter userId.
+   * @returns Promise<User>.
+   */
   async function get(userId: number): Promise<User> {
     if (storageRef.current[userId] === undefined) {
       const userData = await send("get_user_data", { user_id: userId });
@@ -40,6 +50,11 @@ export default function UserProvider(props: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Executes useUser.
+ * @param none This function has no parameters.
+ * @returns contextValue.
+ */
 export function useUser(): contextValue {
   const context = React.useContext(UserContext);
   if (!context) {

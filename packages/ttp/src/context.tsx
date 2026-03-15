@@ -26,6 +26,11 @@ const FATAL_IDENTIFICATION_ERROR_TYPES = new Set([
   "error_not_authenticated",
 ]);
 
+/**
+ * Detects whether an error chain contains a STOP_SENDING transport signal.
+ * @param error Unknown error value from transport operations.
+ * @returns True when the error represents a STOP_SENDING condition.
+ */
 function isStopSendingError(error: unknown) {
   if (typeof error === "string") {
     return error.includes("STOP_SENDING");
@@ -54,6 +59,11 @@ function isStopSendingError(error: unknown) {
   return false;
 }
 
+/**
+ * Classifies identification errors that should be treated as terminal.
+ * @param error Unknown error raised during identification.
+ * @returns True when identification should fail without retry.
+ */
 function isFatalIdentificationError(error: unknown) {
   if (typeof error === "object" && error !== null && "type" in error) {
     const type = (error as { type?: unknown }).type;
@@ -90,9 +100,14 @@ type ContextType = {
 
 const socketContext = React.createContext<ContextType | undefined>(undefined);
 
+/**
+ * Provides socket transport state and authenticated send operations to children.
+ * @param props Component props with children.
+ * @returns Loading, error, or provider-wrapped JSX.
+ */
 export default function Provider(props: { children: React.ReactNode }) {
   const { load } = useStorage();
-  const { decrypt, get_shared_secret } = useCrypto();
+  const { decrypt, getSharedSecret } = useCrypto();
 
   const [readyState, setReadyState] = React.useState<number>(
     READY_STATE.CLOSED,
@@ -112,6 +127,13 @@ export default function Provider(props: { children: React.ReactNode }) {
   > | null>(null);
   const identificationStartedRef = React.useRef(false);
 
+  /**
+   * Sends typed protocol messages through the active transport client.
+   * @param type Protocol message type.
+   * @param data Optional request payload.
+   * @param options Optional request id and response mode.
+   * @returns A promise for either void (no response) or typed message payload.
+   */
   const send = React.useCallback<BoundSendFn<Schemas>>(
     ((
       type: string,
@@ -175,6 +197,10 @@ export default function Provider(props: { children: React.ReactNode }) {
     let reconnectScheduled = false;
     let disposed = false;
 
+    /**
+     * Clears any scheduled reconnect timeout and resets scheduling flags.
+     * @returns Void.
+     */
     const clearReconnectTimer = () => {
       if (!reconnectTimer) {
         return;
@@ -185,6 +211,11 @@ export default function Provider(props: { children: React.ReactNode }) {
       reconnectScheduled = false;
     };
 
+    /**
+     * Schedules a delayed reconnect attempt unless retries are exhausted.
+     * @param reason Optional reason for reconnect scheduling.
+     * @returns Void.
+     */
     const scheduleReconnect = (reason?: unknown) => {
       if (disposed || reconnectScheduled) {
         return;
@@ -256,6 +287,10 @@ export default function Provider(props: { children: React.ReactNode }) {
 
     clientRef.current = transportClient;
 
+    /**
+     * Establishes the transport connection and schedules reconnect on failures.
+     * @returns Promise that resolves after one connection attempt.
+     */
     async function connect() {
       if (disposed) {
         return;
@@ -318,6 +353,10 @@ export default function Provider(props: { children: React.ReactNode }) {
     setIdentifying(true);
     setIdentified(false);
 
+    /**
+     * Executes the challenge-response identification handshake.
+     * @returns Promise that resolves when identification flow completes.
+     */
     const identify = async () => {
       try {
         const userId = await load("user_id");
@@ -335,7 +374,7 @@ export default function Provider(props: { children: React.ReactNode }) {
           user_id: userId,
         });
 
-        const sharedSecret = await get_shared_secret(
+        const sharedSecret = await getSharedSecret(
           privateKey,
           "",
           challengeEnvelope.data.public_key,
@@ -405,7 +444,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [connected, decrypt, get_shared_secret, load, send]);
+  }, [connected, decrypt, getSharedSecret, load, send]);
 
   const progress = React.useMemo(() => {
     if (readyState === READY_STATE.CONNECTING) return 30;
@@ -472,6 +511,10 @@ export default function Provider(props: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Returns the active socket context and enforces provider usage.
+ * @returns Socket context API for transport operations and connection state.
+ */
 export function useSocket(): ContextType {
   const context = React.useContext(socketContext);
   if (!context) {

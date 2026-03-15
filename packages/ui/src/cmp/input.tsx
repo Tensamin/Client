@@ -3,6 +3,11 @@ import { Input as InputPrimitive } from "@base-ui/react/input";
 
 import { cn } from "../lib/utils";
 
+/**
+ * Executes Input.
+ * @param { className, type, ...props } Parameter { className, type, ...props }.
+ * @returns unknown.
+ */
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <InputPrimitive

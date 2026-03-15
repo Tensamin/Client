@@ -5,6 +5,11 @@ import type { RawMessage } from "../values";
 import { log } from "@tensamin/shared/log";
 import Text from "@tensamin/markdown/text";
 
+/**
+ * Executes Message.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function Message(props: {
   message: RawMessage;
   notEncrypted?: boolean;

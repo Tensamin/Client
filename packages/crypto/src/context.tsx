@@ -1,14 +1,39 @@
 import * as React from "react";
 import * as Comlink from "comlink";
-import Loading from "@tensamin/ui/screens/loading";
 
-export const context = React.createContext<contextType | undefined>(undefined);
+type CryptoContextType = {
+  decrypt: (secret: string, ciphertext: string) => Promise<string>;
+  encrypt: (secret: string, plaintext: string) => Promise<string>;
+  getSharedSecret: (
+    ownPrivateKey: string,
+    ownPublicKey: string,
+    otherPublicKey: string,
+  ) => Promise<string>;
+};
 
+type ApiRef = {
+  encrypt: (secret: string, plaintext: string) => Promise<string>;
+  decrypt: (secret: string, ciphertext: string) => Promise<string>;
+  getSharedSecret: (
+    ownPrivateKey: string,
+    ownPublicKey: string,
+    otherPublicKey: string,
+  ) => Promise<string>;
+};
+
+export const context = React.createContext<CryptoContextType | undefined>(
+  undefined,
+);
+
+/**
+ * Provides cryptographic actions backed by a worker without coupling to UI state.
+ * @param props Component props with children.
+ * @returns Crypto context provider JSX.
+ */
 export default function Provider(props: { children: React.ReactNode }) {
   const apiRef = React.useRef<ApiRef | null>(null);
-  const [isWorkerReady, setIsWorkerReady] = React.useState(false);
 
-  const { encrypt, decrypt, get_shared_secret } = React.useMemo(
+  const value = React.useMemo(
     () => createCryptoActions(() => apiRef.current),
     [],
   );
@@ -18,83 +43,84 @@ export default function Provider(props: { children: React.ReactNode }) {
       type: "module",
     });
 
-    apiRef.current = Comlink.wrap(worker);
-    setIsWorkerReady(true);
+    apiRef.current = Comlink.wrap<ApiRef>(worker);
 
     return () => {
       apiRef.current = null;
       worker.terminate();
-      setIsWorkerReady(false);
     };
   }, []);
 
-  if (!isWorkerReady) {
-    return <Loading progress={10} />;
-  }
-
-  return (
-    <context.Provider value={{ encrypt, decrypt, get_shared_secret }}>
-      {props.children}
-    </context.Provider>
-  );
+  return <context.Provider value={value}>{props.children}</context.Provider>;
 }
 
-type contextType = {
-  decrypt: (secret: string, data: string) => Promise<string>;
-  encrypt: (secret: string, data: string) => Promise<string>;
-  get_shared_secret: (
+/**
+ * Creates crypto action functions that safely delegate to the worker API.
+ * @param getApiRef Function that returns worker API reference when initialized.
+ * @returns Typed crypto action functions.
+ */
+export function createCryptoActions(
+  getApiRef: () => ApiRef | null,
+): CryptoContextType {
+  /**
+   * Encrypts plaintext by delegating to the crypto worker API.
+   * @param secret Hex-encoded shared secret.
+   * @param plaintext Plaintext to encrypt.
+   * @returns Encrypted ciphertext.
+   */
+  const encrypt = async (
+    secret: string,
+    plaintext: string,
+  ): Promise<string> => {
+    const apiRef = getApiRef();
+    if (!apiRef) throw new Error("API not initialized");
+    return await apiRef.encrypt(secret, plaintext);
+  };
+
+  /**
+   * Decrypts ciphertext by delegating to the crypto worker API.
+   * @param secret Hex-encoded shared secret.
+   * @param ciphertext Ciphertext to decrypt.
+   * @returns Decrypted plaintext.
+   */
+  const decrypt = async (
+    secret: string,
+    ciphertext: string,
+  ): Promise<string> => {
+    const apiRef = getApiRef();
+    if (!apiRef) throw new Error("API not initialized");
+    return await apiRef.decrypt(secret, ciphertext);
+  };
+
+  /**
+   * Derives a shared secret from local and peer key material via the worker API.
+   * @param ownPrivateKey Local private key.
+   * @param ownPublicKey Local public key.
+   * @param otherPublicKey Peer public key.
+   * @returns Hex-encoded shared secret.
+   */
+  const getSharedSecret = async (
     ownPrivateKey: string,
     ownPublicKey: string,
     otherPublicKey: string,
-  ) => Promise<string>;
-};
-
-type ApiRef = {
-  encrypt: (secret: string, message: string) => Promise<string>;
-  decrypt: (secret: string, encryptedMessage: string) => Promise<string>;
-  get_shared_secret: (
-    own_private_key: string,
-    own_public_key: string,
-    other_public_key: string,
-  ) => Promise<string>;
-};
-
-export function createCryptoActions(
-  getApiRef: () => ApiRef | null,
-): contextType {
-  const encrypt = async (secret: string, message: string): Promise<string> => {
-    const apiRef = getApiRef();
-    if (!apiRef) throw new Error("API not initialized");
-    return await apiRef.encrypt(secret, message);
-  };
-
-  const decrypt = async (
-    secret: string,
-    encryptedMessage: string,
   ): Promise<string> => {
     const apiRef = getApiRef();
     if (!apiRef) throw new Error("API not initialized");
-    return await apiRef.decrypt(secret, encryptedMessage);
-  };
-
-  const get_shared_secret = async (
-    own_private_key: string,
-    own_public_key: string,
-    other_public_key: string,
-  ): Promise<string> => {
-    const apiRef = getApiRef();
-    if (!apiRef) throw new Error("API not initialized");
-    return await apiRef.get_shared_secret(
-      own_private_key,
-      own_public_key,
-      other_public_key,
+    return await apiRef.getSharedSecret(
+      ownPrivateKey,
+      ownPublicKey,
+      otherPublicKey,
     );
   };
 
-  return { encrypt, decrypt, get_shared_secret };
+  return { encrypt, decrypt, getSharedSecret };
 }
 
-export function useCrypto(): contextType {
+/**
+ * Returns the crypto actions from the nearest provider.
+ * Throws when used outside of the crypto provider tree.
+ */
+export function useCrypto(): CryptoContextType {
   const ctx = React.useContext(context);
   if (!ctx) {
     throw new Error("useCrypto must be used within a CryptoProvider");

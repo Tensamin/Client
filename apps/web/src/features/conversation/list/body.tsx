@@ -6,6 +6,11 @@ import Switch from "./switch";
 import ConversationModal from "../modal/conversation";
 import CommunityModal from "../modal/community";
 
+/**
+ * Executes List.
+ * @param none This function has no parameters.
+ * @returns unknown.
+ */
 export default function List() {
   const [category, setCategory] = React.useState<
     "conversations" | "communities"

@@ -8,6 +8,11 @@ import {
   Loader2Icon,
 } from "lucide-react";
 
+/**
+ * Executes Toaster.
+ * @param { ...props } Parameter { ...props }.
+ * @returns unknown.
+ */
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
 

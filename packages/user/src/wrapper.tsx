@@ -1,14 +1,22 @@
 import * as React from "react";
 import { useUser, type User } from "./context";
 
+/**
+ * Executes Wrapper.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function Wrapper(props: {
-  userId: number;
+  userId?: number;
+  loading: React.ReactNode;
   component: (user: User) => React.ReactNode;
 }) {
   const { get } = useUser();
   const [user, setUser] = React.useState<User | null>(null);
 
   React.useEffect(() => {
+    if (!props.userId) return;
+
     let active = true;
 
     void get(props.userId)
@@ -28,5 +36,5 @@ export default function Wrapper(props: {
     };
   }, [get, props.userId]);
 
-  return <>{user ? props.component(user) : null}</>;
+  return <>{user ? props.component(user) : props.loading}</>;
 }

@@ -7,6 +7,11 @@ import LegalWrapper from "@/features/legal/screen";
 
 import { Toaster } from "@tensamin/ui/cmp/sonner";
 
+/**
+ * Executes Layout.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function Layout(props: { children: ReactNode }) {
   return (
     <>

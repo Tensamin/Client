@@ -1,5 +1,10 @@
 import Link from "../link";
 
+/**
+ * Executes Screen.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function Screen(props: { error: string; description: string }) {
   return (
     <div className="bg-background w-full h-screen flex flex-col justify-center items-center">

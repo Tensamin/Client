@@ -12,12 +12,18 @@ type JWK = {
 const textEncoder = new TextEncoder();
 const crypto = globalThis.crypto;
 
+/**
+ * Encrypts plaintext with a symmetric key derived from a hex shared secret.
+ * @param secret Hex-encoded shared secret.
+ * @param plaintext UTF-8 plaintext to encrypt.
+ * @returns Base64-encoded ciphertext.
+ */
 export async function encrypt(
-  password: string,
-  input: string,
+  secret: string,
+  plaintext: string,
 ): Promise<string> {
   const sharedSecret = new Uint8Array(
-    password.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
+    secret.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
   );
 
   const hkdfKey = await crypto.subtle.importKey(
@@ -54,21 +60,29 @@ export async function encrypt(
   const encryptedBuffer = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: nonce },
     aesKey,
-    textEncoder.encode(input),
+    textEncoder.encode(plaintext),
   );
 
   return btoa(String.fromCharCode(...new Uint8Array(encryptedBuffer)));
 }
 
+/**
+ * Decrypts base64 ciphertext with a symmetric key derived from a hex shared secret.
+ * @param secret Hex-encoded shared secret.
+ * @param ciphertext Base64 ciphertext to decrypt.
+ * @returns Decrypted UTF-8 plaintext.
+ */
 export async function decrypt(
-  password: string,
-  input: Base64URLString | string,
+  secret: string,
+  ciphertext: Base64URLString | string,
 ): Promise<string> {
   const sharedSecret = new Uint8Array(
-    password.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
+    secret.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
   );
 
-  const ciphertext = Uint8Array.from(atob(input), (c) => c.charCodeAt(0));
+  const ciphertextBytes = Uint8Array.from(atob(ciphertext), (c) =>
+    c.charCodeAt(0),
+  );
 
   const hkdfKey = await crypto.subtle.importKey(
     "raw",
@@ -107,28 +121,45 @@ export async function decrypt(
       iv: nonce,
     },
     aesKey,
-    ciphertext,
+    ciphertextBytes,
   );
 
   return new TextDecoder().decode(decryptedBuffer);
 }
 
-export async function get_shared_secret(
-  own_private_key: string,
-  own_public_key: string,
-  other_public_key: string,
+/**
+ * Computes an X448 shared secret from local and peer key material.
+ * @param ownPrivateKey Local private key in raw/base64/base64url or PKCS#8-wrapped form.
+ * @param ownPublicKey Local public key in raw/base64/base64url or SPKI-wrapped form.
+ * @param otherPublicKey Peer public key in raw/base64/base64url or SPKI-wrapped form.
+ * @returns Hex-encoded shared secret, or a failure message when key material is missing/invalid.
+ */
+export async function getSharedSecret(
+  ownPrivateKey: string,
+  ownPublicKey: string,
+  otherPublicKey: string,
 ): Promise<string> {
-  const other_jwk: JWK = { kty: "OKP", crv: "X448", x: other_public_key };
-  const own_jwk: JWK = {
+  const otherJwk: JWK = { kty: "OKP", crv: "X448", x: otherPublicKey };
+  const ownJwk: JWK = {
     kty: "OKP",
     crv: "X448",
-    x: own_public_key,
-    d: own_private_key,
+    x: ownPublicKey,
+    d: ownPrivateKey,
   };
 
+  /**
+   * Converts bytes to a lowercase hex string.
+   * @param u8 Byte array.
+   * @returns Hex string.
+   */
   const bytesToHex = (u8: Uint8Array): string =>
     Array.from(u8, (b) => b.toString(16).padStart(2, "0")).join("");
 
+  /**
+   * Decodes standard base64 text into bytes.
+   * @param s Base64 string.
+   * @returns Decoded bytes.
+   */
   const b64ToBytes = (s: Base64URLString): Uint8Array => {
     const bin = atob(s);
     const out = new Uint8Array(bin.length);
@@ -136,20 +167,41 @@ export async function get_shared_secret(
     return out;
   };
 
+  /**
+   * Decodes URL-safe base64 text into bytes.
+   * @param s Base64url string.
+   * @returns Decoded bytes.
+   */
   const b64uToBytes = (s: Base64URLString): Uint8Array => {
     const b64 =
       s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4);
     return b64ToBytes(b64);
   };
 
+  /**
+   * Encodes bytes as URL-safe base64 without padding.
+   * @param u8 Byte array.
+   * @returns Base64url string.
+   */
   const bytesToB64u = (u8: Uint8Array): string => {
     const b64 = btoa(String.fromCharCode(...u8));
     return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
   };
 
+  /**
+   * Decodes either base64 or base64url text into bytes.
+   * @param s Base64/base64url string.
+   * @returns Decoded bytes.
+   */
   const decodeBase64Auto = (s: string): Uint8Array =>
     /[-_]/.test(s) ? b64uToBytes(s) : b64ToBytes(s);
 
+  /**
+   * Reads a DER TLV item from the provided offset.
+   * @param view DER-encoded bytes.
+   * @param off Start offset.
+   * @returns Parsed TLV metadata with tag, length, and boundaries.
+   */
   const readTLV = (view: Uint8Array, off: number) => {
     const tag = view[off++];
     if (off >= view.length) throw new Error("DER: truncated");
@@ -167,6 +219,12 @@ export async function get_shared_secret(
     return { tag, len, start, end };
   };
 
+  /**
+   * Validates that a DER OID matches X448.
+   * @param view DER-encoded bytes.
+   * @param start Offset of the OID TLV.
+   * @returns True when the OID is X448.
+   */
   const ensureOidX448 = (view: Uint8Array, start: number): boolean => {
     const oid = readTLV(view, start);
     if (oid.tag !== 0x06) return false;
@@ -179,6 +237,11 @@ export async function get_shared_secret(
     );
   };
 
+  /**
+   * Extracts raw 56-byte X448 public key material from SPKI bytes.
+   * @param spkiBytes DER-encoded SPKI bytes.
+   * @returns Raw X448 public key bytes.
+   */
   const extractRawX448FromSPKI = (spkiBytes: Uint8Array): Uint8Array => {
     const view = spkiBytes;
     const outer = readTLV(view, 0);
@@ -196,6 +259,11 @@ export async function get_shared_secret(
     return raw;
   };
 
+  /**
+   * Extracts raw 56-byte X448 private key material from PKCS#8 bytes.
+   * @param pkcs8Bytes DER-encoded PKCS#8 bytes.
+   * @returns Raw X448 private key bytes.
+   */
   const extractRawX448FromPKCS8 = (pkcs8Bytes: Uint8Array): Uint8Array => {
     const view = pkcs8Bytes;
     const outer = readTLV(view, 0);
@@ -230,6 +298,12 @@ export async function get_shared_secret(
     return raw;
   };
 
+  /**
+   * Normalizes X448 JWK fields into raw base64url key material.
+   * @param jwk Candidate JWK.
+   * @param label Error label for diagnostics.
+   * @returns Normalized JWK suitable for WebCrypto import.
+   */
   const normalizeOkpX448Jwk = (jwk: JWK, label: string): JWK => {
     if (!jwk || jwk.kty !== "OKP" || jwk.crv !== "X448") {
       throw new Error(`${label}: expected OKP JWK with crv "X448"`);
@@ -271,6 +345,10 @@ export async function get_shared_secret(
     return out;
   };
 
+  /**
+   * Returns WebCrypto subtle API when available.
+   * @returns SubtleCrypto instance or undefined.
+   */
   const getSubtle = () => globalThis.crypto?.subtle;
 
   {
@@ -305,8 +383,8 @@ export async function get_shared_secret(
     */
   }
 
-  const myJwk: JWK = normalizeOkpX448Jwk(own_jwk, "own_jwk");
-  const peerJwk: JWK = normalizeOkpX448Jwk(other_jwk, "other_jwk");
+  const myJwk: JWK = normalizeOkpX448Jwk(ownJwk, "own_jwk");
+  const peerJwk: JWK = normalizeOkpX448Jwk(otherJwk, "other_jwk");
 
   const subtle = getSubtle();
   //const infoStr = `ECDH-X448-AES-GCM-v1|my=${myJwk.x}|peer=${peerJwk.x}`;
@@ -357,8 +435,33 @@ export async function get_shared_secret(
   return bytesToHex(sharedSecret);
 }
 
-Comlink.expose({
-  encrypt,
-  decrypt,
-  get_shared_secret,
-});
+/**
+ * @deprecated Use getSharedSecret instead.
+ * @param ownPrivateKey Local private key.
+ * @param ownPublicKey Local public key.
+ * @param otherPublicKey Peer public key.
+ * @returns Shared secret derived by getSharedSecret.
+ */
+export async function get_shared_secret(
+  ownPrivateKey: string,
+  ownPublicKey: string,
+  otherPublicKey: string,
+): Promise<string> {
+  return await getSharedSecret(ownPrivateKey, ownPublicKey, otherPublicKey);
+}
+
+/**
+ * Checks whether the current runtime context is a worker global scope.
+ * @returns True when executed inside a worker-like runtime.
+ */
+function isWorkerRuntime(): boolean {
+  return "postMessage" in globalThis && "importScripts" in globalThis;
+}
+
+if (isWorkerRuntime()) {
+  Comlink.expose({
+    encrypt,
+    decrypt,
+    getSharedSecret,
+  });
+}

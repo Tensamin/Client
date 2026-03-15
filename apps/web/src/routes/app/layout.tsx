@@ -6,6 +6,11 @@ import Sidebar from "@/components/sidebar";
 import Conversation from "@/features/conversation/context";
 import Navbar from "@/components/navbar";
 
+/**
+ * Executes Layout.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function Layout(props: { children: ReactNode }) {
   return (
     <Socket>

@@ -22,6 +22,11 @@ const StorageContext = React.createContext<StorageContextValue | undefined>(
 
 const isIndexedDBSupported = typeof indexedDB !== "undefined";
 
+/**
+ * Executes StorageProvider.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function StorageProvider(props: { children: React.ReactNode }) {
   const [storage, setStorage] = React.useState<StorageSchema>(defaults);
   const storageRef = React.useRef(storage);
@@ -135,6 +140,11 @@ export default function StorageProvider(props: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Executes useStorage.
+ * @param none This function has no parameters.
+ * @returns StorageContextValue.
+ */
 export function useStorage(): StorageContextValue {
   const context = React.useContext(StorageContext);
   if (!context) {

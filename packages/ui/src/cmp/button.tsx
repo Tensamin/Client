@@ -38,6 +38,21 @@ const buttonVariants = cva(
   },
 );
 
+/**
+ * Executes Button.
+ * @param {
+  className,
+  variant = "default",
+  size = "default",
+  ...props
+} Parameter {
+  className,
+  variant = "default",
+  size = "default",
+  ...props
+}.
+ * @returns unknown.
+ */
 function Button({
   className,
   variant = "default",

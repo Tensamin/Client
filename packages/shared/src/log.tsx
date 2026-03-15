@@ -1,6 +1,14 @@
 import { toast as sonnerToast } from "sonner";
 import { Ban, Check, Info, TriangleAlert } from "lucide-react";
 
+/**
+ * Executes log.
+ * @param logLevel Parameter logLevel.
+ * @param logger Parameter logger.
+ * @param color Parameter color.
+ * @param args Parameter args.
+ * @returns unknown.
+ */
 export function log(
   logLevel: number,
   logger: string,
@@ -23,6 +31,12 @@ export function log(
 }
 
 const size = 20;
+/**
+ * Executes toast.
+ * @param type Parameter type.
+ * @param message Parameter message.
+ * @returns unknown.
+ */
 export function toast(
   type: "error" | "info" | "warn" | "success",
   message: string,

@@ -1,5 +1,10 @@
 import { ExternalLink } from "lucide-react";
 
+/**
+ * Executes Link.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function Link(props: { link: string; label: string }) {
   return (
     <a

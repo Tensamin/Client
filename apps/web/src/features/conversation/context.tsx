@@ -16,6 +16,11 @@ const ConversationContext = React.createContext<contextValue | undefined>(
   undefined,
 );
 
+/**
+ * Executes ConversationProvider.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function ConversationProvider(props: {
   children: React.ReactNode;
 }) {
@@ -64,6 +69,11 @@ export default function ConversationProvider(props: {
   );
 }
 
+/**
+ * Executes useConversation.
+ * @param none This function has no parameters.
+ * @returns contextValue.
+ */
 export function useConversation(): contextValue {
   const context = React.useContext(ConversationContext);
   if (!context) {

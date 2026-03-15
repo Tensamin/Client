@@ -3,6 +3,19 @@ import { Avatar as AvatarPrimitive } from "@base-ui/react/avatar";
 
 import { cn } from "../lib/utils";
 
+/**
+ * Executes Avatar.
+ * @param {
+  className,
+  size = "default",
+  ...props
+} Parameter {
+  className,
+  size = "default",
+  ...props
+}.
+ * @returns unknown.
+ */
 function Avatar({
   className,
   size = "default",
@@ -23,6 +36,11 @@ function Avatar({
   );
 }
 
+/**
+ * Executes AvatarImage.
+ * @param { className, ...props } Parameter { className, ...props }.
+ * @returns unknown.
+ */
 function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
   return (
     <AvatarPrimitive.Image
@@ -36,6 +54,17 @@ function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
   );
 }
 
+/**
+ * Executes AvatarFallback.
+ * @param {
+  className,
+  ...props
+} Parameter {
+  className,
+  ...props
+}.
+ * @returns unknown.
+ */
 function AvatarFallback({
   className,
   ...props
@@ -52,6 +81,11 @@ function AvatarFallback({
   );
 }
 
+/**
+ * Executes AvatarBadge.
+ * @param { className, ...props } Parameter { className, ...props }.
+ * @returns unknown.
+ */
 function AvatarBadge({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
@@ -68,6 +102,11 @@ function AvatarBadge({ className, ...props }: React.ComponentProps<"span">) {
   );
 }
 
+/**
+ * Executes AvatarGroup.
+ * @param { className, ...props } Parameter { className, ...props }.
+ * @returns unknown.
+ */
 function AvatarGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -81,6 +120,17 @@ function AvatarGroup({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Executes AvatarGroupCount.
+ * @param {
+  className,
+  ...props
+} Parameter {
+  className,
+  ...props
+}.
+ * @returns unknown.
+ */
 function AvatarGroupCount({
   className,
   ...props

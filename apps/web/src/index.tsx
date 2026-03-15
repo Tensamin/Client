@@ -33,6 +33,11 @@ window.setLogLevelToMax = () => {
   location.reload();
 };
 
+/**
+ * Executes RootShell.
+ * @param none This function has no parameters.
+ * @returns unknown.
+ */
 function RootShell() {
   return (
     <ThemeProvider>
@@ -45,6 +50,11 @@ function RootShell() {
   );
 }
 
+/**
+ * Executes AppShell.
+ * @param none This function has no parameters.
+ * @returns unknown.
+ */
 function AppShell() {
   return (
     <AppLayout>
@@ -53,6 +63,11 @@ function AppShell() {
   );
 }
 
+/**
+ * Executes Chat.
+ * @param none This function has no parameters.
+ * @returns unknown.
+ */
 function Chat() {
   return (
     <ChatContext>

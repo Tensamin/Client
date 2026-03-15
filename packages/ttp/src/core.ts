@@ -62,6 +62,9 @@ type ActiveConnection = {
   closeNotified: boolean;
 };
 
+/**
+ * Represents non-fatal payload decoding failures for individual protocol messages.
+ */
 class RecoverableMessageDecodeError extends Error {
   readonly messageId: number;
 
@@ -69,6 +72,12 @@ class RecoverableMessageDecodeError extends Error {
 
   readonly cause: unknown;
 
+  /**
+   * Creates a recoverable decode error associated with a specific message.
+   * @param messageId Protocol message id that failed to decode.
+   * @param messageType Protocol message type that failed to decode.
+   * @param cause Original decode failure cause.
+   */
   constructor(messageId: number, messageType: string, cause: unknown) {
     super(
       `Failed to decode message payload for "${messageType}" (id=${messageId}): ${formatUnknownError(cause)}`,
@@ -439,6 +448,12 @@ export type TransportClient<T extends SchemaMap> = {
   subscribePush(handler: PushHandler): () => void;
 };
 
+/**
+ * Creates a typed transport client that validates request and response payloads.
+ * @param schemas Protocol schema map for request/response validation.
+ * @param options Optional transport lifecycle callbacks and default URL.
+ * @returns Transport client API for connect, close, send, and push subscriptions.
+ */
 export function createTransportClient<T extends SchemaMap>(
   schemas: T,
   options: TransportClientOptions = {},
@@ -451,11 +466,21 @@ export function createTransportClient<T extends SchemaMap>(
   let nextRequestId = 1;
   let configuredUrl = options.url;
 
+  /**
+   * Updates current ready state and emits lifecycle callbacks.
+   * @param readyState New transport ready state value.
+   * @returns Void.
+   */
   const setReadyState = (readyState: number) => {
     currentReadyState = readyState;
     options.onReadyStateChange?.(readyState);
   };
 
+  /**
+   * Rejects all pending requests and clears timeout handles.
+   * @param reason Rejection reason applied to all pending requests.
+   * @returns Void.
+   */
   const rejectPending = (reason: unknown) => {
     for (const [id, request] of pending) {
       clearTimeout(request.timeoutId);
@@ -464,6 +489,12 @@ export function createTransportClient<T extends SchemaMap>(
     }
   };
 
+  /**
+   * Finalizes closed state for a connection and notifies listeners.
+   * @param connection Closed connection object.
+   * @param error Optional close error.
+   * @returns Void.
+   */
   const notifyClosed = (connection: ActiveConnection, error?: unknown) => {
     if (connection.closeNotified) {
       return;
@@ -483,6 +514,12 @@ export function createTransportClient<T extends SchemaMap>(
     options.onClose?.({ error, intentional: connection.intentional });
   };
 
+  /**
+   * Handles connection-level failures and routes them through close handling.
+   * @param connection Connection that failed.
+   * @param error Optional failure reason.
+   * @returns Void.
+   */
   const handleConnectionFailure = (
     connection: ActiveConnection,
     error?: unknown,
@@ -494,6 +531,12 @@ export function createTransportClient<T extends SchemaMap>(
     notifyClosed(connection, error);
   };
 
+  /**
+   * Handles STOP_SENDING failures by forcing close and notifying failure.
+   * @param connection Active connection.
+   * @param error Failure reason.
+   * @returns Void.
+   */
   const closeFromStopSending = (
     connection: ActiveConnection,
     error: unknown,
@@ -514,6 +557,11 @@ export function createTransportClient<T extends SchemaMap>(
     handleConnectionFailure(connection, error);
   };
 
+  /**
+   * Handles decoded incoming messages and resolves request promises or push listeners.
+   * @param message Decoded incoming message.
+   * @returns Void.
+   */
   const handleIncomingMessage = (message: TypedMessage) => {
     if (message.type !== "pong") {
       log(2, "Socket", "blue", "Received:", message.type, message.data, {
@@ -591,6 +639,11 @@ export function createTransportClient<T extends SchemaMap>(
     }
   };
 
+  /**
+   * Handles recoverable decode failures by rejecting only the affected request.
+   * @param error Recoverable decode error details.
+   * @returns Void.
+   */
   const handleRecoverableDecodeFailure = (
     error: RecoverableMessageDecodeError,
   ) => {
@@ -618,6 +671,11 @@ export function createTransportClient<T extends SchemaMap>(
     );
   };
 
+  /**
+   * Starts the incoming stream loop for a newly-opened connection.
+   * @param connection Active connection instance.
+   * @returns Void.
+   */
   const startIncomingLoop = (connection: ActiveConnection) => {
     connection.streamReader =
       connection.transport.incomingUnidirectionalStreams.getReader();
@@ -678,6 +736,11 @@ export function createTransportClient<T extends SchemaMap>(
     })();
   };
 
+  /**
+   * Awaits transport closed promise and forwards outcome to failure handling.
+   * @param connection Active connection instance.
+   * @returns Void.
+   */
   const awaitClosed = (connection: ActiveConnection) => {
     void connection.transport.closed
       .then(() => {
@@ -688,6 +751,11 @@ export function createTransportClient<T extends SchemaMap>(
       });
   };
 
+  /**
+   * Opens a transport connection and starts incoming frame processing.
+   * @param url Optional override transport URL.
+   * @returns Promise that resolves when connection setup completes.
+   */
   const connect = async (url = configuredUrl) => {
     if (!url) {
       throw new Error("Transport URL is not configured");
@@ -729,6 +797,11 @@ export function createTransportClient<T extends SchemaMap>(
     }
   };
 
+  /**
+   * Closes the current transport connection and sends a close sentinel frame.
+   * @param reason Close reason sent to transport.
+   * @returns Promise that resolves once close handling completes.
+   */
   const close = async (reason = APPLICATION_CLOSE_REASON) => {
     const connection = currentConnection;
     if (!connection) {
@@ -769,6 +842,13 @@ export function createTransportClient<T extends SchemaMap>(
     }
   };
 
+  /**
+   * Sends a typed protocol request over the current connection.
+   * @param type Protocol message type.
+   * @param input Optional request payload.
+   * @param options Optional id and response behavior.
+   * @returns Promise for response message or void when no response is expected.
+   */
   const send: BoundSendFn<T> = ((
     type: string,
     input?: Record<string, unknown>,
@@ -887,6 +967,11 @@ export function createTransportClient<T extends SchemaMap>(
   };
 }
 
+/**
+ * Builds a normalized lookup map for protocol names by index.
+ * @param values Ordered protocol names.
+ * @returns Map from normalized name to array index.
+ */
 function createIndexMap(values: readonly string[]) {
   const map = new Map<string, number>();
 
@@ -897,6 +982,12 @@ function createIndexMap(values: readonly string[]) {
   return map;
 }
 
+/**
+ * Registers expected data kinds for protocol data type names.
+ * @param kind Expected scalar or array kind for the provided names.
+ * @param names Data type names to register.
+ * @returns Void.
+ */
 function registerDataKinds(kind: DataKind, names: readonly string[]) {
   for (const name of names) {
     if (dataKindByType.has(name)) {
@@ -907,6 +998,10 @@ function registerDataKinds(kind: DataKind, names: readonly string[]) {
   }
 }
 
+/**
+ * Returns the WebTransport constructor from the current runtime.
+ * @returns WebTransport constructor.
+ */
 function getWebTransportCtor() {
   const ctor = (globalThis as WebTransportGlobal).WebTransport;
   if (!ctor) {
@@ -916,10 +1011,20 @@ function getWebTransportCtor() {
   return ctor;
 }
 
+/**
+ * Normalizes protocol names by lowercasing and removing underscores.
+ * @param value Raw protocol name.
+ * @returns Normalized protocol key.
+ */
 function normalizeName(value: string) {
   return value.toLowerCase().replaceAll("_", "");
 }
 
+/**
+ * Formats unknown errors into a stable log string.
+ * @param error Unknown error value.
+ * @returns Human-readable error description.
+ */
 function formatUnknownError(error: unknown) {
   if (error instanceof Error) {
     return error.message;
@@ -936,6 +1041,11 @@ function formatUnknownError(error: unknown) {
   }
 }
 
+/**
+ * Detects whether an error chain includes STOP_SENDING.
+ * @param error Unknown transport error.
+ * @returns True when STOP_SENDING appears in the error chain.
+ */
 function isStopSendingError(error: unknown) {
   if (typeof error === "string") {
     return error.includes("STOP_SENDING");
@@ -964,6 +1074,11 @@ function isStopSendingError(error: unknown) {
   return false;
 }
 
+/**
+ * Ensures outbound message payloads are plain object records.
+ * @param value Candidate payload.
+ * @returns Payload as plain object record.
+ */
 function coercePayload(value: unknown): Record<string, unknown> {
   if (!isPlainObject(value)) {
     throw new Error("Protocol payload must be a plain object");
@@ -972,10 +1087,23 @@ function coercePayload(value: unknown): Record<string, unknown> {
   return value;
 }
 
+/**
+ * Checks whether a value is a non-null, non-array object.
+ * @param value Candidate value.
+ * @returns True when the value is a plain object.
+ */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Resolves a unique request id for transport messages.
+ * @param requestedId Optional caller-provided request id.
+ * @param expectsResponse Whether the request expects a response.
+ * @param pending Map of currently pending requests.
+ * @param nextId Function that returns the next candidate id.
+ * @returns A request id valid for the current pending set.
+ */
 function resolveRequestId(
   requestedId: number | undefined,
   expectsResponse: boolean,
@@ -1010,6 +1138,12 @@ function resolveRequestId(
   return candidate;
 }
 
+/**
+ * Validates request id bounds and response semantics.
+ * @param id Request id to validate.
+ * @param expectsResponse Whether a response is expected for this request.
+ * @returns Void.
+ */
 function validateRequestId(id: number, expectsResponse: boolean) {
   if (!Number.isInteger(id) || id < 0 || id > MAX_REQUEST_ID) {
     throw new Error(`Request id must be a u32 between 0 and ${MAX_REQUEST_ID}`);
@@ -1020,6 +1154,12 @@ function validateRequestId(id: number, expectsResponse: boolean) {
   }
 }
 
+/**
+ * Writes a protocol message payload as a framed unidirectional transport stream.
+ * @param transport Active transport instance.
+ * @param payload Encoded message payload bytes.
+ * @returns Promise that resolves when frame writing is complete.
+ */
 async function writeMessage(transport: WebTransportLike, payload: Uint8Array) {
   if (payload.byteLength >= CLOSE_FRAME_LEN) {
     throw new Error("Message too large for transport frame");
@@ -1040,6 +1180,11 @@ async function writeMessage(transport: WebTransportLike, payload: Uint8Array) {
   }
 }
 
+/**
+ * Writes a close sentinel frame to the transport.
+ * @param transport Active transport instance.
+ * @returns Promise that resolves when the close frame is written.
+ */
 async function writeCloseFrame(transport: WebTransportLike) {
   const stream = await transport.createUnidirectionalStream();
   const writer = stream.getWriter();
@@ -1054,6 +1199,11 @@ async function writeCloseFrame(transport: WebTransportLike) {
   }
 }
 
+/**
+ * Reads and validates a full transport frame from a stream.
+ * @param stream Incoming stream for one framed message.
+ * @returns Decoded typed message or null for close sentinel frames.
+ */
 async function readFrame(stream: ReadableStream<Uint8Array>) {
   const payload = await readAll(stream);
   if (payload.byteLength < 4) {
@@ -1075,6 +1225,11 @@ async function readFrame(stream: ReadableStream<Uint8Array>) {
   return decodeCommunicationMessage(payload.subarray(4));
 }
 
+/**
+ * Reads all chunks from a stream into a contiguous byte array.
+ * @param stream Stream providing Uint8Array chunks.
+ * @returns Concatenated stream bytes.
+ */
 async function readAll(stream: ReadableStream<Uint8Array>) {
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
@@ -1105,7 +1260,12 @@ async function readAll(stream: ReadableStream<Uint8Array>) {
   return buffer;
 }
 
-function encodeCommunicationMessage(
+/**
+ * Encodes a typed protocol message into the wire communication format.
+ * @param message Typed message with id, type, and payload data.
+ * @returns Encoded communication frame bytes.
+ */
+export function encodeCommunicationMessage(
   message: TypedMessage<Record<string, unknown>>,
 ) {
   const typeIndex = parseCommunicationType(message.type);
@@ -1129,7 +1289,12 @@ function encodeCommunicationMessage(
   return buffer;
 }
 
-function decodeCommunicationMessage(frame: Uint8Array): TypedMessage {
+/**
+ * Decodes communication frame bytes into a typed protocol message.
+ * @param frame Encoded communication frame bytes.
+ * @returns Decoded typed protocol message.
+ */
+export function decodeCommunicationMessage(frame: Uint8Array): TypedMessage {
   const reader = new ByteReader(frame);
   const payloadLength = reader.readU32();
   if (payloadLength !== frame.byteLength - 4) {
@@ -1189,6 +1354,11 @@ function decodeCommunicationMessage(frame: Uint8Array): TypedMessage {
   };
 }
 
+/**
+ * Resolves a communication type string to its protocol index.
+ * @param type Protocol message type string.
+ * @returns Numeric protocol type index.
+ */
 function parseCommunicationType(type: string) {
   const index = COMMUNICATION_TYPE_BY_NAME.get(normalizeName(type));
   if (index === undefined) {
@@ -1198,6 +1368,11 @@ function parseCommunicationType(type: string) {
   return index;
 }
 
+/**
+ * Parses a protocol data key into its index and canonical name.
+ * @param type Raw protocol data key.
+ * @returns Canonical data key metadata with index and normalized name.
+ */
 function parseDataType(type: string) {
   const index = DATA_TYPE_BY_NAME.get(normalizeName(type));
   if (index === undefined) {
@@ -1210,6 +1385,11 @@ function parseDataType(type: string) {
   };
 }
 
+/**
+ * Returns the expected value kind for a protocol data key.
+ * @param type Canonical data key name.
+ * @returns Expected data kind definition.
+ */
 function getExpectedKind(type: string) {
   const kind = dataKindByType.get(type);
   if (!kind) {
@@ -1224,6 +1404,13 @@ type EncodedDataValue = {
   payload: Uint8Array;
 };
 
+/**
+ * Encodes a value according to the expected protocol kind.
+ * @param kind Expected protocol kind.
+ * @param value Candidate value to encode.
+ * @param path Payload path used in validation errors.
+ * @returns Encoded value marker and payload bytes.
+ */
 function encodeDataValueForKind(
   kind: DataKind,
   value: unknown,
@@ -1285,6 +1472,12 @@ function encodeDataValueForKind(
   }
 }
 
+/**
+ * Encodes a numeric payload as signed 64-bit big-endian bytes.
+ * @param value Value expected to be a safe integer number.
+ * @param path Payload path used in validation errors.
+ * @returns Encoded i64 byte array.
+ */
 function encodeNumberPayload(value: unknown, path: string) {
   if (
     typeof value !== "number" ||
@@ -1299,6 +1492,13 @@ function encodeNumberPayload(value: unknown, path: string) {
   return buffer;
 }
 
+/**
+ * Encodes an array payload where each item is tagged with a data marker.
+ * @param innerKind Expected kind for array entries.
+ * @param value Candidate array payload.
+ * @param path Payload path used in validation errors.
+ * @returns Encoded array payload bytes.
+ */
 function encodeArrayPayload(
   innerKind: PrimitiveDataKind | "container" | "null",
   value: unknown,
@@ -1352,6 +1552,12 @@ function encodeArrayPayload(
   return buffer;
 }
 
+/**
+ * Encodes a keyed container payload into protocol key-index/value entries.
+ * @param value Object payload to encode.
+ * @param path Payload path used in validation errors.
+ * @returns Encoded container payload bytes.
+ */
 function encodeContainerPayload(value: Record<string, unknown>, path: string) {
   const normalizedEntries = new Map<
     string,
@@ -1433,6 +1639,12 @@ function encodeContainerPayload(value: Record<string, unknown>, path: string) {
   return buffer;
 }
 
+/**
+ * Decodes a value marker and payload bytes into a JavaScript value.
+ * @param marker Protocol value marker.
+ * @param payload Encoded payload bytes for the marker.
+ * @returns Decoded JavaScript value.
+ */
 function decodeValuePayload(marker: number, payload: Uint8Array): unknown {
   const reader = new ByteReader(payload);
 
@@ -1479,6 +1691,11 @@ function decodeValuePayload(marker: number, payload: Uint8Array): unknown {
   }
 }
 
+/**
+ * Decodes an encoded array payload from a byte reader.
+ * @param reader Byte reader positioned at array payload start.
+ * @returns Decoded array values.
+ */
 function decodeArrayPayload(reader: ByteReader) {
   const itemCount = reader.readU16();
   const values: unknown[] = [];
@@ -1499,6 +1716,11 @@ function decodeArrayPayload(reader: ByteReader) {
   return values;
 }
 
+/**
+ * Decodes an encoded keyed container payload from a byte reader.
+ * @param reader Byte reader positioned at container payload start.
+ * @returns Decoded object payload.
+ */
 function decodeContainerPayload(reader: ByteReader) {
   const entryCount = reader.readU16();
   const value: Record<string, unknown> = {};
@@ -1528,6 +1750,11 @@ function decodeContainerPayload(reader: ByteReader) {
   return value;
 }
 
+/**
+ * Resolves a canonical data key by protocol index.
+ * @param index Protocol key index.
+ * @returns Canonical protocol data key name.
+ */
 function getDataTypeNameByIndex(index: number) {
   const key = DATA_TYPES[index];
   if (!key) {
@@ -1537,6 +1764,11 @@ function getDataTypeNameByIndex(index: number) {
   return key;
 }
 
+/**
+ * Checks whether a marker represents a boolean payload.
+ * @param marker Protocol value marker.
+ * @returns True when marker is boolean true or false.
+ */
 function isBoolKindMarker(marker: number) {
   return (
     marker === DATA_VALUE_KIND_BOOL_TRUE ||
@@ -1544,6 +1776,12 @@ function isBoolKindMarker(marker: number) {
   );
 }
 
+/**
+ * Validates that a marker is compatible with an expected data kind.
+ * @param marker Protocol value marker.
+ * @param kind Expected protocol data kind.
+ * @returns True when marker matches the expected kind.
+ */
 function isMarkerCompatibleWithKind(marker: number, kind: DataKind) {
   if (typeof kind === "object") {
     return marker === DATA_VALUE_KIND_ARRAY;
@@ -1563,6 +1801,13 @@ function isMarkerCompatibleWithKind(marker: number, kind: DataKind) {
   }
 }
 
+/**
+ * Validates marker compatibility for a specific key with scalar-array fallback support.
+ * @param marker Protocol value marker.
+ * @param kind Expected protocol data kind.
+ * @param key Canonical protocol key name.
+ * @returns True when marker is compatible for the key.
+ */
 function isMarkerCompatibleWithKey(
   marker: number,
   kind: DataKind,
@@ -1578,6 +1823,12 @@ function isMarkerCompatibleWithKey(
   return isMarkerCompatibleWithKind(marker, kind);
 }
 
+/**
+ * Normalizes outbound values for special scalar-array compatibility keys.
+ * @param type Canonical protocol key name.
+ * @param value Outbound value.
+ * @returns Normalized outbound value.
+ */
 function normalizeOutgoingValue(type: string, value: unknown) {
   if (SCALAR_NUMBER_ARRAY_DATA_TYPES.has(type) && typeof value === "number") {
     return [value];
@@ -1586,6 +1837,12 @@ function normalizeOutgoingValue(type: string, value: unknown) {
   return value;
 }
 
+/**
+ * Normalizes inbound values for scalar-array compatibility keys.
+ * @param type Canonical protocol key name.
+ * @param value Inbound decoded value.
+ * @returns Normalized inbound value.
+ */
 function normalizeIncomingValue(type: string, value: unknown) {
   if (
     SCALAR_NUMBER_ARRAY_DATA_TYPES.has(type) &&
@@ -1599,6 +1856,13 @@ function normalizeIncomingValue(type: string, value: unknown) {
   return value;
 }
 
+/**
+ * Writes a big-endian unsigned 16-bit integer to a byte buffer.
+ * @param buffer Destination byte buffer.
+ * @param offset Byte offset to write at.
+ * @param value Unsigned 16-bit integer value.
+ * @returns Void.
+ */
 function writeU16(buffer: Uint8Array, offset: number, value: number) {
   new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength).setUint16(
     offset,
@@ -1607,6 +1871,13 @@ function writeU16(buffer: Uint8Array, offset: number, value: number) {
   );
 }
 
+/**
+ * Writes a big-endian unsigned 32-bit integer to a byte buffer.
+ * @param buffer Destination byte buffer.
+ * @param offset Byte offset to write at.
+ * @param value Unsigned 32-bit integer value.
+ * @returns Void.
+ */
 function writeU32(buffer: Uint8Array, offset: number, value: number) {
   new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength).setUint32(
     offset,
@@ -1615,6 +1886,13 @@ function writeU32(buffer: Uint8Array, offset: number, value: number) {
   );
 }
 
+/**
+ * Writes a big-endian signed 64-bit integer to a byte buffer.
+ * @param buffer Destination byte buffer.
+ * @param offset Byte offset to write at.
+ * @param value Signed integer value.
+ * @returns Void.
+ */
 function writeI64(buffer: Uint8Array, offset: number, value: number) {
   new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength).setBigInt64(
     offset,
@@ -1623,6 +1901,12 @@ function writeI64(buffer: Uint8Array, offset: number, value: number) {
   );
 }
 
+/**
+ * Reads a big-endian unsigned 32-bit integer from a byte buffer.
+ * @param buffer Source byte buffer.
+ * @param offset Byte offset to read from.
+ * @returns Unsigned 32-bit integer value.
+ */
 function readU32(buffer: Uint8Array, offset: number) {
   return new DataView(
     buffer.buffer,
@@ -1631,6 +1915,9 @@ function readU32(buffer: Uint8Array, offset: number) {
   ).getUint32(offset, false);
 }
 
+/**
+ * Provides sequential big-endian reads over protocol byte buffers.
+ */
 class ByteReader {
   private readonly view: DataView;
 
@@ -1638,11 +1925,19 @@ class ByteReader {
 
   private readonly bytes: Uint8Array;
 
+  /**
+   * Creates a byte reader over an immutable Uint8Array view.
+   * @param bytes Source bytes to read from.
+   */
   constructor(bytes: Uint8Array) {
     this.bytes = bytes;
     this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   }
 
+  /**
+   * Reads one unsigned byte.
+   * @returns Unsigned 8-bit integer.
+   */
   readU8() {
     this.ensureAvailable(1);
     const value = this.view.getUint8(this.offset);
@@ -1650,6 +1945,10 @@ class ByteReader {
     return value;
   }
 
+  /**
+   * Reads two bytes as big-endian unsigned 16-bit integer.
+   * @returns Unsigned 16-bit integer.
+   */
   readU16() {
     this.ensureAvailable(2);
     const value = this.view.getUint16(this.offset, false);
@@ -1657,6 +1956,10 @@ class ByteReader {
     return value;
   }
 
+  /**
+   * Reads four bytes as big-endian unsigned 32-bit integer.
+   * @returns Unsigned 32-bit integer.
+   */
   readU32() {
     this.ensureAvailable(4);
     const value = this.view.getUint32(this.offset, false);
@@ -1664,6 +1967,10 @@ class ByteReader {
     return value;
   }
 
+  /**
+   * Reads eight bytes as big-endian signed 64-bit integer.
+   * @returns Safe integer representation of the decoded value.
+   */
   readI64() {
     this.ensureAvailable(8);
     const value = this.view.getBigInt64(this.offset, false);
@@ -1679,6 +1986,10 @@ class ByteReader {
     return numberValue;
   }
 
+  /**
+   * Reads six bytes as a big-endian unsigned 48-bit integer.
+   * @returns Unsigned 48-bit integer represented as number.
+   */
   readU48() {
     this.ensureAvailable(6);
     const upper = this.view.getUint16(this.offset, false);
@@ -1687,6 +1998,11 @@ class ByteReader {
     return upper * 2 ** 32 + lower;
   }
 
+  /**
+   * Reads a byte slice of the requested length.
+   * @param length Number of bytes to read.
+   * @returns View over the requested bytes.
+   */
   readBytes(length: number) {
     this.ensureAvailable(length);
     const value = this.bytes.subarray(this.offset, this.offset + length);
@@ -1694,10 +2010,19 @@ class ByteReader {
     return value;
   }
 
+  /**
+   * Indicates whether all bytes have been consumed.
+   * @returns True when reader offset is at buffer end.
+   */
   isAtEnd() {
     return this.offset === this.bytes.byteLength;
   }
 
+  /**
+   * Ensures that at least a specific number of bytes can still be read.
+   * @param length Required available byte count.
+   * @returns Void.
+   */
   private ensureAvailable(length: number) {
     if (this.offset + length > this.bytes.byteLength) {
       throw new Error("Unexpected end of protocol buffer");

@@ -4,16 +4,37 @@ import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu
 import { cn } from "../lib/utils";
 import { ChevronRightIcon, CheckIcon } from "lucide-react";
 
+/**
+ * Executes ContextMenu.
+ * @param { ...props } Parameter { ...props }.
+ * @returns unknown.
+ */
 function ContextMenu({ ...props }: ContextMenuPrimitive.Root.Props) {
   return <ContextMenuPrimitive.Root data-slot="context-menu" {...props} />;
 }
 
+/**
+ * Executes ContextMenuPortal.
+ * @param { ...props } Parameter { ...props }.
+ * @returns unknown.
+ */
 function ContextMenuPortal({ ...props }: ContextMenuPrimitive.Portal.Props) {
   return (
     <ContextMenuPrimitive.Portal data-slot="context-menu-portal" {...props} />
   );
 }
 
+/**
+ * Executes ContextMenuTrigger.
+ * @param {
+  className,
+  ...props
+} Parameter {
+  className,
+  ...props
+}.
+ * @returns unknown.
+ */
 function ContextMenuTrigger({
   className,
   ...props
@@ -27,6 +48,25 @@ function ContextMenuTrigger({
   );
 }
 
+/**
+ * Executes ContextMenuContent.
+ * @param {
+  className,
+  align = "start",
+  alignOffset = 4,
+  side = "right",
+  sideOffset = 0,
+  ...props
+} Parameter {
+  className,
+  align = "start",
+  alignOffset = 4,
+  side = "right",
+  sideOffset = 0,
+  ...props
+}.
+ * @returns unknown.
+ */
 function ContextMenuContent({
   className,
   align = "start",
@@ -61,12 +101,30 @@ function ContextMenuContent({
   );
 }
 
+/**
+ * Executes ContextMenuGroup.
+ * @param { ...props } Parameter { ...props }.
+ * @returns unknown.
+ */
 function ContextMenuGroup({ ...props }: ContextMenuPrimitive.Group.Props) {
   return (
     <ContextMenuPrimitive.Group data-slot="context-menu-group" {...props} />
   );
 }
 
+/**
+ * Executes ContextMenuLabel.
+ * @param {
+  className,
+  inset,
+  ...props
+} Parameter {
+  className,
+  inset,
+  ...props
+}.
+ * @returns unknown.
+ */
 function ContextMenuLabel({
   className,
   inset,
@@ -87,6 +145,21 @@ function ContextMenuLabel({
   );
 }
 
+/**
+ * Executes ContextMenuItem.
+ * @param {
+  className,
+  inset,
+  variant = "default",
+  ...props
+} Parameter {
+  className,
+  inset,
+  variant = "default",
+  ...props
+}.
+ * @returns unknown.
+ */
 function ContextMenuItem({
   className,
   inset,
@@ -110,12 +183,32 @@ function ContextMenuItem({
   );
 }
 
+/**
+ * Executes ContextMenuSub.
+ * @param { ...props } Parameter { ...props }.
+ * @returns unknown.
+ */
 function ContextMenuSub({ ...props }: ContextMenuPrimitive.SubmenuRoot.Props) {
   return (
     <ContextMenuPrimitive.SubmenuRoot data-slot="context-menu-sub" {...props} />
   );
 }
 
+/**
+ * Executes ContextMenuSubTrigger.
+ * @param {
+  className,
+  inset,
+  children,
+  ...props
+} Parameter {
+  className,
+  inset,
+  children,
+  ...props
+}.
+ * @returns unknown.
+ */
 function ContextMenuSubTrigger({
   className,
   inset,
@@ -140,6 +233,15 @@ function ContextMenuSubTrigger({
   );
 }
 
+/**
+ * Executes ContextMenuSubContent.
+ * @param {
+  ...props
+} Parameter {
+  ...props
+}.
+ * @returns unknown.
+ */
 function ContextMenuSubContent({
   ...props
 }: React.ComponentProps<typeof ContextMenuContent>) {
@@ -153,6 +255,23 @@ function ContextMenuSubContent({
   );
 }
 
+/**
+ * Executes ContextMenuCheckboxItem.
+ * @param {
+  className,
+  children,
+  checked,
+  inset,
+  ...props
+} Parameter {
+  className,
+  children,
+  checked,
+  inset,
+  ...props
+}.
+ * @returns unknown.
+ */
 function ContextMenuCheckboxItem({
   className,
   children,
@@ -183,6 +302,15 @@ function ContextMenuCheckboxItem({
   );
 }
 
+/**
+ * Executes ContextMenuRadioGroup.
+ * @param {
+  ...props
+} Parameter {
+  ...props
+}.
+ * @returns unknown.
+ */
 function ContextMenuRadioGroup({
   ...props
 }: ContextMenuPrimitive.RadioGroup.Props) {
@@ -194,6 +322,21 @@ function ContextMenuRadioGroup({
   );
 }
 
+/**
+ * Executes ContextMenuRadioItem.
+ * @param {
+  className,
+  children,
+  inset,
+  ...props
+} Parameter {
+  className,
+  children,
+  inset,
+  ...props
+}.
+ * @returns unknown.
+ */
 function ContextMenuRadioItem({
   className,
   children,
@@ -222,6 +365,17 @@ function ContextMenuRadioItem({
   );
 }
 
+/**
+ * Executes ContextMenuSeparator.
+ * @param {
+  className,
+  ...props
+} Parameter {
+  className,
+  ...props
+}.
+ * @returns unknown.
+ */
 function ContextMenuSeparator({
   className,
   ...props
@@ -235,6 +389,17 @@ function ContextMenuSeparator({
   );
 }
 
+/**
+ * Executes ContextMenuShortcut.
+ * @param {
+  className,
+  ...props
+} Parameter {
+  className,
+  ...props
+}.
+ * @returns unknown.
+ */
 function ContextMenuShortcut({
   className,
   ...props

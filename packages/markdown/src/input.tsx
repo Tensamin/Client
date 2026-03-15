@@ -70,6 +70,11 @@ const markdownDecorations = ViewPlugin.fromClass(
   },
 );
 
+/**
+ * Executes Input.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function Input(props: InputProps) {
   ensureMarkdownStyles();
 
@@ -132,6 +137,14 @@ export default function Input(props: InputProps) {
   return <div ref={elementRef} className="tm-md-root" />;
 }
 
+/**
+ * Executes createEditorExtensions.
+ * @param onChange Parameter onChange.
+ * @param getPlaceholder Parameter getPlaceholder.
+ * @param getInvertEnterBehavior Parameter getInvertEnterBehavior.
+ * @param onSubmit Parameter onSubmit.
+ * @returns Extension[].
+ */
 function createEditorExtensions(
   onChange: (value: string) => void,
   getPlaceholder: () => string | undefined,
@@ -191,6 +204,11 @@ function createEditorExtensions(
   ];
 }
 
+/**
+ * Executes buildDecorations.
+ * @param view Parameter view.
+ * @returns DecorationSet.
+ */
 function buildDecorations(view: EditorView): DecorationSet {
   const builder: Range<Decoration>[] = [];
   const selections = view.state.selection.ranges.map(

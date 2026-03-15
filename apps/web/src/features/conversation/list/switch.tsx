@@ -2,6 +2,11 @@ import * as React from "react";
 
 type Category = "conversations" | "communities";
 
+/**
+ * Executes Switch.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function Switch(props: {
   category: Category;
   setCategory: (category: Category) => void;
@@ -28,6 +33,11 @@ export default function Switch(props: {
     updateIndicator();
   }, [updateIndicator]);
 
+  /**
+   * Executes toggleCategory.
+   * @param none This function has no parameters.
+   * @returns unknown.
+   */
   function toggleCategory() {
     props.setCategory(
       props.category === "conversations" ? "communities" : "conversations",

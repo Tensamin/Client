@@ -2,6 +2,19 @@ import * as React from "react";
 
 import { cn } from "../lib/utils";
 
+/**
+ * Executes Card.
+ * @param {
+  className,
+  size = "default",
+  ...props
+} Parameter {
+  className,
+  size = "default",
+  ...props
+}.
+ * @returns unknown.
+ */
 function Card({
   className,
   size = "default",
@@ -20,6 +33,11 @@ function Card({
   );
 }
 
+/**
+ * Executes CardHeader.
+ * @param { className, ...props } Parameter { className, ...props }.
+ * @returns unknown.
+ */
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -33,6 +51,11 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Executes CardTitle.
+ * @param { className, ...props } Parameter { className, ...props }.
+ * @returns unknown.
+ */
 function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -43,6 +66,11 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Executes CardDescription.
+ * @param { className, ...props } Parameter { className, ...props }.
+ * @returns unknown.
+ */
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -53,6 +81,11 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Executes CardAction.
+ * @param { className, ...props } Parameter { className, ...props }.
+ * @returns unknown.
+ */
 function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -66,6 +99,11 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Executes CardContent.
+ * @param { className, ...props } Parameter { className, ...props }.
+ * @returns unknown.
+ */
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -76,6 +114,11 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Executes CardFooter.
+ * @param { className, ...props } Parameter { className, ...props }.
+ * @returns unknown.
+ */
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div

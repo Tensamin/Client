@@ -10,6 +10,11 @@ export type TextProps = {
   value: string;
 };
 
+/**
+ * Executes Text.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function Text(props: TextProps) {
   ensureMarkdownStyles();
 

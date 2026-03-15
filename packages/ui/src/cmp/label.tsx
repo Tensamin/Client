@@ -2,6 +2,11 @@ import * as React from "react";
 
 import { cn } from "../lib/utils";
 
+/**
+ * Executes Label.
+ * @param { className, ...props } Parameter { className, ...props }.
+ * @returns unknown.
+ */
 function Label({ className, ...props }: React.ComponentProps<"label">) {
   return (
     <label

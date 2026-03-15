@@ -6,6 +6,11 @@ const STORE_NAME = "storage";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
+/**
+ * Executes openDB.
+ * @param none This function has no parameters.
+ * @returns Promise<IDBDatabase>.
+ */
 function openDB(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
 
@@ -26,6 +31,11 @@ function openDB(): Promise<IDBDatabase> {
   return dbPromise;
 }
 
+/**
+ * Executes getEntry.
+ * @param key Parameter key.
+ * @returns Promise<StorageSchema[K] | undefined>.
+ */
 export async function getEntry<K extends keyof StorageSchema>(
   key: K,
 ): Promise<StorageSchema[K] | undefined> {
@@ -41,6 +51,12 @@ export async function getEntry<K extends keyof StorageSchema>(
   });
 }
 
+/**
+ * Executes setEntry.
+ * @param key Parameter key.
+ * @param value Parameter value.
+ * @returns Promise<void>.
+ */
 export async function setEntry<K extends keyof StorageSchema>(
   key: K,
   value: StorageSchema[K],
@@ -56,6 +72,11 @@ export async function setEntry<K extends keyof StorageSchema>(
   });
 }
 
+/**
+ * Executes deleteEntry.
+ * @param key Parameter key.
+ * @returns Promise<void>.
+ */
 export async function deleteEntry<K extends keyof StorageSchema>(
   key: K,
 ): Promise<void> {

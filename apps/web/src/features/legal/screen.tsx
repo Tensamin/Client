@@ -11,6 +11,60 @@ import { log } from "@tensamin/shared/log";
 import Link from "@tensamin/ui/link";
 import { Label } from "@tensamin/ui/cmp/label";
 
+type SaveFn = ReturnType<typeof useStorage>["save"];
+
+/**
+ * Persists accepted legal documents and marks the first onboarding step complete.
+ * @param save Storage save function.
+ * @param currentDocs Current legal documents fetched from the server.
+ * @param setPPandToSDone State setter for legal acceptance completion.
+ * @returns Promise that resolves when persistence is complete.
+ */
+async function persistAcceptedDocs(
+  save: SaveFn,
+  currentDocs: z.infer<typeof legalDocsSchema>,
+  setPPandToSDone: React.Dispatch<React.SetStateAction<boolean>>,
+): Promise<void> {
+  await save("accepted_privacy_policy", true);
+  await save("accepted_terms_of_service", true);
+  await save("ppandtos_done", true);
+  await save("legal_docs", currentDocs);
+  setPPandToSDone(true);
+}
+
+/**
+ * Persists analytics preference toggles and marks analytics onboarding complete.
+ * @param save Storage save function.
+ * @param crashReports Whether crash reports are enabled.
+ * @param usageData Whether usage data is enabled.
+ * @param setCrashReports State setter for crash reports.
+ * @param setUsageData State setter for usage data.
+ * @param setDoneWithAnalytics State setter for analytics completion.
+ * @returns Promise that resolves when persistence is complete.
+ */
+async function persistAnalyticsPreferences(
+  save: SaveFn,
+  crashReports: boolean,
+  usageData: boolean,
+  setCrashReports: React.Dispatch<React.SetStateAction<boolean>>,
+  setUsageData: React.Dispatch<React.SetStateAction<boolean>>,
+  setDoneWithAnalytics: React.Dispatch<React.SetStateAction<boolean>>,
+): Promise<void> {
+  await save("analytics_crash_reports", crashReports);
+  setCrashReports(crashReports);
+
+  await save("analytics_usage_data", usageData);
+  setUsageData(usageData);
+
+  await save("analytics_done", true);
+  setDoneWithAnalytics(true);
+}
+
+/**
+ * Gates the application behind legal and analytics consent checks.
+ * @param props Component props containing children to render after consent.
+ * @returns Legal onboarding or wrapped children JSX.
+ */
 export default function Screen(props: { children: React.ReactNode }) {
   const { load, save } = useStorage();
 
@@ -30,6 +84,37 @@ export default function Screen(props: { children: React.ReactNode }) {
   const [doneWithAnalytics, setDoneWithAnalytics] = React.useState(false);
   const [crashReports, setCrashReports] = React.useState(false);
   const [usageData, setUsageData] = React.useState(false);
+
+  /**
+   * Handles continue action for privacy policy and terms acceptance.
+   * @returns Void.
+   */
+  const handleContinueLegal = React.useCallback((): void => {
+    const currentDocs = remoteDocs;
+    if (!currentDocs) {
+      return;
+    }
+
+    void persistAcceptedDocs(save, currentDocs, setPPandToSDone);
+  }, [remoteDocs, save]);
+
+  /**
+   * Handles continue action for analytics preferences.
+   * @returns Void.
+   */
+  const handleContinueAnalytics = React.useCallback((): void => {
+    const currentCrashReports = crashReports;
+    const currentUsageData = usageData;
+
+    void persistAnalyticsPreferences(
+      save,
+      currentCrashReports,
+      currentUsageData,
+      setCrashReports,
+      setUsageData,
+      setDoneWithAnalytics,
+    );
+  }, [crashReports, save, usageData]);
 
   React.useEffect(() => {
     let active = true;
@@ -178,20 +263,7 @@ export default function Screen(props: { children: React.ReactNode }) {
             </div>
             <ContinueButton
               disabled={!acceptedPP || !acceptedTOS}
-              onClick={() => {
-                const currentDocs = remoteDocs;
-                if (!currentDocs) {
-                  return;
-                }
-
-                void (async () => {
-                  await save("accepted_privacy_policy", true);
-                  await save("accepted_terms_of_service", true);
-                  await save("ppandtos_done", true);
-                  await save("legal_docs", currentDocs);
-                  setPPandToSDone(true);
-                })();
-              }}
+              onClick={handleContinueLegal}
             />
           </>
         ) : (
@@ -211,24 +283,7 @@ export default function Screen(props: { children: React.ReactNode }) {
                 />
               </div>
             </div>
-            <ContinueButton
-              onClick={() => {
-                const currentCrashReports = crashReports;
-                const currentUsageData = usageData;
-
-                void save("analytics_crash_reports", currentCrashReports).then(
-                  () => {
-                    setCrashReports(currentCrashReports);
-                  },
-                );
-                void save("analytics_usage_data", currentUsageData).then(() => {
-                  setUsageData(currentUsageData);
-                });
-                void save("analytics_done", true).then(() => {
-                  setDoneWithAnalytics(true);
-                });
-              }}
-            />
+            <ContinueButton onClick={handleContinueAnalytics} />
           </>
         )}
       </div>
@@ -236,6 +291,11 @@ export default function Screen(props: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Renders a large continue button used by legal and analytics steps.
+ * @param props Button props with click callback and disabled state.
+ * @returns Continue button JSX.
+ */
 function ContinueButton(props: { onClick: () => void; disabled?: boolean }) {
   return (
     <div className="w-full flex justify-end">
@@ -251,6 +311,11 @@ function ContinueButton(props: { onClick: () => void; disabled?: boolean }) {
   );
 }
 
+/**
+ * Renders a larger checkbox row for onboarding preferences.
+ * @param props Checkbox label, current value, and change callback.
+ * @returns Checkbox row JSX.
+ */
 export function BigCheckbox(props: {
   label: string;
   checked: boolean;

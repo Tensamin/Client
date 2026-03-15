@@ -9,6 +9,11 @@ type ScreenProps = {
   fullscreen?: boolean;
 };
 
+/**
+ * Executes Screen.
+ * @param props Parameter props.
+ * @returns unknown.
+ */
 export default function Screen(props: ScreenProps) {
   const [displayProgress, setDisplayProgress] = React.useState(0);
   const displayProgressRef = React.useRef(0);
@@ -30,6 +35,11 @@ export default function Screen(props: ScreenProps) {
     const startTime = performance.now();
     let frameId = 0;
 
+    /**
+     * Executes animate.
+     * @param now Parameter now.
+     * @returns unknown.
+     */
     function animate(now: number) {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / duration, 1);

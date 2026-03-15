@@ -22,6 +22,11 @@ const ThemeProviderContext = React.createContext<
   ThemeProviderState | undefined
 >(undefined);
 
+/**
+ * Executes isTheme.
+ * @param value Parameter value.
+ * @returns value is Theme.
+ */
 function isTheme(value: string | null): value is Theme {
   if (value === null) {
     return false;
@@ -30,6 +35,11 @@ function isTheme(value: string | null): value is Theme {
   return THEME_VALUES.includes(value as Theme);
 }
 
+/**
+ * Executes getSystemTheme.
+ * @param none This function has no parameters.
+ * @returns ResolvedTheme.
+ */
 function getSystemTheme(): ResolvedTheme {
   if (window.matchMedia(COLOR_SCHEME_QUERY).matches) {
     return "dark";
@@ -38,6 +48,11 @@ function getSystemTheme(): ResolvedTheme {
   return "light";
 }
 
+/**
+ * Executes disableTransitionsTemporarily.
+ * @param none This function has no parameters.
+ * @returns unknown.
+ */
 function disableTransitionsTemporarily() {
   const style = document.createElement("style");
   style.appendChild(
@@ -57,6 +72,11 @@ function disableTransitionsTemporarily() {
   };
 }
 
+/**
+ * Executes isEditableTarget.
+ * @param target Parameter target.
+ * @returns unknown.
+ */
 function isEditableTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -76,6 +96,23 @@ function isEditableTarget(target: EventTarget | null) {
   return false;
 }
 
+/**
+ * Executes ThemeProvider.
+ * @param {
+  children,
+  defaultTheme = "system",
+  storageKey = "theme",
+  disableTransitionOnChange = true,
+  ...props
+} Parameter {
+  children,
+  defaultTheme = "system",
+  storageKey = "theme",
+  disableTransitionOnChange = true,
+  ...props
+}.
+ * @returns unknown.
+ */
 export function ThemeProvider({
   children,
   defaultTheme = "system",
@@ -127,6 +164,11 @@ export function ThemeProvider({
     }
 
     const mediaQuery = window.matchMedia(COLOR_SCHEME_QUERY);
+    /**
+     * Executes handleChange.
+     * @param none This function has no parameters.
+     * @returns unknown.
+     */
     const handleChange = () => {
       applyTheme("system");
     };
@@ -139,6 +181,11 @@ export function ThemeProvider({
   }, [theme, applyTheme]);
 
   React.useEffect(() => {
+    /**
+     * Executes handleKeyDown.
+     * @param event Parameter event.
+     * @returns unknown.
+     */
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.repeat) {
         return;
@@ -179,6 +226,11 @@ export function ThemeProvider({
   }, [storageKey]);
 
   React.useEffect(() => {
+    /**
+     * Executes handleStorageChange.
+     * @param event Parameter event.
+     * @returns unknown.
+     */
     const handleStorageChange = (event: StorageEvent) => {
       if (event.storageArea !== localStorage) {
         return;
@@ -218,6 +270,11 @@ export function ThemeProvider({
   );
 }
 
+/**
+ * Executes useTheme.
+ * @param none This function has no parameters.
+ * @returns unknown.
+ */
 export const useTheme = () => {
   const context = React.useContext(ThemeProviderContext);
 
