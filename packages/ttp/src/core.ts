@@ -1205,32 +1205,6 @@ async function writeCloseFrame(transport: WebTransportLike) {
  * @returns Decoded typed message or null for close sentinel frames.
  */
 async function readFrame(stream: ReadableStream<Uint8Array>) {
-  const payload = await readAll(stream);
-  if (payload.byteLength < 4) {
-    throw new Error("Received truncated transport frame");
-  }
-
-  const declaredLength = readU32(payload, 0);
-  if (declaredLength === CLOSE_FRAME_LEN) {
-    return null;
-  }
-
-  const actualLength = payload.byteLength - 4;
-  if (actualLength !== declaredLength) {
-    throw new Error(
-      `Transport frame length mismatch: expected ${declaredLength}, received ${actualLength}`,
-    );
-  }
-
-  return decodeCommunicationMessage(payload.subarray(4));
-}
-
-/**
- * Reads all chunks from a stream into a contiguous byte array.
- * @param stream Stream providing Uint8Array chunks.
- * @returns Concatenated stream bytes.
- */
-async function readAll(stream: ReadableStream<Uint8Array>) {
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let totalLength = 0;
@@ -1244,11 +1218,58 @@ async function readAll(stream: ReadableStream<Uint8Array>) {
 
       chunks.push(value);
       totalLength += value.byteLength;
+
+      if (totalLength >= 4) {
+        const payload = concatChunks(chunks, totalLength);
+        const declaredLength = readU32(payload, 0);
+
+        if (declaredLength === CLOSE_FRAME_LEN) {
+          return null;
+        }
+
+        const expectedLength = 4 + declaredLength;
+        if (totalLength >= expectedLength) {
+          if (totalLength !== expectedLength) {
+            throw new Error(
+              `Transport frame length mismatch: expected ${declaredLength}, received ${totalLength - 4}`,
+            );
+          }
+
+          return decodeCommunicationMessage(payload);
+        }
+      }
     }
   } finally {
     reader.releaseLock();
   }
 
+  if (totalLength < 4) {
+    throw new Error("Received truncated transport frame");
+  }
+
+  const payload = concatChunks(chunks, totalLength);
+  const declaredLength = readU32(payload, 0);
+  if (declaredLength === CLOSE_FRAME_LEN) {
+    return null;
+  }
+
+  const actualLength = payload.byteLength - 4;
+  if (actualLength !== declaredLength) {
+    throw new Error(
+      `Transport frame length mismatch: expected ${declaredLength}, received ${actualLength}`,
+    );
+  }
+
+  return decodeCommunicationMessage(payload);
+}
+
+/**
+ * Concatenates stream chunks into a single byte array.
+ * @param chunks Stream chunks to concatenate.
+ * @param totalLength Total byte length of the concatenated chunks.
+ * @returns Concatenated stream bytes.
+ */
+function concatChunks(chunks: Uint8Array[], totalLength: number) {
   const buffer = new Uint8Array(totalLength);
   let offset = 0;
 
@@ -1729,10 +1750,14 @@ function decodeContainerPayload(reader: ByteReader) {
     const marker = reader.readU8();
     const payloadLength = isBoolKindMarker(marker) ? 0 : reader.readU16();
     const keyIndex = reader.readU8();
-    const key = getDataTypeNameByIndex(keyIndex);
     const payload = isBoolKindMarker(marker)
       ? new Uint8Array(0)
       : reader.readBytes(payloadLength);
+
+    const key = getDataTypeNameByIndex(keyIndex);
+    if (!key) {
+      continue;
+    }
 
     const expectedKind = getExpectedKind(key);
     if (!isMarkerCompatibleWithKey(marker, expectedKind, key)) {
@@ -1756,12 +1781,7 @@ function decodeContainerPayload(reader: ByteReader) {
  * @returns Canonical protocol data key name.
  */
 function getDataTypeNameByIndex(index: number) {
-  const key = DATA_TYPES[index];
-  if (!key) {
-    throw new Error(`Unknown data type index ${index}`);
-  }
-
-  return key;
+  return DATA_TYPES[index];
 }
 
 /**

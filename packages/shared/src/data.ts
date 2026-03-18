@@ -100,7 +100,7 @@ export const socket = {
       communities: z.array(community),
     }),
   },
-  live_message: {
+  message_live: {
     request: z.object({}),
     response: z.object({
       sender_id: z.number(),
