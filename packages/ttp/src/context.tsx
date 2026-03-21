@@ -17,6 +17,7 @@ import Loading from "@tensamin/ui/screens/loading";
 import ErrorScreen from "@tensamin/ui/screens/error";
 
 const FATAL_IDENTIFICATION_ERROR_TYPES = new Set([
+  "error",
   "error_invalid_user_id",
   "error_no_user_id",
   "error_invalid_challenge",
@@ -82,12 +83,41 @@ function isFatalIdentificationError(error: unknown) {
   if (
     error.message.includes("Missing or invalid user id") ||
     error.message.includes("Missing private key") ||
-    error.message.includes("Identification challenge was rejected")
+    error.message.includes("Identification challenge was rejected") ||
+    error.message.includes("timed out after") ||
+    error.message.includes("Response validation failed")
   ) {
     return true;
   }
 
   return false;
+}
+
+/**
+ * Extracts structured protocol error details for identification logging.
+ * @param error Unknown error raised during identification.
+ * @returns Structured protocol error details when available.
+ */
+function getProtocolErrorDetails(error: unknown) {
+  if (typeof error !== "object" || error === null) {
+    return null;
+  }
+
+  if (!("type" in error)) {
+    return null;
+  }
+
+  const protocolError = error as {
+    id?: unknown;
+    type?: unknown;
+    data?: unknown;
+  };
+
+  return {
+    id: protocolError.id,
+    type: protocolError.type,
+    data: protocolError.data,
+  };
 }
 
 type ContextType = {
@@ -415,13 +445,16 @@ export default function Provider(props: { children: React.ReactNode }) {
         }
 
         const isFatal = isFatalIdentificationError(identificationError);
+        const protocolErrorDetails = getProtocolErrorDetails(
+          identificationError,
+        );
 
         log(
           isFatal ? 0 : 1,
           "Socket",
           isFatal ? "red" : "yellow",
           "Identification handshake failed",
-          identificationError,
+          protocolErrorDetails ?? identificationError,
         );
 
         setIdentified(false);
