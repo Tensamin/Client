@@ -12,7 +12,7 @@ export const READY_STATE = {
 
 const CLOSE_FRAME_LEN = 0xffff_ffff;
 const APPLICATION_CLOSE_CODE = 0;
-const APPLICATION_CLOSE_REASON = "epsilon-close";
+const APPLICATION_CLOSE_REASON = "ttp-close";
 const MAX_REQUEST_ID = 0xffff_fffe;
 
 const DATA_VALUE_KIND_BOOL_TRUE = 0x01;
@@ -688,36 +688,17 @@ export function createTransportClient<T extends SchemaMap>(
             break;
           }
 
-          let frame: TypedMessage | null;
-          try {
-            frame = await readFrame(result.value);
-          } catch (error) {
-            if (error instanceof RecoverableMessageDecodeError) {
-              handleRecoverableDecodeFailure(error);
-              continue;
-            }
+          const closedByPeer = await processIncomingStream(
+            result.value,
+            connection,
+            handleIncomingMessage,
+            handleRecoverableDecodeFailure,
+            handleConnectionFailure,
+          );
 
-            throw error;
-          }
-
-          if (frame === null) {
-            try {
-              connection.transport.close({
-                closeCode: APPLICATION_CLOSE_CODE,
-                reason: APPLICATION_CLOSE_REASON,
-              });
-            } catch {
-              // Ignore close errors during peer shutdown.
-            }
-
-            handleConnectionFailure(
-              connection,
-              new Error("Transport closed by peer"),
-            );
+          if (closedByPeer) {
             return;
           }
-
-          handleIncomingMessage(frame);
         }
 
         if (!connection.intentional) {
@@ -1200,14 +1181,22 @@ async function writeCloseFrame(transport: WebTransportLike) {
 }
 
 /**
- * Reads and validates a full transport frame from a stream.
- * @param stream Incoming stream for one framed message.
- * @returns Decoded typed message or null for close sentinel frames.
+ * Reads a byte stream and emits each framed protocol message it contains.
+ * @param stream Incoming byte stream for a single unidirectional transport stream.
+ * @param connection Active connection instance.
+ * @param handleIncomingFrame Handler for decoded protocol messages.
+ * @param handleDecodeFailure Handler for recoverable frame decode failures.
+ * @returns True when the peer close sentinel was received.
  */
-async function readFrame(stream: ReadableStream<Uint8Array>) {
+async function processIncomingStream(
+  stream: ReadableStream<Uint8Array>,
+  connection: ActiveConnection,
+  handleIncomingFrame: (message: TypedMessage) => void,
+  handleDecodeFailure: (error: RecoverableMessageDecodeError) => void,
+  handleStreamFailure: (connection: ActiveConnection, error?: unknown) => void,
+) {
   const reader = stream.getReader();
-  const chunks: Uint8Array[] = [];
-  let totalLength = 0;
+  let bufferedBytes = new Uint8Array(0) as Uint8Array<ArrayBufferLike>;
 
   try {
     while (true) {
@@ -1216,68 +1205,72 @@ async function readFrame(stream: ReadableStream<Uint8Array>) {
         break;
       }
 
-      chunks.push(value);
-      totalLength += value.byteLength;
+      bufferedBytes = appendBytes(bufferedBytes, value);
 
-      if (totalLength >= 4) {
-        const payload = concatChunks(chunks, totalLength);
-        const declaredLength = readU32(payload, 0);
+      while (bufferedBytes.byteLength >= 4) {
+        const declaredLength = readU32(bufferedBytes, 0);
 
         if (declaredLength === CLOSE_FRAME_LEN) {
-          return null;
+          try {
+            connection.transport.close({
+              closeCode: APPLICATION_CLOSE_CODE,
+              reason: APPLICATION_CLOSE_REASON,
+            });
+          } catch {
+            // Ignore close errors during peer shutdown.
+          }
+
+          handleStreamFailure(connection, new Error("Transport closed by peer"));
+          return true;
         }
 
         const expectedLength = 4 + declaredLength;
-        if (totalLength >= expectedLength) {
-          if (totalLength !== expectedLength) {
-            throw new Error(
-              `Transport frame length mismatch: expected ${declaredLength}, received ${totalLength - 4}`,
-            );
+        if (bufferedBytes.byteLength < expectedLength) {
+          break;
+        }
+
+        const frameBytes = bufferedBytes.subarray(0, expectedLength);
+        bufferedBytes = bufferedBytes.subarray(expectedLength);
+
+        try {
+          handleIncomingFrame(decodeCommunicationMessage(frameBytes));
+        } catch (error) {
+          if (error instanceof RecoverableMessageDecodeError) {
+            handleDecodeFailure(error);
+            continue;
           }
 
-          return decodeCommunicationMessage(payload);
+          throw error;
         }
       }
     }
+
+    if (bufferedBytes.byteLength > 0) {
+      throw new Error("Received truncated transport frame");
+    }
+
+    return false;
   } finally {
     reader.releaseLock();
   }
-
-  if (totalLength < 4) {
-    throw new Error("Received truncated transport frame");
-  }
-
-  const payload = concatChunks(chunks, totalLength);
-  const declaredLength = readU32(payload, 0);
-  if (declaredLength === CLOSE_FRAME_LEN) {
-    return null;
-  }
-
-  const actualLength = payload.byteLength - 4;
-  if (actualLength !== declaredLength) {
-    throw new Error(
-      `Transport frame length mismatch: expected ${declaredLength}, received ${actualLength}`,
-    );
-  }
-
-  return decodeCommunicationMessage(payload);
 }
 
 /**
- * Concatenates stream chunks into a single byte array.
- * @param chunks Stream chunks to concatenate.
- * @param totalLength Total byte length of the concatenated chunks.
- * @returns Concatenated stream bytes.
+ * Concatenates two byte arrays.
+ * @param left Existing buffered bytes.
+ * @param right Newly received bytes.
+ * @returns Concatenated bytes.
  */
-function concatChunks(chunks: Uint8Array[], totalLength: number) {
-  const buffer = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    buffer.set(chunk, offset);
-    offset += chunk.byteLength;
+function appendBytes(left: Uint8Array, right: Uint8Array) {
+  if (left.byteLength === 0) {
+    return right;
   }
 
+  const buffer = new Uint8Array(
+    left.byteLength + right.byteLength,
+  ) as Uint8Array<ArrayBufferLike>;
+  buffer.set(left, 0);
+  buffer.set(right, left.byteLength);
   return buffer;
 }
 
@@ -1347,21 +1340,34 @@ export function decodeCommunicationMessage(frame: Uint8Array): TypedMessage {
   const messageType = COMMUNICATION_TYPES[typeIndex] ?? "error_protocol";
 
   const dataLength = payloadLength - consumedHeaderBytes;
-  const dataReader = new ByteReader(reader.readBytes(dataLength));
   let decodedData: Record<string, unknown>;
 
-  try {
-    decodedData = decodeContainerPayload(dataReader);
-  } catch (error) {
-    throw new RecoverableMessageDecodeError(id, messageType, error);
-  }
+  if (dataLength === 0) {
+    decodedData = {};
+  } else {
+    const dataReader = new ByteReader(reader.readBytes(dataLength));
 
-  if (!dataReader.isAtEnd()) {
-    throw new RecoverableMessageDecodeError(
-      id,
-      messageType,
-      new Error("Trailing bytes found after communication data payload"),
-    );
+    try {
+      decodedData = decodeContainerPayload(dataReader);
+    } catch (error) {
+      if (messageType.startsWith("error")) {
+        return {
+          id,
+          type: messageType,
+          data: {},
+        };
+      } else {
+        throw new RecoverableMessageDecodeError(id, messageType, error);
+      }
+    }
+
+    if (!dataReader.isAtEnd()) {
+      throw new RecoverableMessageDecodeError(
+        id,
+        messageType,
+        new Error("Trailing bytes found after communication data payload"),
+      );
+    }
   }
 
   if (!reader.isAtEnd()) {

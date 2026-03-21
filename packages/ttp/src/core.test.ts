@@ -37,7 +37,7 @@ function createRoundTripMessage(): TypedMessage<Record<string, unknown>> {
   };
 }
 
-function installFakeWebTransport(frameBytes: Uint8Array) {
+function installFakeWebTransport(streamChunks: Uint8Array[]) {
   const globalScope = globalThis as typeof globalThis & {
     WebTransport?: unknown;
   };
@@ -62,11 +62,17 @@ function installFakeWebTransport(frameBytes: Uint8Array) {
           controller.enqueue(
             new ReadableStream<Uint8Array>({
               start(innerController) {
-                const splitIndex = 3;
-                innerController.enqueue(frameBytes.subarray(0, splitIndex));
-                setTimeout(() => {
-                  innerController.enqueue(frameBytes.subarray(splitIndex));
-                }, 10);
+                const emitChunk = (index: number) => {
+                  if (index >= streamChunks.length) {
+                    innerController.close();
+                    return;
+                  }
+
+                  innerController.enqueue(streamChunks[index]);
+                  setTimeout(() => emitChunk(index + 1), 10);
+                };
+
+                emitChunk(0);
               },
             }),
           );
@@ -97,6 +103,40 @@ function installFakeWebTransport(frameBytes: Uint8Array) {
   return () => {
     globalScope.WebTransport = originalWebTransport;
   };
+}
+
+function concatBytes(chunks: Uint8Array[]) {
+  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+  const buffer = new Uint8Array(totalLength);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    buffer.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return buffer;
+}
+
+function chunkBytes(bytes: Uint8Array, sizes: number[]) {
+  const chunks: Uint8Array[] = [];
+  let offset = 0;
+
+  for (const size of sizes) {
+    if (offset >= bytes.byteLength) {
+      break;
+    }
+
+    const end = Math.min(offset + size, bytes.byteLength);
+    chunks.push(bytes.subarray(offset, end));
+    offset = end;
+  }
+
+  if (offset < bytes.byteLength) {
+    chunks.push(bytes.subarray(offset));
+  }
+
+  return chunks;
 }
 
 function installFakeLocalStorage() {
@@ -162,6 +202,38 @@ describe("TTP communication codec", () => {
     });
   });
 
+  test("decodes an empty error payload as an empty object", () => {
+    const frame = new Uint8Array(6);
+    const view = new DataView(frame.buffer);
+
+    view.setUint32(0, 2, false);
+    frame[4] = 0;
+    frame[5] = 0;
+
+    const decoded = decodeCommunicationMessage(frame);
+
+    expect(decoded.id).toBe(0);
+    expect(decoded.type).toBe("error");
+    expect(decoded.data).toEqual({});
+  });
+
+  test("keeps malformed error payloads visible as error messages", () => {
+    const frame = new Uint8Array(8);
+    const view = new DataView(frame.buffer);
+
+    view.setUint32(0, 4, false);
+    frame[4] = 0;
+    frame[5] = 0;
+    frame[6] = 0;
+    frame[7] = 1;
+
+    const decoded = decodeCommunicationMessage(frame);
+
+    expect(decoded.id).toBe(0);
+    expect(decoded.type).toBe("error");
+    expect(decoded.data).toEqual({});
+  });
+
   test("throws for unknown communication type", () => {
     expect(() =>
       encodeCommunicationMessage({
@@ -207,7 +279,15 @@ describe("TTP communication codec", () => {
   });
 
   test("resolves an identification response before the stream closes", async () => {
-    const frame = encodeCommunicationMessage({
+    const ignoredFrame = encodeCommunicationMessage({
+      id: 0,
+      type: "error_internal",
+      data: {
+        error_type: "transport_noise",
+      },
+    });
+
+    const identificationFrame = encodeCommunicationMessage({
       id: 7,
       type: "identification",
       data: {
@@ -216,7 +296,69 @@ describe("TTP communication codec", () => {
       },
     });
 
-    const restoreWebTransport = installFakeWebTransport(frame);
+    const streamBytes = concatBytes([ignoredFrame, identificationFrame]);
+    const restoreWebTransport = installFakeWebTransport(
+      chunkBytes(streamBytes, [2, 5, 1, 7]),
+    );
+    const restoreLocalStorage = installFakeLocalStorage();
+
+    try {
+      const client = createTransportClient(socket, { url: "https://example.test" });
+
+      await client.connect("https://example.test");
+
+      const response = client.send(
+        "identification",
+        { user_id: 1 },
+        { id: 7 },
+      );
+
+      const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("identification response timed out"));
+        }, 250);
+      });
+
+      const result = await Promise.race([response, timeout]);
+
+      expect(result).toEqual({
+        id: 7,
+        type: "identification",
+        data: {
+          challenge: "Zm9v",
+          public_key: "Zm9v",
+        },
+      });
+
+      await client.close("test-complete");
+    } finally {
+      restoreLocalStorage();
+      restoreWebTransport();
+    }
+  });
+
+  test("resolves an identification response that arrives after another frame on the same stream", async () => {
+    const ignoredFrame = encodeCommunicationMessage({
+      id: 0,
+      type: "error_internal",
+      data: {
+        error_type: "transport_noise",
+      },
+    });
+
+    const identificationFrame = encodeCommunicationMessage({
+      id: 7,
+      type: "identification",
+      data: {
+        challenge: "Zm9v",
+        public_key: "Zm9v",
+      },
+    });
+
+    const streamBytes = concatBytes([ignoredFrame, identificationFrame]);
+    const restoreWebTransport = installFakeWebTransport(
+      chunkBytes(streamBytes, [1, 4, 3, 9, 2]),
+    );
     const restoreLocalStorage = installFakeLocalStorage();
 
     try {
