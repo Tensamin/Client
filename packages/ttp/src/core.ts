@@ -14,6 +14,7 @@ const CLOSE_FRAME_LEN = 0xffff_ffff;
 const APPLICATION_CLOSE_CODE = 0;
 const APPLICATION_CLOSE_REASON = "ttp-close";
 const MAX_REQUEST_ID = 0xffff_fffe;
+const BINARY_LOG_STORAGE_KEY = "ttp_logBinary";
 
 const DATA_VALUE_KIND_BOOL_TRUE = 0x01;
 const DATA_VALUE_KIND_BOOL_FALSE = 0x02;
@@ -1023,6 +1024,38 @@ function formatUnknownError(error: unknown) {
 }
 
 /**
+ * Returns whether raw transport binary logging is enabled in local storage.
+ * @returns True when binary transport logs should be emitted.
+ */
+function isBinaryMessageLoggingEnabled() {
+  try {
+    return localStorage.getItem(BINARY_LOG_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Logs raw transport bytes when binary logging is enabled.
+ * @param direction Message direction label.
+ * @param payload Raw binary payload to log.
+ * @returns Void.
+ */
+function logBinaryMessage(
+  direction: "Incoming" | "Outgoing",
+  payload: Uint8Array,
+) {
+  if (!isBinaryMessageLoggingEnabled()) {
+    return;
+  }
+
+  console.log(
+    `[Socket] ${direction} binary message (${payload.byteLength} bytes)`,
+    payload,
+  );
+}
+
+/**
  * Detects whether an error chain includes STOP_SENDING.
  * @param error Unknown transport error.
  * @returns True when STOP_SENDING appears in the error chain.
@@ -1154,6 +1187,8 @@ async function writeMessage(transport: WebTransportLike, payload: Uint8Array) {
     writeU32(frame, 0, payload.byteLength);
     frame.set(payload, 4);
 
+    logBinaryMessage("Outgoing", frame);
+
     await writer.write(frame);
     await writer.close();
   } finally {
@@ -1220,7 +1255,10 @@ async function processIncomingStream(
             // Ignore close errors during peer shutdown.
           }
 
-          handleStreamFailure(connection, new Error("Transport closed by peer"));
+          handleStreamFailure(
+            connection,
+            new Error("Transport closed by peer"),
+          );
           return true;
         }
 
@@ -1231,6 +1269,8 @@ async function processIncomingStream(
 
         const frameBytes = bufferedBytes.subarray(0, expectedLength);
         bufferedBytes = bufferedBytes.subarray(expectedLength);
+
+        logBinaryMessage("Incoming", frameBytes);
 
         try {
           handleIncomingFrame(decodeCommunicationMessage(frameBytes));
@@ -1310,10 +1350,17 @@ export function encodeCommunicationMessage(
  */
 export function decodeCommunicationMessage(frame: Uint8Array): TypedMessage {
   const reader = new ByteReader(frame);
-  const payloadLength = reader.readU32();
-  if (payloadLength !== frame.byteLength - 4) {
+  const frameLength = reader.readU32();
+  if (frameLength !== frame.byteLength - 4) {
     throw new Error(
-      `Communication payload length mismatch: expected ${payloadLength}, received ${frame.byteLength - 4}`,
+      `Communication frame length mismatch: expected ${frameLength}, received ${frame.byteLength - 4}`,
+    );
+  }
+
+  const payloadLength = reader.readU32();
+  if (payloadLength !== frameLength - 4) {
+    throw new Error(
+      `Communication payload length mismatch: expected ${payloadLength}, received ${frameLength - 4}`,
     );
   }
 

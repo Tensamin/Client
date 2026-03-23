@@ -445,9 +445,8 @@ export default function Provider(props: { children: React.ReactNode }) {
         }
 
         const isFatal = isFatalIdentificationError(identificationError);
-        const protocolErrorDetails = getProtocolErrorDetails(
-          identificationError,
-        );
+        const protocolErrorDetails =
+          getProtocolErrorDetails(identificationError);
 
         log(
           isFatal ? 0 : 1,

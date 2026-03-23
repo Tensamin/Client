@@ -50,9 +50,11 @@ function installFakeWebTransport(streamChunks: Uint8Array[]) {
 
     private resolveClosed!: () => void;
 
-    readonly incomingUnidirectionalStreams: ReadableStream<ReadableStream<Uint8Array>>;
+    readonly incomingUnidirectionalStreams: ReadableStream<
+      ReadableStream<Uint8Array>
+    >;
 
-    constructor(_url: string) {
+    constructor() {
       this.closed = new Promise<void>((resolve) => {
         this.resolveClosed = resolve;
       });
@@ -139,6 +141,16 @@ function chunkBytes(bytes: Uint8Array, sizes: number[]) {
   return chunks;
 }
 
+function frameBytes(payload: Uint8Array) {
+  const frame = new Uint8Array(payload.byteLength + 4);
+  const view = new DataView(frame.buffer);
+
+  view.setUint32(0, payload.byteLength, false);
+  frame.set(payload, 4);
+
+  return frame;
+}
+
 function installFakeLocalStorage() {
   const globalScope = globalThis as typeof globalThis & {
     localStorage?: Storage;
@@ -172,12 +184,31 @@ function installFakeLocalStorage() {
   };
 }
 
+function installConsoleLogSpy() {
+  const globalConsole = console as typeof console & {
+    log: (...args: unknown[]) => void;
+  };
+  const originalLog = globalConsole.log;
+  const calls: unknown[][] = [];
+
+  globalConsole.log = (...args: unknown[]) => {
+    calls.push(args);
+  };
+
+  return {
+    calls,
+    restore() {
+      globalConsole.log = originalLog;
+    },
+  };
+}
+
 describe("TTP communication codec", () => {
   test("encodes and decodes a mixed payload message", () => {
     const input = createRoundTripMessage();
 
     const encoded = encodeCommunicationMessage(input);
-    const decoded = decodeCommunicationMessage(encoded);
+    const decoded = decodeCommunicationMessage(frameBytes(encoded));
 
     expect(decoded.id).toBe(41);
     expect(decoded.type).toBe("message");
@@ -203,14 +234,14 @@ describe("TTP communication codec", () => {
   });
 
   test("decodes an empty error payload as an empty object", () => {
-    const frame = new Uint8Array(6);
-    const view = new DataView(frame.buffer);
+    const innerFrame = new Uint8Array(6);
+    const view = new DataView(innerFrame.buffer);
 
     view.setUint32(0, 2, false);
-    frame[4] = 0;
-    frame[5] = 0;
+    innerFrame[4] = 0;
+    innerFrame[5] = 0;
 
-    const decoded = decodeCommunicationMessage(frame);
+    const decoded = decodeCommunicationMessage(frameBytes(innerFrame));
 
     expect(decoded.id).toBe(0);
     expect(decoded.type).toBe("error");
@@ -218,16 +249,16 @@ describe("TTP communication codec", () => {
   });
 
   test("keeps malformed error payloads visible as error messages", () => {
-    const frame = new Uint8Array(8);
-    const view = new DataView(frame.buffer);
+    const innerFrame = new Uint8Array(8);
+    const view = new DataView(innerFrame.buffer);
 
     view.setUint32(0, 4, false);
-    frame[4] = 0;
-    frame[5] = 0;
-    frame[6] = 0;
-    frame[7] = 1;
+    innerFrame[4] = 0;
+    innerFrame[5] = 0;
+    innerFrame[6] = 0;
+    innerFrame[7] = 1;
 
-    const decoded = decodeCommunicationMessage(frame);
+    const decoded = decodeCommunicationMessage(frameBytes(innerFrame));
 
     expect(decoded.id).toBe(0);
     expect(decoded.type).toBe("error");
@@ -266,7 +297,7 @@ describe("TTP communication codec", () => {
     const corrupted = encoded.slice();
     corrupted[corrupted.length - 1] = 215;
 
-    const decoded = decodeCommunicationMessage(corrupted);
+    const decoded = decodeCommunicationMessage(frameBytes(corrupted));
 
     expect(decoded.id).toBe(9);
     expect(decoded.type).toBe("error");
@@ -276,6 +307,172 @@ describe("TTP communication codec", () => {
   test("aligns live message schema with backend protocol name", () => {
     expect(socket.message_live !== undefined).toBe(true);
     expect((socket as Record<string, unknown>).live_message).toEqual(undefined);
+  });
+
+  test("does not log raw binary frames unless enabled", async () => {
+    const ignoredFrame = encodeCommunicationMessage({
+      id: 0,
+      type: "error_internal",
+      data: {
+        error_type: "transport_noise",
+      },
+    });
+
+    const identificationFrame = encodeCommunicationMessage({
+      id: 7,
+      type: "identification",
+      data: {
+        challenge: "Zm9v",
+        public_key: "Zm9v",
+      },
+    });
+
+    const streamBytes = concatBytes([
+      frameBytes(ignoredFrame),
+      frameBytes(identificationFrame),
+    ]);
+    const restoreWebTransport = installFakeWebTransport(
+      chunkBytes(streamBytes, [2, 5, 1, 7]),
+    );
+    const restoreLocalStorage = installFakeLocalStorage();
+    const consoleSpy = installConsoleLogSpy();
+
+    try {
+      const client = createTransportClient(socket, {
+        url: "https://example.test",
+      });
+
+      await client.connect("https://example.test");
+
+      const response = client.send("identification", { user_id: 1 }, { id: 7 });
+
+      const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("identification response timed out"));
+        }, 250);
+      });
+
+      const result = await Promise.race([response, timeout]);
+
+      expect(result).toEqual({
+        id: 7,
+        type: "identification",
+        data: {
+          challenge: "Zm9v",
+          public_key: "Zm9v",
+        },
+      });
+      expect(consoleSpy.calls);
+
+      await client.close("test-complete");
+    } finally {
+      consoleSpy.restore();
+      restoreLocalStorage();
+      restoreWebTransport();
+    }
+  });
+
+  test("logs raw binary frames when enabled", async () => {
+    const requestMessage = encodeCommunicationMessage({
+      id: 7,
+      type: "identification",
+      data: {
+        user_id: 1,
+      },
+    });
+    const requestFrame = frameBytes(requestMessage);
+
+    const ignoredFrame = encodeCommunicationMessage({
+      id: 0,
+      type: "error_internal",
+      data: {
+        error_type: "transport_noise",
+      },
+    });
+
+    const identificationFrame = encodeCommunicationMessage({
+      id: 7,
+      type: "identification",
+      data: {
+        challenge: "Zm9v",
+        public_key: "Zm9v",
+      },
+    });
+    const ignoredTransportFrame = frameBytes(ignoredFrame);
+    const identificationTransportFrame = frameBytes(identificationFrame);
+
+    const streamBytes = concatBytes([
+      ignoredTransportFrame,
+      identificationTransportFrame,
+    ]);
+    const restoreWebTransport = installFakeWebTransport(
+      chunkBytes(streamBytes, [2, 5, 1, 7]),
+    );
+    const restoreLocalStorage = installFakeLocalStorage();
+    const consoleSpy = installConsoleLogSpy();
+
+    try {
+      localStorage.setItem("ttp_logBinary", "true");
+
+      const client = createTransportClient(socket, {
+        url: "https://example.test",
+      });
+
+      await client.connect("https://example.test");
+
+      const response = client.send("identification", { user_id: 1 }, { id: 7 });
+
+      const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("identification response timed out"));
+        }, 250);
+      });
+
+      const result = await Promise.race([response, timeout]);
+
+      expect(result).toEqual({
+        id: 7,
+        type: "identification",
+        data: {
+          challenge: "Zm9v",
+          public_key: "Zm9v",
+        },
+      });
+
+      const logMessages = consoleSpy.calls
+        .filter((entry) => typeof entry[0] === "string")
+        .map((entry) => entry[0] as string);
+
+      expect(logMessages).toContain(
+        `[Socket] Outgoing binary message (${requestFrame.byteLength} bytes)`,
+      );
+      expect(logMessages).toContain(
+        `[Socket] Incoming binary message (${ignoredTransportFrame.byteLength} bytes)`,
+      );
+      expect(logMessages).toContain(
+        `[Socket] Incoming binary message (${identificationTransportFrame.byteLength} bytes)`,
+      );
+
+      const outgoingCall = consoleSpy.calls.find(
+        (entry) =>
+          entry[0] ===
+          `[Socket] Outgoing binary message (${requestFrame.byteLength} bytes)`,
+      );
+      expect(outgoingCall?.[1]).toEqual(requestFrame);
+
+      const incomingCall = consoleSpy.calls.find(
+        (entry) =>
+          entry[0] ===
+          `[Socket] Incoming binary message (${identificationTransportFrame.byteLength} bytes)`,
+      );
+      expect(incomingCall?.[1]).toEqual(identificationTransportFrame);
+
+      await client.close("test-complete");
+    } finally {
+      consoleSpy.restore();
+      restoreLocalStorage();
+      restoreWebTransport();
+    }
   });
 
   test("resolves an identification response before the stream closes", async () => {
@@ -296,22 +493,23 @@ describe("TTP communication codec", () => {
       },
     });
 
-    const streamBytes = concatBytes([ignoredFrame, identificationFrame]);
+    const streamBytes = concatBytes([
+      frameBytes(ignoredFrame),
+      frameBytes(identificationFrame),
+    ]);
     const restoreWebTransport = installFakeWebTransport(
       chunkBytes(streamBytes, [2, 5, 1, 7]),
     );
     const restoreLocalStorage = installFakeLocalStorage();
 
     try {
-      const client = createTransportClient(socket, { url: "https://example.test" });
+      const client = createTransportClient(socket, {
+        url: "https://example.test",
+      });
 
       await client.connect("https://example.test");
 
-      const response = client.send(
-        "identification",
-        { user_id: 1 },
-        { id: 7 },
-      );
+      const response = client.send("identification", { user_id: 1 }, { id: 7 });
 
       const timeout = new Promise<never>((_, reject) => {
         setTimeout(() => {
@@ -355,22 +553,23 @@ describe("TTP communication codec", () => {
       },
     });
 
-    const streamBytes = concatBytes([ignoredFrame, identificationFrame]);
+    const streamBytes = concatBytes([
+      frameBytes(ignoredFrame),
+      frameBytes(identificationFrame),
+    ]);
     const restoreWebTransport = installFakeWebTransport(
       chunkBytes(streamBytes, [1, 4, 3, 9, 2]),
     );
     const restoreLocalStorage = installFakeLocalStorage();
 
     try {
-      const client = createTransportClient(socket, { url: "https://example.test" });
+      const client = createTransportClient(socket, {
+        url: "https://example.test",
+      });
 
       await client.connect("https://example.test");
 
-      const response = client.send(
-        "identification",
-        { user_id: 1 },
-        { id: 7 },
-      );
+      const response = client.send("identification", { user_id: 1 }, { id: 7 });
 
       const timeout = new Promise<never>((_, reject) => {
         setTimeout(() => {
