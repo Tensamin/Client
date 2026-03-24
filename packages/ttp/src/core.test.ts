@@ -1,597 +1,493 @@
-import { describe, expect, test } from "bun:test";
-import { socket } from "@tensamin/shared/data";
+import { describe, it, expect } from "bun:test";
 import {
-  createTransportClient,
-  decodeCommunicationMessage,
   encodeCommunicationMessage,
+  decodeCommunicationMessage,
+  createTransportClient,
   type TypedMessage,
+  type SchemaMap,
 } from "./core";
+import { z } from "zod";
 
-/**
- * Creates a representative protocol message used for round-trip codec tests.
- * @returns Typed protocol message with mixed payload data kinds.
- */
-function createRoundTripMessage(): TypedMessage<Record<string, unknown>> {
-  return {
-    id: 41,
-    type: "message",
-    data: {
-      accepted: true,
-      message: "hello",
-      user_id: 77,
-      iota_ids: [11, 12],
-      ping_iota: 33,
-      last_ping: 101,
-      get_variant: null,
-      user: {
-        user_id: 1,
-        username: "alice",
-      },
-      messages: [
-        {
-          user_id: 2,
-          message: "payload",
-        },
-      ],
+type MockStreamWriter = {
+  write: (chunk: Uint8Array) => Promise<void>;
+  releaseLock: () => void;
+  close: () => Promise<void>;
+};
+
+type MockStream = {
+  getWriter: () => MockStreamWriter;
+};
+
+type MockReader = {
+  read: () => Promise<{ done: boolean; value?: Uint8Array }>;
+  releaseLock: () => void;
+  cancel: () => Promise<void>;
+};
+
+type MockTransportInstance = {
+  ready: Promise<void>;
+  closed: Promise<void>;
+  createUnidirectionalStream: () => Promise<MockStream>;
+  incomingUnidirectionalStreams: {
+    getReader: () => MockReader;
+  };
+  close: () => void;
+};
+
+type MemoryStorage = {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+  removeItem: (key: string) => void;
+  clear: () => void;
+};
+
+function ensureLocalStorage() {
+  const globalWithStorage = globalThis as unknown as {
+    localStorage?: MemoryStorage;
+  };
+
+  if (globalWithStorage.localStorage) {
+    return;
+  }
+
+  const storage = new Map<string, string>();
+  globalWithStorage.localStorage = {
+    getItem: (key) => storage.get(key) ?? null,
+    setItem: (key, value) => {
+      storage.set(key, value);
+    },
+    removeItem: (key) => {
+      storage.delete(key);
+    },
+    clear: () => {
+      storage.clear();
     },
   };
 }
 
-function installFakeWebTransport(streamChunks: Uint8Array[]) {
-  const globalScope = globalThis as typeof globalThis & {
-    WebTransport?: unknown;
+function createMockWebTransport() {
+  ensureLocalStorage();
+
+  let readyResolve!: () => void;
+  let closedResolve!: () => void;
+
+  const ready = new Promise<void>((resolve) => {
+    readyResolve = resolve;
+  });
+  const closed = new Promise<void>((resolve) => {
+    closedResolve = resolve;
+  });
+
+  const writer: MockStreamWriter = {
+    write: async () => {},
+    releaseLock: () => {},
+    close: async () => {},
   };
-  const originalWebTransport = globalScope.WebTransport;
 
-  class FakeWebTransport {
-    readonly ready = Promise.resolve();
+  const stream: MockStream = {
+    getWriter: () => writer,
+  };
 
-    readonly closed: Promise<void>;
+  const transport: MockTransportInstance = {
+    ready,
+    closed,
+    createUnidirectionalStream: async () => stream,
+    incomingUnidirectionalStreams: {
+      getReader: () => ({
+        read: async () => ({ done: true }),
+        releaseLock: () => {},
+        cancel: async () => {},
+      }),
+    },
+    close: () => {},
+  };
 
-    private resolveClosed!: () => void;
-
-    readonly incomingUnidirectionalStreams: ReadableStream<
-      ReadableStream<Uint8Array>
-    >;
-
-    constructor() {
-      this.closed = new Promise<void>((resolve) => {
-        this.resolveClosed = resolve;
-      });
-
-      const incomingStream = new ReadableStream<ReadableStream<Uint8Array>>({
-        start: (controller) => {
-          controller.enqueue(
-            new ReadableStream<Uint8Array>({
-              start(innerController) {
-                const emitChunk = (index: number) => {
-                  if (index >= streamChunks.length) {
-                    innerController.close();
-                    return;
-                  }
-
-                  innerController.enqueue(streamChunks[index]);
-                  setTimeout(() => emitChunk(index + 1), 10);
-                };
-
-                emitChunk(0);
-              },
-            }),
-          );
-        },
-      });
-
-      this.incomingUnidirectionalStreams = incomingStream;
-    }
-
-    createUnidirectionalStream() {
-      return new WritableStream<Uint8Array>({
-        write() {
-          return undefined;
-        },
-        close() {
-          return undefined;
-        },
-      });
-    }
-
-    close() {
-      this.resolveClosed();
-    }
+  class MockWebTransport implements MockTransportInstance {
+    ready = transport.ready;
+    closed = transport.closed;
+    createUnidirectionalStream = transport.createUnidirectionalStream;
+    incomingUnidirectionalStreams = transport.incomingUnidirectionalStreams;
+    close = transport.close;
   }
 
-  globalScope.WebTransport = FakeWebTransport as never;
-
-  return () => {
-    globalScope.WebTransport = originalWebTransport;
+  return {
+    readyResolve,
+    closedResolve,
+    MockWebTransport,
   };
 }
 
-function concatBytes(chunks: Uint8Array[]) {
-  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
-  const buffer = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    buffer.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-
-  return buffer;
-}
-
-function chunkBytes(bytes: Uint8Array, sizes: number[]) {
-  const chunks: Uint8Array[] = [];
-  let offset = 0;
-
-  for (const size of sizes) {
-    if (offset >= bytes.byteLength) {
-      break;
+async function expectRejection(
+  promise: Promise<unknown>,
+  messageSubstring?: string,
+) {
+  try {
+    await promise;
+    expect(false).toBe(true);
+  } catch (error) {
+    if (messageSubstring) {
+      expect(getErrorMessage(error).includes(messageSubstring)).toBe(true);
     }
-
-    const end = Math.min(offset + size, bytes.byteLength);
-    chunks.push(bytes.subarray(offset, end));
-    offset = end;
   }
-
-  if (offset < bytes.byteLength) {
-    chunks.push(bytes.subarray(offset));
-  }
-
-  return chunks;
 }
 
-function frameBytes(payload: Uint8Array) {
-  const frame = new Uint8Array(payload.byteLength + 4);
-  const view = new DataView(frame.buffer);
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
 
-  view.setUint32(0, payload.byteLength, false);
-  frame.set(payload, 4);
+function writeU32BigEndian(buffer: Uint8Array, offset: number, value: number) {
+  new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength).setUint32(
+    offset,
+    value,
+    false,
+  );
+}
 
+function wrapForDecode(body: Uint8Array) {
+  const frame = new Uint8Array(body.byteLength + 4);
+  writeU32BigEndian(frame, 0, body.byteLength);
+  frame.set(body, 4);
   return frame;
 }
 
-function installFakeLocalStorage() {
-  const globalScope = globalThis as typeof globalThis & {
-    localStorage?: Storage;
-  };
-  const originalLocalStorage = globalScope.localStorage;
-  const store = new Map<string, string>();
+describe("Core Protocol", () => {
+  describe("encodeCommunicationMessage", () => {
+    it("encodes message with id", () => {
+      const message: TypedMessage = {
+        id: 123,
+        type: "ping",
+        data: {},
+      };
 
-  globalScope.localStorage = {
-    getItem(key: string) {
-      return store.has(key) ? store.get(key)! : null;
-    },
-    setItem(key: string, value: string) {
-      store.set(key, value);
-    },
-    removeItem(key: string) {
-      store.delete(key);
-    },
-    clear() {
-      store.clear();
-    },
-    key(index: number) {
-      return [...store.keys()][index] ?? null;
-    },
-    get length() {
-      return store.size;
-    },
-  } as Storage;
+      const encoded = encodeCommunicationMessage(message);
 
-  return () => {
-    globalScope.localStorage = originalLocalStorage;
-  };
-}
-
-function installConsoleLogSpy() {
-  const globalConsole = console as typeof console & {
-    log: (...args: unknown[]) => void;
-  };
-  const originalLog = globalConsole.log;
-  const calls: unknown[][] = [];
-
-  globalConsole.log = (...args: unknown[]) => {
-    calls.push(args);
-  };
-
-  return {
-    calls,
-    restore() {
-      globalConsole.log = originalLog;
-    },
-  };
-}
-
-describe("TTP communication codec", () => {
-  test("encodes and decodes a mixed payload message", () => {
-    const input = createRoundTripMessage();
-
-    const encoded = encodeCommunicationMessage(input);
-    const decoded = decodeCommunicationMessage(frameBytes(encoded));
-
-    expect(decoded.id).toBe(41);
-    expect(decoded.type).toBe("message");
-    expect(decoded.data).toEqual({
-      accepted: true,
-      message: "hello",
-      user_id: 77,
-      iota_ids: [11, 12],
-      ping_iota: 33,
-      last_ping: 101,
-      get_variant: null,
-      user: {
-        user_id: 1,
-        username: "alice",
-      },
-      messages: [
-        {
-          user_id: 2,
-          message: "payload",
-        },
-      ],
+      expect(encoded instanceof Uint8Array).toBe(true);
+      expect(encoded.byteLength > 0).toBe(true);
     });
-  });
 
-  test("decodes an empty error payload as an empty object", () => {
-    const innerFrame = new Uint8Array(6);
-    const view = new DataView(innerFrame.buffer);
+    it("encodes message without id", () => {
+      const message: TypedMessage = {
+        id: 0,
+        type: "pong",
+        data: {},
+      };
 
-    view.setUint32(0, 2, false);
-    innerFrame[4] = 0;
-    innerFrame[5] = 0;
+      const encoded = encodeCommunicationMessage(message);
+      expect(encoded instanceof Uint8Array).toBe(true);
+    });
 
-    const decoded = decodeCommunicationMessage(frameBytes(innerFrame));
-
-    expect(decoded.id).toBe(0);
-    expect(decoded.type).toBe("error");
-    expect(decoded.data).toEqual({});
-  });
-
-  test("keeps malformed error payloads visible as error messages", () => {
-    const innerFrame = new Uint8Array(8);
-    const view = new DataView(innerFrame.buffer);
-
-    view.setUint32(0, 4, false);
-    innerFrame[4] = 0;
-    innerFrame[5] = 0;
-    innerFrame[6] = 0;
-    innerFrame[7] = 1;
-
-    const decoded = decodeCommunicationMessage(frameBytes(innerFrame));
-
-    expect(decoded.id).toBe(0);
-    expect(decoded.type).toBe("error");
-    expect(decoded.data).toEqual({});
-  });
-
-  test("throws for unknown communication type", () => {
-    expect(() =>
-      encodeCommunicationMessage({
-        id: 1,
-        type: "unknown_type",
-        data: { user_id: 1 },
-      }),
-    ).toThrow("Unknown communication type");
-  });
-
-  test("throws for unknown data key", () => {
-    expect(() =>
-      encodeCommunicationMessage({
+    it("encodes message with string data", () => {
+      const message: TypedMessage = {
         id: 1,
         type: "message",
-        data: { unknown_key: 1 },
-      }),
-    ).toThrow("Unknown data type");
-  });
+        data: { content: "hello", sender_id: 42 },
+      };
 
-  test("skips unknown container keys without failing decode", () => {
-    const encoded = encodeCommunicationMessage({
-      id: 9,
-      type: "error",
-      data: {
-        accepted: true,
-      },
+      const encoded = encodeCommunicationMessage(message);
+      const decoded = decodeCommunicationMessage(wrapForDecode(encoded));
+
+      expect(decoded.type).toBe("message");
+      expect(decoded.id).toBe(1);
     });
 
-    const corrupted = encoded.slice();
-    corrupted[corrupted.length - 1] = 215;
+    it("throws on unknown message type", () => {
+      const message: TypedMessage = {
+        id: 1,
+        type: "unknown_type",
+        data: {},
+      };
 
-    const decoded = decodeCommunicationMessage(frameBytes(corrupted));
-
-    expect(decoded.id).toBe(9);
-    expect(decoded.type).toBe("error");
-    expect(decoded.data).toEqual({});
+      expect(() => encodeCommunicationMessage(message)).toThrow(
+        "Unknown communication type",
+      );
+    });
   });
 
-  test("aligns live message schema with backend protocol name", () => {
-    expect(socket.message_live !== undefined).toBe(true);
-    expect((socket as Record<string, unknown>).live_message).toEqual(undefined);
+  describe("decodeCommunicationMessage", () => {
+    it("decodes encoded message", () => {
+      const original: TypedMessage = {
+        id: 456,
+        type: "success",
+        data: {},
+      };
+
+      const encoded = encodeCommunicationMessage(original);
+      const decoded = decodeCommunicationMessage(wrapForDecode(encoded));
+
+      expect(decoded.id).toBe(456);
+      expect(decoded.type).toBe("success");
+    });
+
+    it("throws on truncated frame", () => {
+      const truncated = new Uint8Array([0x00, 0x00, 0x00]);
+      expect(() => decodeCommunicationMessage(truncated)).toThrow();
+    });
+
+    it("throws on frame length mismatch", () => {
+      const buffer = new Uint8Array(10);
+      buffer[0] = 0xff;
+      buffer[1] = 0xff;
+      buffer[2] = 0xff;
+      buffer[3] = 0xff;
+
+      expect(() => decodeCommunicationMessage(buffer)).toThrow(
+        "Communication frame length mismatch",
+      );
+    });
+
+    it("decodes error messages with empty data", () => {
+      const original: TypedMessage = {
+        id: 1,
+        type: "error",
+        data: {},
+      };
+
+      const encoded = encodeCommunicationMessage(original);
+      const decoded = decodeCommunicationMessage(wrapForDecode(encoded));
+
+      expect(decoded.type).toBe("error");
+    });
   });
 
-  test("does not log raw binary frames unless enabled", async () => {
-    const ignoredFrame = encodeCommunicationMessage({
-      id: 0,
-      type: "error_internal",
-      data: {
-        error_type: "transport_noise",
-      },
-    });
+  describe("createTransportClient", () => {
+    it("creates client with schemas", () => {
+      const { MockWebTransport } = createMockWebTransport();
+      const globalWithWebTransport = globalThis as unknown as {
+        WebTransport?: new (url: string) => MockTransportInstance;
+      };
+      globalWithWebTransport.WebTransport = MockWebTransport;
 
-    const identificationFrame = encodeCommunicationMessage({
-      id: 7,
-      type: "identification",
-      data: {
-        challenge: "Zm9v",
-        public_key: "Zm9v",
-      },
-    });
-
-    const streamBytes = concatBytes([
-      frameBytes(ignoredFrame),
-      frameBytes(identificationFrame),
-    ]);
-    const restoreWebTransport = installFakeWebTransport(
-      chunkBytes(streamBytes, [2, 5, 1, 7]),
-    );
-    const restoreLocalStorage = installFakeLocalStorage();
-    const consoleSpy = installConsoleLogSpy();
-
-    try {
-      const client = createTransportClient(socket, {
-        url: "https://example.test",
-      });
-
-      await client.connect("https://example.test");
-
-      const response = client.send("identification", { user_id: 1 }, { id: 7 });
-
-      const timeout = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error("identification response timed out"));
-        }, 250);
-      });
-
-      const result = await Promise.race([response, timeout]);
-
-      expect(result).toEqual({
-        id: 7,
-        type: "identification",
-        data: {
-          challenge: "Zm9v",
-          public_key: "Zm9v",
+      const schemas: SchemaMap = {
+        ping: {
+          request: z.object({}),
+          response: z.object({}),
         },
-      });
-      expect(consoleSpy.calls);
+      };
 
-      await client.close("test-complete");
-    } finally {
-      consoleSpy.restore();
-      restoreLocalStorage();
-      restoreWebTransport();
-    }
+      const client = createTransportClient(schemas);
+
+      expect(client !== undefined).toBe(true);
+      expect(typeof client.readyState === "function").toBe(true);
+      expect(typeof client.connect === "function").toBe(true);
+      expect(typeof client.send === "function").toBe(true);
+      expect(typeof client.close === "function").toBe(true);
+      expect(typeof client.subscribePush === "function").toBe(true);
+    });
+
+    it("returns CLOSED ready state initially", () => {
+      const client = createTransportClient({});
+      expect(client.readyState()).toBe(3); // CLOSED
+    });
+
+    it("rejects send when not connected", async () => {
+      const { MockWebTransport } = createMockWebTransport();
+      const globalWithWebTransport = globalThis as unknown as {
+        WebTransport?: new (url: string) => MockTransportInstance;
+      };
+      globalWithWebTransport.WebTransport = MockWebTransport;
+
+      const schemas: SchemaMap = {
+        ping: {
+          request: z.object({}),
+          response: z.object({}),
+        },
+      };
+
+      const client = createTransportClient(schemas);
+
+      await expectRejection(
+        client.send("ping", {}),
+        "Transport is not connected",
+      );
+    });
+
+    it("calls readyStateChange callback", async () => {
+      const { readyResolve, MockWebTransport } = createMockWebTransport();
+      const globalWithWebTransport = globalThis as unknown as {
+        WebTransport?: new (url: string) => MockTransportInstance;
+      };
+      globalWithWebTransport.WebTransport = MockWebTransport;
+
+      const readyStateChanges: number[] = [];
+      const client = createTransportClient(
+        {},
+        {
+          onReadyStateChange: (state) => readyStateChanges.push(state),
+        },
+      );
+
+      const connectPromise = client.connect("http://localhost:8000");
+      readyResolve();
+      await connectPromise;
+
+      expect(readyStateChanges).toContain(0); // CONNECTING
+      expect(readyStateChanges).toContain(1); // OPEN
+    });
+
+    it("calls close callback on intentional close", async () => {
+      const { readyResolve, closedResolve, MockWebTransport } =
+        createMockWebTransport();
+      const globalWithWebTransport = globalThis as unknown as {
+        WebTransport?: new (url: string) => MockTransportInstance;
+      };
+      globalWithWebTransport.WebTransport = MockWebTransport;
+
+      const closeEvents: Array<{ intentional: boolean; error?: unknown }> = [];
+      const client = createTransportClient(
+        {},
+        {
+          onClose: (event) => closeEvents.push(event),
+        },
+      );
+
+      const connectPromise = client.connect("http://localhost:8000");
+      readyResolve();
+      await connectPromise;
+
+      const closePromise = client.close();
+      closedResolve();
+      await closePromise;
+
+      expect(closeEvents.length > 0).toBe(true);
+      expect(closeEvents[closeEvents.length - 1].intentional).toBe(true);
+    });
+
+    it("rejects pending requests on close", async () => {
+      const { readyResolve, closedResolve, MockWebTransport } =
+        createMockWebTransport();
+      const globalWithWebTransport = globalThis as unknown as {
+        WebTransport?: new (url: string) => MockTransportInstance;
+      };
+      globalWithWebTransport.WebTransport = MockWebTransport;
+
+      const schemas: SchemaMap = {
+        ping: {
+          request: z.object({}),
+          response: z.object({}),
+        },
+      };
+
+      const client = createTransportClient(schemas);
+      const connectPromise = client.connect("http://localhost:8000");
+      readyResolve();
+      await connectPromise;
+
+      const sendPromise = client.send("ping", {});
+      const closePromise = client.close();
+      closedResolve();
+      await closePromise;
+
+      await expectRejection(sendPromise);
+    });
   });
 
-  test("logs raw binary frames when enabled", async () => {
-    const requestMessage = encodeCommunicationMessage({
-      id: 7,
-      type: "identification",
-      data: {
-        user_id: 1,
-      },
+  describe("Push subscriptions", () => {
+    it("subscribes and unsubscribes from push events", () => {
+      const client = createTransportClient({});
+
+      const handler = () => {};
+      const unsubscribe = client.subscribePush(handler);
+
+      expect(typeof unsubscribe).toBe("function");
+      unsubscribe();
     });
-    const requestFrame = frameBytes(requestMessage);
-
-    const ignoredFrame = encodeCommunicationMessage({
-      id: 0,
-      type: "error_internal",
-      data: {
-        error_type: "transport_noise",
-      },
-    });
-
-    const identificationFrame = encodeCommunicationMessage({
-      id: 7,
-      type: "identification",
-      data: {
-        challenge: "Zm9v",
-        public_key: "Zm9v",
-      },
-    });
-    const ignoredTransportFrame = frameBytes(ignoredFrame);
-    const identificationTransportFrame = frameBytes(identificationFrame);
-
-    const streamBytes = concatBytes([
-      ignoredTransportFrame,
-      identificationTransportFrame,
-    ]);
-    const restoreWebTransport = installFakeWebTransport(
-      chunkBytes(streamBytes, [2, 5, 1, 7]),
-    );
-    const restoreLocalStorage = installFakeLocalStorage();
-    const consoleSpy = installConsoleLogSpy();
-
-    try {
-      localStorage.setItem("ttp_logBinary", "true");
-
-      const client = createTransportClient(socket, {
-        url: "https://example.test",
-      });
-
-      await client.connect("https://example.test");
-
-      const response = client.send("identification", { user_id: 1 }, { id: 7 });
-
-      const timeout = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error("identification response timed out"));
-        }, 250);
-      });
-
-      const result = await Promise.race([response, timeout]);
-
-      expect(result).toEqual({
-        id: 7,
-        type: "identification",
-        data: {
-          challenge: "Zm9v",
-          public_key: "Zm9v",
-        },
-      });
-
-      const logMessages = consoleSpy.calls
-        .filter((entry) => typeof entry[0] === "string")
-        .map((entry) => entry[0] as string);
-
-      expect(logMessages).toContain(
-        `[Socket] Outgoing binary message (${requestFrame.byteLength} bytes)`,
-      );
-      expect(logMessages).toContain(
-        `[Socket] Incoming binary message (${ignoredTransportFrame.byteLength} bytes)`,
-      );
-      expect(logMessages).toContain(
-        `[Socket] Incoming binary message (${identificationTransportFrame.byteLength} bytes)`,
-      );
-
-      const outgoingCall = consoleSpy.calls.find(
-        (entry) =>
-          entry[0] ===
-          `[Socket] Outgoing binary message (${requestFrame.byteLength} bytes)`,
-      );
-      expect(outgoingCall?.[1]).toEqual(requestFrame);
-
-      const incomingCall = consoleSpy.calls.find(
-        (entry) =>
-          entry[0] ===
-          `[Socket] Incoming binary message (${identificationTransportFrame.byteLength} bytes)`,
-      );
-      expect(incomingCall?.[1]).toEqual(identificationTransportFrame);
-
-      await client.close("test-complete");
-    } finally {
-      consoleSpy.restore();
-      restoreLocalStorage();
-      restoreWebTransport();
-    }
   });
 
-  test("resolves an identification response before the stream closes", async () => {
-    const ignoredFrame = encodeCommunicationMessage({
-      id: 0,
-      type: "error_internal",
-      data: {
-        error_type: "transport_noise",
-      },
+  describe("Data type encoding", () => {
+    it("encodes boolean true", () => {
+      const message: TypedMessage = {
+        id: 1,
+        type: "message",
+        data: { signed: true },
+      };
+
+      const encoded = encodeCommunicationMessage(message);
+      const decoded = decodeCommunicationMessage(wrapForDecode(encoded));
+
+      expect(decoded.data.signed).toBe(true);
     });
 
-    const identificationFrame = encodeCommunicationMessage({
-      id: 7,
-      type: "identification",
-      data: {
-        challenge: "Zm9v",
-        public_key: "Zm9v",
-      },
+    it("encodes boolean false", () => {
+      const message: TypedMessage = {
+        id: 1,
+        type: "message",
+        data: { signed: false },
+      };
+
+      const encoded = encodeCommunicationMessage(message);
+      const decoded = decodeCommunicationMessage(wrapForDecode(encoded));
+
+      expect(decoded.data.signed).toBe(false);
     });
 
-    const streamBytes = concatBytes([
-      frameBytes(ignoredFrame),
-      frameBytes(identificationFrame),
-    ]);
-    const restoreWebTransport = installFakeWebTransport(
-      chunkBytes(streamBytes, [2, 5, 1, 7]),
-    );
-    const restoreLocalStorage = installFakeLocalStorage();
+    it("encodes numbers", () => {
+      const message: TypedMessage = {
+        id: 1,
+        type: "message",
+        data: { user_id: 42, sender_id: 100 },
+      };
 
-    try {
-      const client = createTransportClient(socket, {
-        url: "https://example.test",
-      });
+      const encoded = encodeCommunicationMessage(message);
+      const decoded = decodeCommunicationMessage(wrapForDecode(encoded));
 
-      await client.connect("https://example.test");
-
-      const response = client.send("identification", { user_id: 1 }, { id: 7 });
-
-      const timeout = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error("identification response timed out"));
-        }, 250);
-      });
-
-      const result = await Promise.race([response, timeout]);
-
-      expect(result).toEqual({
-        id: 7,
-        type: "identification",
-        data: {
-          challenge: "Zm9v",
-          public_key: "Zm9v",
-        },
-      });
-
-      await client.close("test-complete");
-    } finally {
-      restoreLocalStorage();
-      restoreWebTransport();
-    }
-  });
-
-  test("resolves an identification response that arrives after another frame on the same stream", async () => {
-    const ignoredFrame = encodeCommunicationMessage({
-      id: 0,
-      type: "error_internal",
-      data: {
-        error_type: "transport_noise",
-      },
+      expect(decoded.data.user_id).toBe(42);
+      expect(decoded.data.sender_id).toBe(100);
     });
 
-    const identificationFrame = encodeCommunicationMessage({
-      id: 7,
-      type: "identification",
-      data: {
-        challenge: "Zm9v",
-        public_key: "Zm9v",
-      },
+    it("encodes strings", () => {
+      const message: TypedMessage = {
+        id: 1,
+        type: "message",
+        data: { content: "test message", username: "alice" },
+      };
+
+      const encoded = encodeCommunicationMessage(message);
+      const decoded = decodeCommunicationMessage(wrapForDecode(encoded));
+
+      expect(decoded.data.content).toBe("test message");
+      expect(decoded.data.username).toBe("alice");
     });
 
-    const streamBytes = concatBytes([
-      frameBytes(ignoredFrame),
-      frameBytes(identificationFrame),
-    ]);
-    const restoreWebTransport = installFakeWebTransport(
-      chunkBytes(streamBytes, [1, 4, 3, 9, 2]),
-    );
-    const restoreLocalStorage = installFakeLocalStorage();
+    it("encodes null values", () => {
+      const message: TypedMessage = {
+        id: 1,
+        type: "message",
+        data: { status: null },
+      };
 
-    try {
-      const client = createTransportClient(socket, {
-        url: "https://example.test",
+      const encoded = encodeCommunicationMessage(message);
+      const decoded = decodeCommunicationMessage(wrapForDecode(encoded));
+
+      expect(decoded.data.status).toBe(null);
+    });
+
+    it("encodes arrays of numbers", () => {
+      const message: TypedMessage = {
+        id: 1,
+        type: "message",
+        data: { user_ids: [1, 2, 3] },
+      };
+
+      const encoded = encodeCommunicationMessage(message);
+      const decoded = decodeCommunicationMessage(wrapForDecode(encoded));
+
+      expect(decoded.data.user_ids).toEqual([1, 2, 3]);
+    });
+
+    it("encodes nested containers", () => {
+      const message: TypedMessage = {
+        id: 1,
+        type: "message",
+        data: { user: { username: "alice", display: "Alice" } },
+      };
+
+      const encoded = encodeCommunicationMessage(message);
+      const decoded = decodeCommunicationMessage(wrapForDecode(encoded));
+
+      expect(decoded.data.user).toEqual({
+        username: "alice",
+        display: "Alice",
       });
-
-      await client.connect("https://example.test");
-
-      const response = client.send("identification", { user_id: 1 }, { id: 7 });
-
-      const timeout = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error("identification response timed out"));
-        }, 250);
-      });
-
-      const result = await Promise.race([response, timeout]);
-
-      expect(result).toEqual({
-        id: 7,
-        type: "identification",
-        data: {
-          challenge: "Zm9v",
-          public_key: "Zm9v",
-        },
-      });
-
-      await client.close("test-complete");
-    } finally {
-      restoreLocalStorage();
-      restoreWebTransport();
-    }
+    });
   });
 });

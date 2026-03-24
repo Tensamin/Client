@@ -5,7 +5,8 @@ import { useStorage } from "@tensamin/storage/context";
 import { createTransportClient, READY_STATE, type BoundSendFn } from "./core";
 import {
   PING_INTERVAL,
-  RETRY_COUNT,
+  RECONNECT_RESET,
+  RECONNECT_TRIES,
   RETRY_INTERVAL,
   TRANSPORT_URL,
 } from "./values";
@@ -224,6 +225,7 @@ export default function Provider(props: { children: React.ReactNode }) {
   React.useEffect(() => {
     let attempts = 0;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let reconnectResetTimer: ReturnType<typeof setTimeout> | null = null;
     let reconnectScheduled = false;
     let disposed = false;
 
@@ -242,6 +244,31 @@ export default function Provider(props: { children: React.ReactNode }) {
     };
 
     /**
+     * Clears the stability timer that resets reconnect attempt counters.
+     * @returns Void.
+     */
+    const clearReconnectResetTimer = () => {
+      if (!reconnectResetTimer) {
+        return;
+      }
+
+      clearTimeout(reconnectResetTimer);
+      reconnectResetTimer = null;
+    };
+
+    /**
+     * Starts the stability timer that resets reconnect attempts after uptime.
+     * @returns Void.
+     */
+    const scheduleReconnectReset = () => {
+      clearReconnectResetTimer();
+      reconnectResetTimer = setTimeout(() => {
+        attempts = 0;
+        reconnectResetTimer = null;
+      }, RECONNECT_RESET * 1_000);
+    };
+
+    /**
      * Schedules a delayed reconnect attempt unless retries are exhausted.
      * @param reason Optional reason for reconnect scheduling.
      * @returns Void.
@@ -251,7 +278,7 @@ export default function Provider(props: { children: React.ReactNode }) {
         return;
       }
 
-      if (attempts >= RETRY_COUNT) {
+      if (attempts >= RECONNECT_TRIES) {
         setError("Connection Failed");
         setErrorDescription(
           "Unable to connect to the server after multiple attempts. Please check your internet connection or try again later.",
@@ -275,8 +302,8 @@ export default function Provider(props: { children: React.ReactNode }) {
         setReadyState(state);
 
         if (state === READY_STATE.OPEN) {
-          attempts = 0;
           clearReconnectTimer();
+          scheduleReconnectReset();
           identificationStartedRef.current = false;
           setConnected(true);
           setIdentified(false);
@@ -285,32 +312,24 @@ export default function Provider(props: { children: React.ReactNode }) {
           return;
         }
 
+        clearReconnectResetTimer();
         identificationStartedRef.current = false;
         setConnected(false);
         setIdentified(false);
       },
       onClose: ({ error: closeError, intentional }) => {
-        if (isStopSendingError(closeError)) {
-          clearReconnectTimer();
-          setConnected(false);
-          setIdentified(false);
-          setIdentifying(false);
-          setError("Connection closed");
-          setErrorDescription(
-            "The connection was forcefully closed by the Omikron.",
-          );
-          log(0, "Socket", "red", "Connection closed", closeError);
-          return;
-        }
-
+        clearReconnectResetTimer();
         setConnected(false);
         setIdentified(false);
+        setIdentifying(false);
 
         if (disposed || intentional) {
           return;
         }
 
-        log(0, "Socket", "red", "Disconnected", closeError);
+        log(0, "Socket", "red", "Disconnected", closeError, {
+          stopSending: isStopSendingError(closeError),
+        });
         scheduleReconnect(closeError);
       },
     });
@@ -333,15 +352,6 @@ export default function Provider(props: { children: React.ReactNode }) {
           return;
         }
 
-        if (isStopSendingError(connectError)) {
-          clearReconnectTimer();
-          setError("Connection closed");
-          setErrorDescription(
-            "The connection was forcefully closed by the Omikron.",
-          );
-          return;
-        }
-
         log(0, "Socket", "red", "Connection attempt failed", connectError);
         scheduleReconnect(connectError);
       }
@@ -352,6 +362,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     return () => {
       disposed = true;
       clearReconnectTimer();
+      clearReconnectResetTimer();
 
       if (clientRef.current === transportClient) {
         clientRef.current = null;

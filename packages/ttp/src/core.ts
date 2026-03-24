@@ -61,6 +61,11 @@ type ActiveConnection = {
   streamReader: ReadableStreamDefaultReader<ReadableStream<Uint8Array>> | null;
   intentional: boolean;
   closeNotified: boolean;
+  acceptLoopDone: Promise<void> | null;
+  resolveAcceptLoopDone: (() => void) | null;
+  activeIncomingTasks: Set<Promise<void>>;
+  sendStream: WritableStream<Uint8Array> | null;
+  sendWriter: WritableStreamDefaultWriter<Uint8Array> | null;
 };
 
 /**
@@ -533,32 +538,6 @@ export function createTransportClient<T extends SchemaMap>(
   };
 
   /**
-   * Handles STOP_SENDING failures by forcing close and notifying failure.
-   * @param connection Active connection.
-   * @param error Failure reason.
-   * @returns Void.
-   */
-  const closeFromStopSending = (
-    connection: ActiveConnection,
-    error: unknown,
-  ) => {
-    if (!isStopSendingError(error)) {
-      return;
-    }
-
-    try {
-      connection.transport.close({
-        closeCode: APPLICATION_CLOSE_CODE,
-        reason: "stop-sending",
-      });
-    } catch {
-      // Ignore close failures while handling STOP_SENDING.
-    }
-
-    handleConnectionFailure(connection, error);
-  };
-
-  /**
    * Handles decoded incoming messages and resolves request promises or push listeners.
    * @param message Decoded incoming message.
    * @returns Void.
@@ -680,40 +659,88 @@ export function createTransportClient<T extends SchemaMap>(
   const startIncomingLoop = (connection: ActiveConnection) => {
     connection.streamReader =
       connection.transport.incomingUnidirectionalStreams.getReader();
+    connection.acceptLoopDone = new Promise<void>((resolve) => {
+      connection.resolveAcceptLoopDone = resolve;
+    });
 
     void (async () => {
       try {
-        while (currentConnection === connection && !connection.intentional) {
-          const result = await connection.streamReader?.read();
+        while (!connection.closeNotified) {
+          const streamReader = connection.streamReader;
+          if (!streamReader) {
+            break;
+          }
+
+          const readResult = await Promise.race([
+            streamReader.read().then((result) => ({
+              type: "stream" as const,
+              result,
+            })),
+            connection.transport.closed
+              .catch(() => undefined)
+              .then(() => ({ type: "closed" as const })),
+          ]);
+
+          if (readResult.type !== "stream") {
+            break;
+          }
+
+          const result = readResult.result;
           if (!result || result.done) {
             break;
           }
 
-          const closedByPeer = await processIncomingStream(
-            result.value,
-            connection,
-            handleIncomingMessage,
-            handleRecoverableDecodeFailure,
-            handleConnectionFailure,
-          );
+          const shouldDiscardFrames =
+            connection.intentional || currentConnection !== connection;
 
-          if (closedByPeer) {
-            return;
-          }
+          const task = (async () => {
+            try {
+              await processIncomingStream(
+                result.value,
+                connection,
+                handleIncomingMessage,
+                handleRecoverableDecodeFailure,
+                handleConnectionFailure,
+                shouldDiscardFrames,
+              );
+            } catch (error) {
+              log(
+                0,
+                "Socket",
+                "red",
+                "Incoming transport stream failed",
+                error,
+              );
+              handleConnectionFailure(connection, error);
+            }
+          })();
+
+          connection.activeIncomingTasks.add(task);
+          void task.finally(() => {
+            connection.activeIncomingTasks.delete(task);
+          });
         }
 
-        if (!connection.intentional) {
+        if (
+          !connection.intentional &&
+          !connection.closeNotified &&
+          currentConnection === connection
+        ) {
           handleConnectionFailure(
             connection,
             new Error("Transport stream closed"),
           );
         }
       } catch (error) {
-        log(0, "Socket", "red", "Incoming transport stream failed", error);
+        log(0, "Socket", "red", "Incoming stream accept loop failed", error);
         handleConnectionFailure(connection, error);
       } finally {
         connection.streamReader?.releaseLock();
         connection.streamReader = null;
+
+        const resolveAcceptLoopDone = connection.resolveAcceptLoopDone;
+        connection.resolveAcceptLoopDone = null;
+        resolveAcceptLoopDone?.();
       }
     })();
   };
@@ -756,6 +783,11 @@ export function createTransportClient<T extends SchemaMap>(
       streamReader: null,
       intentional: false,
       closeNotified: false,
+      acceptLoopDone: null,
+      resolveAcceptLoopDone: null,
+      activeIncomingTasks: new Set(),
+      sendStream: null,
+      sendWriter: null,
     };
 
     currentConnection = connection;
@@ -793,19 +825,21 @@ export function createTransportClient<T extends SchemaMap>(
 
     connection.intentional = true;
     setReadyState(READY_STATE.CLOSING);
+    const acceptLoopDone = connection.acceptLoopDone;
 
     rejectPending(new Error("Transport closed"));
+
+    try {
+      connection.sendWriter?.releaseLock();
+      await connection.sendStream?.abort();
+    } catch {
+      // Ignore errors during stream abort
+    }
 
     try {
       await writeCloseFrame(connection.transport);
     } catch (error) {
       log(1, "Socket", "yellow", "Failed to send close sentinel", error);
-    }
-
-    try {
-      connection.streamReader?.cancel().catch(() => undefined);
-    } catch {
-      // Ignore reader cancellation failures during shutdown.
     }
 
     try {
@@ -819,6 +853,10 @@ export function createTransportClient<T extends SchemaMap>(
 
     try {
       await connection.transport.closed.catch(() => undefined);
+      await acceptLoopDone;
+      if (connection.activeIncomingTasks.size > 0) {
+        await Promise.allSettled([...connection.activeIncomingTasks]);
+      }
     } finally {
       notifyClosed(connection);
     }
@@ -898,9 +936,9 @@ export function createTransportClient<T extends SchemaMap>(
       });
 
       if (!expectsResponse) {
-        return writeMessage(connection.transport, messageBytes).catch(
+        return writeMessageOnPersistentStream(connection, messageBytes).catch(
           (error) => {
-            closeFromStopSending(connection, error);
+            handleConnectionFailure(connection, error);
             throw error;
           },
         );
@@ -923,12 +961,14 @@ export function createTransportClient<T extends SchemaMap>(
           timeoutId,
         });
 
-        void writeMessage(connection.transport, messageBytes).catch((error) => {
-          closeFromStopSending(connection, error);
-          clearTimeout(timeoutId);
-          pending.delete(requestId);
-          reject(error);
-        });
+        void writeMessageOnPersistentStream(connection, messageBytes).catch(
+          (error) => {
+            handleConnectionFailure(connection, error);
+            clearTimeout(timeoutId);
+            pending.delete(requestId);
+            reject(error);
+          },
+        );
       });
     } catch (error) {
       return Promise.reject(error);
@@ -1056,39 +1096,6 @@ function logBinaryMessage(
 }
 
 /**
- * Detects whether an error chain includes STOP_SENDING.
- * @param error Unknown transport error.
- * @returns True when STOP_SENDING appears in the error chain.
- */
-function isStopSendingError(error: unknown) {
-  if (typeof error === "string") {
-    return error.includes("STOP_SENDING");
-  }
-
-  if (error instanceof Error) {
-    if (error.message.includes("STOP_SENDING")) {
-      return true;
-    }
-
-    const errorWithCause = error as Error & { cause?: unknown };
-    if (errorWithCause.cause !== undefined) {
-      return isStopSendingError(errorWithCause.cause);
-    }
-
-    return false;
-  }
-
-  if (typeof error === "object" && error !== null) {
-    const maybeMessage = (error as { message?: unknown }).message;
-    if (typeof maybeMessage === "string") {
-      return maybeMessage.includes("STOP_SENDING");
-    }
-  }
-
-  return false;
-}
-
-/**
  * Ensures outbound message payloads are plain object records.
  * @param value Candidate payload.
  * @returns Payload as plain object record.
@@ -1170,30 +1177,54 @@ function validateRequestId(id: number, expectsResponse: boolean) {
 
 /**
  * Writes a protocol message payload as a framed unidirectional transport stream.
- * @param transport Active transport instance.
+ * Uses a persistent stream, and retries once if the stream was closed by the receiver.
+ * @param connection Active connection instance.
  * @param payload Encoded message payload bytes.
  * @returns Promise that resolves when frame writing is complete.
  */
-async function writeMessage(transport: WebTransportLike, payload: Uint8Array) {
+async function writeMessageOnPersistentStream(
+  connection: ActiveConnection,
+  payload: Uint8Array,
+) {
   if (payload.byteLength >= CLOSE_FRAME_LEN) {
     throw new Error("Message too large for transport frame");
   }
 
-  const stream = await transport.createUnidirectionalStream();
-  const writer = stream.getWriter();
+  const frame = new Uint8Array(4 + payload.byteLength);
+  writeU32(frame, 0, payload.byteLength);
+  frame.set(payload, 4);
 
-  try {
-    const frame = new Uint8Array(4 + payload.byteLength);
-    writeU32(frame, 0, payload.byteLength);
-    frame.set(payload, 4);
+  const writeAndCatch = async (): Promise<boolean> => {
+    try {
+      if (!connection.sendStream || !connection.sendWriter) {
+        connection.sendStream =
+          await connection.transport.createUnidirectionalStream();
+        connection.sendWriter = connection.sendStream.getWriter();
+      }
 
-    logBinaryMessage("Outgoing", frame);
+      logBinaryMessage("Outgoing", frame);
+      await connection.sendWriter.write(frame);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
-    await writer.write(frame);
-    await writer.close();
-  } finally {
-    writer.releaseLock();
-  }
+  const firstResult = await writeAndCatch();
+  if (firstResult) return;
+
+  // Retry once
+  connection.sendWriter?.releaseLock();
+  connection.sendWriter = null;
+  connection.sendStream = null;
+
+  const secondResult = await writeAndCatch();
+  if (secondResult) return;
+
+  connection.sendWriter = null;
+  connection.sendStream = null;
+
+  throw new Error("Transport stream closed during send");
 }
 
 /**
@@ -1221,6 +1252,7 @@ async function writeCloseFrame(transport: WebTransportLike) {
  * @param connection Active connection instance.
  * @param handleIncomingFrame Handler for decoded protocol messages.
  * @param handleDecodeFailure Handler for recoverable frame decode failures.
+ * @param discardFrames Whether frames should be drained and discarded.
  * @returns True when the peer close sentinel was received.
  */
 async function processIncomingStream(
@@ -1229,9 +1261,11 @@ async function processIncomingStream(
   handleIncomingFrame: (message: TypedMessage) => void,
   handleDecodeFailure: (error: RecoverableMessageDecodeError) => void,
   handleStreamFailure: (connection: ActiveConnection, error?: unknown) => void,
+  discardFrames: boolean,
 ) {
   const reader = stream.getReader();
   let bufferedBytes = new Uint8Array(0) as Uint8Array<ArrayBufferLike>;
+  let peerCloseDetected = false;
 
   try {
     while (true) {
@@ -1242,10 +1276,18 @@ async function processIncomingStream(
 
       bufferedBytes = appendBytes(bufferedBytes, value);
 
+      if (discardFrames || peerCloseDetected) {
+        bufferedBytes = new Uint8Array(0) as Uint8Array<ArrayBufferLike>;
+        continue;
+      }
+
       while (bufferedBytes.byteLength >= 4) {
         const declaredLength = readU32(bufferedBytes, 0);
 
         if (declaredLength === CLOSE_FRAME_LEN) {
+          peerCloseDetected = true;
+          bufferedBytes = new Uint8Array(0) as Uint8Array<ArrayBufferLike>;
+
           try {
             connection.transport.close({
               closeCode: APPLICATION_CLOSE_CODE,
@@ -1259,7 +1301,7 @@ async function processIncomingStream(
             connection,
             new Error("Transport closed by peer"),
           );
-          return true;
+          break;
         }
 
         const expectedLength = 4 + declaredLength;
@@ -1277,20 +1319,24 @@ async function processIncomingStream(
         } catch (error) {
           if (error instanceof RecoverableMessageDecodeError) {
             handleDecodeFailure(error);
-            continue;
+          } else {
+            throw error;
           }
-
-          throw error;
         }
+
+        // Just like the backend, drop the stream after receiving exactly one incoming message!
+        return peerCloseDetected;
       }
     }
 
-    if (bufferedBytes.byteLength > 0) {
+    if (!discardFrames && !peerCloseDetected && bufferedBytes.byteLength > 0) {
       throw new Error("Received truncated transport frame");
     }
 
-    return false;
+    return peerCloseDetected;
   } finally {
+    // We cancel the reader to signal the stream is naturally dropped, matching Rust's receiver behavior.
+    reader.cancel().catch(() => {});
     reader.releaseLock();
   }
 }
