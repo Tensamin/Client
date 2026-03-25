@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import Storage from "@tensamin/storage/context";
 import Crypto from "@tensamin/crypto/context";
@@ -13,8 +13,34 @@ import { Toaster } from "@tensamin/ui/cmp/sonner";
  * @returns unknown.
  */
 export default function Layout(props: { children: ReactNode }) {
+  const [pixelRatio, setPixelRatio] = useState(devicePixelRatio);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setPixelRatio(devicePixelRatio);
+      setVisible(true);
+      setTimeout(() => setVisible(false), 1000);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <>
+      <div className="fixed top-0 left-0 z-100 w-screen h-screen flex flex-col justify-center items-center pointer-events-none select-none">
+        {visible && (
+          <div className="bg-card border p-1 text-xs">{pixelRatio}</div>
+        )}
+
+        {/* Todo: Make this nicer */}
+        {pixelRatio !== 1 && (
+          <div className="fixed bottom-0 right-0 m-3 text-xs text-red-500">
+            Hey! You're zoomed in.
+          </div>
+        )}
+      </div>
       <Toaster />
       <Storage>
         <LegalWrapper>

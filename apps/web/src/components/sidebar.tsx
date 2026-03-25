@@ -17,7 +17,7 @@ export default function Sidebar() {
   }, [load]);
 
   return (
-    <div className="w-75 h-full flex flex-col gap-3 p-2">
+    <div className="w-65 h-full flex flex-col gap-3 p-2">
       <Wrapper
         loading={<Loading />}
         userId={userId}
