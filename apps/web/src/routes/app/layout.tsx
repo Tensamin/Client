@@ -1,7 +1,7 @@
 import Socket from "@tensamin/ttp/context";
 import User from "@tensamin/user/context";
 import { useEffect, useState, type ReactNode } from "react";
-import { useNavigate, useLocation } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 
 import Sidebar from "@/components/sidebar";
 import Conversation from "@/features/conversation/context";
@@ -18,26 +18,38 @@ export default function Layout(props: { children: ReactNode }) {
 
   const { load } = useStorage();
 
-  const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log(location);
+    let active = true;
 
-    load("user_id").then((userId) => {
+    void load("user_id").then((userId) => {
+      if (!active) {
+        return;
+      }
+
       if (userId !== 0) {
         setLoggedIn(true);
-      } else {
-        navigate({
-          to: "/login",
-        });
-        setLoggedIn(false);
+        return;
       }
+
+      setLoggedIn(false);
+      void navigate({
+        to: "/login",
+      });
     });
-  }, [location]);
+
+    return () => {
+      active = false;
+    };
+  }, [load, navigate]);
+
+  if (loggedIn !== true) {
+    return null;
+  }
 
   return (
-    <Socket blockConnection={!loggedIn}>
+    <Socket>
       <User>
         <Conversation>
           <div className="w-full h-full flex bg-sidebar">

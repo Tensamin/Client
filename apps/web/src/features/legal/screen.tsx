@@ -10,15 +10,20 @@ import { legalDocsSchema } from "@tensamin/shared/features/legal/schema";
 import { log } from "@tensamin/shared/log";
 import Link from "@tensamin/ui/link";
 import { Label } from "@tensamin/ui/cmp/label";
+import { useLocation } from "@tanstack/react-router";
 
 // Prevents the user from using Tensamin without accepting the privacy policy and terms of service.
 export default function Screen(props: { children: React.ReactNode }) {
   const { load, save } = useStorage();
+  const location = useLocation();
 
   const [error, setError] = useState("");
   const [errorDescription, setErrorDescription] = useState("");
 
   const [remoteDocs, setRemoteDocs] = useState<
+    z.infer<typeof legalDocsSchema> | undefined
+  >(undefined);
+  const [localDocs, setLocalDocs] = useState<
     z.infer<typeof legalDocsSchema> | undefined
   >(undefined);
 
@@ -45,6 +50,11 @@ export default function Screen(props: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
+
+    setLoading(true);
+    setError("");
+    setErrorDescription("");
+    setHasContinued(false);
 
     void load("user_id").then(async (id) => {
       if (!active) {
@@ -95,7 +105,8 @@ export default function Screen(props: { children: React.ReactNode }) {
 
       setRemoteDocs(safeCurrent.data);
 
-      const localDocs = await load("legal_docs");
+      const currentLocalDocs = await load("legal_docs");
+      setLocalDocs(currentLocalDocs);
 
       const [loadedAcceptedPP, loadedAcceptedTOS] = await Promise.all([
         load("accepted_privacy_policy"),
@@ -109,11 +120,17 @@ export default function Screen(props: { children: React.ReactNode }) {
       acceptPP(loadedAcceptedPP);
       acceptTOS(loadedAcceptedTOS);
 
-      if (localDocs.pp.hash !== safeCurrent.data.pp.hash) {
+      if (
+        !currentLocalDocs ||
+        currentLocalDocs.pp.hash !== safeCurrent.data.pp.hash
+      ) {
         acceptPP(false);
       }
 
-      if (localDocs.tos.hash !== safeCurrent.data.tos.hash) {
+      if (
+        !currentLocalDocs ||
+        currentLocalDocs.tos.hash !== safeCurrent.data.tos.hash
+      ) {
         acceptTOS(false);
       }
 
@@ -123,7 +140,7 @@ export default function Screen(props: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [load]);
+  }, [load, location.pathname]);
 
   if (error !== "" && errorDescription !== "") {
     return <ErrorScreen error={error} description={errorDescription} />;
@@ -133,7 +150,16 @@ export default function Screen(props: { children: React.ReactNode }) {
     return null;
   }
 
-  if ((acceptedPP && acceptedTOS && hasContinued) || userId === 0) {
+  const docsMatch =
+    localDocs !== undefined &&
+    remoteDocs !== undefined &&
+    localDocs.pp.hash === remoteDocs.pp.hash &&
+    localDocs.tos.hash === remoteDocs.tos.hash;
+
+  if (
+    (acceptedPP && acceptedTOS && (docsMatch || hasContinued)) ||
+    userId === 0
+  ) {
     return <>{props.children}</>;
   }
 

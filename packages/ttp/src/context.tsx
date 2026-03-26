@@ -387,7 +387,7 @@ export default function Provider(props: {
       setIdentifying(false);
       identificationStartedRef.current = false;
     };
-  }, []);
+  }, [props.blockConnection]);
 
   useEffect(() => {
     if (!connected) {
