@@ -1,6 +1,4 @@
 import Form from "@/components/screens/login/form";
-import { Button } from "@tensamin/ui/cmp/button";
-import { Link } from "@tanstack/react-router";
 
 /**
  * Executes Page.
@@ -12,9 +10,12 @@ export default function Page() {
     <div className="w-full h-full flex flex-col gap-10 items-center justify-center">
       <Form />
       <div className="flex">
-        <Link to="/signup">
-          <Button variant="outline">Sign up</Button>
-        </Link>
+        <a target="_blank" href="https://docs.tensamin.net/installation/#iota">
+          <p className="text-sm underline text-foreground/75">
+            Don't have an account yet? Click here to get help setting up an
+            Iota.
+          </p>
+        </a>
       </div>
     </div>
   );

@@ -1,4 +1,13 @@
-import * as React from "react";
+import {
+  useState,
+  createContext,
+  type ReactNode,
+  useRef,
+  useEffect,
+  useContext,
+  useCallback,
+  useMemo,
+} from "react";
 import { useCrypto } from "@tensamin/crypto/context";
 import { log } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
@@ -129,34 +138,35 @@ type ContextType = {
   identified: () => boolean;
 };
 
-const socketContext = React.createContext<ContextType | undefined>(undefined);
+const socketContext = createContext<ContextType | undefined>(undefined);
 
 /**
  * Provides socket transport state and authenticated send operations to children.
  * @param props Component props with children.
  * @returns Loading, error, or provider-wrapped JSX.
  */
-export default function Provider(props: { children: React.ReactNode }) {
+export default function Provider(props: {
+  children: ReactNode;
+  blockConnection?: boolean;
+}) {
   const { load } = useStorage();
   const { decrypt, getSharedSecret } = useCrypto();
 
-  const [readyState, setReadyState] = React.useState<number>(
-    READY_STATE.CLOSED,
-  );
-  const [connected, setConnected] = React.useState<boolean>(false);
-  const [identified, setIdentified] = React.useState<boolean>(false);
-  const [identifying, setIdentifying] = React.useState<boolean>(false);
+  const [readyState, setReadyState] = useState<number>(READY_STATE.CLOSED);
+  const [connected, setConnected] = useState<boolean>(false);
+  const [identified, setIdentified] = useState<boolean>(false);
+  const [identifying, setIdentifying] = useState<boolean>(false);
 
-  const [ownPing, setOwnPing] = React.useState<number>(0);
-  const [iotaPing, setIotaPing] = React.useState<number>(0);
+  const [ownPing, setOwnPing] = useState<number>(0);
+  const [iotaPing, setIotaPing] = useState<number>(0);
 
-  const [error, setError] = React.useState("");
-  const [errorDescription, setErrorDescription] = React.useState("");
+  const [error, setError] = useState("");
+  const [errorDescription, setErrorDescription] = useState("");
 
-  const clientRef = React.useRef<ReturnType<
+  const clientRef = useRef<ReturnType<
     typeof createTransportClient<Schemas>
   > | null>(null);
-  const identificationStartedRef = React.useRef(false);
+  const identificationStartedRef = useRef(false);
 
   /**
    * Sends typed protocol messages through the active transport client.
@@ -165,7 +175,7 @@ export default function Provider(props: { children: React.ReactNode }) {
    * @param options Optional request id and response mode.
    * @returns A promise for either void (no response) or typed message payload.
    */
-  const send = React.useCallback<BoundSendFn<Schemas>>(
+  const send = useCallback<BoundSendFn<Schemas>>(
     ((
       type: string,
       data?: Record<string, unknown>,
@@ -192,7 +202,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     [],
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!connected || !identified) {
       return;
     }
@@ -222,7 +232,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     };
   }, [connected, identified, send]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let attempts = 0;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let reconnectResetTimer: ReturnType<typeof setTimeout> | null = null;
@@ -296,43 +306,45 @@ export default function Provider(props: { children: React.ReactNode }) {
       }, RETRY_INTERVAL);
     };
 
-    const transportClient = createTransportClient(schemas, {
-      url: TRANSPORT_URL,
-      onReadyStateChange: (state) => {
-        setReadyState(state);
+    const transportClient = !props.blockConnection
+      ? createTransportClient(schemas, {
+          url: TRANSPORT_URL,
+          onReadyStateChange: (state) => {
+            setReadyState(state);
 
-        if (state === READY_STATE.OPEN) {
-          clearReconnectTimer();
-          scheduleReconnectReset();
-          identificationStartedRef.current = false;
-          setConnected(true);
-          setIdentified(false);
-          setError("");
-          setErrorDescription("");
-          return;
-        }
+            if (state === READY_STATE.OPEN) {
+              clearReconnectTimer();
+              scheduleReconnectReset();
+              identificationStartedRef.current = false;
+              setConnected(true);
+              setIdentified(false);
+              setError("");
+              setErrorDescription("");
+              return;
+            }
 
-        clearReconnectResetTimer();
-        identificationStartedRef.current = false;
-        setConnected(false);
-        setIdentified(false);
-      },
-      onClose: ({ error: closeError, intentional }) => {
-        clearReconnectResetTimer();
-        setConnected(false);
-        setIdentified(false);
-        setIdentifying(false);
+            clearReconnectResetTimer();
+            identificationStartedRef.current = false;
+            setConnected(false);
+            setIdentified(false);
+          },
+          onClose: ({ error: closeError, intentional }) => {
+            clearReconnectResetTimer();
+            setConnected(false);
+            setIdentified(false);
+            setIdentifying(false);
 
-        if (disposed || intentional) {
-          return;
-        }
+            if (disposed || intentional) {
+              return;
+            }
 
-        log(0, "Socket", "red", "Disconnected", closeError, {
-          stopSending: isStopSendingError(closeError),
-        });
-        scheduleReconnect(closeError);
-      },
-    });
+            log(0, "Socket", "red", "Disconnected", closeError, {
+              stopSending: isStopSendingError(closeError),
+            });
+            scheduleReconnect(closeError);
+          },
+        })
+      : null;
 
     clientRef.current = transportClient;
 
@@ -346,7 +358,7 @@ export default function Provider(props: { children: React.ReactNode }) {
       }
 
       try {
-        await transportClient.connect(TRANSPORT_URL);
+        await transportClient?.connect(TRANSPORT_URL);
       } catch (connectError) {
         if (disposed) {
           return;
@@ -368,7 +380,7 @@ export default function Provider(props: { children: React.ReactNode }) {
         clientRef.current = null;
       }
 
-      void transportClient.close("context-dispose");
+      void transportClient?.close("context-dispose");
       setReadyState(READY_STATE.CLOSED);
       setConnected(false);
       setIdentified(false);
@@ -377,7 +389,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     };
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!connected) {
       setIdentifying(false);
       setIdentified(false);
@@ -489,7 +501,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     };
   }, [connected, decrypt, getSharedSecret, load, send]);
 
-  const progress = React.useMemo(() => {
+  const progress = useMemo(() => {
     if (readyState === READY_STATE.CONNECTING) return 30;
     if (!connected) return 45;
     if (identifying) return 75;
@@ -497,7 +509,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     return 100;
   }, [connected, identified, identifying, readyState]);
 
-  const loadingTitle = React.useMemo(() => {
+  const loadingTitle = useMemo(() => {
     if (readyState === READY_STATE.CONNECTING || !connected) {
       return "Connecting to Tensamin";
     }
@@ -509,7 +521,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     return "Loading";
   }, [connected, identified, identifying, readyState]);
 
-  const loadingDescription = React.useMemo(() => {
+  const loadingDescription = useMemo(() => {
     if (readyState === READY_STATE.CONNECTING || !connected) {
       return "Establishing transport channel";
     }
@@ -521,7 +533,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     return undefined;
   }, [connected, identified, identifying, readyState]);
 
-  const contextValue = React.useMemo<ContextType>(
+  const contextValue = useMemo<ContextType>(
     () => ({
       send,
       readyState: () => readyState,
@@ -559,7 +571,7 @@ export default function Provider(props: { children: React.ReactNode }) {
  * @returns Socket context API for transport operations and connection state.
  */
 export function useSocket(): ContextType {
-  const context = React.useContext(socketContext);
+  const context = useContext(socketContext);
   if (!context) {
     throw new Error("useSocket must be used within a SocketProvider");
   }

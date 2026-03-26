@@ -1,1 +1,3 @@
 - Calculate message height and pass to virtualizer (-> packages/chat/src/components/input.tsx)
+- Review legal screen stuff
+- Fix that location change doesn't trigger loggedIn so the user is stuck on a connecting page

@@ -64,14 +64,6 @@ export default function Form() {
   const navigate = useNavigate();
 
   /**
-   * Opens the hidden file input when the upload tile is clicked.
-   * @returns Void.
-   */
-  const handleUploadTileClick = React.useCallback((): void => {
-    uploadRef.current?.click();
-  }, []);
-
-  /**
    * Handles uploaded .tu files and stores resolved credentials.
    * @param event Change event from the hidden file input.
    * @returns Promise that resolves when processing has finished.
@@ -105,7 +97,7 @@ export default function Form() {
    * @returns Promise that resolves after login processing.
    */
   const handleCredentialsSubmit = React.useCallback(
-    async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    async (event: React.SubmitEvent<HTMLFormElement>): Promise<void> => {
       event.preventDefault();
 
       const formData = new FormData(event.currentTarget);
@@ -135,7 +127,7 @@ export default function Form() {
         await save("user_id", user.data.user_id);
         await save("private_key", inputParse.data.private_key);
 
-        void navigate({ to: "/" });
+        navigate({ to: "/" });
       } catch (error) {
         log(0, "Login", "red", error);
         toast("error", "Failed to fetch user data");
@@ -145,47 +137,37 @@ export default function Form() {
   );
 
   return (
-    <div className="flex gap-5">
-      <Card className="w-75 h-80">
-        <CardHeader>
-          <CardTitle>Use .tu file</CardTitle>
-        </CardHeader>
-        <CardContent className="h-full flex items-center justify-center">
-          <div
-            onClick={handleUploadTileClick}
-            className="cursor-pointer w-60 aspect-square mb-17 bg-input/13 hover:bg-input/30 transition-all duration-300 ease-in-out border-dotted border-input/75 border-3 flex items-center justify-center rounded-lg"
-          >
-            <Upload className="text-input/75" size={34} />
-          </div>
-          <input
-            onChange={handleFileInputChange}
-            type="file"
-            ref={uploadRef}
-            className="hidden"
-          />
-        </CardContent>
-      </Card>
-      <Card className="w-75 h-auto">
-        <CardHeader>
-          <CardTitle>Use credentials</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="flex flex-col gap-5 h-full"
-            onSubmit={handleCredentialsSubmit}
-          >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input type="text" id="username" name="username" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="private_key">Private Key</Label>
-              <Input type="password" id="private_key" name="private_key" />
-            </div>
-            <Button type="submit">Login</Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="flex gap-15">
+      <div
+        onClick={() => uploadRef.current?.click()}
+        className="flex flex-col gap-3 cursor-pointer w-55 aspect-square bg-input/13 hover:bg-input/30 transition-all duration-300 ease-in-out border-3 items-center justify-center rounded-lg"
+      >
+        <Upload className="text-foreground" size={27} />
+        <p className="text-md">Upload .tu file</p>
+      </div>
+      <input
+        accept=".tu"
+        onChange={handleFileInputChange}
+        type="file"
+        ref={uploadRef}
+        hidden
+      />
+      <form
+        className="flex flex-col gap-5 aspect-square w-55"
+        onSubmit={handleCredentialsSubmit}
+      >
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="username">Username</Label>
+          <Input required type="text" id="username" name="username" />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="private_key">Private Key</Label>
+          <Input required type="password" id="private_key" name="private_key" />
+        </div>
+        <Button className="mt-auto" type="submit">
+          Login
+        </Button>
+      </form>
     </div>
   );
 }
