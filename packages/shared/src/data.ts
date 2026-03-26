@@ -128,6 +128,13 @@ export const socket = {
     }),
     response: z.object({}),
   },
+  add_conversation: {
+    request: z.object({
+      chat_partner_id: z.number().optional(),
+      chat_partner_name: z.string().min(1).max(15).optional(),
+    }),
+    response: z.object({}),
+  },
 } satisfies Record<string, { request: z.ZodType; response: z.ZodType }>;
 
 export type Socket = typeof socket;

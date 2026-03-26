@@ -12,16 +12,27 @@ import {
 import z from "zod";
 import { toast } from "@tensamin/shared/log";
 import { useSocket } from "@tensamin/ttp/context";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
-/**
- * Executes Page.
- * @param none This function has no parameters.
- * @returns unknown.
- */
+// The page
 export default function Page() {
+  return (
+    <div className="p-3 flex gap-2">
+      <AddConversationButton />
+      <Button disabled>Add Community</Button>
+    </div>
+  );
+}
+
+// Add Conversation Button Component
+function AddConversationButton() {
   const { send } = useSocket();
+  const [loading, setLoading] = useState(false);
 
   function submit(username: string | null) {
+    if (loading) return;
+
     const schema = z
       .string()
       .min(1, "Username is too short")
@@ -34,48 +45,61 @@ export default function Page() {
       return;
     }
 
+    setTimeout(() => setLoading(true), 500);
+
     send("add_conversation", {
       chat_partner_name: result.data,
     })
-      .then(() => toast("success", "Conversation added"))
-      .catch(() => toast("error", "Failed to add conversation"));
+      .then(() => {
+        toast("success", "Conversation added");
+      })
+      .catch((error) => {
+        if (String(error).includes("error_not_found")) {
+          toast("error", "User not found");
+          return;
+        }
+
+        toast("error", "Failed to add conversation, check console for details");
+        console.error("Failed to add conversation", error);
+      })
+      .finally(() => setLoading(false));
   }
 
   return (
-    <div className="p-3 flex gap-2">
-      <Dialog>
-        <DialogTrigger render={<Button>Add Conversation</Button>} />
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New Conversation</DialogTitle>
-          </DialogHeader>
-          <DialogDescription>
-            Add a new conversation. Just enter the username of the person you
-            want to add as a conversation.
-          </DialogDescription>
-          <form
-            className="flex flex-col gap-5"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const form = new FormData(event.currentTarget);
-              const username = form.get("username") as string | null;
-              submit(username);
-            }}
-          >
-            <Input
-              type="text"
-              id="username"
-              name="username"
-              placeholder="Enter username..."
-            />
-            <div className="flex w-full justify-end gap-1">
-              <DialogClose render={<Button variant="outline">Cancel</Button>} />
-              <Button type="submit">Continue</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-      <Button disabled>Add Community</Button>
-    </div>
+    <Dialog>
+      <DialogTrigger render={<Button>Add Conversation</Button>} />
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New Conversation</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
+          Add a new conversation. Just enter the username of the person you want
+          to add as a conversation.
+        </DialogDescription>
+        <form
+          className="flex flex-col gap-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const form = new FormData(event.currentTarget);
+            const username = form.get("username") as string | null;
+            submit(username);
+          }}
+        >
+          <Input
+            required
+            type="text"
+            id="username"
+            name="username"
+            placeholder="Enter username..."
+          />
+          <div className="flex w-full justify-end gap-1">
+            <DialogClose render={<Button variant="outline">Cancel</Button>} />
+            <Button disabled={loading} type="submit">
+              {loading && <Loader2 className="animate-spin" />} Continue
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
