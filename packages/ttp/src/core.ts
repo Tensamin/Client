@@ -131,7 +131,7 @@ const COMMUNICATION_TYPES = [
   "change_confirm",
   "confirm_receive",
   "confirm_read",
-  "get_chats",
+  "get_conversations",
   "get_states",
   "add_community",
   "remove_community",
@@ -343,6 +343,8 @@ registerDataKinds({ array: "container" }, [
   "communities",
   "rho_connections",
   "matches",
+  "get_conversations",
+  "get_communities",
 ]);
 
 registerDataKinds({ array: "number" }, [

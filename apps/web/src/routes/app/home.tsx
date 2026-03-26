@@ -45,7 +45,7 @@ function AddConversationButton() {
       return;
     }
 
-    setTimeout(() => setLoading(true), 500);
+    const timeout = setTimeout(() => setLoading(true), 500);
 
     send("add_conversation", {
       chat_partner_name: result.data,
@@ -62,7 +62,10 @@ function AddConversationButton() {
         toast("error", "Failed to add conversation, check console for details");
         console.error("Failed to add conversation", error);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        clearTimeout(timeout);
+        setLoading(false);
+      });
   }
 
   return (

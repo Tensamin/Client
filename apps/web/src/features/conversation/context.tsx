@@ -32,7 +32,7 @@ export default function ConversationProvider(props: {
   React.useEffect(() => {
     let active = true;
 
-    send("get_chats", {})
+    send("get_conversations", {})
       .then((data) => {
         if (active) {
           setConversations(data.data.user_ids);

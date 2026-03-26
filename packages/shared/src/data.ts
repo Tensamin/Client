@@ -88,7 +88,7 @@ export const socket = {
       ping_iota: z.number(),
     }),
   },
-  get_chats: {
+  get_conversations: {
     request: z.object({}),
     response: z.object({
       user_ids: z.array(conversation),
