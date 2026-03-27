@@ -23,20 +23,20 @@ export default function List() {
   const virtualizer = useVirtualizer({
     count:
       category === "conversations" ? conversations.length : communities.length,
-    estimateSize: () => 80,
+    estimateSize: () => 60,
     getScrollElement: () => scrollRef.current,
   });
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 h-full">
       <Switch category={category} setCategory={setCategory} />
       <div
         ref={scrollRef}
         id="conversation-list"
-        className="overflow-y-auto flex-1"
+        className="overflow-y-auto flex-1 h-full"
       >
         <div
-          className="relative w-full flex flex-col gap-2"
+          className="relative w-full flex flex-col"
           style={{
             height: `${virtualizer.getTotalSize()}px`,
           }}
