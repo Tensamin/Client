@@ -276,6 +276,7 @@ const DATA_TYPES = [
   "calls",
   "timeout",
   "has_admin",
+  "last_message_at",
 ] as const;
 
 const COMMUNICATION_TYPE_BY_NAME = createIndexMap(COMMUNICATION_TYPES);
@@ -303,6 +304,7 @@ registerDataKinds("number", [
   "send_time",
   "sub_level",
   "sub_end",
+  "last_message_at",
 ]);
 
 registerDataKinds("string", [

@@ -4,6 +4,7 @@ export const conversation = z.object({
   user_id: z.number(),
   calls: z.array(z.uuidv4()).optional(),
   last_message_at: z.number(),
+  username: z.string().optional(), // Todo: Remove this
 });
 
 export const community = z.object({
