@@ -41,6 +41,17 @@ export default function InputComponent() {
     const time = Date.now();
     const currentValue = value;
     const currentUserId = userId();
+    const currentSharedSecret = sharedSecret();
+
+    if (!Number.isSafeInteger(currentUserId) || currentUserId <= 0) {
+      toast("error", "No conversation selected");
+      return;
+    }
+
+    if (!currentSharedSecret) {
+      toast("error", "Conversation key not ready yet");
+      return;
+    }
 
     addLiveMessage({
       height: 0,
@@ -50,7 +61,7 @@ export default function InputComponent() {
       sent_by_self: true,
     });
 
-    const encryptedContext = await encrypt(sharedSecret(), currentValue);
+    const encryptedContext = await encrypt(currentSharedSecret, currentValue);
 
     send("message_send", {
       height: 0,

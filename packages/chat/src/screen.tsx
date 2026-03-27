@@ -26,11 +26,13 @@ export default function Screen() {
   } | null>(null);
 
   const chatUserId = userId();
+  const hasValidChatUser = Number.isSafeInteger(chatUserId) && chatUserId > 0;
 
   const messagesQuery = useInfiniteQuery({
     queryKey: ["chat-messages", String(chatUserId)],
     initialPageParam: 0,
     queryFn: ({ pageParam }) => getMessages(PAGE_SIZE, Number(pageParam)),
+    enabled: hasValidChatUser,
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < PAGE_SIZE) {
         return undefined;
@@ -174,6 +176,14 @@ export default function Screen() {
   const handleContainerScroll = React.useCallback((): void => {
     void onScroll();
   }, [onScroll]);
+
+  if (!hasValidChatUser) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+        Select a conversation to start chatting.
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden px-2">

@@ -51,10 +51,14 @@ export default function Screen(props: { children: React.ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    setLoading(true);
+    const shouldBlockRender = userId === undefined || userId === 0;
+
+    if (shouldBlockRender) {
+      setLoading(true);
+    }
+
     setError("");
     setErrorDescription("");
-    setHasContinued(false);
 
     void load("user_id").then(async (id) => {
       if (!active) {
@@ -64,7 +68,9 @@ export default function Screen(props: { children: React.ReactNode }) {
       setUserId(id);
 
       if (id === 0) {
-        setLoading(false);
+        if (shouldBlockRender) {
+          setLoading(false);
+        }
         return;
       }
 
@@ -134,7 +140,9 @@ export default function Screen(props: { children: React.ReactNode }) {
         acceptTOS(false);
       }
 
-      setLoading(false);
+      if (shouldBlockRender) {
+        setLoading(false);
+      }
     });
 
     return () => {
