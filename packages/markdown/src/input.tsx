@@ -1,6 +1,7 @@
 import { markdown } from "@codemirror/lang-markdown";
 import {
   EditorState,
+  Prec,
   type Extension,
   type Range,
   type SelectionRange,
@@ -81,6 +82,13 @@ export default function Input(props: InputProps) {
   const elementRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | undefined>(undefined);
   const ignoreSyncRef = useRef(false);
+  const onSubmitRef = useRef<InputProps["onSubmit"]>(props.onSubmit);
+  const invertEnterBehaviorRef = useRef(Boolean(props.invertEnterBehavior));
+
+  useEffect(() => {
+    onSubmitRef.current = props.onSubmit;
+    invertEnterBehaviorRef.current = Boolean(props.invertEnterBehavior);
+  }, [props.onSubmit, props.invertEnterBehavior]);
 
   useEffect(() => {
     if (!elementRef.current) return;
@@ -93,8 +101,8 @@ export default function Input(props: InputProps) {
           props.setValue(value);
         },
         () => props.placeholder,
-        () => Boolean(props.invertEnterBehavior),
-        () => props.onSubmit?.(),
+        () => invertEnterBehaviorRef.current,
+        () => onSubmitRef.current?.(),
       ),
     });
 
@@ -179,8 +187,8 @@ function createEditorExtensions(
   return [
     history(),
     markdown(),
-    customEnterKeymap,
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+    Prec.highest(customEnterKeymap),
     EditorView.lineWrapping,
     placeholder(getPlaceholder() ?? ""),
     EditorView.updateListener.of((update: ViewUpdate) => {

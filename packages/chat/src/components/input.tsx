@@ -53,7 +53,7 @@ export default function InputComponent() {
       return;
     }
 
-    addLiveMessage({
+    const reference = addLiveMessage({
       height: 0,
       not_encrypted: true,
       timestamp: time,
@@ -75,6 +75,7 @@ export default function InputComponent() {
         receiver_id: currentUserId,
         send_time: time,
       });
+      reference.setFailed(true);
       toast("error", "Failed to send message");
     });
 
@@ -82,7 +83,7 @@ export default function InputComponent() {
   }
 
   return (
-    <Card className="rounded-none rounded-t-xl border border-input/50 border-b-0 pt-0">
+    <Card className="rounded-none rounded-t-xl border-b-0 pt-0">
       <CardHeader className="p-0 flex flex-col">
         <Input
           placeholder="Send a message..."
@@ -93,10 +94,7 @@ export default function InputComponent() {
         />
         <div className="w-full flex justify-between gap-2 p-2 pt-0">
           <div className="flex gap-2">
-            <Button
-              className="w-9 h-9 p-0"
-              variant="ghost"
-            >
+            <Button className="w-9 h-9 p-0" variant="ghost">
               <Plus size={20} />
             </Button>
             <div className="w-auto flex">
@@ -104,16 +102,10 @@ export default function InputComponent() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button
-              className="w-9 h-9 p-0"
-              variant="ghost"
-            >
+            <Button className="w-9 h-9 p-0" variant="ghost">
               <Laugh size={20} />
             </Button>
-            <Button
-              className="w-9 h-9 p-0"
-              variant="ghost"
-            >
+            <Button className="w-9 h-9 p-0" variant="ghost">
               <Clapperboard size={20} />
             </Button>
           </div>

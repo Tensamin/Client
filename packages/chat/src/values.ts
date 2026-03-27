@@ -6,3 +6,8 @@ export type RawMessages = z.infer<
 >["messages"];
 
 export type RawMessage = RawMessages[number];
+
+export type LiveMessage = RawMessage & {
+  failed?: boolean;
+  localId: string;
+};

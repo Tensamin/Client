@@ -1,7 +1,7 @@
 import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
-import type { RawMessage, RawMessages } from "./values";
+import type { LiveMessage, RawMessage, RawMessages } from "./values";
 import { useCrypto } from "@tensamin/crypto/context";
 import { useUser } from "@tensamin/user/context";
 import { useStorage } from "@tensamin/storage/context";
@@ -22,9 +22,7 @@ export default function Provider(props: { children: React.ReactNode }) {
   const { load } = useStorage();
   const { send } = useSocket();
 
-  const [liveMessagesState, setLiveMessagesState] = React.useState<RawMessages>(
-    [],
-  );
+  const [liveMessagesState, setLiveMessagesState] = React.useState<LiveMessage[]>([]);
   const [currentSharedSecret, setCurrentSharedSecret] = React.useState("");
 
   const locationSearch = useRouterState({
@@ -93,7 +91,30 @@ export default function Provider(props: { children: React.ReactNode }) {
   );
 
   const addLiveMessage = React.useCallback((message: RawMessage) => {
-    setLiveMessagesState((prev) => [...prev, message]);
+    const localId =
+      globalThis.crypto?.randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    setLiveMessagesState((prev) => [
+      ...prev,
+      {
+        ...message,
+        localId,
+        failed: false,
+      },
+    ]);
+
+    return {
+      setFailed: (failed: boolean) => {
+        setLiveMessagesState((prev) =>
+          prev.map((liveMessage) =>
+            liveMessage.localId === localId
+              ? { ...liveMessage, failed }
+              : liveMessage,
+          ),
+        );
+      },
+    };
   }, []);
 
   const clearLiveMessages = React.useCallback(() => {
@@ -128,8 +149,10 @@ export default function Provider(props: { children: React.ReactNode }) {
 
 type contextType = {
   getMessages: (amount: number, offset: number) => Promise<RawMessages>;
-  liveMessages: () => RawMessages;
-  addLiveMessage: (message: RawMessage) => void;
+  liveMessages: () => LiveMessage[];
+  addLiveMessage: (message: RawMessage) => {
+    setFailed: (failed: boolean) => void;
+  };
   clearLiveMessages: () => void;
   sharedSecret: () => string;
   userId: () => number;

@@ -4,6 +4,13 @@ import { useChat } from "../context";
 import type { RawMessage } from "../values";
 import { log } from "@tensamin/shared/log";
 import Text from "@tensamin/markdown/text";
+import { AlertTriangle } from "lucide-react";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@tensamin/ui/cmp/tooltip";
 
 /**
  * Executes Message.
@@ -11,7 +18,9 @@ import Text from "@tensamin/markdown/text";
  * @returns unknown.
  */
 export default function Message(props: {
-  message: RawMessage;
+  message: RawMessage & {
+    failed?: boolean;
+  };
   notEncrypted?: boolean;
 }) {
   const { sharedSecret } = useChat();
@@ -67,14 +76,24 @@ export default function Message(props: {
   }, [decrypt, props.message.content, props.notEncrypted, sharedSecret]);
 
   return (
-    <div className="w-full flex justify-start">
+    <div
+      className={`w-full flex justify-start ${props.message.failed && "opacity-50"}`}
+    >
       <div
-        className={`animate-in fade-in duration-200 max-w-[80%] rounded-xl px-2 py-1 whitespace-pre-wrap wrap-break-word ${
+        className={`flex gap-1 items-center justify-center animate-in fade-in duration-200 max-w-[80%] rounded-lg px-2 py-px whitespace-pre-wrap wrap-break-word ${
           props.message.sent_by_self
             ? "bg-primary text-primary-foreground"
             : "bg-muted"
         }`}
       >
+        {props.message.failed && (
+          <Tooltip>
+            <TooltipContent>
+              <p>Failed to send message</p>
+            </TooltipContent>
+            <TooltipTrigger render={<AlertTriangle size={17} />} />
+          </Tooltip>
+        )}
         {isReady ? <Text value={decodedContent} /> : null}
       </div>
     </div>

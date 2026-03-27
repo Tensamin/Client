@@ -6,6 +6,7 @@ import Crypto from "@tensamin/crypto/context";
 import LegalWrapper from "@/features/legal/screen";
 
 import { Toaster } from "@tensamin/ui/cmp/sonner";
+import { TooltipProvider } from "@tensamin/ui/cmp/tooltip";
 
 /**
  * Executes Layout.
@@ -42,11 +43,13 @@ export default function Layout(props: { children: ReactNode }) {
         )}
       </div>
       <Toaster />
-      <Storage>
-        <LegalWrapper>
-          <Crypto>{props.children}</Crypto>
-        </LegalWrapper>
-      </Storage>
+      <TooltipProvider>
+        <Storage>
+          <LegalWrapper>
+            <Crypto>{props.children}</Crypto>
+          </LegalWrapper>
+        </Storage>
+      </TooltipProvider>
     </>
   );
 }
