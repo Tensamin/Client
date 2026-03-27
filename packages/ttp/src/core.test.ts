@@ -1,11 +1,13 @@
 import { describe, it, expect } from "bun:test";
 import {
-  encodeCommunicationMessage,
-  decodeCommunicationMessage,
   createTransportClient,
-  type TypedMessage,
   type SchemaMap,
 } from "./core";
+import {
+  decodeCommunicationMessage,
+  encodeCommunicationMessage,
+  type TypedMessage,
+} from "./codec";
 import { z } from "zod";
 
 type MockStreamWriter = {
