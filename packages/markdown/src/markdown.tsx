@@ -666,11 +666,12 @@ export const markdownStyles = `
 .tm-md-table th { background: var(--muted); font-weight: 600; }
 .tm-md-hr { border: 0; border-top: 1px solid var(--border); margin: 0.55rem 0; }
 
-.cm-editor.tm-md-editor { border: 1px solid var(--border); border-radius: 0.65rem; background: var(--background); }
+.cm-editor.tm-md-editor { border: 1px solid var(--border); border-radius: 0.65rem; background: var(--card); }
 .cm-editor.tm-md-editor.cm-focused { outline: 2px solid var(--ring); outline-offset: 1px; }
 .cm-editor.tm-md-editor .cm-scroller { font-family: inherit; line-height: 1.55; max-height: 30vh; overflow-y: auto; overflow-x: hidden; }
+.cm-editor.tm-md-editor .cm-content { caret-color: var(--text); }
 .cm-editor.tm-md-editor .cm-content { padding: 0.7rem 0.85rem; min-height: 2.75rem; }
-.cm-editor.tm-md-editor .cm-line { padding: 0 1px; }
+.cm-editor.tm-md-editor .cm-line { padding: 0 1px; color: var(--text); }
 .cm-editor.tm-md-editor .tm-md-hidden-token { color: transparent; opacity: 0; font-size: inherit; }
 .cm-editor.tm-md-editor .tm-md-code-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: var(--muted); border-radius: 0.3rem; }
 `;

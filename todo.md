@@ -1,2 +1,3 @@
 - Calculate message height and pass to virtualizer (-> packages/chat/src/components/input.tsx)
 - Split ttp codec into separate file
+- Add "Rename Conversations to Friends" option in settings

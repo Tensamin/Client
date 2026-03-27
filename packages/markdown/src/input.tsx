@@ -134,7 +134,7 @@ export default function Input(props: InputProps) {
     });
   }, [props.value]);
 
-  return <div ref={elementRef} className="tm-md-root" />;
+  return <div ref={elementRef} className="tm-md-root w-full" />;
 }
 
 /**

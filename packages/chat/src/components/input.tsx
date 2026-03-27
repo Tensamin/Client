@@ -82,7 +82,7 @@ export default function InputComponent() {
   }
 
   return (
-    <Card className="rounded-none rounded-t-xl border border-input/50 border-b-0">
+    <Card className="rounded-none rounded-t-xl border border-input/50 border-b-0 pt-0">
       <CardHeader className="p-0 flex flex-col">
         <Input
           placeholder="Send a message..."
@@ -94,8 +94,8 @@ export default function InputComponent() {
         <div className="w-full flex justify-between gap-2 p-2 pt-0">
           <div className="flex gap-2">
             <Button
-              className="w-9 h-9 p-0 border border-ring/10"
-              variant="secondary"
+              className="w-9 h-9 p-0"
+              variant="ghost"
             >
               <Plus size={20} />
             </Button>
@@ -105,14 +105,14 @@ export default function InputComponent() {
           </div>
           <div className="flex gap-2">
             <Button
-              className="w-9 h-9 p-0 border border-ring/10"
-              variant="secondary"
+              className="w-9 h-9 p-0"
+              variant="ghost"
             >
               <Laugh size={20} />
             </Button>
             <Button
-              className="w-9 h-9 p-0 border border-ring/10"
-              variant="secondary"
+              className="w-9 h-9 p-0"
+              variant="ghost"
             >
               <Clapperboard size={20} />
             </Button>
