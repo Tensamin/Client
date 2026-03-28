@@ -1,25 +1,26 @@
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { useUser, type User } from "./context";
 
-/**
- * Executes Wrapper.
- * @param props Parameter props.
- * @returns unknown.
- */
+import { failedUser } from "@tensamin/shared/data";
+
+// Wrapper function to pass user data to some component
 export default function Wrapper(props: {
   userId?: number;
   loading: React.ReactNode;
   component: (user: User) => React.ReactNode;
 }) {
   const { get } = useUser();
-  const [user, setUser] = React.useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  React.useEffect(() => {
-    if (!props.userId) return;
+  useEffect(() => {
+    if (!props.userId) {
+      setUser(failedUser);
+      return;
+    }
 
     let active = true;
 
-    void get(props.userId)
+    get(props.userId)
       .then((value) => {
         if (active) {
           setUser(value);
@@ -27,7 +28,7 @@ export default function Wrapper(props: {
       })
       .catch(() => {
         if (active) {
-          setUser(null);
+          setUser(failedUser);
         }
       });
 

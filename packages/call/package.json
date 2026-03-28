@@ -1,0 +1,32 @@
+{
+  "name": "@tensamin/call",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./context": "./src/context.tsx",
+    "./screen": "./src/screen.tsx",
+    "./utils": "./src/utils.ts"
+  },
+  "scripts": {
+    "format": "bunx prettier --write .",
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-router": "^1.0.0",
+    "@tanstack/react-virtual": "^3.0.0",
+    "@tensamin/crypto": "workspace:*",
+    "@tensamin/ttp": "workspace:*",
+    "@tensamin/storage": "workspace:*",
+    "@tensamin/user": "workspace:*",
+    "@tensamin/markdown": "workspace:*",
+    "@tensamin/shared": "workspace:*",
+    "@tensamin/ui": "workspace:*",
+    "lucide-react": "^0.564.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.3.6"
+  }
+}

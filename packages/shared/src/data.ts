@@ -21,6 +21,18 @@ const message = z.object({
   display: z.boolean().optional(),
 });
 
+export const failedUser = {
+  display: "Failed to load user",
+  iota_id: 0,
+  omikron_connections: [],
+  online_status: "user_borked",
+  public_key: "",
+  sub_end: 0,
+  sub_level: 0,
+  user_id: 0,
+  username: "unknown",
+} as z.infer<typeof socket.get_user_data.response>;
+
 // Socket
 export const socket = {
   identification: {

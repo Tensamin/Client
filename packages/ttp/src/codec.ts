@@ -196,6 +196,7 @@ const DATA_TYPES = [
 	"timeout",
 	"has_admin",
 	"last_message_at",
+	"height"
 ] as const;
 
 const COMMUNICATION_TYPE_BY_NAME = createIndexMap(COMMUNICATION_TYPES);
@@ -224,6 +225,7 @@ registerDataKinds("number", [
 	"sub_level",
 	"sub_end",
 	"last_message_at",
+	"height"
 ]);
 
 registerDataKinds("string", [
@@ -276,7 +278,7 @@ registerDataKinds({ array: "number" }, [
 	"last_ping",
 	"ping_iota",
 	"get_time",
-	"omikron_connections",
+	"omikron_connections"
 ]);
 
 registerDataKinds("container", [

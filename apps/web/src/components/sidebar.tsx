@@ -18,11 +18,13 @@ export default function Sidebar() {
 
   return (
     <div className="w-65 h-full flex flex-col gap-3 p-2">
-      <Wrapper
-        loading={<Loading />}
-        userId={userId}
-        component={(user) => <Basic user={user} />}
-      />
+      <div>
+        <Wrapper
+          loading={<Loading />}
+          userId={userId}
+          component={(user) => <Basic user={user} />}
+        />
+      </div>
       <div className="h-full">
         <List />
       </div>

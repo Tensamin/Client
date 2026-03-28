@@ -1,10 +1,7 @@
-import Socket from "@tensamin/ttp/context";
-import User from "@tensamin/user/context";
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
 import Sidebar from "@/components/sidebar";
-import Conversation from "@/features/conversation/context";
 import Navbar from "@/components/navbar";
 import { useStorage } from "@tensamin/storage/context";
 
@@ -49,20 +46,14 @@ export default function Layout(props: { children: ReactNode }) {
   }
 
   return (
-    <Socket>
-      <User>
-        <Conversation>
-          <div className="w-full h-full flex bg-sidebar">
-            <Sidebar />
-            <div className="w-full h-full flex flex-col">
-              <Navbar />
-              <div className="bg-background h-full w-full rounded-tl-3xl border-t border-l">
-                {props.children}
-              </div>
-            </div>
-          </div>
-        </Conversation>
-      </User>
-    </Socket>
+    <div className="w-full h-full flex bg-sidebar">
+      <Sidebar />
+      <div className="w-full h-full flex flex-col">
+        <Navbar />
+        <div className="bg-background h-full w-full rounded-tl-3xl border-t border-l">
+          {props.children}
+        </div>
+      </div>
+    </div>
   );
 }

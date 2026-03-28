@@ -12,6 +12,7 @@
     "preview": "cd dist && nix-shell -p python3 --run 'python3 -m http.server 3000' && cd .."
   },
   "dependencies": {
+    "@tensamin/call": "workspace:*",
     "@tensamin/chat": "workspace:*",
     "@tensamin/crypto": "workspace:*",
     "@tensamin/ttp": "workspace:*",

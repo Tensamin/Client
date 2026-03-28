@@ -15,11 +15,18 @@ import AppLayout from "./routes/app/layout";
 
 import Home from "@/routes/app/home";
 import ChatScreen from "@tensamin/chat/screen";
-import ChatContext from "@tensamin/chat/context";
+import CallScreen from "@tensamin/call/screen";
 import Login from "@/routes/screens/login";
 import Signup from "@/routes/screens/signup";
 
+import ConversationContext from "@/features/conversation/context";
+import ChatContext from "@tensamin/chat/context";
+import CallContext from "@tensamin/call/context";
+import SocketContext from "@tensamin/ttp/context";
+import UserContext from "@tensamin/user/context";
+
 import { ThemeProvider } from "@tensamin/ui/theme";
+import z from "zod";
 
 const wrapper = document.getElementById("root");
 
@@ -33,11 +40,6 @@ window.setLogLevelToMax = () => {
   location.reload();
 };
 
-/**
- * Executes RootShell.
- * @param none This function has no parameters.
- * @returns unknown.
- */
 function RootShell() {
   return (
     <ThemeProvider>
@@ -50,24 +52,22 @@ function RootShell() {
   );
 }
 
-/**
- * Executes AppShell.
- * @param none This function has no parameters.
- * @returns unknown.
- */
 function AppShell() {
   return (
-    <AppLayout>
-      <Outlet />
-    </AppLayout>
+    <SocketContext>
+      <UserContext>
+        <CallContext>
+          <ConversationContext>
+            <AppLayout>
+              <Outlet />
+            </AppLayout>
+          </ConversationContext>
+        </CallContext>
+      </UserContext>
+    </SocketContext>
   );
 }
 
-/**
- * Executes Chat.
- * @param none This function has no parameters.
- * @returns unknown.
- */
 function Chat() {
   return (
     <ChatContext>
@@ -77,6 +77,7 @@ function Chat() {
 }
 
 const rootRoute = createRootRoute({
+  
   component: RootShell,
 });
 
@@ -96,6 +97,15 @@ const chatRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "chat",
   component: Chat,
+  validateSearch: z.object({
+    id: z.number().optional(),
+  })
+});
+
+const callRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "call",
+  component: CallScreen,
 });
 
 const loginRoute = createRoute({
@@ -111,7 +121,7 @@ const signupRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  appRoute.addChildren([homeRoute, chatRoute]),
+  appRoute.addChildren([homeRoute, chatRoute, callRoute]),
   loginRoute,
   signupRoute,
 ]);

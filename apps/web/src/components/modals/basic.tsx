@@ -6,7 +6,7 @@ import { Skeleton } from "@tensamin/ui/cmp/skeleton";
 
 export function Basic(props: { user: User }) {
   return (
-    <Card className="animate-in fade-in duration-300 rounded-xl py-0 m-px">
+    <Card className="animate-in fade-in duration-300 rounded-2xl py-0 m-px">
       <CardHeader className="flex flex-row gap-2.5 items-center justify-start p-2">
         <Avatar>
           <AvatarImage src={props.user.avatar} />
@@ -21,5 +21,5 @@ export function Basic(props: { user: User }) {
 }
 
 export function Loading() {
-  return <Skeleton className="h-12.5 rounded-xl" />;
+  return <Skeleton className="h-12.5 rounded-2xl" />;
 }
